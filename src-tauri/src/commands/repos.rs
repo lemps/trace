@@ -273,6 +273,10 @@ pub fn remove_repo(path: String) -> Result<Vec<String>, String> {
         cfg.assignments.retain(|_, v| v != &path);
         cfg.repos.clone()
     })
+    .inspect(|_| {
+        // Its setup stays with a hosted repo's record, for when it's cloned again.
+        let _ = crate::repo_catalog::store::update(|cat| cat.forget_local(&path));
+    })
 }
 
 #[tauri::command]

@@ -117,6 +117,8 @@ pub fn create_worktree(
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    // The repo's setup hooks (`npm install`, copying `.env`), on their own thread.
+    crate::repo_catalog::setup::after_worktree_created(repo_path, worktree_path);
     Ok(())
 }
 

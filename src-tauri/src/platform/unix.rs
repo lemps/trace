@@ -81,6 +81,14 @@ pub fn default_shell(fallback: &str) -> String {
     std::env::var("SHELL").unwrap_or_else(|_| fallback.to_string())
 }
 
+/// `/bin/sh -c <line>`: POSIX sh, not the user's login shell, so a setup command
+/// means the same thing for everyone. Its env comes from the caller.
+pub fn shell_line(line: &str) -> Command {
+    let mut command = super::process::command("/bin/sh");
+    command.args(["-c", line]);
+    command
+}
+
 /// `~/.local/bin/<name>`, plus the claude-style `~/.<name>/local/<name>` layout
 /// (harmless for binaries that don't use it).
 pub fn user_tool_paths(home: &Path, name: &str) -> Vec<PathBuf> {

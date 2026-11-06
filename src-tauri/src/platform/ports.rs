@@ -60,6 +60,10 @@ pub trait AgentEnvironment {
 
     /// The shell behind the plain Terminal tab.
     fn default_shell() -> String;
+
+    /// A command running `line` through the platform's plain command shell
+    /// (`sh -c`, `cmd /C`) — how a repo's setup commands run in a new worktree.
+    fn shell_line(line: &str) -> Command;
 }
 
 /// The scripts agents use to reach trace (`trace-hook`, `trace-render`).

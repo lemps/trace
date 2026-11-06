@@ -25,6 +25,7 @@ import { IntegrationsView } from "@/domains/integrations/IntegrationsView";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useLiveStore } from "@/domains/live/store";
 import { PrsView } from "@/domains/prs/PrsView";
+import { useWorktreeSetupToasts } from "@/domains/repos/useWorktreeSetupToasts";
 import { useScheduleEvents } from "@/domains/schedules/hooks/useScheduleEvents";
 import { SchedulesView } from "@/domains/schedules/SchedulesView";
 import { useSchedulesStore } from "@/domains/schedules/store";
@@ -61,6 +62,7 @@ export function App() {
 
   // Scheduled runs start and finish backend-side; keep their store live app-wide.
   useScheduleEvents();
+  useWorktreeSetupToasts();
   useActivityFeed();
 
   useAppEvents();

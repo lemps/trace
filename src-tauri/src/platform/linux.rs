@@ -123,6 +123,10 @@ impl AgentEnvironment for Os {
     fn default_shell() -> String {
         unix::default_shell("/bin/bash")
     }
+
+    fn shell_line(line: &str) -> Command {
+        unix::shell_line(line)
+    }
 }
 
 impl SoundPlayer for Os {

@@ -16,6 +16,7 @@ pub mod issues;
 pub mod jira;
 pub mod platform;
 pub mod pylon;
+pub mod repo_catalog;
 pub mod schedule;
 pub mod state;
 
@@ -49,6 +50,8 @@ pub fn run() {
             schedule::runner::start(app.handle().clone());
             // Idle-workspace cleanup; a no-op until enabled in Settings.
             cleanup::runner::start(app.handle().clone());
+            // Worktree setup hooks report progress to the renderer.
+            repo_catalog::setup::init(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -79,6 +82,15 @@ pub fn run() {
             commands::repos::set_issue_repo,
             commands::repos::list_repo_mappings,
             commands::repos::set_repo_mappings,
+            commands::repo_setup::repo_details,
+            commands::repo_setup::set_repo_setup,
+            commands::repo_setup::suggest_repo_setup,
+            commands::repo_setup::clone_root,
+            commands::repo_setup::set_clone_root,
+            commands::github::github_status,
+            commands::github::github_owners,
+            commands::github::github_repos,
+            commands::github::github_clone,
             commands::agent::agent_running,
             commands::agent::live_workspaces,
             commands::agent::start_agent,

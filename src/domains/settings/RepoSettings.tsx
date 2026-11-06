@@ -1,7 +1,11 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { CloneFolder } from "@/domains/github/CloneFolder";
+import { RepoBrowser } from "@/domains/github/RepoBrowser";
+import type { RepoDetails } from "@/domains/repos/types";
+import { repoDetails } from "@/ipc/repoSetup";
 import {
   addRepo,
   listRepoMappings,
@@ -11,6 +15,7 @@ import {
   setRepoMappings,
 } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import { RepoRow } from "./RepoRow";
 
 // The Repositories section: the configured repos plus the ticket→repo mapping
 // table. A ticket whose key contains a mapping's pattern (case-insensitive)
@@ -24,15 +29,27 @@ export function RepoSettings() {
   const [repos, setRepos] = useState<string[]>([]);
   const [mappings, setMappings] = useState<EditorRow[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  // Remote, default branch and setup per repo: slower (git per repo), so they fill in.
+  const [details, setDetails] = useState<Record<string, RepoDetails>>({});
+  const [browsing, setBrowsing] = useState(false);
+
+  const loadDetails = useCallback(
+    () =>
+      void repoDetails()
+        .then((list) => setDetails(Object.fromEntries(list.map((d) => [d.path, d]))))
+        .catch((err) => toast.error(`Couldn't read your repositories: ${String(err)}`)),
+    []
+  );
 
   useEffect(() => {
     listRepos()
       .then(setRepos)
       .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
+    loadDetails();
     listRepoMappings()
       .then((list) => setMappings(list.map(withId)))
       .catch((err) => toast.error(`Couldn't load your repo mappings: ${String(err)}`));
-  }, []);
+  }, [loadDetails]);
 
   const persist = (next: EditorRow[]) => {
     setMappings(next);
@@ -51,6 +68,7 @@ export function RepoSettings() {
     if (typeof picked !== "string") return;
     try {
       setRepos(await addRepo(picked));
+      loadDetails();
     } catch (err) {
       setMessage(String(err));
     }
@@ -76,19 +94,16 @@ export function RepoSettings() {
       {repos.length > 0 && (
         <div className="repo-list">
           {repos.map((path) => (
-            <div key={path} className="repo-row">
-              <I.Code size={14} />
-              <span className="repo-name">{basename(path)}</span>
-              <span className="repo-path">{path}</span>
-              <button
-                type="button"
-                className="repo-remove"
-                onClick={() => void remove(path)}
-                aria-label={`Remove ${basename(path)}`}
-              >
-                <I.X size={13} />
-              </button>
-            </div>
+            <RepoRow
+              key={path}
+              path={path}
+              details={details[path] ?? null}
+              onRemove={() => void remove(path)}
+              onSaved={(setup) => {
+                const d = details[path];
+                if (d) setDetails({ ...details, [path]: { ...d, setup } });
+              }}
+            />
           ))}
         </div>
       )}
@@ -96,12 +111,28 @@ export function RepoSettings() {
         <button type="button" className="btn" onClick={addFolder}>
           <I.Plus size={13} /> Add repository
         </button>
+        <button type="button" className="btn" onClick={() => setBrowsing(true)}>
+          <I.Download size={13} /> Clone from GitHub
+        </button>
         {message && <span style={{ fontSize: 12.5, color: "var(--c-danger)" }}>{message}</span>}
       </div>
       {repos.length === 0 && (
         <span className="hint" style={{ marginTop: 8, display: "block" }}>
-          Add the folder of a local git repository (not a GitHub URL).
+          Add the folder of a local git repository, or clone one from GitHub.
         </span>
+      )}
+      <CloneFolder label="GitHub clones go in" />
+      {browsing && (
+        <RepoBrowser
+          onClose={() => {
+            setBrowsing(false);
+            loadDetails();
+          }}
+          onCloned={(cloned) => {
+            setRepos((list) => (list.includes(cloned.path) ? list : [...list, cloned.path]));
+            loadDetails();
+          }}
+        />
       )}
 
       {repos.length > 1 && (

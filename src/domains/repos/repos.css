@@ -1,0 +1,55 @@
+/* A repo's worktree setup (`rp-`): its row in Settings → Repositories and the editor. */
+.rp-item {
+  display: flex;
+  flex-direction: column;
+}
+.rp-remote {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
+.rp-setup-toggle {
+  flex-shrink: 0;
+  height: var(--control-h-xs);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
+.rp-setup-toggle:hover:not(:disabled),
+.rp-setup-toggle[aria-expanded="true"] {
+  border-color: var(--border-strong);
+  color: var(--fg-0);
+}
+.rp-setup-toggle:disabled {
+  color: var(--fg-4);
+}
+.rp-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: -1px;
+  padding: 12px;
+  border: 1px solid var(--border-faint);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--bg-1);
+}
+.rp-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rp-lines {
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+}
+.rp-editor-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rp-spacer {
+  flex: 1;
+}
