@@ -229,6 +229,16 @@ impl AgentEnvironment for Os {
             .or_else(|| std::env::var("ComSpec").ok())
             .unwrap_or_else(|| "cmd.exe".to_string())
     }
+
+    /// `cmd /D /S /C "<line>"`, as npm runs package scripts. With `/S` cmd strips the
+    /// outer quotes and runs the rest verbatim, so the line goes in raw: Rust's own
+    /// argument quoting is for the MSVC parser and would mangle quotes inside it.
+    fn shell_line(line: &str) -> Command {
+        let comspec = std::env::var("ComSpec").unwrap_or_else(|_| "cmd.exe".to_string());
+        let mut command = process::command(comspec);
+        command.raw_arg(format!("/D /S /C \"{line}\""));
+        command
+    }
 }
 
 impl AgentBridge for Os {

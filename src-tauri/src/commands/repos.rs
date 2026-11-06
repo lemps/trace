@@ -258,12 +258,16 @@ pub fn list_repos() -> Result<Vec<String>, String> {
 pub fn add_repo(path: String) -> Result<Vec<String>, String> {
     let path = path.trim().to_string();
     validate_repo(&path)?;
-    update(|cfg| {
+    let repos = update(|cfg| {
         if !cfg.repos.contains(&path) {
-            cfg.repos.push(path);
+            cfg.repos.push(path.clone());
         }
         cfg.repos.clone()
-    })
+    })?;
+    // A repo removed and added back rejoins its record (by remote), so its setup returns.
+    let remote = crate::repo_catalog::origin_of(&path);
+    let _ = crate::repo_catalog::store::update(|cat| cat.add_local(&path, remote, None));
+    Ok(repos)
 }
 
 #[tauri::command]
@@ -272,6 +276,10 @@ pub fn remove_repo(path: String) -> Result<Vec<String>, String> {
         cfg.repos.retain(|r| r != &path);
         cfg.assignments.retain(|_, v| v != &path);
         cfg.repos.clone()
+    })
+    .inspect(|_| {
+        // Its setup stays with a hosted repo's record, for when it's cloned again.
+        let _ = crate::repo_catalog::store::update(|cat| cat.forget_local(&path));
     })
 }
 

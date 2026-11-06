@@ -50,6 +50,8 @@ src/
 └── domains/
     ├── issues/             # provider-agnostic tracker connection (store, types)
     ├── integrations/       # the Integrations page: a card per service, connect/disconnect dialog
+    ├── github/             # GitHub repo browser: list via `gh`, clone, post-clone setup step
+    ├── repos/              # the repo model (remote + checkouts) and its worktree setup editor
     ├── board/              # Board, Column, Card, filters; store also tracks agent run-state + PTY buffers
     ├── agent/              # AgentDetail + tabs (chat/ticket/files/terminal/tests/PR), xterm registry, defaults
     ├── sessions/           # exploratory (non-Jira) Claude sessions
@@ -81,6 +83,7 @@ src-tauri/src/
 ├── pylon/                  # Pylon provider: auth, client, models, board  (Pylon REST)
 ├── schedule/               # scheduled prompts: cron/timing, runner loop, run lifecycle, hooks, transcripts
 ├── agent_tools/            # trace's own tools served to its agents over loopback MCP (renderer runs them)
+├── repo_catalog/           # per-repo remote, checkouts, default branch + worktree setup hooks
 ├── interrupted.rs          # ledger of live agents; ones cut off by quit/update/crash are offered back
 └── commands/               # thin wrappers: agent, session, schedules, issues, activity, pr, diff, tests, repos, editor
 ```
@@ -151,6 +154,11 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
 - **Lifecycle:** moving a card transitions the tracker's issue. With Settings' auto-start on, landing in the first
   in-progress column also starts its agent. That's the only automation: agents raise their own PRs, and the
   detail view's PR actions are explicit clicks.
+- **Repositories:** `repos.json` lists the local folders agents run in; `repo_catalog/` adds what's known
+  about each — its remote, its checkouts (local today; a tagged `Checkout` so remote execution can add a
+  kind), default branch, and worktree setup (commands + files copied from the main checkout), run on its
+  own thread after `git::create_worktree` makes a worktree. The GitHub integration (`github/account.rs`,
+  `repo_list.rs`, `clone.rs`) lists and clones repos through `gh` only — trace holds no GitHub token.
 - **Agent workspace tabs:** beyond the chat PTY, each agent has a ticket view, a diff/file viewer
   (`commands/diff.rs`), a plain shell terminal, a test runner (`commands/tests.rs`, auto-detects the toolchain),
   an open-in-editor action (`commands/editor.rs`), and a PR pane.

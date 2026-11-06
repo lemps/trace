@@ -13,8 +13,6 @@ use std::collections::HashMap;
 use std::process::Output;
 use std::sync::Mutex;
 
-use serde_json::Value;
-
 /// Repo owner → login that last succeeded for it.
 static ACCOUNT_FOR_OWNER: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
 
@@ -46,23 +44,13 @@ fn logins() -> Vec<String> {
     else {
         return Vec::new();
     };
-    let Ok(v) = serde_json::from_slice::<Value>(&out.stdout) else {
+    let Ok(mut accounts) = super::account::parse_auth_status(&String::from_utf8_lossy(&out.stdout))
+    else {
         return Vec::new();
     };
-    let mut accounts: Vec<(bool, String)> = v
-        .pointer("/hosts/github.com")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter(|a| a.get("state").and_then(Value::as_str) == Some("success"))
-        .filter_map(|a| {
-            let login = a.get("login").and_then(Value::as_str)?.to_string();
-            let active = a.get("active").and_then(Value::as_bool).unwrap_or(false);
-            Some((active, login))
-        })
-        .collect();
-    accounts.sort_by_key(|(active, _)| !active);
-    accounts.into_iter().map(|(_, login)| login).collect()
+    accounts.retain(|a| a.ok);
+    accounts.sort_by_key(|a| !a.active);
+    accounts.into_iter().map(|a| a.login).collect()
 }
 
 fn token_for(login: &str) -> Option<String> {

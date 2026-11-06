@@ -18,6 +18,9 @@ use crate::claude::conversations::{forget_session_id, session_id_for};
 use crate::commands::agent::spawn_in;
 use crate::commands::session_agents::stop_agents;
 use crate::git;
+
+/// The longest a scheduled run waits for its worktree's setup before starting anyway.
+const SETUP_WAIT: std::time::Duration = std::time::Duration::from_secs(15 * 60);
 use crate::helpers::{new_id, slugify};
 use crate::state::AppState;
 
@@ -155,6 +158,9 @@ fn spawn(
         .or_else(crate::commands::repos::default_repo)
         .ok_or("Add a repository in Settings first.")?;
     let cwd = ensure_worktree(&repo, &prompt.id)?;
+    // Unattended and on its own thread: let the repo's setup (`npm ci`, `.env`)
+    // finish first, rather than race the agent in the same tree.
+    crate::repo_catalog::setup::wait_for(&cwd, SETUP_WAIT);
     let previous_run = store::runs()
         .into_iter()
         .filter(|r| r.prompt_id == prompt.id && r.id != run.id)
