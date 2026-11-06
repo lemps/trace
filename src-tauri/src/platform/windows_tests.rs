@@ -173,19 +173,48 @@ fn open_pty() -> portable_pty::PtyPair {
         .unwrap()
 }
 
-/// npm installs CLIs as `.cmd` files, and trace passes Claude its settings as JSON: quotes,
-/// braces and all. A shim like npm's has to hand the program those arguments intact.
+/// A shim in npm's exact format, as `cmd-shim` writes it.
+const NPM_SHIM: &str = "@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n\
+:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\r\nIF EXIST \"%dp0%\\node.exe\" (\r\n  \
+SET \"_prog=%dp0%\\node.exe\"\r\n) ELSE (\r\n  SET \"_prog=node\"\r\n  \
+SET PATHEXT=%PATHEXT:;.JS;=;%\r\n)\r\n\r\nendLocal & goto #_undefined_# 2>NUL || \
+title %COMSPEC% & \"%_prog%\"  \"%dp0%\\node_modules\\pkg\\cli.js\" %*\r\n";
+
 #[test]
-fn json_arguments_survive_a_batch_file_in_a_pty() {
+fn npm_shims_name_their_program() {
+    assert_eq!(
+        npm_shim_target(NPM_SHIM).as_deref(),
+        Some("node_modules\\pkg\\cli.js")
+    );
+    assert_eq!(npm_shim_target("@echo off\r\nsomething.exe %*\r\n"), None);
+}
+
+#[test]
+fn a_shim_pointing_at_nothing_falls_back_to_the_interpreter() {
+    let dir = temp_dir("shim");
+    let tool = dir.join("tool.cmd");
+    fs::write(&tool, NPM_SHIM).unwrap();
+    let argv = Os::pty_invocation(&tool.to_string_lossy());
+    assert_eq!(argv[1], "/c");
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// npm installs CLIs as `.cmd` files, and trace passes Claude its settings as JSON: quotes,
+/// braces and all, from a home folder that can have spaces in its name.
+#[test]
+fn json_arguments_reach_a_program_installed_by_npm() {
     if process::command("node").arg("--version").output().is_err() {
         return; // Only CI is sure to have node; it's what npm's shims run.
     }
-    let dir = temp_dir("shim");
+    let dir = temp_dir("first last");
     let out = dir.join("arg.txt");
     let tool = dir.join("tool.cmd");
+    fs::write(&tool, NPM_SHIM).unwrap();
+    let program = dir.join("node_modules\\pkg");
+    fs::create_dir_all(&program).unwrap();
     fs::write(
-        &tool,
-        "@node -e \"require('fs').writeFileSync(process.env.ARG_OUT, process.argv[1])\" %*\r\n",
+        program.join("cli.js"),
+        "require('fs').writeFileSync(process.env.ARG_OUT, process.argv[2])",
     )
     .unwrap();
     let json = r#"{"hooks":{"Stop":[{"command":"'C:/a b/trace-hook' stop & more"}]},"n":"100%"}"#;
@@ -197,6 +226,10 @@ fn json_arguments_survive_a_batch_file_in_a_pty() {
         portable_pty::CommandBuilder::from_argv(argv.into_iter().map(Into::into).collect());
     cmd.env("ARG_OUT", &out);
     cmd.env("PATH", std::env::var("PATH").unwrap());
+    cmd.env(
+        "PATHEXT",
+        std::env::var("PATHEXT").unwrap_or_else(|_| ".EXE".to_string()),
+    );
     cmd.cwd(&dir);
     let mut child = pair.slave.spawn_command(cmd).unwrap();
     drop(pair.slave);

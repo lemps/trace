@@ -14,12 +14,21 @@ case "$(uname -s)" in
     src-tauri/target/release/trace &
     app=$!
     sleep "$WAIT"
+    xwininfo -root -tree | head -20 || true
     import -window root first-screen.png || echo "::warning::No screenshot."
     if ! kill -0 "$app" 2>/dev/null; then
       wait "$app"
       echo "::error::trace exited during startup with status $?."
       exit 1
     fi
+    kill "$app"
+    wait "$app" 2>/dev/null
+    # WebKitGTK's known blank-window cause. Worth seeing side by side until a real desktop
+    # has settled whether trace needs to set this itself.
+    WEBKIT_DISABLE_DMABUF_RENDERER=1 src-tauri/target/release/trace &
+    app=$!
+    sleep "$WAIT"
+    import -window root first-screen-no-dmabuf.png || echo "::warning::No screenshot."
     kill "$app" "$xvfb"
     ;;
   MINGW* | MSYS*)

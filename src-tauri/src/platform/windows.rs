@@ -111,17 +111,53 @@ impl ToolLocator for Os {
         dir.join(format!("{name}.bat"))
     }
 
-    /// A pseudo console runs executables directly, so a batch file (how npm installs
-    /// CLIs) goes through the command interpreter.
+    /// A pseudo console runs executables directly, so a batch file needs help. The
+    /// interpreter would split trace's JSON arguments at any `&`, so an npm install runs
+    /// the program its shim points at instead. Other batch files have no alternative.
     fn pty_invocation(tool: &str) -> Vec<String> {
         let lower = tool.to_ascii_lowercase();
-        if lower.ends_with(".cmd") || lower.ends_with(".bat") {
-            let shell = std::env::var("ComSpec").unwrap_or_else(|_| "cmd.exe".to_string());
-            vec![shell, "/c".to_string(), tool.to_string()]
-        } else {
-            vec![tool.to_string()]
+        if !lower.ends_with(".cmd") && !lower.ends_with(".bat") {
+            return vec![tool.to_string()];
         }
+        if let Some(argv) = npm_shim_argv(Path::new(tool)) {
+            return argv;
+        }
+        let shell = std::env::var("ComSpec").unwrap_or_else(|_| "cmd.exe".to_string());
+        vec![shell, "/c".to_string(), tool.to_string()]
     }
+}
+
+/// The program in an npm shim's last line, relative to the shim:
+/// `... "%_prog%"  "%dp0%\\node_modules\\pkg\\cli.js" %*`.
+fn npm_shim_target(shim: &str) -> Option<String> {
+    let target = regex::Regex::new(r#""%dp0%\\([^"]+)"\s+%\*"#).ok()?;
+    Some(target.captures(shim)?[1].to_string())
+}
+
+/// How to run what an npm shim runs, without the shim.
+fn npm_shim_argv(shim_path: &Path) -> Option<Vec<String>> {
+    let dir = shim_path.parent()?;
+    let target = dir.join(npm_shim_target(&fs::read_to_string(shim_path).ok()?)?);
+    if !target.is_file() {
+        return None;
+    }
+    let program = target.to_string_lossy().to_string();
+    let is_script = target.extension().is_some_and(|ext| {
+        ["js", "cjs", "mjs"]
+            .iter()
+            .any(|js| ext.eq_ignore_ascii_case(js))
+    });
+    if !is_script {
+        return Some(vec![program]);
+    }
+    // The shim prefers a node.exe installed beside it, as a global npm install has.
+    let local_node = dir.join("node.exe");
+    let node = if local_node.is_file() {
+        local_node.to_string_lossy().to_string()
+    } else {
+        "node".to_string()
+    };
+    Some(vec![node, program])
 }
 
 /// Windows variable names ignore case and `PATH` usually arrives as `Path`, which
