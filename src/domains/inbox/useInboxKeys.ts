@@ -42,16 +42,17 @@ export function useInboxKeys(actions: InboxKeyActions): void {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         if (!inList(e.target)) return;
       }
-      // A focused button (an answer, a tab) takes its own Enter and numbers. Rows are divs.
-      const onButton = e.target instanceof HTMLButtonElement;
+      // A focused button (an answer, a tab) keeps Enter, Space and the numbers, whatever
+      // they're bound to. Rows are divs.
+      if (e.target instanceof HTMLButtonElement && /^(Enter| |[0-9])$/.test(e.key)) return;
       const answer = shortcutIndex("inboxAnswer", e);
       if (isShortcut("inboxMoveDown", e)) a.nudge(1);
       else if (isShortcut("inboxMoveUp", e)) a.nudge(-1);
       else if (isShortcut("inboxNext", e)) a.move(1);
       else if (isShortcut("inboxPrev", e)) a.move(-1);
-      else if (isShortcut("inboxOpen", e) && !onButton) a.open();
+      else if (isShortcut("inboxOpen", e)) a.open();
       else if (isShortcut("inboxDismiss", e)) a.dismiss();
-      else if (answer !== null && !onButton) a.answer(answer);
+      else if (answer !== null) a.answer(answer);
       else return;
       e.preventDefault();
     };

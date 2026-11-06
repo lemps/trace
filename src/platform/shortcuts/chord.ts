@@ -40,34 +40,43 @@ const BASE_BY_CODE: Record<string, string> = {
   Backquote: "`",
 };
 
-/** The key a press names, independent of what Shift or ⌥ did to the character. */
+/** The digits and unshifted symbols: a key that types one of these is named by it. */
+const BASE_CHARS = new Set([..."0123456789", ...Object.values(BASE_BY_CODE)]);
+
+/**
+ * The key a press names. The layout's own letter, digit or symbol wins (Dvorak's J is
+ * J, German Shift+7 is /). Only when Shift or ⌥ turned it into something else — US
+ * Shift+1 is !, macOS ⌥J is ∆, ⌥E is a dead key — is the physical key named instead.
+ */
 function baseKey(e: KeyChord): string {
   const code = e.code ?? "";
   if (e.key === " ") return "Space";
-  if (e.key.length === 1) {
-    if (/^[a-z]$/i.test(e.key) && !e.altKey) return e.key.toLowerCase();
-    // ⌥ (and Shift on symbols) change the character; the physical key doesn't change.
-    const letter = /^Key([A-Z])$/.exec(code);
-    if (letter) return letter[1].toLowerCase();
-    const digit = /^(?:Digit|Numpad)(\d)$/.exec(code);
-    if (digit) return digit[1];
-    if ((e.shiftKey || e.altKey) && BASE_BY_CODE[code]) return BASE_BY_CODE[code];
-    if (e.key === "+") return "=";
-    return e.key.toLowerCase();
-  }
-  return e.key;
+  if (e.key.length !== 1 && e.key !== "Dead") return e.key;
+  if (/^[a-z]$/i.test(e.key)) return e.key.toLowerCase();
+  if (BASE_CHARS.has(e.key)) return e.key;
+  const letter = /^Key([A-Z])$/.exec(code);
+  if (letter) return letter[1].toLowerCase();
+  const digit = /^(?:Digit|Numpad)(\d)$/.exec(code);
+  if (digit) return digit[1];
+  if (BASE_BY_CODE[code]) return BASE_BY_CODE[code];
+  if (e.key === "+") return "=";
+  return e.key === "Dead" ? "Dead" : e.key.toLowerCase();
 }
+
+// One key press is asked about many times (every shortcut, in each listener); read it once.
+const readChords = new WeakMap<object, string | null>();
 
 /** The chord a key event presses, or null for a bare modifier (still choosing). */
 export function chordFromEvent(e: KeyChord): string | null {
-  if (MODIFIER_KEYS.has(e.key) || e.key === "Dead" || e.key === "Unidentified") return null;
-  return joinChord({
-    ctrl: e.ctrlKey,
-    alt: e.altKey,
-    shift: e.shiftKey,
-    meta: e.metaKey,
-    key: baseKey(e),
-  });
+  const cached = readChords.get(e);
+  if (cached !== undefined) return cached;
+  const key = MODIFIER_KEYS.has(e.key) ? null : baseKey(e);
+  const chord =
+    key === null || key === "Dead" || key === "Unidentified"
+      ? null
+      : joinChord({ ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey, meta: e.metaKey, key });
+  readChords.set(e, chord);
+  return chord;
 }
 
 export function joinChord(p: ChordParts): string {
@@ -106,8 +115,13 @@ export function chordsCollide(a: string, b: string): boolean {
  */
 export function matchIndex(binding: string, pressed: string): number | null {
   if (binding === pressed) return 0;
-  if (!binding.endsWith("#")) return null;
   const p = parseChord(pressed);
+  // A symbol some layouts can only type with Shift (/ is Shift+7 in German) still
+  // answers to a binding written without it.
+  if (p.shift && BASE_CHARS.has(p.key) && !/\d/.test(p.key)) {
+    if (binding === joinChord({ ...p, shift: false })) return 0;
+  }
+  if (!binding.endsWith("#")) return null;
   if (!isDigit(p.key)) return null;
   return binding.slice(0, -1) === pressed.slice(0, -1) ? Number(p.key) - 1 : null;
 }

@@ -3,7 +3,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { chordFromEvent, chordsCollide, formatChord, matchIndex } from "./chord.ts";
 import { cleanOverrides, effectiveKeymap, SHORTCUTS, shortcutDef } from "./registry.ts";
-import { asBinding, bindingProblem, findConflicts, terminalNeeds } from "./rules.ts";
+import {
+  allowedOverrides,
+  asBinding,
+  bindingProblem,
+  findConflicts,
+  terminalNeeds,
+} from "./rules.ts";
 
 const key = (k: string, code: string, mods: Partial<Record<string, boolean>> = {}) => ({
   key: k,
@@ -170,5 +176,48 @@ describe("binding rules", () => {
   it("flags clashes already in a keymap", () => {
     const clashing = effectiveKeymap({ search: ["Ctrl+Shift+j"] }, "windows");
     assert.deepEqual(findConflicts(clashing).get("search"), ["orchestrator"]);
+  });
+});
+
+describe("review fixes", () => {
+  const win = effectiveKeymap({}, "windows");
+  const mac = effectiveKeymap({}, "macos");
+  it("keeps the layout's letter under Alt (Dvorak's Alt+J is on physical C)", () => {
+    assert.equal(chordFromEvent(key("j", "KeyC", { altKey: true })), "Alt+j");
+  });
+  it("keeps a symbol the layout types with Shift (German / is Shift+7)", () => {
+    const pressed = chordFromEvent(key("/", "Digit7", { metaKey: true, shiftKey: true }));
+    assert.equal(pressed, "Shift+Meta+/");
+    assert.equal(matchIndex("Meta+/", pressed ?? ""), 0);
+    assert.equal(matchIndex("Meta+7", pressed ?? ""), null);
+  });
+  it("names a digit the layout types (AZERTY Shift+& is 1) by that digit", () => {
+    assert.equal(chordFromEvent(key("1", "Digit1", { shiftKey: true })), "Shift+1");
+    assert.equal(chordFromEvent(key("&", "Digit1", { ctrlKey: true })), "Ctrl+1");
+  });
+  it("reads macOS ⌥ dead keys by physical key", () => {
+    assert.equal(chordFromEvent(key("Dead", "KeyE", { altKey: true })), "Alt+e");
+    assert.equal(chordFromEvent(key("Dead", "")), null);
+  });
+  it("keeps text-editing and clipboard keys out of the reply box and inbox", () => {
+    for (const chord of ["Ctrl+v", "Ctrl+c", "Ctrl+ArrowLeft", "Ctrl+Backspace", "Alt+Home"]) {
+      assert.match(bindingProblem(def("sendAndNext"), chord, win, "windows") ?? "", /edits/, chord);
+    }
+    assert.match(bindingProblem(def("sendAndNext"), "Alt+f", mac, "macos") ?? "", /edits/);
+    assert.match(bindingProblem(def("inboxDismiss"), "Ctrl+c", win, "windows") ?? "", /clipboard/);
+    assert.equal(bindingProblem(def("inboxDismiss"), "Ctrl+Shift+d", win, "windows"), null);
+  });
+  it("refuses macOS screenshot, full-screen and lock chords, and Ctrl++", () => {
+    assert.match(bindingProblem(def("detailTab"), "Shift+Meta+#", mac, "macos") ?? "", /system/);
+    assert.match(bindingProblem(def("search"), "Ctrl+Meta+f", mac, "macos") ?? "", /system/);
+    assert.match(bindingProblem(def("search"), "Ctrl+Shift+=", win, "windows") ?? "", /system/);
+  });
+  it("drops stored rebindings the rules refuse", () => {
+    const stored = {
+      orchestrator: ["Ctrl+c"],
+      search: ["Ctrl+Shift+y", "Ctrl+r"],
+      nextAgent: ["F5"],
+    };
+    assert.deepEqual(allowedOverrides(stored, "windows"), { search: ["Ctrl+Shift+y"] });
   });
 });

@@ -51,7 +51,10 @@ export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: Sho
   const clash =
     clashesWith.length > 0 ? `Same keys as “${clashesWith.join("”, “")}”. Rebind one.` : null;
   const note = isRecording
-    ? (problem ?? "Press the new keys. Esc cancels.")
+    ? (problem ??
+      (chords.length > 1
+        ? `Press the new keys; they replace all ${chords.length}. Esc cancels.`
+        : "Press the new keys. Esc cancels."))
     : (clash ?? (def.isFixed ? "Built in" : null));
 
   return (

@@ -1,6 +1,6 @@
 import type { Os } from "../os.ts";
 import { chordsCollide, formatChord, parseChord } from "./chord.ts";
-import { type Scope, SHORTCUTS, type ShortcutDef } from "./registry.ts";
+import { type Overrides, type Scope, SHORTCUTS, type ShortcutDef } from "./registry.ts";
 
 // What a shortcut may be bound to: never a key a terminal or text box needs, never one
 // the system or the webview keeps for itself, and never one another shortcut already
@@ -23,6 +23,12 @@ const RESERVED: Record<"mac" | "pc", string[]> = {
     "Meta+Tab",
     "Meta+Space",
     "Meta+`",
+    "Alt+Meta+h", // hide others
+    "Ctrl+Meta+f", // full screen
+    "Ctrl+Meta+q", // lock the screen
+    "Shift+Meta+3", // screenshots
+    "Shift+Meta+4",
+    "Shift+Meta+5",
   ],
   // WebView2 (Windows) and WebKitGTK (Linux): reload, find, print, zoom, dev tools.
   // Ctrl+Shift+J would open the console in a browser, but WebView2 lets the page's
@@ -41,6 +47,7 @@ const RESERVED: Record<"mac" | "pc", string[]> = {
     "F12",
     "F7",
     "Ctrl+=",
+    "Ctrl+Shift+=", // Ctrl++
     "Ctrl+-",
     "Ctrl+0",
     "Alt+F4",
@@ -85,6 +92,25 @@ export function terminalNeeds(chord: string, os: Os): boolean {
   return !isDigitKey(p.key);
 }
 
+/** Copy, paste, cut, select all, undo and redo: the page's selection needs them anywhere. */
+function isClipboardKey(chord: string, os: Os): boolean {
+  const p = parseChord(chord);
+  const held = os === "macos" ? p.meta && !p.ctrl : p.ctrl && !p.meta;
+  return held && !p.alt && /^[acvxyz]$/.test(p.key);
+}
+
+/**
+ * Whether a text box needs this chord: the clipboard keys, word and line moves
+ * (Ctrl/Alt/⌘ with arrows, Backspace, Home…), and on macOS ⌥ chords, which type
+ * characters. ⏎ under a modifier stays free: that's what send-style shortcuts use.
+ */
+export function textNeeds(chord: string, os: Os): boolean {
+  const p = parseChord(chord);
+  if (isClipboardKey(chord, os)) return true;
+  if ((p.ctrl || p.alt || p.meta) && EDITING_KEYS.has(p.key) && p.key !== "Enter") return true;
+  return os === "macos" && p.alt && !p.meta && !p.ctrl && p.key.length === 1;
+}
+
 /** Whether two places' shortcuts can both hear one key press. */
 export function scopesOverlap(a: Scope, b: Scope): boolean {
   // Clicks are each on their own element, and never a key press.
@@ -114,7 +140,9 @@ function scopeProblem(def: ShortcutDef, chord: string, os: Os): string | null {
     }
   } else if (def.scope === "reply") {
     if (!p.ctrl && !p.meta && !p.alt) return "Hold a modifier, or it types into the reply.";
+    if (textNeeds(chord, os)) return `${formatChord(chord, os)} edits the reply.`;
   } else if (def.scope === "inbox") {
+    if (isClipboardKey(chord, os)) return `${formatChord(chord, os)} is the clipboard's.`;
     if (p.key === "Tab" || p.key === "Escape")
       return `${formatChord(chord, os)} is kept for moving focus.`;
   }
@@ -147,6 +175,22 @@ export function bindingProblem(
       (keymap[s.id] ?? []).some((c) => chordsCollide(c, chord))
   );
   return other ? `Already used by “${other.label}”.` : null;
+}
+
+/**
+ * Stored rebindings the rules still allow on this OS (stored data is untrusted, and
+ * the rules may have tightened since it was saved): a refused chord would otherwise
+ * take a key from the terminal. Clashes between shortcuts are left for Settings to flag.
+ */
+export function allowedOverrides(overrides: Overrides, os: Os): Overrides {
+  const out: Overrides = {};
+  for (const [id, chords] of Object.entries(overrides)) {
+    const def = SHORTCUTS.find((s) => s.id === id);
+    if (!def || def.isFixed) continue;
+    const ok = chords.filter((c) => !reserved(c, os) && scopeProblem(def, c, os) === null);
+    if (ok.length > 0) out[id] = ok;
+  }
+  return out;
 }
 
 /** For a number shortcut, the chord pressed becomes its `#` form (Ctrl+3 → Ctrl+#). */

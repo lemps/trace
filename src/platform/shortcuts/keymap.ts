@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { currentOs } from "../os";
 import { cleanOverrides, effectiveKeymap, type Overrides } from "./registry";
+import { allowedOverrides } from "./rules";
 
 // The user's rebindings, and the one place they touch localStorage. Handlers read the
 // effective keymap on each key press (`getState`), hints subscribe through the hook,
@@ -11,7 +12,7 @@ const STORAGE_KEY = "trace.shortcuts";
 function load(): Overrides {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw === null ? {} : cleanOverrides(JSON.parse(raw));
+    return raw === null ? {} : allowedOverrides(cleanOverrides(JSON.parse(raw)), currentOs);
   } catch {
     return {};
   }
