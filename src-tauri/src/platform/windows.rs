@@ -131,6 +131,23 @@ impl ToolLocator for Os {
         let shell = std::env::var("ComSpec").unwrap_or_else(|_| "cmd.exe".to_string());
         vec![shell, "/c".to_string(), tool.to_string()]
     }
+
+    /// Never a git built on MSYS2 or Cygwin (devkitPro, a bare MSYS2 install). It writes
+    /// paths its own way, like `/home/you/repo` for `C:\Users\you\repo`, into a worktree's
+    /// `.git` file, which Git for Windows, editors and `gh` then can't follow. Only git:
+    /// Git Bash, which trace's hooks need, is an MSYS2 build itself.
+    fn is_usable(name: &str, path: &Path) -> bool {
+        name != "git" || !is_posix_runtime_build(path)
+    }
+}
+
+/// Whether `exe` is built on a POSIX emulation layer: those ship its runtime beside them.
+fn is_posix_runtime_build(exe: &Path) -> bool {
+    exe.parent().is_some_and(|dir| {
+        ["msys-2.0.dll", "cygwin1.dll"]
+            .iter()
+            .any(|runtime| dir.join(runtime).is_file())
+    })
 }
 
 /// The program in an npm shim's last line, relative to the shim:
@@ -290,6 +307,9 @@ use config_acl::restrict_acl;
 #[cfg(test)]
 use config_acl::{icacls, is_restricted, parse_sid};
 
+#[cfg(test)]
+#[path = "windows_git_tests.rs"]
+mod git_tests;
 #[cfg(test)]
 #[path = "windows_tests.rs"]
 mod tests;

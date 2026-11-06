@@ -143,6 +143,8 @@ src-tauri/src/platform/
       `git` and `gh`, config folder ACLs, and stopping an agent's process tree.
 - [x] Claude's Windows conversation slug, written from the known format.
 - [x] Long paths (`core.longpaths`) for git commands trace runs.
+- [x] Pass over a git built on MSYS2 or Cygwin (devkitPro puts one first on `PATH`): it wrote
+      worktree `.git` files as `/home/...` paths that Git for Windows, editors and `gh` can't follow.
 - [x] Build the NSIS installer.
 - [x] Check removing a worktree right after its agent stops, as Windows locks files in use. It
       worked first time, so no retry was needed.
