@@ -5,8 +5,8 @@ you can watch, answer and take over any of them, and trace shows you which ones 
 
 - **Sessions:** start an agent in an isolated git worktree of a repo, in any folder, or in an empty
   scratch folder.
-- **Board (optional):** connect Jira or Pylon to see your tickets as a Kanban board and start an
-  agent on any card.
+- **Boards (optional):** connect Jira or Pylon from Integrations to see your tickets as a Kanban
+  board and start an agent on any card. Each one you connect adds its own page.
 - **Scheduled prompts:** run a prompt on a schedule while trace is open.
 - **Inbox and Fleet:** see every running agent and answer its questions in one place.
 

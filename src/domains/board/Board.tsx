@@ -1,5 +1,4 @@
 import { type DragEvent, useRef } from "react";
-import { ProviderLogin } from "@/domains/issues/components/ProviderLogin";
 import { useIssuesStore } from "@/domains/issues/store";
 import type { ColumnStatus, Issue } from "@/domains/issues/types";
 import { useLiveStore } from "@/domains/live/store";
@@ -59,20 +58,17 @@ export function Board() {
     boardProvider ? (s.users[boardProvider]?.accountId ?? null) : null
   );
 
-  const hasTracker = useIssuesStore((s) => Object.keys(s.sessions).length > 0);
-
   const draggingRef = useRef<string | null>(null);
   // Resolve the effective assignee: until the user picks, default to themselves.
   const effectiveAssignee = assigneeFilter === undefined ? currentUserId : assigneeFilter;
 
-  if (!hasTracker) return <ProviderLogin />;
   if (loading && !data) return <Centered title="Loading board…" />;
   if (error && !data) return <Centered title="Couldn't load the board" hint={error} />;
   if (!data) {
     return (
       <Centered
         title="No boards to show"
-        hint="Your tracker is connected but returned no boards. Check its access in Settings."
+        hint="This tracker is connected but returned no boards. Check its access, then reconnect it in Integrations."
       />
     );
   }

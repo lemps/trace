@@ -56,6 +56,24 @@ export const I = {
       <path d="m14 8-3-3 3-3" />
     </Base>
   ),
+  Plug: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M12 22v-5" />
+      <path d="M9 8V2" />
+      <path d="M15 8V2" />
+      <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" />
+    </Base>
+  ),
+  Support: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="m4.93 4.93 4.24 4.24" />
+      <path d="m14.83 9.17 4.24-4.24" />
+      <path d="m14.83 14.83 4.24 4.24" />
+      <path d="m9.17 14.83-4.24 4.24" />
+    </Base>
+  ),
   Refresh: (p: IconProps) => (
     <Base {...p}>
       <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />

@@ -1,10 +1,10 @@
+import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useBoardStore } from "@/domains/board/store";
 import { runIdOf } from "@/domains/schedules/ids";
 import { useSchedulesStore } from "@/domains/schedules/store";
 import { agentRoster } from "@/domains/sessions/agentRoster";
 import { useSessionsStore } from "@/domains/sessions/store";
 import type { NavId } from "./nav";
-import { toast } from "./toast";
 
 /**
  * Open whatever a workspace id belongs to: a scheduled run (on the Scheduled
@@ -30,12 +30,5 @@ export function openWorkspace(workspaceId: string, setNav: (nav: NavId) => void)
     sessions.select(workspaceId);
     return;
   }
-  const board = useBoardStore.getState();
-  // The detail needs the issue itself; one on another board (or filtered out of
-  // this one's query) can't open here — say so rather than select a ghost.
-  if (!board.data?.issues.some((i) => i.key === workspaceId)) {
-    toast.info(`${workspaceId} isn't on the current board — switch boards to open it`);
-    return;
-  }
-  board.openIssue(workspaceId);
+  void openIssueAnywhere(workspaceId);
 }

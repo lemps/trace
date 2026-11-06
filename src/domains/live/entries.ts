@@ -1,3 +1,4 @@
+import { rememberedIssueTitle } from "@/domains/board/issueBoards";
 import { useBoardStore } from "@/domains/board/store";
 import { runIdOf } from "@/domains/schedules/ids";
 import { useSchedulesStore } from "@/domains/schedules/store";
@@ -53,7 +54,14 @@ function resolve(id: string, info: LiveInfo, l: Lookups): LiveEntry {
     }
   }
   const issue = l.issues.find((i) => i.key === id);
-  return { id, source: "ticket", title: issue?.summary ?? id, subtitle: id, worktreeId: id, info };
+  return {
+    id,
+    source: "ticket",
+    title: issue?.summary ?? rememberedIssueTitle(id) ?? id,
+    subtitle: id,
+    worktreeId: id,
+    info,
+  };
 }
 
 /**

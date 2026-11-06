@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useBoardStore } from "@/domains/board/store";
+import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useBuddyStore } from "./store";
 
 /** Long enough to read, short enough not to linger: ~60ms a character, 5–12s. */
@@ -12,7 +12,6 @@ function readMs(text: string): number {
 export function SpeechBubble() {
   const bubble = useBuddyStore((s) => s.bubble);
   const dismiss = useBuddyStore((s) => s.dismiss);
-  const openIssue = useBoardStore((s) => s.openIssue);
 
   useEffect(() => {
     if (!bubble) return;
@@ -22,7 +21,7 @@ export function SpeechBubble() {
 
   if (!bubble) return null;
   const open = () => {
-    if (bubble.issueKey) openIssue(bubble.issueKey);
+    if (bubble.issueKey) void openIssueAnywhere(bubble.issueKey);
     dismiss();
   };
   return (

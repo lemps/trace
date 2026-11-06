@@ -20,15 +20,15 @@ target provider as an argument. Each provider implements `issues::IssueProvider`
   cross to the renderer and are never logged.
 - `issues/session.rs` restores every saved provider on launch (`restore_all`). Disconnecting a
   provider removes only its credential file.
-- A tracker is optional. With none connected, the Board page shows the connect card
-  (`domains/issues/components/ProviderLogin.tsx`) and the rest of the app works as usual; Settings →
-  Integrations connects/disconnects each independently.
+- A tracker is optional. The Integrations page (`domains/integrations/`) connects and disconnects each
+  independently. A tracker's pages are only in the rail while it's connected (`app/nav.ts`), and the
+  app lands on Sessions with none.
 
 ## Pylon specifics
 
 - Bearer-token auth; validate with `GET /me`. API base `https://api.usepylon.com`.
-- No boards/sprints: a single virtual board (`open-issues`), which appears in the board switcher
-  alongside Jira boards (frontend namespaces board keys as `${provider}:${boardId}`). Columns = base states (`new`,
+- No boards/sprints: a single virtual board (`open-issues`), which appears
+  on its own Pylon page in the rail (frontend namespaces board keys as `${provider}:${boardId}`). Columns = base states (`new`,
   `waiting_on_you`, `waiting_on_customer`, `on_hold`, `closed`) plus custom status slugs discovered
   on issues (inserted before `closed`, category `indeterminate`).
 - Cards come from `GET /issues` over a rolling 30-day window (the API is time-bounded). Closed
@@ -48,5 +48,5 @@ target provider as an argument. Each provider implements `issues::IssueProvider`
 2. Add a variant to `issues::Provider` (+ `ProviderKind`, `session_info`, restore in
    `issues/session.rs`).
 3. Add `connect_<name>` in `commands/issues.rs`; register in `lib.rs`.
-4. Frontend: add the connect form to `ProviderLogin.tsx`, a store action in
-   `domains/issues/store.ts`, and an integration card in Settings. Types rarely change.
+4. Frontend: add it to `domains/integrations/registry.ts` with a form in `ConnectForms.tsx`, a store
+   action in `domains/issues/store.ts`, and its page in `app/nav.ts` and the rail. Types rarely change.

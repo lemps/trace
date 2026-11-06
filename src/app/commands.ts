@@ -1,11 +1,12 @@
 import { useBoardStore } from "@/domains/board/store";
+import { useIssuesStore } from "@/domains/issues/store";
 import { choicesFor, choose } from "@/domains/live/answer";
 import { orderIds } from "@/domains/live/order";
 import { useLiveStore } from "@/domains/live/store";
 import { workspaceTitle } from "@/domains/sessions/agentRoster";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { stopAgent } from "@/ipc/agent";
-import { NAV_LABELS, type NavId } from "./nav";
+import { isNavAvailable, NAV_LABELS, type NavId } from "./nav";
 import { openWorkspace } from "./openWorkspace";
 import { toast } from "./toast";
 import { nextNeedingYou } from "./useGlobalKeys";
@@ -26,11 +27,13 @@ const MAX_ISSUE_ACTIONS = 4;
 const NAV_ORDER: NavId[] = [
   "inbox",
   "board",
+  "pylon",
   "fleet",
   "sessions",
   "scheduled",
   "pr",
   "activity",
+  "integrations",
   "settings",
 ];
 
@@ -122,7 +125,8 @@ export function buildCommands(query: string, setNav: (nav: NavId) => void): Comm
     }
   }
 
-  for (const nav of NAV_ORDER) {
+  const trackers = useIssuesStore.getState().sessions;
+  for (const nav of NAV_ORDER.filter((n) => isNavAvailable(n, trackers))) {
     const label = `Go to ${NAV_LABELS[nav]}`;
     if (matches(label))
       out.push({ id: `nav:${nav}`, group: "action", label, run: () => setNav(nav) });

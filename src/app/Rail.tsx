@@ -17,6 +17,8 @@ interface RailProps {
 export function Rail({ nav, onNav, waitingCount }: RailProps) {
   // Prefer the Jira identity for the rail avatar; fall back to any provider, or none.
   const user = useIssuesStore((s) => s.users.jira ?? s.users.pylon ?? null);
+  // A tracker's pages are only here while it's connected (`nav.ts`).
+  const trackers = useIssuesStore((s) => s.sessions);
   const scheduledNeedsYou = useScheduledNeedsYou();
   const buddyOn = useBuddyStore((s) => s.enabled);
 
@@ -36,15 +38,28 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           <I.Inbox size={16} />
           {waitingCount > 0 && <span className="badge count">{waitingCount}</span>}
         </button>
-        <button
-          type="button"
-          className={`nav-btn${nav === "board" ? " active" : ""}`}
-          onClick={() => onNav("board")}
-          title="Board"
-          aria-label="Board"
-        >
-          <I.Board size={16} />
-        </button>
+        {trackers.jira && (
+          <button
+            type="button"
+            className={`nav-btn${nav === "board" ? " active" : ""}`}
+            onClick={() => onNav("board")}
+            title="Board"
+            aria-label="Board"
+          >
+            <I.Board size={16} />
+          </button>
+        )}
+        {trackers.pylon && (
+          <button
+            type="button"
+            className={`nav-btn${nav === "pylon" ? " active" : ""}`}
+            onClick={() => onNav("pylon")}
+            title="Pylon"
+            aria-label="Pylon"
+          >
+            <I.Support size={16} />
+          </button>
+        )}
         <button
           type="button"
           className={`nav-btn${nav === "fleet" ? " active" : ""}`}
@@ -78,15 +93,17 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           <I.Clock size={16} />
           {scheduledNeedsYou && <span className="badge" />}
         </button>
-        <button
-          type="button"
-          className={`nav-btn${nav === "pr" ? " active" : ""}`}
-          onClick={() => onNav("pr")}
-          title="Pull requests"
-          aria-label="Pull requests"
-        >
-          <I.PR size={16} />
-        </button>
+        {trackers.jira && (
+          <button
+            type="button"
+            className={`nav-btn${nav === "pr" ? " active" : ""}`}
+            onClick={() => onNav("pr")}
+            title="Pull requests"
+            aria-label="Pull requests"
+          >
+            <I.PR size={16} />
+          </button>
+        )}
         <button
           type="button"
           className={`nav-btn${nav === "activity" ? " active" : ""}`}
@@ -95,6 +112,15 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           aria-label="Activity"
         >
           <I.Activity size={16} />
+        </button>
+        <button
+          type="button"
+          className={`nav-btn${nav === "integrations" ? " active" : ""}`}
+          onClick={() => onNav("integrations")}
+          title="Integrations"
+          aria-label="Integrations"
+        >
+          <I.Plug size={16} />
         </button>
       </nav>
       {buddyOn && <Buddy />}
@@ -108,15 +134,17 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
       >
         <I.Settings size={16} />
       </button>
-      {/* The connected tracker account; opens Settings (where the connection lives). */}
+      {/* The connected tracker account; opens Integrations (where the connection lives). */}
       <button
         type="button"
         className="me"
         title={user ? user.displayName : "No tracker connected"}
         aria-label={
-          user ? `${user.displayName}, open Settings` : "No tracker connected, open Settings"
+          user
+            ? `${user.displayName}, open Integrations`
+            : "No tracker connected, open Integrations"
         }
-        onClick={() => onNav("settings")}
+        onClick={() => onNav("integrations")}
       >
         {user?.avatarUrl ? (
           <img src={user.avatarUrl} alt={user.displayName} />

@@ -29,7 +29,7 @@ import "@/domains/sessions/session-list.css";
 import "@/domains/sessions/rail-recents.css";
 import "@/domains/schedules/schedules.css";
 import "@/domains/schedules/share.css";
-import "@/domains/issues/connect.css";
+import "@/domains/integrations/integrations.css";
 import "@/domains/settings/settings.css";
 import "@/domains/settings/cleanup.css";
 import "@/domains/activity/activity.css";

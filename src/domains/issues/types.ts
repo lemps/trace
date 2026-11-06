@@ -3,6 +3,12 @@
 
 export type ProviderKind = "jira" | "pylon";
 
+/** Which tracker an issue key came from: Pylon's are `#123`, Jira's `ABC-123`. Mirrors
+ * the backend's `ProviderKind::for_issue_key`. */
+export function trackerForIssueKey(key: string): ProviderKind {
+  return key.startsWith("#") ? "pylon" : "jira";
+}
+
 /** The non-secret session descriptor (never carries tokens). */
 export interface ProviderSession {
   provider: ProviderKind;

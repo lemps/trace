@@ -2,12 +2,14 @@ import { I } from "@/components/Icon";
 import { useBoardStore } from "@/domains/board/store";
 import { useIssuesStore } from "@/domains/issues/store";
 
-// The Board page's topbar controls: the board switcher and refresh.
+// A board page's topbar controls: refresh, and a switcher between this tracker's boards.
 export function BoardActions() {
-  const boards = useIssuesStore((s) => s.boards);
+  const allBoards = useIssuesStore((s) => s.boards);
   const selectedBoardKey = useIssuesStore((s) => s.selectedBoardKey);
   const selectBoard = useIssuesStore((s) => s.selectBoard);
   const refresh = useBoardStore((s) => s.refresh);
+  const provider = allBoards.find((b) => b.key === selectedBoardKey)?.provider;
+  const boards = allBoards.filter((b) => b.provider === provider);
 
   return (
     <>

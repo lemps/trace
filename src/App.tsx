@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { BoardActions } from "@/app/BoardActions";
 import { InterruptedAgents } from "@/app/InterruptedAgents";
-import { NAV_LABELS, type NavId } from "@/app/nav";
+import { NAV_LABELS, type NavId, resolveNav } from "@/app/nav";
 import { openWorkspace } from "@/app/openWorkspace";
 import { PagePanel } from "@/app/PagePanel";
 import { Rail } from "@/app/Rail";
 import { Topbar } from "@/app/Topbar";
 import { useAppEvents } from "@/app/useAppEvents";
+import { useBoardSelection } from "@/app/useBoardSelection";
 import { useFocusRefresh } from "@/app/useFocusRefresh";
 import { useGlobalKeys } from "@/app/useGlobalKeys";
 import { useUpdateCheck } from "@/app/useUpdateCheck";
@@ -20,6 +21,7 @@ import { useBoardAutoRefresh } from "@/domains/board/hooks/useBoardAutoRefresh";
 import { useBoardStore } from "@/domains/board/store";
 import { FleetView } from "@/domains/fleet/FleetView";
 import { InboxView } from "@/domains/inbox/InboxView";
+import { IntegrationsView } from "@/domains/integrations/IntegrationsView";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useLiveStore } from "@/domains/live/store";
 import { PrsView } from "@/domains/prs/PrsView";
@@ -32,21 +34,20 @@ import { useSessionsStore } from "@/domains/sessions/store";
 import { SettingsView } from "@/domains/settings/SettingsView";
 import { setDockBadge } from "@/ipc/notify";
 
-// Shell only — boot, nav routing, and the detail overlay. A tracker is optional: without
-// one, the Board page offers to connect and everything else works as usual.
+// Shell only — boot, nav routing, and the detail overlay. A tracker is optional: each one
+// connected in Integrations adds its own pages to the rail (`app/nav.ts`).
 // All feature logic lives in src/domains/*.
 export function App() {
-  const [nav, setNav] = useState<NavId>("board");
+  const [wantedNav, setNav] = useState<NavId>("board");
 
   const initialized = useIssuesStore((s) => s.initialized);
   const trackerSessions = useIssuesStore((s) => s.sessions);
-  const selectedBoardKey = useIssuesStore((s) => s.selectedBoardKey);
   const init = useIssuesStore((s) => s.init);
-  const hasSession = Object.keys(trackerSessions).length > 0;
+  // Worked out on every render, so a page can't outlive the tracker it needs.
+  const nav = resolveNav(wantedNav, trackerSessions);
+  const isBoardPage = nav === "board" || nav === "pylon";
 
   const data = useBoardStore((s) => s.data);
-  const loadBoard = useBoardStore((s) => s.loadBoard);
-  const clearBoard = useBoardStore((s) => s.clearBoard);
   const selectedIssueKey = useBoardStore((s) => s.selectedIssueKey);
   const closeIssue = useBoardStore((s) => s.closeIssue);
   const liveInfo = useLiveStore((s) => s.info);
@@ -64,13 +65,7 @@ export function App() {
 
   useAppEvents();
 
-  // Load the board whenever the selected board changes. No selection means the last
-  // tracker was disconnected, so its cards mustn't linger.
-  useEffect(() => {
-    if (selectedBoardKey != null) void loadBoard(selectedBoardKey);
-    else clearBoard();
-  }, [selectedBoardKey, loadBoard, clearBoard]);
-
+  useBoardSelection(nav);
   useUpdateCheck();
   useBoardAutoRefresh();
   useFocusRefresh(setNav);
@@ -120,21 +115,23 @@ export function App() {
         <Topbar
           nav={nav}
           project={project}
-          extra={nav === "board" && hasSession ? <BoardActions /> : undefined}
+          extra={isBoardPage ? <BoardActions /> : undefined}
           onNav={handleNav}
         />
         <main className="main">
           <ErrorBoundary key={nav} inPage label={`The ${NAV_LABELS[nav]} page crashed`}>
             {nav === "inbox" && <InboxView onOpen={(id) => openWorkspace(id, setNav)} />}
-            {nav === "board" && <Board />}
+            {isBoardPage && <Board />}
             {nav === "fleet" && <FleetView onOpen={(id) => openWorkspace(id, setNav)} />}
             {nav === "sessions" && <SessionsView />}
             {nav === "scheduled" && <SchedulesView />}
             {nav === "pr" && <PrsView />}
             {nav === "activity" && <ActivityView />}
+            {nav === "integrations" && <IntegrationsView />}
             {nav === "settings" && <SettingsView />}
             {/* The orchestrator, on the pages where it helps (⌘J). */}
-            {(nav === "board" || nav === "sessions") && <PagePanel key={nav} place={nav} />}
+            {isBoardPage && <PagePanel key={nav} place="board" />}
+            {nav === "sessions" && <PagePanel key={nav} place="sessions" />}
           </ErrorBoundary>
         </main>
       </div>

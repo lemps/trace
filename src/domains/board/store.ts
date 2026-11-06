@@ -17,6 +17,7 @@ import {
   saveFilter,
   saveTypeFilter,
 } from "./filterPrefs";
+import { rememberIssues } from "./issueBoards";
 import { appendChunk, type OutputChunk } from "./outputBuffer";
 import type { TypeSelection } from "./typeSelection";
 import { armWaitingNotify, cancelWaitingWatch, watchForQuiet } from "./waitingNotify";
@@ -134,12 +135,27 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   async loadBoard(boardKey) {
     const option = boardOptionFor(boardKey);
     if (!option) return;
-    set({ boardKey, provider: option.provider, loading: true, error: null, pullRequests: {} });
+    // Refreshing keeps the cards up; a different board mustn't show the old one's meanwhile.
+    const kept = get().boardKey === boardKey ? get().data : null;
+    set({
+      boardKey,
+      provider: option.provider,
+      data: kept,
+      loading: true,
+      error: null,
+      pullRequests: {},
+    });
     try {
       const data = await getBoard(option.provider, option.boardId);
       // The user switched board (or disconnected) while this was loading.
       if (get().boardKey !== boardKey) return;
       set({ data, loading: false });
+      // Keeps the titles of running agents' tickets once this board is off screen.
+      const { runningAgents } = get();
+      rememberIssues(
+        boardKey,
+        data.issues.filter((i) => runningAgents.has(i.key))
+      );
       // Fan out PR lookups in the background — cards render immediately and pop
       // a badge in as each issue's dev-status response lands. Failures are silent
       // (no GitHub-for-Jira integration → no badge, not an error). Only Jira has

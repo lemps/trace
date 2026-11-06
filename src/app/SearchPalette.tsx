@@ -1,7 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { I } from "@/components/Icon";
-import { useBoardStore } from "@/domains/board/store";
+import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { buildCommands, type Command } from "./commands";
 import type { NavId } from "./nav";
@@ -32,7 +32,6 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const openIssue = useBoardStore((s) => s.openIssue);
   const selectSession = useSessionsStore((s) => s.select);
 
   // Chat buffers can be large — debounce so we search settled input, not
@@ -100,7 +99,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
   };
 
   const pick = (hit: SearchHit) => {
-    if (hit.kind === "issue") openIssue(hit.key);
+    if (hit.kind === "issue") void openIssueAnywhere(hit.key);
     else if (hit.kind === "session") selectSession(hit.id);
     else if (hit.kind === "pr") void openUrl(hit.url);
     else {
@@ -109,7 +108,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
       const id = hit.workspaceId;
       const session = useSessionsStore.getState().sessions.find((s) => s.id === id);
       if (session) selectSession(session.id);
-      else openIssue(id.startsWith("term:") ? id.slice(5) : id);
+      else void openIssueAnywhere(id.startsWith("term:") ? id.slice(5) : id);
     }
     close();
   };

@@ -1,0 +1,111 @@
+/* Integrations page: a card per service, with its connect/disconnect dialog. */
+.ig-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.ig-section h2 {
+  margin: 0 0 16px;
+  font-size: var(--text-detail-title);
+  font-weight: 600;
+  color: var(--fg-0);
+}
+.ig-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.ig-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ig-card:hover {
+  border-color: var(--border);
+}
+.ig-card:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+.ig-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ig-logo {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+}
+.ig-name {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--fg-0);
+}
+.ig-desc {
+  font-size: var(--text-ui);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+/* Connected to a service isn't agent state, so it uses the tracker green, not StatusLight. */
+.ig-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-meta);
+  color: var(--c-done);
+}
+.ig-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ig-dialog,
+.ig-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ig-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ig-dialog-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ig-account {
+  overflow: hidden;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ig-error {
+  font-size: var(--text-ui);
+  color: var(--c-danger);
+}
+.ig-form-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

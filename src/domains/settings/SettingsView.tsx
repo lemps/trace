@@ -3,24 +3,15 @@ import { AgentDefaultsSettings } from "./AgentDefaultsSettings";
 import { AssistantSettings } from "./AssistantSettings";
 import { AutoCleanupSettings } from "./AutoCleanupSettings";
 import { BuddySettings } from "./BuddySettings";
-import { IntegrationSettings } from "./IntegrationSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
 import { TerminalSettings } from "./TerminalSettings";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
 
-type SettingsTab =
-  | "agents"
-  | "integrations"
-  | "notifications"
-  | "assistant"
-  | "terminal"
-  | "worktrees"
-  | "updates";
+type SettingsTab = "agents" | "notifications" | "assistant" | "terminal" | "worktrees" | "updates";
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "agents", label: "Agents" },
-  { id: "integrations", label: "Integrations" },
   { id: "notifications", label: "Notifications" },
   { id: "assistant", label: "Assistant" },
   { id: "terminal", label: "Terminal" },
@@ -62,7 +53,6 @@ export function SettingsView() {
               <AgentDefaultsSettings />
             </>
           )}
-          {tab === "integrations" && <IntegrationSettings />}
           {tab === "notifications" && <NotificationSettings />}
           {tab === "assistant" && (
             <>

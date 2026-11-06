@@ -47,7 +47,8 @@ src/
 ├── ipc/                    # typed invoke<T> wrappers — the ONLY place that calls Tauri `invoke`
 ├── components/             # shared UI primitives (Icon, AgentAvatar, StatusPill, Modal, Toaster)
 └── domains/
-    ├── issues/             # provider-agnostic tracker connection (store, types, ProviderLogin)
+    ├── issues/             # provider-agnostic tracker connection (store, types)
+    ├── integrations/       # the Integrations page: a card per service, connect/disconnect dialog
     ├── board/              # Board, Column, Card, filters; store also tracks agent run-state + PTY buffers
     ├── agent/              # AgentDetail + tabs (chat/ticket/files/terminal/tests/PR), xterm registry, defaults
     ├── sessions/           # exploratory (non-Jira) Claude sessions
@@ -94,8 +95,11 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
 
 ## Core concepts
 
-- **Issue ⇄ card:** every board card is an issue from a connected tracker (several can be connected at
-  once — the board switcher merges their boards, namespaced `provider:boardId`). There is no local ticket
+- **Issue ⇄ card:** every board card is an issue from a connected tracker. Several can be connected at once, and
+  each has its own page in the rail, shown only while it's connected (`app/nav.ts`: Board and Pull requests for
+  Jira, Pylon for Pylon). A page's switcher lists that tracker's boards, keyed `provider:boardId`. Only one board is loaded at a
+  time, and a ticket's detail needs its board, so open tickets through `board/openIssueAnywhere.ts` unless it's
+  known to be on the loaded board. There is no local ticket
   store — the tracker is the source of truth. On Jira, a board shows exactly what its Jira board shows —
   saved filter + sub-filter, open sprints only while one runs, minus the Kanban backlog column and anything
   finished before the board's done cutoff (`jira/scope.rs`); columns come from the user's *board

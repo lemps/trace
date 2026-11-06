@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { showView, toggleFrontView } from "@/components/useSidePanel";
 import { useBoardStore } from "@/domains/board/store";
+import { useIssuesStore } from "@/domains/issues/store";
 import { orderIds } from "@/domains/live/order";
 import { useLiveStore } from "@/domains/live/store";
 import { useSessionsStore } from "@/domains/sessions/store";
-import type { NavId } from "./nav";
+import { landingNav, type NavId } from "./nav";
 import { openWorkspace } from "./openWorkspace";
 
 /**
@@ -30,10 +31,12 @@ export function useGlobalKeys(setNav: (nav: NavId) => void): void {
       if (e.key === "j" && !e.shiftKey) {
         e.preventDefault();
         // The orchestrator lives in the right-edge panel of whatever's in front;
-        // a page without one (Inbox, Fleet, …) hands over to the board's.
+        // a page without one (Inbox, Fleet, …) hands over to a board's, or to Sessions'
+        // when no tracker is connected.
         if (!toggleFrontView("orchestrator")) {
-          showView("board", "orchestrator");
-          setNav("board");
+          const page = landingNav(useIssuesStore.getState().sessions);
+          showView(page === "sessions" ? "sessions" : "board", "orchestrator");
+          setNav(page);
         }
       } else if (e.shiftKey && e.key.toLowerCase() === "n") {
         e.preventDefault();

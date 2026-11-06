@@ -19,7 +19,7 @@ import {
 const SELECTED_BOARD_KEY = "trace.selectedBoardKey";
 
 interface IssuesStore {
-  /** Connected providers, keyed by kind. Empty = the Board page offers to connect one. */
+  /** Connected providers, keyed by kind. Each one's page is only in the rail while connected. */
   sessions: Partial<Record<ProviderKind, ProviderSession>>;
   users: Partial<Record<ProviderKind, IssueUser>>;
   /** Boards from all connected providers, merged for the switcher. */
@@ -34,6 +34,11 @@ interface IssuesStore {
   connectPylon: (token: string) => Promise<void>;
   disconnect: (provider: ProviderKind) => Promise<void>;
   selectBoard: (key: string) => void;
+  /** The board last viewed on a tracker, or its first. */
+  savedBoardFor: (provider: ProviderKind) => string | null;
+  /** Show this tracker's board: the one last viewed there, or its first. */
+  selectProvider: (provider: ProviderKind) => void;
+  clearConnectError: () => void;
 }
 
 function restoreBoardKey(boards: BoardOption[]): string | null {
@@ -75,7 +80,7 @@ async function loadProvider(
   });
 }
 
-export const useIssuesStore = create<IssuesStore>((set) => ({
+export const useIssuesStore = create<IssuesStore>((set, get) => ({
   sessions: {},
   users: {},
   boards: [],
@@ -152,7 +157,29 @@ export const useIssuesStore = create<IssuesStore>((set) => ({
 
   selectBoard(key) {
     localStorage.setItem(SELECTED_BOARD_KEY, key);
+    const provider = get().boards.find((b) => b.key === key)?.provider;
+    if (provider) localStorage.setItem(`${SELECTED_BOARD_KEY}.${provider}`, key);
     set({ selectedBoardKey: key });
+  },
+
+  savedBoardFor(provider) {
+    const own = get().boards.filter((b) => b.provider === provider);
+    const saved = [
+      localStorage.getItem(`${SELECTED_BOARD_KEY}.${provider}`),
+      localStorage.getItem(SELECTED_BOARD_KEY),
+    ];
+    return (own.find((b) => saved.includes(b.key)) ?? own[0])?.key ?? null;
+  },
+
+  selectProvider(provider) {
+    const { boards, selectedBoardKey, savedBoardFor } = get();
+    if (boards.some((b) => b.provider === provider && b.key === selectedBoardKey)) return;
+    // No boards here means no selection, never another tracker's board under this one's page.
+    set({ selectedBoardKey: savedBoardFor(provider) });
+  },
+
+  clearConnectError() {
+    set({ error: null });
   },
 }));
 

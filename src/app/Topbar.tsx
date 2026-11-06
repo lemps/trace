@@ -12,7 +12,7 @@ interface TopbarProps {
 }
 
 /** Views that show the selected board's data — only they name it in the crumbs. */
-const BOARD_SCOPED = new Set<NavId>(["board", "pr"]);
+const BOARD_SCOPED = new Set<NavId>(["board", "pylon", "pr"]);
 
 export function Topbar({ nav, project, extra, onNav }: TopbarProps) {
   return (

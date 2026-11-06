@@ -11,7 +11,7 @@ abstraction. Jira specifics follow. We never hardcode columns or maintain a loca
   the app config dir (`jira/auth.rs`) so the app reconnects silently on launch. The token **never** crosses to
   the renderer and is **never** logged. (The OS keychain re-prompts on every unsigned dev rebuild — switch back
   to it once release builds are code-signed.)
-- No valid connection → the Board page shows the connect card instead of a board.
+- No valid connection → the Board and Pull requests pages aren't in the rail.
 
 ## Columns come from the user's board (not the design's 4 columns)
 

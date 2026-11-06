@@ -1,5 +1,6 @@
 import { activity } from "@/domains/activity/store";
 import type { ActivityActor } from "@/domains/activity/types";
+import { rememberIssues } from "@/domains/board/issueBoards";
 import { useBoardStore } from "@/domains/board/store";
 import type { Issue } from "@/domains/issues/types";
 import { type AgentCli, type AgentProvider, startAgent } from "@/ipc/agent";
@@ -67,7 +68,7 @@ export async function launchIssueAgent(
   issueKey: string,
   { cli, provider, prompt, actor }: LaunchOptions = {}
 ): Promise<void> {
-  const { clearOutput, setAgentRunning, data } = useBoardStore.getState();
+  const { clearOutput, setAgentRunning, data, boardKey } = useBoardStore.getState();
   const chosen = cli ?? agentCli();
   // The provider only applies to the Claude harness (codex ignores it).
   const chosenProvider = chosen === "claude" ? (provider ?? agentProvider()) : undefined;
@@ -76,6 +77,8 @@ export async function launchIssueAgent(
   // The ticket's summary + labels let repo mappings match a tag like "[BE]" that
   // lives in the title, not the key (the backend pins the resolved repo).
   const issue = data?.issues.find((i) => i.key === issueKey);
+  // So its ticket can be found again from Inbox or Fleet once another board is showing.
+  if (issue && boardKey) rememberIssues(boardKey, [issue]);
   const matchText = issue ? `${issue.summary} ${issue.labels.join(" ")}` : "";
   // Spawn at the live terminal's measured size when it's mounted (detail view);
   // from the board there's no terminal yet, so 80x24 — the first mount's

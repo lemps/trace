@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo } from "react";
 import { I } from "@/components/Icon";
-import { useBoardStore } from "@/domains/board/store";
+import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useActivityStore } from "./store";
 import type { ActivityEvent, ActivityKind } from "./types";
 
@@ -124,11 +124,10 @@ export function ActivityView() {
 }
 
 function ActivityRow({ event }: { event: ActivityEvent }) {
-  const openIssue = useBoardStore((s) => s.openIssue);
   const Ico = ICON[event.kind] ?? I.Activity;
   const clickable = Boolean(event.issueKey);
   const open = () => {
-    if (event.issueKey) openIssue(event.issueKey);
+    if (event.issueKey) void openIssueAnywhere(event.issueKey);
   };
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: timeline row; only issue-linked rows are interactive
