@@ -2,9 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "@/App";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initAppearance } from "@/domains/appearance/apply";
 // Stylesheets: tokens + shared first, then one per domain. All imported here
 // so the cascade order is explicit in one place.
 import "@/styles/tokens.css";
+import "@/styles/themes.css";
 import "@/styles/globals.css";
 import "@/components/error-boundary.css";
 import "@/components/menu.css";
@@ -33,11 +35,15 @@ import "@/domains/schedules/share.css";
 import "@/domains/integrations/integrations.css";
 import "@/domains/settings/settings.css";
 import "@/domains/settings/cleanup.css";
+import "@/domains/appearance/appearance.css";
 import "@/domains/activity/activity.css";
 import "@/domains/orchestrator/orchestrator.css";
 import "@/domains/orchestrator/chat.css";
 import "@/domains/orchestrator/charts.css";
 import "@/domains/buddy/buddy.css";
+
+// The saved theme goes on <html> before the first paint, so there is no flash of Dark.
+initAppearance();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

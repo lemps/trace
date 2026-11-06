@@ -35,7 +35,7 @@
   color: var(--fg-4);
 }
 .test-suite.fail {
-  border-color: oklch(0.68 0.18 25 / 0.3);
+  border-color: color-mix(in oklch, var(--c-danger) 30%, transparent);
 }
 .test-suite.fail .name {
   color: var(--c-danger);
@@ -197,6 +197,10 @@
   border: 0;
   background: var(--bg-2);
   display: block;
+  /* The agent's document renders as a plain light-scheme page whatever trace's
+     theme: a frame whose scheme differs from its document's gets an opaque
+     canvas, which would paint over the pane's background. */
+  color-scheme: normal;
 }
 .rich-output-empty {
   flex: 1;

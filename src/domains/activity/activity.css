@@ -80,17 +80,17 @@
 .act-row.merge .ic {
   color: var(--c-done);
   background: var(--c-done-bg);
-  border-color: oklch(0.74 0.14 155 / 0.3);
+  border-color: color-mix(in oklch, var(--c-done) 30%, transparent);
 }
 .act-row.pr .ic {
   color: var(--c-review);
   background: var(--c-review-bg);
-  border-color: oklch(0.72 0.16 290 / 0.3);
+  border-color: color-mix(in oklch, var(--c-review) 30%, transparent);
 }
 .act-row.spawn .ic {
   color: var(--c-prog);
   background: var(--c-prog-bg);
-  border-color: oklch(0.78 0.15 70 / 0.3);
+  border-color: color-mix(in oklch, var(--c-prog) 30%, transparent);
 }
 .act-row.fail .ic {
   color: var(--c-danger);

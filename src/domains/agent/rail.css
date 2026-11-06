@@ -140,7 +140,7 @@
 .criterion.done .box {
   background: var(--c-done);
   border-color: var(--c-done);
-  color: #0a0a0a;
+  color: var(--on-bright);
 }
 .criterion.done .txt {
   color: var(--fg-3);

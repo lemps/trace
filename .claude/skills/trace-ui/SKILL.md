@@ -13,6 +13,14 @@ rules below being broken — fix it by applying the rule, not by tuning pixels.
 Tokens live in `src/styles/tokens.css`. **Never hardcode a hex, oklch or px value a
 token already names** — in CSS or inline styles.
 
+**Themes.** Dark is only the default: `styles/themes.css` redefines the base tokens for
+Light, Midnight and Paper (Settings → Appearance, `domains/appearance`), so never assume a
+dark background. A tint is `color-mix(in oklch, var(--token) N%, transparent)`, not an
+`oklch(… / a)` literal; text on a bright fill (avatars, the amber answer button) is
+`--on-bright` / `--on-needs`; a top sheen is `--sheen`, a scrim `--overlay`. Anything
+painted with literal colours (xterm, Vega, mermaid) re-reads on `useThemeKey()` or
+subscribes to the appearance store. Check a UI change in a light theme too.
+
 ## 1. Controls: three heights, one corner
 
 Every interactive control is one of three heights, so any row of them lines up:

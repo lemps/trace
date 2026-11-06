@@ -16,6 +16,8 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
       Vercel integration. This comes after the Windows and Linux builds.
 - [ ] **iPhone and Android apps.**
+- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
+      plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
 
 ## Candidates
 

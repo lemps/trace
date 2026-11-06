@@ -61,6 +61,7 @@ src/
     ├── live/               # each agent's live state (the source for StatusLight) + answering its prompts
     ├── orchestrator/       # the assistant in the side panel
     ├── agentTools/         # the tools agents call on trace (board = the orchestrator's, + scheduled prompts)
+    ├── appearance/         # themes (CSS in styles/themes.css), accent, density, fonts, xterm schemes
     ├── buddy/              # rail pixel buddy: mood from board/activity, Haiku speech; art is data (art/ART.md)
     └── settings/           # repos, agent defaults, integrations
 ```

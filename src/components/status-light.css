@@ -23,7 +23,7 @@
 }
 /* Working is a spinner, not a fill: motion says "busy" without a colour fight. */
 .light-dot.working {
-  border: 1.5px solid oklch(0.74 0.12 235 / 0.3);
+  border: 1.5px solid color-mix(in oklch, var(--state-working) 30%, transparent);
   border-top-color: var(--state-working);
   animation: light-spin 0.9s linear infinite;
 }

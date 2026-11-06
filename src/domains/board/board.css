@@ -201,7 +201,7 @@
 .column {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 30%), var(--bg-1);
+  background: linear-gradient(180deg, var(--sheen), transparent 30%), var(--bg-1);
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -283,11 +283,11 @@
   padding: 6px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
-  background: oklch(1 0 0 / 0.012);
+  background: var(--hover-tint);
 }
 .zone-cards.drop-target {
-  background: oklch(0.72 0.16 290 / 0.08);
-  outline: 1px solid oklch(0.72 0.16 290 / 0.45);
+  background: color-mix(in oklch, var(--c-accent) 8%, transparent);
+  outline: 1px solid color-mix(in oklch, var(--c-accent) 45%, transparent);
   outline-offset: -1px;
 }
 
