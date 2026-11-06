@@ -1,17 +1,17 @@
 # Builds and tests the backend on every supported OS, because a Mac can only check
-# the macOS build. Separate from PR CI, which stays off for now: this runs by hand,
-# on the port's branches, and when `main` changes something platform-sensitive.
+# the macOS build. Separate from PR CI, which stays off for now: this runs by hand and
+# on the port's branches, and `cross-platform-main.yml` runs it for `main`.
 name: Cross-platform
 
 on:
   workflow_dispatch:
+  workflow_call:
   push:
-    branches: [main, "port/**"]
-    paths:
-      - "src-tauri/**"
-      - "src/platform/**"
-      - "scripts/**"
-      - ".github/workflows/cross-platform.yml"
+    branches: ["port/**"]
+    # Anything a tester might need a new installer for.
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
 
 concurrency:
   group: cross-platform-${{ github.ref }}

@@ -130,12 +130,7 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
           <button type="button" className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button
-            type="button"
-            className="btn primary"
-            onClick={submit}
-            disabled={saving || !repos.length}
-          >
+          <button type="button" className="btn primary" onClick={submit} disabled={saving}>
             {prompt ? "Save" : "Schedule"}
           </button>
         </>
@@ -176,7 +171,7 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
         {repos.length === 0 ? (
           <div className="field">
             <span className="field-label">Repository</span>
-            <span className="field-note">Add a repository in Settings → Repos first.</span>
+            <span className="field-note">Add a repository in Settings → Repositories first.</span>
           </div>
         ) : (
           <label className="field">

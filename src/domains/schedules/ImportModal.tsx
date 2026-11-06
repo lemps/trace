@@ -85,7 +85,7 @@ export function ImportModal({ items, onClose }: ImportModalProps) {
     >
       <p className="share-note">
         {noRepos ? (
-          "Add a repository in Settings → Repos first. Each prompt runs in a worktree of one."
+          "Add a repository in Settings → Repositories first. Each prompt runs in a worktree of one."
         ) : (
           <>
             Imported prompts start <strong>paused</strong>. Read each one's prompt and CLI flags

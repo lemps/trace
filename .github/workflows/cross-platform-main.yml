@@ -1,0 +1,16 @@
+# Cross-platform checks for `main`, only when it changes something platform-sensitive.
+# A separate file because a workflow's path filter applies to all of its branches.
+name: Cross-platform (main)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+      - "src/platform/**"
+      - "scripts/**"
+      - ".github/workflows/cross-platform*.yml"
+
+jobs:
+  checks:
+    uses: ./.github/workflows/cross-platform.yml
