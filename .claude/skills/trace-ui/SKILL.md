@@ -39,8 +39,11 @@ even they take the control's height and corner (`StatusLight size="lg"`).
   in a header row beside bordered buttons — that's what made headers look mixed.
 - **`.seg`** — mutually exclusive view options (card density).
 - **`.filter-chip`** — a toggleable filter.
-- **`.kbd`** — a keyboard hint inside a button or hint row. Take the label and the key
-  check from `src/platform/shortcuts.ts`: `⌘` chords are `Ctrl+Shift` off macOS.
+- **`.kbd`** — a keyboard hint inside a button or hint row. Users can rebind shortcuts, so
+  never type a key into a hint: take the label (`useHint(id)`) and the key check
+  (`isShortcut(id, e)`) from `src/platform/shortcuts.ts`. A new shortcut is an entry in
+  `src/platform/shortcuts/registry.ts` (it then shows in Settings → Shortcuts); `⌘`
+  chords are `Ctrl+Shift` off macOS.
 
 ## 2. Agent state is drawn one way: `StatusLight`
 

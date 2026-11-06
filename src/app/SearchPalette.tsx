@@ -3,7 +3,7 @@ import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react"
 import { I } from "@/components/Icon";
 import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useSessionsStore } from "@/domains/sessions/store";
-import { hints, isSearchKey } from "@/platform/shortcuts";
+import { isSearchKey, useHint } from "@/platform/shortcuts";
 import { buildCommands, type Command } from "./commands";
 import type { NavId } from "./nav";
 import { runSearch, type SearchHit } from "./search";
@@ -32,6 +32,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchHint = useHint("search");
   const rootRef = useRef<HTMLDivElement>(null);
   const selectSession = useSessionsStore((s) => s.select);
 
@@ -150,7 +151,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
       />
-      <kbd>{hints.search}</kbd>
+      <kbd>{searchHint}</kbd>
       {open && (
         <div className="search-pop">
           {!hasResults && <div className="sr-empty">No matches.</div>}

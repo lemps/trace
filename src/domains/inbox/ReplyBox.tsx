@@ -2,7 +2,7 @@ import { type KeyboardEvent, useState } from "react";
 import { toast } from "@/app/toast";
 import { reply, TERMINAL_ONLY } from "@/domains/live/answer";
 import type { AskKind } from "@/domains/live/types";
-import { hints, isSendAndNext } from "@/platform/shortcuts";
+import { isSendAndNext, useHint } from "@/platform/shortcuts";
 
 interface ReplyBoxProps {
   workspaceId: string;
@@ -15,6 +15,7 @@ interface ReplyBoxProps {
 // Talk to the agent without opening its terminal. ⏎ sends; ⌘⏎ sends and moves on.
 export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps) {
   const [text, setText] = useState("");
+  const nextHint = useHint("sendAndNext");
   const send = (thenNext: boolean) => {
     if (!text.trim()) return;
     const message = text;
@@ -36,9 +37,11 @@ export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps
     );
   }
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    if (e.nativeEvent.isComposing) return;
+    const thenNext = isSendAndNext(e);
+    if (!thenNext && e.key !== "Enter") return;
     e.preventDefault();
-    send(isSendAndNext(e));
+    send(thenNext);
   };
   return (
     <label className="ib-reply">
@@ -54,8 +57,8 @@ export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps
         aria-label="Reply to the agent"
       />
       <span className="ib-reply-hint">
-        <span className="kbd">⏎</span> send · <span className="kbd">{hints.sendAndNext}</span> send
-        &amp; next
+        <span className="kbd">⏎</span> send · <span className="kbd">{nextHint}</span> send &amp;
+        next
       </span>
     </label>
   );
