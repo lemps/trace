@@ -34,6 +34,9 @@
   marathons, no 30-`useState` god component.
 - **Server (issue-tracker) data:** fetch through the typed wrappers in `src/ipc/issues.ts`; cache in a store.
   Do **not** keep fetched issue data in ad-hoc `useState`.
+- **A module holding state ends with `import.meta.hot?.accept(() => location.reload())`** (stores, and singletons
+  like `terminalRegistry`). Without it, a hot update creates a second copy of the state while subscribers stay on
+  the first, which looks like a real bug (an agent stuck on Working after Stop).
 - **No localStorage effect-pairs.** If something must persist, wrap it once in a hook — don't sprinkle
   `useEffect(() => localStorage.setItem(...))` (a documented anti-pattern from the old project).
 

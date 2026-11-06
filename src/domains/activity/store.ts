@@ -85,3 +85,6 @@ export const useActivityStore = create<ActivityStore>((set, get) => ({
 export const activity = {
   log: (input: ActivityInput) => useActivityStore.getState().log(input),
 };
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

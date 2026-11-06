@@ -334,3 +334,6 @@ export function disposeTerminal(issueKey: string): void {
   // Rendered HTML cards are intentionally kept (persisted) so they survive a
   // teardown — see the note in `resetTerminal`.
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

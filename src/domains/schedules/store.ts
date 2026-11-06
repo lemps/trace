@@ -139,3 +139,6 @@ export const useSchedulesStore = create<SchedulesStore>((set, get) => ({
     set({ openPromptId: null, openRunId: null });
   },
 }));
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

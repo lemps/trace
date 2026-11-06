@@ -189,3 +189,6 @@ export function boardOptionFor(key: string | null): BoardOption | null {
   if (!key) return null;
   return useIssuesStore.getState().boards.find((b) => b.key === key) ?? null;
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

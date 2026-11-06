@@ -72,3 +72,6 @@ export function entryFlag(seen: Record<string, string> | undefined, e: PrEntry):
   if (was === undefined) return "new";
   return was === entrySignature(e) ? null : "updated";
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

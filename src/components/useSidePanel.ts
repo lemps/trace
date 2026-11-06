@@ -109,3 +109,6 @@ export function toggleFrontView(view: string): boolean {
 export function showView(place: PanelPlace, view: string): void {
   useStore.getState().set(place, { open: true, view });
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

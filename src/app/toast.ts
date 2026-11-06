@@ -42,3 +42,6 @@ export const toast = {
   error: (message: string) => useToastStore.getState().push("error", message),
   info: (message: string) => useToastStore.getState().push("info", message),
 };
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

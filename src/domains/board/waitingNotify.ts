@@ -228,3 +228,6 @@ function refreshPrsFor(workspaceId: string) {
   const issue = data?.issues.find((i) => i.key === workspaceId);
   if (issue) void refreshIssuePrs(issue.key, issue.id);
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

@@ -83,3 +83,6 @@ export function lightsOf(info: Record<string, LiveInfo>): Record<string, AgentLi
 export function liveLights(): Record<string, AgentLight> {
   return lightsOf(useLiveStore.getState().info);
 }
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

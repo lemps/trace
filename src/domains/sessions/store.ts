@@ -230,3 +230,6 @@ export const useSessionsStore = create<SessionsStore>((set) => ({
     set({ selectedId: null, selectedAgentId: null });
   },
 }));
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

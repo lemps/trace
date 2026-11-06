@@ -100,3 +100,6 @@ export const useOrchestratorStore = create<OrchestratorStore>((set) => ({
     }, 400);
   },
 }));
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

@@ -42,3 +42,6 @@ export const useTestsStore = create<TestsStore>((set, get) => ({
     }
   },
 }));
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());

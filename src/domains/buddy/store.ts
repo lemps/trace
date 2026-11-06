@@ -82,3 +82,6 @@ export const useBuddyStore = create<BuddyStore>((set, get) => ({
     set({ lastInteractionAt: Date.now() });
   },
 }));
+
+// A hot update would leave subscribers on a stale copy of this state, so reload instead.
+import.meta.hot?.accept(() => location.reload());
