@@ -99,6 +99,11 @@ export interface AgentToolCall {
   caller: string;
 }
 
+/** A new prompt reached the agent, so any dialog it had open is over. */
+export function onAgentPrompt(cb: (payload: { workspaceId: string }) => void): Promise<UnlistenFn> {
+  return listen<{ workspaceId: string }>("agent-prompt", (e) => cb(e.payload));
+}
+
 export function onAgentToolCall(cb: (payload: AgentToolCall) => void): Promise<UnlistenFn> {
   return listen<AgentToolCall>("agent-tool-call", (e) => cb(e.payload));
 }

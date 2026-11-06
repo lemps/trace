@@ -41,7 +41,7 @@ export function FleetRow(props: FleetRowProps) {
   const { entry, now, where, diff, pr, dropAbove, isDragging, dragProps } = props;
   const { info } = entry;
   const ask = shownAsk(info);
-  const latest = ask?.label ?? info.lastMessage ?? "";
+  const latest = ask?.label ?? info.update ?? info.lastMessage ?? "";
   return (
     <>
       {dropAbove && <div className="fl-drop" aria-hidden="true" />}

@@ -5,6 +5,7 @@ import { READ_TOOLS, runReadTool } from "@/domains/orchestrator/tools";
 import type { McpTool } from "@/ipc/agentTools";
 import { runScheduleTool, SCHEDULE_TOOLS } from "./scheduleTools";
 import { isSessionTool, runSessionTool, SESSION_TOOLS } from "./sessionTools";
+import { runUpdateUser, UPDATE_USER } from "./updateTool";
 
 // The tools trace offers its own agents over MCP: the board, scheduled prompts,
 // and standalone sessions (`sessionTools`). The board ones are the
@@ -28,6 +29,7 @@ const TOOLS: Anthropic.Tool[] = [
   ...WRITE_TOOLS,
   ...SCHEDULE_TOOLS,
   ...SESSION_TOOLS,
+  UPDATE_USER,
 ];
 
 /** The tool definitions in MCP's shape. */
@@ -39,9 +41,10 @@ export function mcpTools(): McpTool[] {
   }));
 }
 
-/** Run one tool for an agent. Returns the text for the model. */
-export function runAgentTool(name: string, input: unknown): Promise<string> {
-  if (name === GET_BOARD.name) return Promise.resolve(buildBoardContext());
+/** Run one tool for the agent `caller` (its workspace id). Returns the text for the model. */
+export async function runAgentTool(name: string, input: unknown, caller: string): Promise<string> {
+  if (name === GET_BOARD.name) return buildBoardContext();
+  if (name === UPDATE_USER.name) return runUpdateUser(input, caller);
   if (WRITE_TOOL_NAMES.has(name)) return runWriteTool(name, input, "agent");
   if (SCHEDULE_TOOL_NAMES.has(name)) return runScheduleTool(name, input);
   if (isSessionTool(name)) return runSessionTool(name, input);

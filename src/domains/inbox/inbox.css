@@ -346,30 +346,6 @@
 }
 
 /* Opening the agent: the row's arrow, the detail's title and Open button. */
-.ib-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-.ib-open {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  color: var(--fg-3);
-  border: 1px solid transparent;
-}
-.ib-row:hover .ib-open,
-.ib-row.sel .ib-open {
-  color: var(--fg-1);
-  border-color: var(--border);
-}
-.ib-open:hover {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
 .ib-title-link {
   font: inherit;
   color: inherit;

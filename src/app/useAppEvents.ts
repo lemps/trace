@@ -2,13 +2,14 @@ import { useEffect } from "react";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
 import { useBoardStore } from "@/domains/board/store";
-import { noteAgentTurn } from "@/domains/board/waitingNotify";
+import { askIsOver, noteAgentTurn } from "@/domains/board/waitingNotify";
 import { userActed } from "@/domains/live/answer";
-import { noteLiveAsk, noteLiveTurn, useLiveSync } from "@/domains/live/sync";
+import { clearLiveUpdate, noteLiveAsk, noteLiveTurn, useLiveSync } from "@/domains/live/sync";
 import { useSessionsStore } from "@/domains/sessions/store";
 import {
   onAgentAnswered,
   onAgentAsk,
+  onAgentPrompt,
   onAgentRunState,
   onAgentTurn,
   onPtyOutput,
@@ -52,6 +53,12 @@ export function useAppEvents(): void {
     keep(onAgentAsk(noteLiveAsk));
     // ...and when that dialog was answered, wherever (a click, Remote Control).
     keep(onAgentAnswered((p) => userActed(p.workspaceId)));
+    keep(
+      onAgentPrompt((p) => {
+        askIsOver(p.workspaceId);
+        clearLiveUpdate(p.workspaceId);
+      })
+    );
     keep(
       onAgentTurn((turn) => {
         noteAgentTurn(turn);

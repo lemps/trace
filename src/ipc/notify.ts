@@ -44,6 +44,14 @@ export function consumeNotificationClick(): string | null {
   return p && Date.now() - p.at < CLICK_WINDOW_MS ? p.workspaceId : null;
 }
 
+/**
+ * What a notification was about has been dealt with, so the next time the app regains
+ * focus shouldn't jump to that agent as if the notification had been clicked.
+ */
+export function forgetNotificationTarget(workspaceId: string): void {
+  if (pendingClick?.workspaceId === workspaceId) pendingClick = null;
+}
+
 /** Show `count` on the Dock icon; 0 clears it. */
 export function setDockBadge(count: number): void {
   void getCurrentWindow()

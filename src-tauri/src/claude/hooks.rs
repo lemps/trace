@@ -187,6 +187,9 @@ pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
     }
     if name == "prompt" {
         crate::interrupted::record_busy(ws, true);
+        // A new prompt means no dialog is open any more. The only signal for one
+        // dismissed with Esc, which fires no hook of its own.
+        let _ = app.emit("agent-prompt", json!({ "workspaceId": ws }));
         return;
     }
     if name == "answered" {

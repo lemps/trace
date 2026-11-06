@@ -136,7 +136,8 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   scheduled-prompt ones read prompts and runs, update a prompt (keeping its on/off state), and create one
   only paused; the session ones (`sessionTools.ts`) start a standalone session in a chosen repo —
   optionally with Claude Code's Remote Control (`--remote-control`, persisted on the session so every
-  start keeps it) — type into it, slash commands included, and read its screen. Agents are top-level
+  start keeps it) — type into it, slash commands included, and read its screen; `update_user` (`updateTool.ts`) puts a one-line progress note beside the calling agent on
+  the Fleet page until its next prompt. Agents are top-level
   Claude sessions: inherited Claude Code session markers (`claude::env::INHERITED_SESSION_ENV`) are
   stripped, or a trace started from a Claude session would hand its agents transcript saving off.
 - **Interrupted agents:** `interrupted.rs` keeps `running-agents.json` (what each live agent was spawned

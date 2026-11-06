@@ -7,7 +7,7 @@ export interface InboxKeyActions {
   move: (by: -1 | 1) => void;
   nudge: (by: -1 | 1) => void;
   open: () => void;
-  markSeen: () => void;
+  dismiss: () => void;
   /** 1–9: pick that answer on the selected agent's prompt. */
   answer: (index: number) => void;
 }
@@ -22,7 +22,7 @@ function inList(target: EventTarget | null): boolean {
 
 /**
  * The inbox's keyboard: J/K (or ↑/↓ in the list) move, ⌥↑/⌥↓ reorder, ⏎ opens,
- * E marks seen, 1–9 answer. Inactive while typing, while a modal or menu is up,
+ * E dismisses, 1–9 answer. Inactive while typing, while a modal or menu is up,
  * and while a detail overlay covers the inbox.
  */
 export function useInboxKeys(actions: InboxKeyActions): void {
@@ -47,7 +47,7 @@ export function useInboxKeys(actions: InboxKeyActions): void {
         // A focused button (an answer, a tab) takes its own Enter. Rows are divs.
         if (e.target instanceof HTMLButtonElement) return;
         a.open();
-      } else if (e.key === "e") a.markSeen();
+      } else if (e.key === "e") a.dismiss();
       else if (e.key >= "1" && e.key <= "9") {
         if (e.target instanceof HTMLButtonElement) return;
         a.answer(Number(e.key) - 1);

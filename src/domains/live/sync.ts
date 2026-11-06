@@ -68,6 +68,7 @@ function recompute(board: BoardSignals) {
       since: sinceFor(id, prev, light, now),
       ask,
       lastMessage: prev?.lastMessage ?? null,
+      update: prev?.update ?? null,
     };
   }
   const gone = Object.keys(live.info).filter((id) => !(id in next));
@@ -117,6 +118,17 @@ export function noteLiveTurn(turn: AgentTurn): void {
 export function noteLiveAsk(event: AgentAsk): void {
   if (!isAgent(event.workspaceId)) return;
   patchAndRecompute(event.workspaceId, { ask: askFromTool(event) });
+}
+
+/** An agent told the user how it's getting on (`update_user`). */
+export function setLiveUpdate(workspaceId: string, update: string): void {
+  patchAndRecompute(workspaceId, { update });
+}
+
+/** New work reached the agent, so its last update no longer describes what it's doing. */
+export function clearLiveUpdate(workspaceId: string): void {
+  if (!useLiveStore.getState().info[workspaceId]?.update) return;
+  patchAndRecompute(workspaceId, { update: null });
 }
 
 /** The user gave the agent input — whatever it asked has been answered. */

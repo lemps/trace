@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
-import { useBoardStore } from "@/domains/board/store";
+import { dismissAsk } from "@/domains/board/waitingNotify";
 import { choicesFor, choose } from "@/domains/live/answer";
 import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
 import { useLiveStore } from "@/domains/live/store";
@@ -64,7 +64,7 @@ export function InboxView({ onOpen }: InboxViewProps) {
     move: step,
     nudge: (by) => selected && nudge(order, selected.id, by),
     open: () => selected && onOpen(selected.id),
-    markSeen: () => selected && useBoardStore.getState().ackWaiting(selected.id),
+    dismiss: () => selected && dismissAsk(selected.id),
     answer: (i) => {
       // Only for a row the user picked: the fallback selection can shift to a
       // different agent when a row leaves the tab, and an answer must not.
@@ -120,6 +120,7 @@ export function InboxView({ onOpen }: InboxViewProps) {
               dragProps={drag.rowProps(e.id)}
               onSelect={() => setSelectedId(e.id)}
               onOpen={() => onOpen(e.id)}
+              onDismiss={() => dismissAsk(e.id)}
             />
           ))}
           {drag.dropAtEnd() && <div className="ib-drop" aria-hidden="true" />}
@@ -132,7 +133,7 @@ export function InboxView({ onOpen }: InboxViewProps) {
             <span className="kbd">⏎</span> open
           </span>
           <span>
-            <span className="kbd">E</span> mark seen
+            <span className="kbd">E</span> dismiss
           </span>
           <span>
             <span className="kbd">⌥↑</span> <span className="kbd">⌥↓</span> reorder
@@ -148,6 +149,7 @@ export function InboxView({ onOpen }: InboxViewProps) {
           entry={selected}
           now={now}
           onOpen={() => onOpen(selected.id)}
+          onDismiss={() => dismissAsk(selected.id)}
           onSentNext={nextNeedingYou}
         />
       ) : (

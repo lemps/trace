@@ -13,6 +13,7 @@ import "@/components/side-panel.css";
 import "@/app/shell.css";
 import "@/domains/board/board.css";
 import "@/domains/inbox/inbox.css";
+import "@/domains/inbox/inbox-row.css";
 import "@/domains/fleet/fleet.css";
 import "@/domains/board/card.css";
 import "@/domains/agent/detail.css";

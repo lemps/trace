@@ -39,4 +39,6 @@ export interface LiveInfo {
   ask: Ask | null;
   /** Claude's closing words for its last turn, if its hooks reported one. */
   lastMessage: string | null;
+  /** What the agent last told the user (`update_user`); gone at its next prompt. */
+  update: string | null;
 }

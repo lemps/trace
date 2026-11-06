@@ -15,8 +15,8 @@ export function useAgentTools(): void {
     // that resolves after cleanup must unlisten at once, or every call runs twice.
     let cancelled = false;
     let unlisten: (() => void) | undefined;
-    void onAgentToolCall(({ id, name, arguments: input }) => {
-      runAgentTool(name, input)
+    void onAgentToolCall(({ id, name, arguments: input, caller }) => {
+      runAgentTool(name, input, caller)
         .then((text) => agentToolResult(id, text, false))
         .catch((e) => agentToolResult(id, e instanceof Error ? e.message : String(e), true));
     }).then((fn) => {

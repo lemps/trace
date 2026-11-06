@@ -20,11 +20,12 @@ interface InboxRowProps {
   };
   onSelect: () => void;
   onOpen: () => void;
+  onDismiss: () => void;
 }
 
 // One agent in the inbox list: its light and ask, title, last words, and how
 // long it's been like this. A drag handle reorders; the arrow (or ⏎, or a
-// double-click) opens it.
+// double-click) opens it; the cross (or E) takes it out of "Needs you".
 export function InboxRow(props: InboxRowProps) {
   const { entry, selected, now, dropAbove, isDragging, dragProps, onSelect, onOpen } = props;
   const { info } = entry;
@@ -66,18 +67,34 @@ export function InboxRow(props: InboxRowProps) {
           <span className={`ib-age${info.light === "attention" ? " hot" : ""}`}>
             {ageLabel(info.since, now)}
           </span>
-          <button
-            type="button"
-            className="ib-open"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpen();
-            }}
-            title="Open"
-            aria-label={`Open ${entry.title}`}
-          >
-            <I.Chevron size={13} />
-          </button>
+          <span className="ib-row-actions">
+            {info.light === "attention" && (
+              <button
+                type="button"
+                className="ib-open"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  props.onDismiss();
+                }}
+                title="Dismiss. This doesn't answer the agent."
+                aria-label={`Dismiss ${entry.title}`}
+              >
+                <I.X size={13} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="ib-open"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen();
+              }}
+              title="Open"
+              aria-label={`Open ${entry.title}`}
+            >
+              <I.Chevron size={13} />
+            </button>
+          </span>
         </span>
       </div>
     </>

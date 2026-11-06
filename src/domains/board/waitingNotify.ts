@@ -4,7 +4,7 @@ import { isScheduledRun } from "@/domains/schedules/ids";
 import { workspaceTitle } from "@/domains/sessions/agentRoster";
 import { useSessionsStore } from "@/domains/sessions/store";
 import type { AgentTurn } from "@/ipc/events";
-import { notify } from "@/ipc/notify";
+import { forgetNotificationTarget, notify } from "@/ipc/notify";
 import { playNotifySound } from "@/ipc/sound";
 import { useBoardStore } from "./store";
 
@@ -70,8 +70,28 @@ function clearTimer(timers: Map<string, ReturnType<typeof setTimeout>>, workspac
 /** The user gave this workspace work — its next quiet stretch may notify. */
 export function armWaitingNotify(workspaceId: string): void {
   armed.add(workspaceId);
+  askIsOver(workspaceId);
+}
+
+/**
+ * Whatever the agent asked no longer stands. Doesn't arm a notification: this also
+ * runs for prompts nobody typed (an agent's own scheduled wake-up, say).
+ */
+export function askIsOver(workspaceId: string): void {
   askingForHuman.delete(workspaceId);
   clearAsk(workspaceId);
+  forgetNotificationTarget(workspaceId);
+}
+
+/**
+ * The user waved this agent away: out of "Needs you" until it next asks for something.
+ * Their way out when trace can't tell: pressing Esc on a dialog fires no hook at all, so
+ * from Remote Control a dismissed question would otherwise stay until the next prompt.
+ * It doesn't answer anything, so an agent really waiting on a dialog is still waiting.
+ */
+export function dismissAsk(workspaceId: string): void {
+  askIsOver(workspaceId);
+  useBoardStore.getState().ackWaiting(workspaceId);
 }
 
 /** Forget a workspace entirely (agent stopped or exited): arming + timers. */

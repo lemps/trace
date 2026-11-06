@@ -34,12 +34,13 @@ interface InboxDetailProps {
   entry: LiveEntry;
   now: number;
   onOpen: () => void;
+  onDismiss: () => void;
   onSentNext: () => void;
 }
 
 // The selected agent: what it wants, what it last said, what it changed, and a
 // way to answer — enough to unblock it without opening its terminal.
-export function InboxDetail({ entry, now, onOpen, onSentNext }: InboxDetailProps) {
+export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: InboxDetailProps) {
   const { info } = entry;
   const ask = shownAsk(info);
   const overview = useSessionsOverview(entry.worktreeId ? [entry.worktreeId] : [])[
@@ -67,6 +68,16 @@ export function InboxDetail({ entry, now, onOpen, onSentNext }: InboxDetailProps
             </button>
           </h2>
         </div>
+        {ask && (
+          <button
+            type="button"
+            className="btn"
+            onClick={onDismiss}
+            title="Takes it out of Needs you. This doesn't answer the agent."
+          >
+            Dismiss <span className="kbd">E</span>
+          </button>
+        )}
         <button type="button" className="btn primary" onClick={onOpen}>
           Open {OPEN_WHAT[entry.source]} <span className="kbd">⏎</span>
         </button>
