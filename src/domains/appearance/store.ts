@@ -18,15 +18,23 @@ interface AppearanceStore {
   prefs: AppearancePrefs;
   systemScheme: ColorScheme;
   systemReducedMotion: boolean;
+  /**
+   * The interface zoom actually on screen (percent). It trails `prefs.uiScale`
+   * until the webview's async setZoom lands; terminals size their font by it.
+   */
+  appliedScale: number;
   update: (patch: Partial<AppearancePrefs>) => void;
   reset: () => void;
   setSystem: (scheme: ColorScheme, reducedMotion: boolean) => void;
+  setAppliedScale: (scale: number) => void;
 }
 
 export const useAppearance = create<AppearanceStore>((set, get) => ({
   prefs: loadPrefs(),
   systemScheme: media("(prefers-color-scheme: light)") ? "light" : "dark",
   systemReducedMotion: media("(prefers-reduced-motion: reduce)"),
+  // The webview starts at 100%; apply.ts raises it to the saved scale.
+  appliedScale: 100,
   update(patch) {
     const prefs = { ...get().prefs, ...patch };
     savePrefs(prefs);
@@ -38,6 +46,9 @@ export const useAppearance = create<AppearanceStore>((set, get) => ({
   },
   setSystem(systemScheme, systemReducedMotion) {
     set({ systemScheme, systemReducedMotion });
+  },
+  setAppliedScale(appliedScale) {
+    set({ appliedScale });
   },
 }));
 

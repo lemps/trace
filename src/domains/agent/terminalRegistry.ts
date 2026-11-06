@@ -3,7 +3,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { useAppearance } from "@/domains/appearance/store";
-import { terminalAppearance } from "@/domains/appearance/terminalTheme";
+import { terminalAppearance, terminalAppearanceKey } from "@/domains/appearance/terminalTheme";
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
@@ -343,8 +343,15 @@ export function disposeTerminal(issueKey: string): void {
   // teardown — see the note in `resetTerminal`.
 }
 
-// A theme, scheme or cursor change re-themes the live terminals in place.
-useAppearance.subscribe(applyTerminalPrefs);
+// A theme, scheme, cursor or zoom change re-themes the live terminals in place;
+// other appearance edits (UI font, density, accent) don't touch them.
+let appearanceKey = terminalAppearanceKey();
+useAppearance.subscribe((s) => {
+  const next = terminalAppearanceKey(s);
+  if (next === appearanceKey) return;
+  appearanceKey = next;
+  applyTerminalPrefs();
+});
 
 // A hot update would leave subscribers on a stale copy of this state, so reload instead.
 import.meta.hot?.accept(() => location.reload());

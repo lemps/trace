@@ -260,13 +260,13 @@ button.epic-chip:hover {
 }
 .pr-pill.merged {
   color: var(--c-done);
-  border-color: color-mix(in oklch, var(--c-done) 40%, transparent);
+  border-color: var(--c-done-border);
   background: var(--c-done-bg);
 }
 .pr-pill.closed {
   color: var(--c-danger);
-  border-color: color-mix(in oklch, var(--c-danger) 40%, transparent);
-  background: color-mix(in oklch, var(--c-danger) 12%, transparent);
+  border-color: var(--c-danger-border);
+  background: var(--c-danger-bg);
 }
 
 /* Drag ghost */

@@ -2,6 +2,8 @@
 // Settings, read from localStorage so the Settings UI and the live terminals
 // in `terminalRegistry` share one source of truth.
 
+import { fontStack } from "@/domains/appearance/fontStack";
+
 const FONT_KEY = "trace.termFontFamily";
 const SIZE_KEY = "trace.termFontSize";
 const LINE_HEIGHT_KEY = "trace.termLineHeight";
@@ -41,13 +43,9 @@ export function termFontRaw(): string {
   return read(FONT_KEY);
 }
 
-/** The effective xterm font stack: the chosen font in front of the defaults. */
+/** The effective xterm font stack: the chosen font(s) in front of the defaults. */
 export function termFontFamily(): string {
-  const raw = termFontRaw().trim();
-  if (!raw) return DEFAULT_TERM_FONT_STACK;
-  // A value with a comma is already a stack — trust it as written.
-  if (raw.includes(",")) return raw;
-  return `"${raw.replace(/"/g, "")}", ${DEFAULT_TERM_FONT_STACK}`;
+  return fontStack(termFontRaw(), DEFAULT_TERM_FONT_STACK) || DEFAULT_TERM_FONT_STACK;
 }
 
 export function setTermFont(next: string) {

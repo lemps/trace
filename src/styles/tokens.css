@@ -79,7 +79,6 @@
 [data-theme] {
   --c-accent: oklch(var(--accent-l) calc(var(--accent-c) * var(--accent-sat)) var(--accent-h));
   --c-accent-bg: color-mix(in oklch, var(--c-accent) 8%, transparent);
-  --c-accent-border: color-mix(in oklch, var(--c-accent) 40%, transparent);
   --c-todo-bg: color-mix(in oklch, var(--c-todo) 10%, transparent);
   --c-prog-bg: color-mix(in oklch, var(--c-prog) 12%, transparent);
   --c-prog-border: color-mix(in oklch, var(--c-prog) 30%, transparent);

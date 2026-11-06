@@ -1,3 +1,4 @@
+import { Segmented } from "@/components/Segmented";
 import { type Density, useDensity } from "./density";
 
 const OPTIONS: { value: Density; label: string }[] = [
@@ -10,19 +11,5 @@ const OPTIONS: { value: Density; label: string }[] = [
 export function DensityToggle() {
   const density = useDensity((s) => s.density);
   const setDensity = useDensity((s) => s.setDensity);
-  return (
-    <fieldset className="seg" aria-label="Card density">
-      {OPTIONS.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-pressed={density === o.value}
-          className={density === o.value ? "on" : undefined}
-          onClick={() => setDensity(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </fieldset>
-  );
+  return <Segmented label="Card density" value={density} options={OPTIONS} onChange={setDensity} />;
 }

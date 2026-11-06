@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useColorScheme } from "@/domains/appearance/useThemeKey";
 
 // A ```mermaid block drawn as a diagram, the way GitHub shows it. mermaid is
@@ -33,10 +33,16 @@ export function MermaidDiagram({ source }: { source: string }) {
   const [failed, setFailed] = useState(false);
   // Diagrams are SVG with colours baked in, so a theme change redraws them.
   const scheme = useColorScheme();
+  // A theme-only redraw keeps the current diagram on screen until the new one
+  // is ready; only new source drops back to the pending view.
+  const renderedSource = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setSvg(null);
+    if (renderedSource.current !== source) {
+      renderedSource.current = source;
+      setSvg(null);
+    }
     setFailed(false);
     loadMermaid()
       .then((mermaid) => configure(mermaid, scheme).render(id, source))

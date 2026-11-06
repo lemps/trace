@@ -64,7 +64,7 @@
 }
 .pr-row .status-dot.closed {
   color: var(--c-danger);
-  background: color-mix(in oklch, var(--c-danger) 12%, transparent);
+  background: var(--c-danger-bg);
 }
 .pr-row .num {
   font-family: var(--font-mono);

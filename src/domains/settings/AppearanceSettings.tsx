@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { setTermFont, setTermFontSize, setTermLineHeight } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
 import { type Density, UI_SCALES } from "@/domains/appearance/prefs";
-import { Segmented } from "@/domains/appearance/Segmented";
 import { useAppearance } from "@/domains/appearance/store";
 import { AccentPicker, ThemePicker } from "@/domains/appearance/ThemePicker";
 import { SettingRow } from "./SettingRow";
@@ -56,6 +56,7 @@ export function AppearanceSettings() {
         <div className="desc">How large and how dense the interface is.</div>
         <SettingRow label="Interface size" hint="Zooms everything but the terminals.">
           <Segmented
+            className="ap-seg"
             label="Interface size"
             value={prefs.uiScale}
             options={SCALES}
@@ -64,6 +65,7 @@ export function AppearanceSettings() {
         </SettingRow>
         <SettingRow label="Density" hint="Control heights and text size in lists and toolbars.">
           <Segmented
+            className="ap-seg"
             label="Density"
             value={prefs.density}
             options={DENSITIES}
@@ -95,7 +97,7 @@ export function AppearanceSettings() {
           label="Reduce motion"
           hint={
             systemReducedMotion
-              ? "Your system already asks for reduced motion, so it's on."
+              ? "Your system asks for reduced motion, so it's on. Change it in the OS settings."
               : "Stops spinners, blinking, slides and the buddy's animation."
           }
         >
@@ -103,6 +105,7 @@ export function AppearanceSettings() {
             on={prefs.motion === "reduce" || systemReducedMotion}
             onChange={(on) => update({ motion: on ? "reduce" : "system" })}
             label="Reduce motion"
+            disabled={systemReducedMotion}
           />
         </SettingRow>
       </section>

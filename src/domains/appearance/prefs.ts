@@ -93,14 +93,3 @@ export function savePrefs(prefs: AppearancePrefs): void {
     // best-effort persistence, like the app's other view prefs
   }
 }
-
-/**
- * A font family as typed → a CSS stack with it in front, or "" for the default.
- * A value with a comma is already a stack and is used as written.
- */
-export function fontStack(raw: string, fallbackVar: string): string {
-  const v = raw.trim().replace(/[;{}]/g, "");
-  if (!v) return "";
-  if (v.includes(",")) return v;
-  return `"${v.replace(/"/g, "")}", var(${fallbackVar})`;
-}

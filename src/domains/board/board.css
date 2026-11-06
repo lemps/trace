@@ -286,7 +286,7 @@
   background: var(--hover-tint);
 }
 .zone-cards.drop-target {
-  background: color-mix(in oklch, var(--c-accent) 8%, transparent);
+  background: var(--c-accent-bg);
   outline: 1px solid color-mix(in oklch, var(--c-accent) 45%, transparent);
   outline-offset: -1px;
 }

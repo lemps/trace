@@ -144,7 +144,7 @@
 .btn.success {
   background: color-mix(in oklch, var(--c-done) 15%, transparent);
   color: var(--c-done);
-  border-color: color-mix(in oklch, var(--c-done) 40%, transparent);
+  border-color: var(--c-done-border);
 }
 .btn.success:hover {
   background: color-mix(in oklch, var(--c-done) 22%, transparent);

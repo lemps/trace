@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import {
   DEFAULT_TERM_FONT_SIZE,
@@ -12,7 +13,6 @@ import {
 } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
 import type { CursorStyle } from "@/domains/appearance/prefs";
-import { Segmented } from "@/domains/appearance/Segmented";
 import { isMotionReduced, useAppearance } from "@/domains/appearance/store";
 import { isTermSchemeChoice, TERM_SCHEMES } from "@/domains/appearance/terminalSchemes";
 import { SettingRow } from "./SettingRow";
@@ -115,6 +115,7 @@ export function TerminalAppearance() {
       </SettingRow>
       <SettingRow label="Cursor" hint="Most visible in the shell; Claude Code draws its own.">
         <Segmented
+          className="ap-seg"
           label="Cursor style"
           value={prefs.cursorStyle}
           options={CURSORS}

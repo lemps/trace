@@ -13,13 +13,29 @@ export function terminalAppearance(): ITerminalOptions {
   return {
     theme: resolveTermScheme(prefs.termScheme, activeTheme(s)).theme,
     fontFamily: termFontFamily(),
-    // The terminal's size is its own setting, so undo the interface zoom:
-    // a 14px terminal stays 14px at 125%.
-    fontSize: termFontSize() / (prefs.uiScale / 100),
+    // The terminal's size is its own setting, so undo the interface zoom that
+    // is on screen: a 14px terminal stays 14px at 125%.
+    fontSize: termFontSize() / (s.appliedScale / 100),
     lineHeight: termLineHeight(),
     cursorStyle: prefs.cursorStyle,
     cursorBlink: prefs.cursorBlink && !isMotionReduced(s),
   };
+}
+
+/**
+ * What the store-driven part of `terminalAppearance` depends on. The registry
+ * re-applies to live terminals (a refit each) only when this changes — not
+ * when the UI font, density or accent does.
+ */
+export function terminalAppearanceKey(s = useAppearance.getState()): string {
+  const { prefs } = s;
+  return [
+    prefs.termScheme,
+    activeTheme(s),
+    prefs.cursorStyle,
+    prefs.cursorBlink && !isMotionReduced(s),
+    s.appliedScale,
+  ].join("|");
 }
 
 /** The terminal background, for the pane around the canvas (--term-bg). */

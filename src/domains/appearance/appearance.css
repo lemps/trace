@@ -136,7 +136,7 @@
     0 0 0 4px oklch(var(--accent-l) calc(var(--accent-c) * var(--swatch-sat)) var(--swatch-h));
 }
 
-/* A segmented control as a settings value: no trailing gap, wraps if narrow. */
+/* A segmented control as a settings value: no trailing gap. */
 .setting-row .ap-seg {
   margin-right: 0;
 }

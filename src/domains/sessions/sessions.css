@@ -89,7 +89,7 @@
 }
 .archive-action.danger:hover {
   color: var(--c-danger);
-  border-color: color-mix(in oklch, var(--c-danger) 40%, transparent);
+  border-color: var(--c-danger-border);
 }
 
 
