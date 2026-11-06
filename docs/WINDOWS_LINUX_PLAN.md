@@ -18,15 +18,20 @@ for Windows and Linux.
 
 - The backend compiles and its tests pass, and the frontend builds
 - Installers build: NSIS on Windows, AppImage and `.deb` on Linux, kept as run artifacts
-- The built app starts and stays running, and shows its first screen on Windows
+- The built app starts and stays running on both, and shows its first screen on Windows
 - `trace-hook` reaches trace from Git Bash
 - JSON arguments reach a CLI installed by npm, from a folder with a space in its name
 - A pseudo console only ends its reader once closed, which `watch_for_exit` relies on
 - Other users are shut out of the Windows config folder, even if its parent lets them in
 - git handles paths past 260 characters, and `git diff --no-index /dev/null` works
 
+**Open problem: the Linux window never appears in CI.** The process keeps running, but its window
+stays 10×10 and unmapped under Xvfb, with or without a window manager, `WEBKIT_DISABLE_DMABUF_RENDERER`
+or `WEBKIT_DISABLE_COMPOSITING_MODE`. It could be specific to CI or a real bug, and nothing at startup
+looks like it blocks. A real Linux desktop settles it, so check that first.
+
 **Not proven until someone runs it:** everything in the smoke test below. In particular, no real
-`claude` or `codex` agent has run on either OS yet.
+`claude` or `codex` agent has run on either OS yet, and this branch hasn't been run as an app on macOS.
 
 ## Architecture: ports and adapters
 
@@ -116,8 +121,8 @@ src-tauri/src/platform/
 - [x] Add the `linux` adapter: install locations, sounds and editors.
 - [x] Build AppImage and `.deb` packages.
 - [x] Remove the AppImage's own variables (`LD_LIBRARY_PATH`, `APPDIR`) from what trace spawns.
-- [ ] Check WebKitGTK rendering on a real desktop, including xterm and Wayland. If the window is blank,
-      try `WEBKIT_DISABLE_DMABUF_RENDERER=1` first.
+- [ ] Confirm the window appears on a real desktop (see the open problem above), then check WebKitGTK
+      rendering, including xterm and Wayland.
 - [ ] Pass the smoke test on Ubuntu, plus one other distribution.
 
 ### Phase 3: Windows
