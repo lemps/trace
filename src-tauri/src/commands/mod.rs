@@ -24,6 +24,7 @@ pub mod session_link;
 pub mod snapshot;
 pub mod sound;
 pub mod tests;
+pub mod transcript;
 pub mod update;
 pub mod workspace;
 pub mod worktrees;

@@ -10,6 +10,9 @@
   does the same for the plain shell in the Terminal tab.
 - The frontend renders `pty-output` bytes in an **xterm.js** pane and forwards keystrokes/resize back through
   commands. Do not try to parse the byte stream for structured data — it's a screen, not JSON.
+- Structure for the formatted Transcript view comes from Claude Code's own conversation JSONL, never
+  the screen: `claude/transcript/` tails it from a byte offset (whole lines only) and the renderer
+  (`domains/transcript/`) lays it over the still-mounted terminal. Codex has no transcript yet.
 - The renderer's per-workspace buffer (`board/outputBuffer.ts`) is a capped tail, not a full history: old chunks get
   dropped. Track position by chunk `id`, never by array index or backend `seq` (which restarts on every run).
 - Turn boundaries come from Claude Code hooks, not the byte stream: `spawn_in` passes every claude agent

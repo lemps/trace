@@ -21,10 +21,15 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 
 ### Chat and terminal views
 
-- [ ] **Switch views on the same session:** one shortcut flips a running agent between chat and
-      terminal without restarting it.
-- [ ] **Formatted transcript:** messages, tool activity, visuals and file links, without the
-      terminal's status lines.
+- [~] **Switch views on the same session:** one shortcut flips a running agent between chat and
+      terminal without restarting it. *Started:* a Transcript | Terminal switch in ticket and
+      session chat panes, ⌘⇧T / Ctrl+Shift+T; the transcript lies over the live terminal, which
+      stays mounted. Codex shows the terminal only for now.
+- [~] **Formatted transcript:** messages, tool activity, visuals and file links, without the
+      terminal's status lines. *Started:* prompts, Markdown replies, folded tool runs (commands,
+      edit diffs, todos, results), slash commands and turn ends, tailed from Claude Code's own
+      JSONL (`claude/transcript/`); file links open in an editor. Not yet: visuals, thinking,
+      subagent sections, codex.
 - [ ] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
       model/effort pills; half-typed terminal text carries over to chat.
 - [ ] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.

@@ -8,12 +8,12 @@ const EDITORS: { id: Editor; label: string }[] = [
   { id: "cursor", label: "Cursor" },
 ];
 
-/** "Open in …" menu items for a workspace's worktree (or repo root). */
-export function editorItems(workspaceId: string): MenuItem[] {
+/** "Open in …" menu items for a workspace's worktree (or repo root), or one file in it. */
+export function editorItems(workspaceId: string, file?: string): MenuItem[] {
   return EDITORS.map((ed) => ({
     label: `Open in ${ed.label}`,
     onSelect: () => {
-      void openInEditor(workspaceId, ed.id).catch((e) => toast.error(String(e)));
+      void openInEditor(workspaceId, ed.id, file).catch((e) => toast.error(String(e)));
     },
   }));
 }

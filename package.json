@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "check": "biome check src",
     "typecheck": "tsc --noEmit",
-    "check:sprite": "node scripts/check-sprite.ts"
+    "check:sprite": "node scripts/check-sprite.ts",
+    "test:transcript": "node --test scripts/test-transcript.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

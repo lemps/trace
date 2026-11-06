@@ -1,0 +1,98 @@
+import type { ToolStep } from "./blocks";
+import { str, todosOf } from "./toolSummary";
+
+// What an expanded tool row shows: the part of the call worth reading (the
+// command, the edit as a diff, the todo list) and what came back.
+
+/** Result text longer than this many lines is cut to its head and tail. */
+const RESULT_LINES = 40;
+
+function EditDiff({ before, after }: { before: string; after: string }) {
+  return (
+    <pre className="tx-code tx-diff">
+      {before.split("\n").map((line, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: lines of a fixed snapshot
+        <span key={`o${i}`} className="del">
+          {`- ${line}\n`}
+        </span>
+      ))}
+      {after.split("\n").map((line, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: lines of a fixed snapshot
+        <span key={`n${i}`} className="add">
+          {`+ ${line}\n`}
+        </span>
+      ))}
+    </pre>
+  );
+}
+
+function edits(input: unknown): { before: string; after: string }[] {
+  const single = { before: str(input, "old_string"), after: str(input, "new_string") };
+  if (single.before || single.after) return [single];
+  const list =
+    input && typeof input === "object" && "edits" in input
+      ? (input as { edits: unknown }).edits
+      : [];
+  if (!Array.isArray(list)) return [];
+  return list.map((e) => ({ before: str(e, "old_string"), after: str(e, "new_string") }));
+}
+
+/** The call's own content: what it ran or wrote. */
+function CallBody({ name, input }: { name: string; input: unknown }) {
+  if (name === "Bash" || name === "PowerShell") {
+    return <pre className="tx-code">{str(input, "command")}</pre>;
+  }
+  if (name === "Edit" || name === "MultiEdit") {
+    return (
+      <>
+        {edits(input).map((e, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: a call's edits never reorder
+          <EditDiff key={i} before={e.before} after={e.after} />
+        ))}
+      </>
+    );
+  }
+  if (name === "Write") {
+    return <pre className="tx-code">{str(input, "content")}</pre>;
+  }
+  if (name === "TodoWrite") {
+    return (
+      <ul className="tx-todos">
+        {todosOf(input).map((t) => (
+          <li key={t.content} className={t.status}>
+            {t.content}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (name === "Read") return null;
+  const prompt = str(input, "prompt");
+  if (prompt) return <pre className="tx-code tx-prose">{prompt}</pre>;
+  return <pre className="tx-code">{JSON.stringify(input, null, 2)}</pre>;
+}
+
+/** Keep the head and tail of a long result; the middle is rarely the point. */
+function trimLines(text: string): string {
+  const lines = text.split("\n");
+  if (lines.length <= RESULT_LINES) return text;
+  const head = lines.slice(0, RESULT_LINES / 2);
+  const tail = lines.slice(-RESULT_LINES / 2);
+  return [...head, `… ${lines.length - RESULT_LINES} more lines …`, ...tail].join("\n");
+}
+
+export function ToolDetail({ step }: { step: ToolStep }) {
+  const { call, result } = step;
+  // Edits and todo lists report a bare "updated" — the call already says it all.
+  const quietResult = ["Edit", "MultiEdit", "Write", "TodoWrite"].includes(call.name);
+  return (
+    <div className="tx-tool-detail">
+      <CallBody name={call.name} input={call.input} />
+      {result?.text && (!quietResult || result.isError) && (
+        <pre className={`tx-code tx-result${result.isError ? " error" : ""}`}>
+          {trimLines(result.text)}
+        </pre>
+      )}
+    </div>
+  );
+}

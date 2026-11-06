@@ -34,6 +34,12 @@ export function isNextAgentKey(e: KeyChord): boolean {
   return isMac ? (e.metaKey || e.ctrlKey) && e.shiftKey : appChord(e);
 }
 
+/** Flip the agent in view between its formatted transcript and its terminal. */
+export function isAgentViewKey(e: KeyChord): boolean {
+  if (lower(e) !== "t") return false;
+  return isMac ? (e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey : appChord(e);
+}
+
 /** Focus the search box. Shift+/ reads as "?" on most layouts. */
 export function isSearchKey(e: KeyChord): boolean {
   if (isMac) return (e.metaKey || e.ctrlKey) && (e.key === "/" || e.key === "k");
@@ -74,7 +80,13 @@ export function isTerminalPaste(e: KeyChord): boolean {
  */
 export function isAppKey(e: KeyChord): boolean {
   if (isMac) return false;
-  return isOrchestratorKey(e) || isNextAgentKey(e) || isSearchKey(e) || tabKeyIndex(e) !== null;
+  return (
+    isOrchestratorKey(e) ||
+    isNextAgentKey(e) ||
+    isSearchKey(e) ||
+    isAgentViewKey(e) ||
+    tabKeyIndex(e) !== null
+  );
 }
 
 /** Shortcut labels, in the form this OS writes them. */
@@ -82,6 +94,7 @@ export const hints = isMac
   ? {
       orchestrator: "⌘J",
       nextAgent: "⌘⇧N",
+      agentView: "⌘⇧T",
       search: "⌘ /",
       sendAndNext: "⌘⏎",
       moveUp: "⌥↑",
@@ -91,6 +104,7 @@ export const hints = isMac
   : {
       orchestrator: "Ctrl+Shift+J",
       nextAgent: "Ctrl+Shift+N",
+      agentView: "Ctrl+Shift+T",
       search: "Ctrl+Shift+K",
       sendAndNext: "Ctrl+⏎",
       moveUp: "Alt+↑",

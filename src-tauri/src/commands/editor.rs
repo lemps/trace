@@ -29,9 +29,15 @@ fn open_with(editor: Editor, path: &str) -> bool {
 }
 
 /// Open the workspace's worktree (or the repo root if no worktree yet) in
-/// `editor`. `workspace_id` is a Jira issue key or an exploratory session id.
+/// `editor` — or, with `file`, that one file (a path from the agent's
+/// transcript; relative paths resolve against the workspace). `workspace_id`
+/// is a Jira issue key or an exploratory session id.
 #[tauri::command]
-pub fn open_in_editor(issue_key: String, editor: String) -> Result<(), String> {
+pub fn open_in_editor(
+    issue_key: String,
+    editor: String,
+    file: Option<String>,
+) -> Result<(), String> {
     // A session resolves its own repo + worktree; an issue resolves its assigned
     // repo (falling back to the default). Neither creates a worktree here —
     // opening an editor shouldn't spawn a checkout — so both open the repo root
@@ -49,6 +55,17 @@ pub fn open_in_editor(issue_key: String, editor: String) -> Result<(), String> {
         } else {
             repo
         }
+    };
+
+    let path = match file {
+        Some(file) => {
+            let target = Path::new(&path).join(&file);
+            if !target.exists() {
+                return Err(format!("{file} isn't there any more."));
+            }
+            target.to_string_lossy().into_owned()
+        }
+        None => path,
     };
 
     let opened = match editor.trim().to_lowercase().as_str() {
