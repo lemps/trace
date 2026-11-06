@@ -273,6 +273,30 @@ fn a_pseudo_console_only_ends_its_reader_once_closed() {
         .expect("closing the console should end the reader");
 }
 
+#[test]
+fn git_handles_paths_past_the_windows_limit() {
+    let dir = temp_dir("long");
+    let run = |args: &[&str]| {
+        process::command("git")
+            .args(args)
+            .current_dir(&dir)
+            .output()
+            .unwrap()
+    };
+    assert!(run(&["init", "-q"]).status.success());
+    let deep = dir.join("node_modules\\".repeat(30));
+    fs::create_dir_all(&deep).unwrap();
+    fs::write(deep.join("package.json"), "{}").unwrap();
+    assert!(deep.to_string_lossy().len() > 260);
+    let add = run(&["add", "."]);
+    assert!(
+        add.status.success(),
+        "{}",
+        String::from_utf8_lossy(&add.stderr)
+    );
+    let _ = fs::remove_dir_all(&dir);
+}
+
 /// `commands::diff` shows untracked files this way.
 #[test]
 fn git_understands_dev_null_for_untracked_diffs() {

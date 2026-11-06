@@ -10,7 +10,7 @@ CLI session in an isolated git worktree. Sessions and scheduled prompts work wit
   progress (`docs/WINDOWS_LINUX_PLAN.md`).
 - **Frontend:** React 19, TypeScript (strict), Vite 7, vanilla CSS with design tokens (no Tailwind).
 - **Backend:** Rust 2021. Interactive Claude via `portable-pty`; git worktrees + `gh` for PRs. Persistence is
-  small JSON files in the app config dir (`~/Library/Application Support/trace/` via `dirs`), all written `0600`
+  small JSON files in the app config dir (`~/Library/Application Support/trace/` on macOS, via `dirs`), all written `0600`
   through `helpers::persist` — there is no database.
 - **Issue trackers:** pluggable providers behind `issues::IssueProvider` (see `.claude/rules/providers.md`).
   **Jira:** Cloud REST (Agile v1.0 + Platform v3), HTTP Basic (email + API token). **Pylon:** REST, Bearer
@@ -126,7 +126,7 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   `commands/session.rs`). Git is optional: it runs in a worktree of a configured repo, or in a plain `folder`
   (one the user picked, or a scratch folder under the app config dir that's deleted with the session).
 - **Scheduled prompt:** a prompt that fires on a schedule (interval / daily / weekly / monthly / cron) from
-  a Rust runner thread (`schedule/runner.rs`, only while trace is open; one process leads via a `flock`).
+  a Rust runner thread (`schedule/runner.rs`, only while trace is open; one process leads via a file lock).
   Each prompt owns a worktree; each run is a fresh conversation in a PTY keyed `sched:<runId>`. A run
   finishes when a turn ends with no background tasks pending and no new turn follows
   (`schedule/completion.rs`). Finished runs' output is saved to disk and
@@ -168,9 +168,11 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 ## Releases & updates
 
-- Publishing a GitHub release (tag `vX.Y.Z`) triggers `.github/workflows/release.yml` — the only CI in the
-  repo, so credits are spent solely on releases. It builds `trace.app` at the tag's version and uploads a zip,
-  DMG, updater tarball + minisign signature, and `latest.json` to the release.
+- Publishing a GitHub release (tag `vX.Y.Z`) triggers `.github/workflows/release.yml`. It builds macOS, Linux and
+  Windows at the tag's version and uploads each one's installers plus updater bundle + minisign signature. Once
+  all three succeed, its last job merges their parts into `latest.json`: if any fails, nobody is offered the release.
+- `.github/workflows/cross-platform.yml` is the only other CI: it builds and tests all three OSes, by hand and on
+  pushes to `port/**` or to `main` when platform code changes, and keeps Linux and Windows installers as artifacts.
 - In-app updates (`tauri-plugin-updater`) poll `releases/latest/download/latest.json`; users install from
   Settings → Updates. Signing needs the `TAURI_SIGNING_PRIVATE_KEY(_PASSWORD)` repo secrets (same key pair as
   claude-orchestrator; the pubkey is in `tauri.conf.json`).

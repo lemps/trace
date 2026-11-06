@@ -98,7 +98,8 @@ Releases aren't notarized yet, so macOS may block the first launch. If it does, 
 ## Development
 
 trace is a [Tauri 2](https://tauri.app) app with a Rust backend and a React and TypeScript frontend.
-To build it, you need [Node.js](https://nodejs.org) and [Rust](https://rustup.rs).
+To build it, you need [Node.js](https://nodejs.org) and [Rust](https://rustup.rs). Debian and Ubuntu
+also need the system libraries that `scripts/install-linux-build-deps.sh` installs.
 
 ```bash
 npm install                                      # install frontend dependencies
@@ -119,8 +120,8 @@ cargo test --manifest-path src-tauri/Cargo.toml  # backend tests
 
 ## Roadmap
 
-Cloud VMs, iPhone and Android apps, and Windows and Linux support are planned. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full list.
+Windows and Linux builds are in testing and haven't been released yet. Cloud VMs and iPhone and
+Android apps are planned. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full list.
 
 ## License
 

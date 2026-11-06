@@ -25,6 +25,12 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 impl ProcessHost for Os {
     fn prepare(command: &mut Command) {
         command.creation_flags(CREATE_NO_WINDOW);
+        // A worktree nests its repo a level deeper, and `node_modules` can then pass the
+        // 260-character limit git otherwise keeps to here. Only git reads these.
+        command
+            .env("GIT_CONFIG_COUNT", "1")
+            .env("GIT_CONFIG_KEY_0", "core.longpaths")
+            .env("GIT_CONFIG_VALUE_0", "true");
     }
 
     fn is_alive(pid: u32) -> bool {
