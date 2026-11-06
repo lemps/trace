@@ -16,16 +16,16 @@ import { PrRailSection } from "@/domains/prs/PrRailSection";
 import { primaryPr } from "@/domains/prs/primaryPr";
 import { canonicalPrUrl } from "@/domains/prs/prUrl";
 import { usePrWatchStore } from "@/domains/prs/watchStore";
+import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
 import { type AgentCli, type AgentProvider, resetAgentSession, stopAgent } from "@/ipc/agent";
 import { mergePr, raisePr } from "@/ipc/pr";
 import { issueRepo, listRepos, setIssueRepo } from "@/ipc/repos";
-import { AnswerBar } from "./AnswerBar";
+import { ChatSurface } from "./ChatSurface";
 import { ContextRail } from "./ContextRail";
 import { DetailHeader } from "./DetailHeader";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaults";
 import { FilesPane } from "./FilesPane";
 import { launchIssueAgent } from "./launch";
-import { PtyTerminal } from "./PtyTerminal";
 import { agentLabel } from "./providerLabel";
 import { RichOutputPanel } from "./RichOutputPanel";
 import { useRichOutputStore } from "./richOutputStore";
@@ -260,28 +260,25 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
                 </button>
               );
             })}
+            {tab === "chat" && <ViewSwitch workspaceId={issue.key} cli={cli} />}
           </div>
 
           {tab === "chat" && (
             // The terminal mounts even before the session starts so it can be
             // measured/fitted to the real pane; StartPrompt overlays it until then.
-            <>
-              <div className="pty-host-wrap">
-                <PtyTerminal issueKey={issue.key} />
-                {!running && (
-                  <StartPrompt
-                    onStart={start}
-                    onStartFresh={startFresh}
-                    repos={repos}
-                    repoChoice={repoChoice}
-                    onRepoChange={setRepoChoice}
-                    agentName={agentLabel(cli, provider)}
-                    cliName={cli}
-                  />
-                )}
-              </div>
-              <AnswerBar workspaceId={issue.key} />
-            </>
+            <ChatSurface workspaceId={issue.key} cli={cli}>
+              {!running && (
+                <StartPrompt
+                  onStart={start}
+                  onStartFresh={startFresh}
+                  repos={repos}
+                  repoChoice={repoChoice}
+                  onRepoChange={setRepoChoice}
+                  agentName={agentLabel(cli, provider)}
+                  cliName={cli}
+                />
+              )}
+            </ChatSurface>
           )}
           {tab === "html" && <RichOutputPanel issueKey={issue.key} />}
           {tab === "ticket" && <TicketPane issue={issue} />}

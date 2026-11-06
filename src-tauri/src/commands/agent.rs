@@ -65,6 +65,8 @@ pub(crate) fn spawn_in(
         return Ok(());
     }
     let (resume_id, new_id_arg) = claude_session_ids(&workspace_id, &cli, &cwd);
+    // Until this spawn's hooks report, its conversation is the one just resolved.
+    crate::claude::transcript::live::forget(state, &workspace_id);
     let resuming = cli == "claude" && resume_id.is_some();
     let prompt = if resuming {
         resume_prompt

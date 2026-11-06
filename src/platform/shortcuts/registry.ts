@@ -67,6 +67,15 @@ export const SHORTCUTS: ShortcutDef[] = [
     pc: ["Ctrl+Shift+k", "Ctrl+Shift+/"],
   },
   {
+    id: "agentView",
+    label: "Switch between transcript and terminal",
+    group: "detail",
+    scope: "detail",
+    // macOS: ⌘ only. A focused terminal keeps ⌃⇧T, which reaches the TUI as ^T.
+    mac: ["Shift+Meta+t"],
+    pc: ["Ctrl+Shift+t"],
+  },
+  {
     id: "detailTab",
     label: "Switch to tab 1–9",
     group: "detail",

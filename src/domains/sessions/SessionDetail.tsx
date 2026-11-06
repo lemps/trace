@@ -17,6 +17,7 @@ import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
+import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { startSession, startSessionAgent } from "@/ipc/session";
 import { basename } from "@/platform/paths";
@@ -314,6 +315,7 @@ export function SessionDetail({
             >
               <I.Terminal size={13} /> Terminal
             </button>
+            {pane === "agent" && <ViewSwitch workspaceId={active.workspaceId} cli={active.cli} />}
           </div>
 
           {pane === "agent" && (

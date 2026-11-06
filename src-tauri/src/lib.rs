@@ -94,6 +94,7 @@ pub fn run() {
             commands::pr_watch::pr_thread,
             commands::workspace::workspace_info,
             commands::workspace::sessions_overview,
+            commands::transcript::read_transcript,
             commands::diff::git_diff_summary,
             commands::diff::git_diff_file,
             commands::diff::read_workspace_file,
