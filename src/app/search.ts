@@ -1,6 +1,7 @@
 import { decodePtyChunk, stripAnsi } from "@/domains/agent/transcript";
+import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { dedupePrs } from "@/domains/board/prDedupe";
-import { type OutputChunk, useBoardStore } from "@/domains/board/store";
+import { useBoardStore } from "@/domains/board/store";
 import type { PullRequest } from "@/domains/issues/types";
 import { isScheduledRun } from "@/domains/schedules/ids";
 import { useSessionsStore } from "@/domains/sessions/store";
@@ -27,19 +28,15 @@ const PER_GROUP = 5;
 /** Searchable tail kept per workspace — old scrollback past this is dropped. */
 const MAX_CHAT_TEXT = 200_000;
 
-// Decoded chat text per workspace. Buffers are append-only while the app
-// runs, so we only decode chunks added since the last search.
-const chatCache = new Map<string, { count: number; text: string }>();
+// Decoded chat text per workspace. Chunks only ever join a buffer at the end, so we
+// only decode the ones added since the last search. The text can outlive the chunks
+// it came from, which the buffer's cap drops.
+const chatCache = new Map<string, { lastId: number; text: string }>();
 
 function chatText(workspaceId: string, chunks: OutputChunk[]): string {
   const cached = chatCache.get(workspaceId);
-  let from = 0;
-  let text = "";
-  if (cached && cached.count <= chunks.length) {
-    from = cached.count;
-    text = cached.text;
-  }
-  for (let i = from; i < chunks.length; i++) {
+  let text = cached?.text ?? "";
+  for (let i = firstUnseenIndex(chunks, cached?.lastId ?? 0); i < chunks.length; i++) {
     try {
       text += stripAnsi(decodePtyChunk(chunks[i].data));
     } catch {
@@ -47,7 +44,10 @@ function chatText(workspaceId: string, chunks: OutputChunk[]): string {
     }
   }
   if (text.length > MAX_CHAT_TEXT) text = text.slice(-MAX_CHAT_TEXT);
-  chatCache.set(workspaceId, { count: chunks.length, text });
+  chatCache.set(workspaceId, {
+    lastId: chunks[chunks.length - 1]?.id ?? cached?.lastId ?? 0,
+    text,
+  });
   return text;
 }
 

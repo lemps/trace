@@ -1,4 +1,4 @@
-import type { OutputChunk } from "@/domains/board/store";
+import type { OutputChunk } from "@/domains/board/outputBuffer";
 
 // Turning raw PTY scrollback into readable text. The board store keeps each
 // workspace's output as base64 chunks (ANSI + multibyte preserved); search and

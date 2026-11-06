@@ -162,6 +162,10 @@ function stateOf(id: string): string {
   return `${words[light]}${ask}`;
 }
 
+// The link is printed once, at startup, and long output would age it out of the
+// session's capped buffer. Remembered until the session is next launched.
+const knownLinks = new Map<string, string>();
+
 /** The Remote Control link on a session's screen, if it's shown one yet. */
 function remoteLink(id: string): string | null {
   const chunks = useBoardStore.getState().outputBuffers[id] ?? [];
@@ -170,7 +174,10 @@ function remoteLink(id: string): string | null {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: a link ends at the escape that closes it
   const re = /https:\/\/claude\.ai\/code[^\s\x07\x1b"'<>)\]]*/g;
   const found = raw.match(re) ?? transcriptText(chunks).match(re);
-  return found ? found[found.length - 1] : null;
+  if (!found) return knownLinks.get(id) ?? null;
+  const link = found[found.length - 1];
+  knownLinks.set(id, link);
+  return link;
 }
 
 async function waitForLink(id: string): Promise<string | null> {
@@ -185,6 +192,7 @@ async function waitForLink(id: string): Promise<string | null> {
 
 /** Start (or resume) a session's agent and mark it running. */
 async function launch(session: ScratchSession, prompt: string) {
+  knownLinks.delete(session.id);
   await startSession(session.id, COLS, ROWS, agentArgs(), prompt || undefined);
   const board = useBoardStore.getState();
   board.setAgentRunning(session.id, true);

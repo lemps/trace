@@ -2,7 +2,8 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
-import { type OutputChunk, useBoardStore } from "@/domains/board/store";
+import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
+import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
 import { useRichOutputStore } from "./richOutputStore";
 import { termFontFamily, termFontSize, termLineHeight } from "./terminalPrefs";
@@ -64,7 +65,7 @@ interface TerminalEntry {
   container: HTMLDivElement;
   /** True once `term.open(container)` has run (only valid in the DOM). */
   opened: boolean;
-  /** How many buffered chunks we've already written (monotonic, no double-write). */
+  /** Id of the last buffered chunk handled (ids stay valid when the buffer is trimmed). */
   lastSeen: number;
   /**
    * High-water mark from a history replay: live chunks with seq at or below
@@ -190,9 +191,9 @@ export function getTerminal(issueKey: string): TerminalEntry {
   // current screen cleanly. Scrollback across navigation is preserved a
   // different way — the terminal is kept alive (detached), not recreated.
   const pump = (chunks: OutputChunk[]) => {
-    while (entry.lastSeen < chunks.length) {
-      const chunk = chunks[entry.lastSeen];
-      entry.lastSeen++;
+    for (let i = firstUnseenIndex(chunks, entry.lastSeen); i < chunks.length; i++) {
+      const chunk = chunks[i];
+      entry.lastSeen = chunk.id;
       // Skip what a history replay already painted (seq handoff) — an event
       // can arrive after the snapshot that already contained its bytes.
       if (chunk.seq <= entry.skipSeq) continue;
@@ -200,7 +201,8 @@ export function getTerminal(issueKey: string): TerminalEntry {
       entry.hasOutput = true;
     }
   };
-  entry.lastSeen = (useBoardStore.getState().outputBuffers[issueKey] ?? []).length;
+  const buffered = useBoardStore.getState().outputBuffers[issueKey] ?? [];
+  entry.lastSeen = buffered[buffered.length - 1]?.id ?? 0;
   entry.unsub = useBoardStore.subscribe((s) => pump(s.outputBuffers[issueKey] ?? []));
 
   registry.set(issueKey, entry);

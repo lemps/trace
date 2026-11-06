@@ -17,6 +17,7 @@ import {
   saveFilter,
   saveTypeFilter,
 } from "./filterPrefs";
+import { appendChunk, type OutputChunk } from "./outputBuffer";
 import type { TypeSelection } from "./typeSelection";
 import { armWaitingNotify, cancelWaitingWatch, watchForQuiet } from "./waitingNotify";
 
@@ -28,12 +29,6 @@ function formatMoveError(err: unknown): string {
 
 /** Live state of an issue's agent. */
 export type SessionStatus = "idle" | "working" | "waiting";
-
-/** One PTY output chunk: base64 bytes + the backend's monotonic counter. */
-export interface OutputChunk {
-  seq: number;
-  data: string;
-}
 
 /** Derive a session's status from the running set + activity flag. */
 export function statusOf(
@@ -89,11 +84,10 @@ interface BoardStore {
   /** GitHub PRs linked to each issue, keyed by issue key. */
   pullRequests: Record<string, PullRequest[]>;
   /**
-   * Raw PTY output chunks (base64 + backend seq) captured per workspace_id
-   * since the app started listening. App-level capture keeps the stream
-   * flowing even when the terminal isn't mounted; the live terminal in
-   * `terminalRegistry` drains new chunks from here as they arrive, using seq
-   * to avoid re-writing what a history snapshot already replayed.
+   * Recent PTY output per workspace_id, capped (`outputBuffer.ts`). App-level
+   * capture keeps the stream flowing even when the terminal isn't mounted; the
+   * live terminal in `terminalRegistry` drains new chunks from here as they
+   * arrive, using seq to avoid re-writing what a history snapshot already replayed.
    */
   outputBuffers: Record<string, OutputChunk[]>;
 
@@ -322,7 +316,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set((s) => {
       const prev = s.outputBuffers[workspaceId] ?? [];
       const out: Partial<BoardStore> = {
-        outputBuffers: { ...s.outputBuffers, [workspaceId]: [...prev, { seq, data }] },
+        outputBuffers: { ...s.outputBuffers, [workspaceId]: appendChunk(prev, seq, data) },
       };
       // Output means the agent is generating — mark it working; `watchForQuiet`
       // decides when the turn is over. Note that output deliberately does NOT
