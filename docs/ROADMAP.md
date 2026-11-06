@@ -14,7 +14,7 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [~] **Windows and Linux builds:** the current priority. See
       [the plan](WINDOWS_LINUX_PLAN.md).
 - [x] **GitHub integration:** browse your repos through `gh`, and clone one into a folder you choose,
-      added to trace's repositories and set up for agents.
+      added to trace's repositories and set up for agents. ([#11](https://github.com/noble1911/trace/pull/11))
 - [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
       Vercel integration. This comes after the Windows and Linux builds.
 - [ ] **iPhone and Android apps.**
@@ -69,6 +69,7 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       to the agent.
 - [x] **Worktree setup hooks:** run commands like `npm install` or restoring `.env` after a worktree
       is created. Per repo, in Settings → Repositories; suggested from lockfiles after a clone.
+      ([#11](https://github.com/noble1911/trace/pull/11))
 - [ ] **Scheduled run prechecks:** a shell command decides whether a scheduled run goes ahead.
 - [ ] **Quick Open:** fuzzy file search within a worktree.
 - [ ] **File previews:** images, PDFs and Markdown next to the agent.
