@@ -1,3 +1,4 @@
+import { submitLine } from "@/domains/agent/submitLine";
 import { transcriptText } from "@/domains/agent/transcript";
 import { useBoardStore } from "@/domains/board/store";
 import { watchForQuiet } from "@/domains/board/waitingNotify";
@@ -121,5 +122,5 @@ export async function reply(
     await sendAgentInput(workspaceId, ESC);
     await pause(400);
   }
-  await sendAgentInput(workspaceId, `${message}\r`);
+  await submitLine(workspaceId, message);
 }
