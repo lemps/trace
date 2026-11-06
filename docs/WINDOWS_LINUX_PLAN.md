@@ -78,7 +78,7 @@ src-tauri/src/platform/
 
 **Still open:**
 
-1. **How to test:** the smoke test needs a Windows PC and a Linux desktop, or VMs. Who has them?
+1. **Who tests Linux:** Ron is testing Windows on a second machine. Linux still needs a desktop or a VM.
 
 **Made:**
 
