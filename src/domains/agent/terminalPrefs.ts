@@ -11,7 +11,7 @@ const LINE_HEIGHT_KEY = "trace.termLineHeight";
 // missing glyphs (box drawing, powerline) still fall back to something sane.
 export const DEFAULT_TERM_FONT_STACK =
   '"Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
-export const DEFAULT_TERM_FONT_SIZE = 12;
+export const DEFAULT_TERM_FONT_SIZE = 14;
 export const DEFAULT_TERM_LINE_HEIGHT = 1;
 
 function read(key: string): string {

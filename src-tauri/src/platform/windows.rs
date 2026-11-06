@@ -191,8 +191,26 @@ impl AgentEnvironment for Os {
         dirs
     }
 
+    /// PowerShell, the shell Windows itself now opens: 7 (`pwsh`) where it's installed,
+    /// else the 5.1 every Windows has, and `cmd.exe` only if neither can be found.
     fn default_shell() -> String {
-        std::env::var("ComSpec").unwrap_or_else(|_| "cmd.exe".to_string())
+        let on_path = std::env::var_os("PATH")
+            .map(|path| std::env::split_paths(&path).collect::<Vec<_>>())
+            .unwrap_or_default()
+            .into_iter()
+            .map(|dir| dir.join("pwsh.exe"));
+        let candidates = on_path
+            .chain(env_dir("ProgramFiles", "PowerShell\\7\\pwsh.exe"))
+            .chain(env_dir(
+                "SystemRoot",
+                "System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            ));
+        candidates
+            .into_iter()
+            .find(|shell| shell.is_file())
+            .map(|shell| shell.to_string_lossy().into_owned())
+            .or_else(|| std::env::var("ComSpec").ok())
+            .unwrap_or_else(|| "cmd.exe".to_string())
     }
 }
 
@@ -205,27 +223,6 @@ impl AgentBridge for Os {
     fn shell_path(path: &Path) -> String {
         path.to_string_lossy().replace('\\', "/")
     }
-}
-
-/// `S-1-5-21-...`, the current user's security identifier. Safer in an ACL than a
-/// name, which depends on locale and domain.
-fn current_user_sid() -> Option<String> {
-    let out = process::command("whoami")
-        .args(["/user", "/fo", "csv", "/nh"])
-        .output()
-        .ok()?;
-    let text = String::from_utf8_lossy(&out.stdout);
-    parse_sid(&text)
-}
-
-fn parse_sid(whoami_csv: &str) -> Option<String> {
-    let sid = whoami_csv
-        .trim()
-        .rsplit(',')
-        .next()?
-        .trim()
-        .trim_matches('"');
-    sid.starts_with("S-1-").then(|| sid.to_string())
 }
 
 impl PrivateFiles for Os {
@@ -243,47 +240,6 @@ impl PrivateFiles for Os {
             tracing::warn!("couldn't restrict the config dir's ACL: {reason}");
         }
     }
-}
-
-/// Everyone, Authenticated Users and Users: who a folder can inherit access from.
-const ORDINARY_USERS: [&str; 3] = ["*S-1-1-0", "*S-1-5-11", "*S-1-5-32-545"];
-/// SYSTEM and Administrators keep access: like root on Unix, which `0600` doesn't stop,
-/// they can take any file anyway, and backup and security tools run as them.
-const ADMINS: [&str; 2] = ["*S-1-5-18", "*S-1-5-32-544"];
-
-fn icacls(path: &Path, args: &[String]) -> Result<(), String> {
-    let out = process::command("icacls")
-        .arg(path)
-        .args(args)
-        .output()
-        .map_err(|e| format!("couldn't run icacls: {e}"))?;
-    if out.status.success() {
-        return Ok(());
-    }
-    Err(format!(
-        "icacls: {} {}",
-        String::from_utf8_lossy(&out.stdout).trim(),
-        String::from_utf8_lossy(&out.stderr).trim()
-    ))
-}
-
-/// The equivalent of `0600` for a folder and everything in it: no other ordinary user can
-/// read it. New files inherit this, so each write needs nothing extra.
-fn restrict_acl(path: &Path) -> Result<(), String> {
-    let sid = current_user_sid().ok_or("couldn't read the current user's SID")?;
-    let mut grant = vec!["/grant:r".to_string(), format!("*{sid}:(OI)(CI)F")];
-    grant.extend(ADMINS.iter().map(|admin| format!("{admin}:(OI)(CI)F")));
-    grant.extend([
-        "/inheritance:r".to_string(),
-        "/C".to_string(),
-        "/Q".to_string(),
-    ]);
-    icacls(path, &grant)?;
-    // Removing inheritance can leave what was inherited behind as explicit entries.
-    let mut remove = vec!["/remove:g".to_string()];
-    remove.extend(ORDINARY_USERS.iter().map(ToString::to_string));
-    remove.extend(["/T".to_string(), "/C".to_string(), "/Q".to_string()]);
-    icacls(path, &remove)
 }
 
 impl SoundPlayer for Os {
@@ -327,6 +283,12 @@ impl EditorLauncher for Os {
         }
     }
 }
+
+#[path = "windows_acl.rs"]
+mod config_acl;
+use config_acl::restrict_acl;
+#[cfg(test)]
+use config_acl::{icacls, is_restricted, parse_sid};
 
 #[cfg(test)]
 #[path = "windows_tests.rs"]

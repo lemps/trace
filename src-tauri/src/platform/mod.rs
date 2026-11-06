@@ -2,8 +2,10 @@
 //!
 //! `ports` says what trace needs, and exactly one adapter implements it for [`Os`] in
 //! any build. macOS and Linux share `unix`, overriding only what really differs.
-//! `paths` is pure logic rather than a port, so its Windows rules are tested everywhere.
+//! `paths` and `acl` are pure logic rather than ports, so their Windows rules are tested
+//! everywhere.
 
+pub mod acl;
 pub mod paths;
 pub mod ports;
 pub mod process;

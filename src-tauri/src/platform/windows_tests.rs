@@ -131,6 +131,29 @@ fn restricting_a_dir_shuts_out_other_users_and_reaches_new_files() {
     fs::remove_dir_all(&parent).unwrap();
 }
 
+#[test]
+fn restricting_an_already_restricted_dir_skips_the_walk() {
+    let dir = temp_dir("acl-again");
+    restrict_acl(&dir).unwrap();
+    assert!(is_restricted(&dir), "{}", acl_of(&dir));
+    // A child given its own grant afterwards: only the recursive pass would touch it.
+    let child = dir.join("session");
+    fs::create_dir(&child).unwrap();
+    icacls(&child, &["/grant".to_string(), "*S-1-1-0:R".to_string()]).unwrap();
+
+    restrict_acl(&dir).unwrap();
+
+    assert!(acl_of(&child).contains("Everyone"), "the walk ran again");
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn an_inheriting_dir_is_not_restricted_yet() {
+    let dir = temp_dir("acl-fresh");
+    assert!(!is_restricted(&dir), "{}", acl_of(&dir));
+    fs::remove_dir_all(&dir).unwrap();
+}
+
 /// The real relay, end to end: Git Bash runs `trace-hook`, which reaches a loopback
 /// listener through `/dev/tcp`, as it does when Claude Code fires a hook.
 #[test]

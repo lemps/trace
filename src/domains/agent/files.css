@@ -144,42 +144,6 @@
   border-bottom: 1px solid var(--border-faint);
 }
 
-/* Terminal */
-.terminal {
-  background: var(--bg-0);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
-  padding: 14px 18px;
-  color: var(--fg-1);
-  height: 100%;
-  overflow-y: auto;
-}
-.terminal .prompt {
-  color: var(--c-accent);
-}
-.terminal .dim {
-  color: var(--fg-3);
-}
-.terminal .ok {
-  color: var(--c-done);
-}
-.terminal .err {
-  color: var(--c-danger);
-}
-.terminal .warn {
-  color: var(--c-warn);
-}
-.terminal .cursor {
-  display: inline-block;
-  width: 8px;
-  height: 14px;
-  background: var(--fg-1);
-  vertical-align: middle;
-  animation: blink 1s steps(2) infinite;
-}
-
-
 /* Diff/Preview toggle for markdown files */
 .diff-head .view-toggle {
   display: inline-flex;

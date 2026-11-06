@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { activity } from "@/domains/activity/store";
+import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useBoardStore } from "@/domains/board/store";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
@@ -17,6 +18,7 @@ import {
   setSessionGroup,
   unarchiveSession,
 } from "@/ipc/session";
+import { agentWorkspaceIds } from "./agentRoster";
 import type { ScratchSession, SessionGroups } from "./types";
 
 // Metadata + selection only. Live runtime state (running set, output buffers) is
@@ -103,7 +105,7 @@ function pushRecent(prev: string[], id: string): string[] {
   return [id, ...prev.filter((x) => x !== id)].slice(0, RECENT_CAP);
 }
 
-export const useSessionsStore = create<SessionsStore>((set) => ({
+export const useSessionsStore = create<SessionsStore>((set, get) => ({
   sessions: [],
   groups: { tabs: [], sections: [] },
   selectedId: null,
@@ -149,7 +151,11 @@ export const useSessionsStore = create<SessionsStore>((set) => ({
     set((s) => ({ sessions: patch(s.sessions, id, null) }));
   },
   async remove(id) {
+    const session = get().sessions.find((x) => x.id === id);
     await deleteSession(id);
+    // Its agents' trace-render cards are persisted; nothing can show them now.
+    const clearCards = useRichOutputStore.getState().clear;
+    for (const workspaceId of session ? agentWorkspaceIds(session) : [id]) clearCards(workspaceId);
     set((s) => {
       const recent = s.recent.filter((x) => x !== id);
       saveRecent(recent);

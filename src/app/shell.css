@@ -139,10 +139,23 @@
   border-color: var(--border-strong);
   color: var(--fg-1);
 }
+/* min-width: 0 lets the input shrink, so a long hint like Ctrl+Shift+K stays inside the box. */
 .topbar .search input {
   flex: 1;
+  min-width: 0;
+}
+/* A detail view covers the topbar. While the search is open over one, lift the topbar
+   above it and show only the search box, floating over the detail's header. */
+.app-root:has(.detail) .topbar:has(.search:focus-within) {
+  z-index: 60;
+  border-bottom-color: transparent;
+  background: none;
+}
+.app-root:has(.detail) .topbar:has(.search:focus-within) > :not(.search) {
+  visibility: hidden;
 }
 .topbar .search kbd {
+  flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 10.5px;
   padding: 1px 5px;

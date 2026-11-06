@@ -328,6 +328,11 @@
 .pty-pane .xterm {
   height: 100%;
 }
+/* xterm.css paints its viewport #000. Any space below the last whole row would show
+   as a black band around the terminal, so match the theme's background instead. */
+.pty-pane .xterm .xterm-viewport {
+  background-color: var(--bg-0);
+}
 
 .amsg {
   display: grid;

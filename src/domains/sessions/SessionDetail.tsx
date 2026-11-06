@@ -8,6 +8,8 @@ import { editorItems } from "@/domains/agent/editorItems";
 import { FilesPane } from "@/domains/agent/FilesPane";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
+import { RichOutputPanel } from "@/domains/agent/RichOutputPanel";
+import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { TerminalPane } from "@/domains/agent/TerminalPane";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
@@ -28,8 +30,9 @@ import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
 import type { ScratchSession } from "./types";
 
-/** Which pane the body shows. Agent tabs all share the "agent" pane. */
-type PaneId = "agent" | "files" | "terminal";
+/** Which pane the body shows. Agent tabs all share the "agent" pane; "html" shows the
+ * viewed agent's `trace-render` cards. */
+type PaneId = "agent" | "html" | "files" | "terminal";
 
 // Full-screen detail for one exploratory session. Reuses the agent detail shell
 // (`.detail`), the live terminal, and the Files/Diff pane — all keyed by workspace
@@ -88,6 +91,7 @@ export function SessionDetail({
   // Repo + live branch for the header (the tab bar already names the agent).
   const info = useWorkspaceInfo(session.id, turnIds, run.running);
   const waiting = agentActivity[active.workspaceId] === "waiting";
+  const htmlCount = useRichOutputStore((s) => s.blocks[active.workspaceId]?.length ?? 0);
 
   // Viewing a waiting agent acknowledges it — see AgentDetail.
   useEffect(() => {
@@ -99,12 +103,12 @@ export function SessionDetail({
     setPane("agent");
     setConfirmRemove(false);
   };
-  // ⌘1… = each agent tab, then Files and Terminal; Esc goes back.
+  // ⌘1… = each agent tab, then HTML, Files and Terminal; Esc goes back.
   // A plain folder has no git, so nothing for Files to show.
   const hasFiles = !session.folder;
-  const keyTabs = [...turnIds, ...(hasFiles ? ["files"] : []), "terminal"];
+  const keyTabs = [...turnIds, "html", ...(hasFiles ? ["files"] : []), "terminal"];
   useDetailKeys(onBack, keyTabs, (t) => {
-    if (t === "files" || t === "terminal") setPane(t);
+    if (t === "html" || t === "files" || t === "terminal") setPane(t);
     else showAgent(t);
   });
 
@@ -285,6 +289,15 @@ export function SessionDetail({
               disabled={companionsOf(session).length >= MAX_COMPANIONS}
             />
             <span className="detail-tab-sep" />
+            <button
+              type="button"
+              className={`detail-tab${pane === "html" ? " active" : ""}`}
+              onClick={() => setPane("html")}
+              title={`What ${active.label} rendered with trace-render`}
+            >
+              <I.Sparkles size={13} /> HTML
+              {htmlCount > 0 && <span className="count">{htmlCount}</span>}
+            </button>
             {hasFiles && (
               <button
                 type="button"
@@ -312,6 +325,7 @@ export function SessionDetail({
               hint={startHint}
             />
           )}
+          {pane === "html" && <RichOutputPanel issueKey={active.workspaceId} />}
           {pane === "files" && <FilesPane workspaceId={session.id} />}
           {pane === "terminal" && <TerminalPane issueKey={session.id} />}
           {linking && <LinkTicketModal onClose={() => setLinking(false)} onPick={onPickIssue} />}

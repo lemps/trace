@@ -30,8 +30,17 @@ stays 10×10 and unmapped under Xvfb, with or without a window manager, `WEBKIT_
 or `WEBKIT_DISABLE_COMPOSITING_MODE`. It could be specific to CI or a real bug, and nothing at startup
 looks like it blocks. A real Linux desktop settles it, so check that first.
 
-**Not proven until someone runs it:** everything in the smoke test below. In particular, no real
-`claude` or `codex` agent has run on either OS yet, and this branch hasn't been run as an app on macOS.
+**Proven by hand on Windows 11** (a dev build, 2026-11-06), with no tracker connected:
+
+- A real `claude` agent runs in a session: typing, Stop, resume, and resume after a crash
+- Claude Code runs trace's hooks through Git Bash, so turns are tracked
+- The agent tools reach trace over loopback MCP
+- `codex` starts from its npm `.cmd` and runs in the pseudo console
+- A worktree, its folder and its branch are removed right after its agent stops
+- Diffs (including new files), the Terminal tab, Open in VS Code and sounds work
+
+**Not proven until someone runs it:** the rest of the smoke test below, in particular everything that
+needs a tracker, and this branch hasn't been run as an app on macOS.
 
 ## Architecture: ports and adapters
 
@@ -44,10 +53,12 @@ src-tauri/src/platform/
 ├── ports.rs        # one trait per concern, with no OS code
 ├── process.rs      # the one place a process gets created
 ├── paths.rs        # pure path logic, testing Windows' rules on every OS
+├── acl.rs          # pure SDDL reading, so the config folder check is tested on every OS
 ├── unix.rs         # shared by macOS and Linux
 ├── macos.rs        # only what differs from unix
 ├── linux.rs        # only what differs from unix
-└── windows.rs
+├── windows.rs
+└── windows_acl.rs  # the config folder's ACL, part of the windows adapter
 ```
 
 | Port | What it covers | Used by |
@@ -133,8 +144,10 @@ src-tauri/src/platform/
 - [x] Claude's Windows conversation slug, written from the known format.
 - [x] Long paths (`core.longpaths`) for git commands trace runs.
 - [x] Build the NSIS installer.
-- [ ] Check removing a worktree right after its agent stops, as Windows locks files in use. Add a
-      retry if this fails.
+- [x] Check removing a worktree right after its agent stops, as Windows locks files in use. It
+      worked first time, so no retry was needed.
+- [x] Lock down the config folder only once: an already restricted folder is left alone, rather
+      than every ACL under it, scratch sessions included, being rewritten at each launch.
 - [ ] Pass the smoke test on Windows 11.
 
 ### Phase 4: Release
@@ -171,9 +184,23 @@ and `codex` installed the usual way for that platform.
 
 These can't be settled in CI, so check them during the smoke test:
 
-- Whether Claude Code runs hooks through Git Bash, and finds `trace-render` on its `PATH`
-- Claude's exact conversation slug on Windows
-- How Codex behaves in a pseudo console
+- ~~Whether Claude Code runs hooks through Git Bash, and finds `trace-render` on its `PATH`~~ Yes, both
+- ~~Claude's exact conversation slug on Windows~~ Right: resume finds the conversation
+- ~~How Codex behaves in a pseudo console~~ Fine: it draws and takes input like Claude
 - Whether notifications need an installed app on Windows, so dev builds may not show them
 - Whether WebView2's own shortcuts (`Ctrl+R` reloads, `Ctrl+F` finds) get in the way
 - A non-npm `.cmd` tool still runs through `cmd.exe`, which can split arguments at `&`
+
+## Developing on Windows
+
+- **Clone outside the config folder** (`%APPDATA%	race`). trace locks that folder down on its first
+  launch, and the permission changes look like file changes to `tauri dev`'s watcher, so a clone in
+  there rebuilds over and over.
+- **A dev build joins an installed trace's WebView2.** Both use `com.obsidianos.trace`, so a
+  `tauri dev` window started while the installed app runs shares its browser process, profile and
+  storage, and ignores `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`. Give the dev build its own folder:
+  `WEBVIEW2_USER_DATA_FOLDER=%TEMP%	race-dev-webview npm run tauri dev`.
+- **Driving the UI from a script:** add `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333`
+  (with the folder above) and connect over the Chrome DevTools Protocol at `http://127.0.0.1:9333/json`.
+- **Stopping `tauri dev` by killing its process** (rather than Ctrl+C in its terminal) leaves vite
+  running on port 1420, and the next start fails. Stop the leftover `node` process first.
