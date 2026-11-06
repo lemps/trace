@@ -163,6 +163,10 @@ cargo test --manifest-path src-tauri/Cargo.toml
 - Don't bump `version` in `Cargo.toml`/`tauri.conf.json` by hand for releases — the workflow syncs it from the
   release tag.
 
+## Roadmap
+
+`docs/ROADMAP.md` lists planned features. When a change ships or starts a listed item, update it in the same PR.
+
 ## Non-negotiables (full list in .claude/rules/)
 
 - Keep files small (above). Split at the cap.
