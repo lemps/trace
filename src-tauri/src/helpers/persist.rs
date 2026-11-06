@@ -66,14 +66,8 @@ fn sibling(path: &Path, suffix: &str) -> PathBuf {
 
 /// Options that create a file user-only from its first instant.
 fn owner_only() -> OpenOptions {
-    #[allow(unused_mut)]
-    let mut options = OpenOptions::new();
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    options
+    use crate::platform::{ports::PrivateFiles, Os};
+    Os::owner_only_options()
 }
 
 /// [`write_atomic`] for a JSON value.

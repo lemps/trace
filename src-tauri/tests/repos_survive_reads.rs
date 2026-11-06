@@ -1,3 +1,4 @@
+#![allow(clippy::disallowed_methods)] // Outside the crate, so no platform::process.
 //! A read during a save used to wipe the repo list. The old `load` treated a half-written
 //! `repos.json` as a first run, rebuilt the list from the legacy `repo-path` file and saved
 //! that over everything, so users kept losing all but one repo at launch.

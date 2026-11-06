@@ -7,7 +7,6 @@
 //!   every `gh pr create` output and every URL the agent printed, long after
 //!   the TUI repainted them away. Codex keeps no such log; the branch still works.
 
-use std::process::Command;
 use std::sync::OnceLock;
 
 use regex::Regex;
@@ -131,7 +130,7 @@ pub(super) fn remote_owner(remote: &str) -> Option<String> {
 
 /// Trimmed stdout of a successful `tool args` run in `cwd`.
 fn git_stdout(cwd: &str, tool: &str, args: &[&str]) -> Option<String> {
-    let out = Command::new(tool)
+    let out = crate::claude::discovery::command(tool)
         .args(args)
         .current_dir(cwd)
         .output()

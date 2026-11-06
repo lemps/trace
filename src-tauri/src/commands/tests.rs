@@ -5,10 +5,12 @@
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::Command;
 use std::time::Instant;
 
 use serde::Serialize;
+
+use crate::platform::ports::ToolLocator;
+use crate::platform::Os;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,13 +24,16 @@ pub struct TestRun {
     pub output: String,
 }
 
+/// Stands in for the project's own Gradle wrapper, whose file name differs per OS.
+const GRADLE_WRAPPER: &str = "./gradlew";
+
 /// Pick a test command for the worktree based on the toolchain files present.
 /// Returns `(program, args, display)`.
 fn detect(dir: &str) -> Option<(&'static str, Vec<&'static str>, &'static str)> {
     let has = |f: &str| Path::new(&format!("{dir}/{f}")).exists();
     if has("gradlew") {
         return Some((
-            "./gradlew",
+            GRADLE_WRAPPER,
             vec!["test", "--console=plain"],
             "./gradlew test",
         ));
@@ -104,7 +109,16 @@ fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
     // and lets the tool find what it calls in turn (npm needs node).
     let env = crate::claude::env::build_effective_cli_env(&HashMap::new());
     let started = Instant::now();
-    let out = Command::new(program)
+    // A project's own wrapper is a path; anything else is a tool to look up.
+    let resolved = if program == GRADLE_WRAPPER {
+        Os::project_wrapper(Path::new(&worktree), "gradlew")
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        crate::claude::discovery::find_cli_with_env(program, Some(&env))
+            .unwrap_or_else(|| program.to_string())
+    };
+    let out = crate::platform::process::command(resolved)
         .args(&args)
         .envs(&env)
         .current_dir(&worktree)

@@ -23,12 +23,7 @@ pub fn render(template: &str, vars: &Vars) -> String {
         .and_then(local)
         .map(|t| t.to_rfc3339())
         .unwrap_or_else(|| "never (this is the first run)".to_string());
-    let repo_name = vars
-        .repo
-        .trim_end_matches('/')
-        .rsplit('/')
-        .next()
-        .unwrap_or(vars.repo);
+    let repo_name = crate::platform::paths::basename(vars.repo);
     let values: [(&str, String); 7] = [
         ("date", fmt("%Y-%m-%d")),
         ("time", fmt("%H:%M")),

@@ -25,14 +25,22 @@ pub fn trace_bin_dir() -> PathBuf {
 /// under the config dir ends up this way (state files via `persist`, which creates
 /// them 0600) — session ids and repo paths aren't token-grade secrets, but a
 /// world-readable session id still lets another local user resume the conversation.
-#[cfg(unix)]
 pub fn restrict_perms(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
+    use crate::platform::{ports::PrivateFiles, Os};
+    Os::restrict_file(path);
 }
 
-#[cfg(not(unix))]
-pub fn restrict_perms(_path: &Path) {}
+/// Keep the config dir itself user-only, off the startup path: it can take a moment
+/// on Windows, where it's what protects every file inside.
+pub fn secure_config_dir() {
+    use crate::platform::{ports::PrivateFiles, Os};
+    std::thread::spawn(|| {
+        let dir = trace_dir();
+        if std::fs::create_dir_all(&dir).is_ok() {
+            Os::restrict_dir(&dir);
+        }
+    });
+}
 
 /// Validate a path the renderer sent that must stay under some root. Only plain
 /// names are allowed: anything absolute or containing `..` could read or remove

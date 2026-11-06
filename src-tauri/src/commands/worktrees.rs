@@ -2,8 +2,6 @@
 //! and `workspace/<slug>` branches behind forever — these commands list them
 //! (with merged/dirty/running status) and remove them safely.
 
-use std::process::Command;
-
 use serde::Serialize;
 use tauri::State;
 
@@ -28,7 +26,7 @@ pub struct WorktreeInfo {
 }
 
 pub(crate) fn git_out(dir: &str, args: &[&str]) -> Option<String> {
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(args)
         .current_dir(dir)
         .output()
@@ -130,7 +128,7 @@ pub(crate) fn remove_for_workspace(workspace_id: &str) {
         return;
     }
     for repo in crate::commands::repos::all_repos() {
-        let path = format!("{repo}/.worktrees/{dirname}");
+        let path = crate::platform::paths::worktree_dir(&repo, &dirname);
         if !std::path::Path::new(&path).exists() {
             continue;
         }
@@ -140,11 +138,11 @@ pub(crate) fn remove_for_workspace(workspace_id: &str) {
             .map(|b| b.trim().to_string())
             .filter(|b| b.starts_with("workspace/"))
             .unwrap_or_else(|| format!("workspace/{slug}"));
-        let _ = Command::new("git")
+        let _ = crate::claude::discovery::command("git")
             .args(["worktree", "remove", "--force", &path])
             .current_dir(&repo)
             .output();
-        let _ = Command::new("git")
+        let _ = crate::claude::discovery::command("git")
             .args(["branch", "-D", &branch])
             .current_dir(&repo)
             .output();
@@ -184,13 +182,12 @@ pub async fn list_worktrees(state: State<'_, AppState>) -> Result<Vec<WorktreeIn
 fn collect_worktrees(running: &[String]) -> Vec<WorktreeInfo> {
     let mut out = Vec::new();
     for repo in crate::commands::repos::all_repos() {
-        let marker = format!("{repo}/.worktrees/");
         let Some(listing) = git_out(&repo, &["worktree", "list", "--porcelain"]) else {
             continue;
         };
         let entries: Vec<(String, Option<String>)> = parse_worktree_list(&listing)
             .into_iter()
-            .filter(|(p, _)| p.starts_with(&marker))
+            .filter(|(p, _)| crate::platform::paths::below_worktrees(p, &repo).is_some())
             .collect();
         if entries.is_empty() {
             continue;
@@ -210,7 +207,7 @@ fn collect_worktrees(running: &[String]) -> Vec<WorktreeInfo> {
                 .collect()
         });
         for ((path, branch), dirty) in entries.into_iter().zip(dirt) {
-            let name = path.rsplit('/').next().unwrap_or(&path).to_string();
+            let name = crate::platform::paths::basename(&path);
             out.push(WorktreeInfo {
                 merged: branch
                     .as_deref()
@@ -240,13 +237,12 @@ pub async fn remove_worktree(
     force: bool,
 ) -> Result<(), String> {
     // The prefix alone isn't enough: `<repo>/.worktrees/../../other` passes it.
-    let inside = path
-        .strip_prefix(&format!("{repo}/.worktrees/"))
+    let inside = crate::platform::paths::below_worktrees(&path, &repo)
         .is_some_and(|rest| crate::helpers::safe_relative_path(rest).is_ok());
     if !inside {
         return Err("Not a trace-managed worktree.".to_string());
     }
-    let name = path.rsplit('/').next().unwrap_or("").to_string();
+    let name = crate::platform::paths::basename(&path);
     if running_slugs(&state).contains(&name) {
         return Err("An agent is running in this worktree — stop it first.".to_string());
     }
@@ -269,7 +265,7 @@ fn remove_blocking(
         args.push("--force");
     }
     args.push(path);
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(&args)
         .current_dir(repo)
         .output()
@@ -282,7 +278,7 @@ fn remove_blocking(
     }
     // Branch deletion is best-effort — the checkout is gone either way.
     if let Some(branch) = branch {
-        let _ = Command::new("git")
+        let _ = crate::claude::discovery::command("git")
             .args(["branch", "-D", &branch])
             .current_dir(repo)
             .output();

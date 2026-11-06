@@ -19,6 +19,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
 use crate::helpers::{new_id, trace_bin_dir};
+use crate::platform::ports::AgentBridge;
+use crate::platform::Os;
 
 /// The producer script trace places on every agent's PATH. It reads the bridge
 /// coordinates from the agent's env (set in `commands::agent::spawn_in`) and
@@ -164,11 +166,5 @@ fn write_producer_script() -> std::io::Result<()> {
     let bin = trace_bin_dir();
     std::fs::create_dir_all(&bin)?;
     let path = bin.join("trace-render");
-    std::fs::write(&path, PRODUCER_SCRIPT)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
-    }
-    Ok(())
+    Os::install_script(&path, PRODUCER_SCRIPT)
 }

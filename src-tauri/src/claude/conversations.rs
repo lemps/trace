@@ -69,10 +69,7 @@ pub(crate) fn claude_conversation_exists(cwd: &str, session_id: &str) -> bool {
 /// Where Claude keeps a conversation: `~/.claude/projects/<cwd-slug>/<id>.jsonl`,
 /// the slug being the cwd with every `/` and `.` replaced by `-`.
 pub(crate) fn conversation_path(cwd: &str, session_id: &str) -> Option<PathBuf> {
-    let slug: String = cwd
-        .chars()
-        .map(|c| if c == '/' || c == '.' { '-' } else { c })
-        .collect();
+    let slug = crate::platform::paths::claude_project_slug(cwd);
     Some(
         dirs::home_dir()?
             .join(".claude")

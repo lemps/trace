@@ -86,7 +86,7 @@ fn push(
     archived_at: Option<u64>,
 ) {
     let dirname = workspace_dirname(owner.id);
-    let path = format!("{repo}/.worktrees/{dirname}");
+    let path = crate::platform::paths::worktree_dir(&repo, &dirname);
     if dirname.is_empty() || !Path::new(&path).is_dir() || !seen.insert(path.clone()) {
         return;
     }

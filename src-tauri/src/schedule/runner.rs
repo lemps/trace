@@ -9,11 +9,10 @@
 //!
 //! Only one trace process fires schedules: a packaged trace.app and a
 //! `tauri dev` build share the config dir, and both firing would double every
-//! run. An exclusive `flock` decides; the other keeps retrying, so it takes over
+//! run. An exclusive file lock decides; the other keeps retrying, so it takes over
 //! when the leader quits.
 
 use std::fs::File;
-use std::os::unix::io::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -75,9 +74,8 @@ fn try_lead() -> Option<File> {
     let path = dir.join("scheduler.lock");
     let file = File::create(&path).ok()?;
     restrict_perms(&path);
-    // SAFETY: `flock` on a valid, owned fd; the lock lives as long as `file`.
-    let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0;
-    locked.then_some(file)
+    // The lock lives as long as `file`.
+    file.try_lock().is_ok().then_some(file)
 }
 
 /// On becoming leader, any run still marked running that this process doesn't

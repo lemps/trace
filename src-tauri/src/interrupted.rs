@@ -137,11 +137,8 @@ pub fn collect_at_launch(state: &AppState) {
 }
 
 fn process_alive(pid: u32) -> bool {
-    let Ok(pid) = libc::pid_t::try_from(pid) else {
-        return false;
-    };
-    // Signal 0 checks existence without sending anything.
-    unsafe { libc::kill(pid, 0) == 0 }
+    use crate::platform::{ports::ProcessHost, Os};
+    Os::is_alive(pid)
 }
 
 /// The agents interrupted last time, not yet resumed or dismissed.

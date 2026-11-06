@@ -24,9 +24,6 @@ serde_json = "1"
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
-# Process signals
-libc = "0.2"
-
 # Interactive PTY transport (hosts the real Claude TUI)
 portable-pty = "0.8"
 base64 = "0.22"
@@ -46,6 +43,14 @@ thiserror = "2"
 dirs = "5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[target.'cfg(unix)'.dependencies]
+# Process signals
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+# Checking whether a process is alive
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Threading"] }
 
 [features]
 default = ["custom-protocol"]

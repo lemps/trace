@@ -82,6 +82,7 @@ fn child_process_updater() {
 }
 
 #[test]
+#[allow(clippy::disallowed_methods)] // Re-runs this test binary, not a tool.
 fn updates_from_real_processes_all_land() {
     const CHILDREN: u32 = 3;
     let dir = TempDir::new();

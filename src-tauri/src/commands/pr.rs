@@ -2,8 +2,6 @@
 //! worktree so the user's existing `gh auth` and ssh credentials apply without
 //! any in-app OAuth dance.
 
-use std::process::Command;
-
 use serde::Serialize;
 
 use crate::helpers::slugify;
@@ -31,7 +29,7 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
 
     // Push the branch. `-u` sets upstream on the first push; if upstream is
     // already set, fall through to a plain push.
-    let push = Command::new("git")
+    let push = crate::claude::discovery::command("git")
         .args(["push", "-u", "origin", &branch])
         .current_dir(&worktree)
         .output()
@@ -39,7 +37,7 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
     if !push.status.success() {
         let stderr = String::from_utf8_lossy(&push.stderr);
         // Already-set upstream is harmless; retry without -u.
-        let retry = Command::new("git")
+        let retry = crate::claude::discovery::command("git")
             .args(["push", "origin", &branch])
             .current_dir(&worktree)
             .output()

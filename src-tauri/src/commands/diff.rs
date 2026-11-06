@@ -2,8 +2,6 @@
 //! `origin/<default-branch>`: a numstat summary for the file tree, plus
 //! per-file unified diffs parsed into hunks for the diff viewer.
 
-use std::process::Command;
-
 use serde::Serialize;
 
 use crate::git;
@@ -107,7 +105,7 @@ pub fn read_workspace_file(issue_key: String, path: String) -> Result<String, St
 /// phantom deletions. Falls back to the branch ref if merge-base fails
 /// (e.g. unborn HEAD).
 fn diff_base(work_dir: &str, base: &str) -> String {
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(["merge-base", base, "HEAD"])
         .current_dir(work_dir)
         .output();
@@ -127,7 +125,7 @@ fn diff_base(work_dir: &str, base: &str) -> String {
 /// Paths git doesn't track yet — exactly what an agent's brand-new files are
 /// until something commits them. `git diff` never reports these.
 fn untracked_files(work_dir: &str) -> Vec<String> {
-    Command::new("git")
+    crate::claude::discovery::command("git")
         .args(["ls-files", "--others", "--exclude-standard"])
         .current_dir(work_dir)
         .output()
@@ -159,7 +157,7 @@ fn diff_summary_blocking(issue_key: &str) -> Result<DiffSummary, String> {
     let (repo, worktree) = work_dir_for(issue_key)?;
     let base = base_ref(&repo);
     let against = diff_base(&worktree, &base);
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(["diff", "--numstat", &against])
         .current_dir(&worktree)
         .output()
@@ -218,7 +216,7 @@ pub fn git_diff_file(issue_key: String, path: String) -> Result<FileDiff, String
 
     // Untracked files have no base to diff against — synthesize the "all
     // added" diff with --no-index, which exits 1 when differences exist.
-    let tracked = Command::new("git")
+    let tracked = crate::claude::discovery::command("git")
         .args(["ls-files", "--error-unmatch", "--", &path])
         .current_dir(&worktree)
         .output()
@@ -227,13 +225,13 @@ pub fn git_diff_file(issue_key: String, path: String) -> Result<FileDiff, String
     let out = if tracked {
         let base = base_ref(&repo);
         let against = diff_base(&worktree, &base);
-        Command::new("git")
+        crate::claude::discovery::command("git")
             .args(["diff", "--no-color", &against, "--", &path])
             .current_dir(&worktree)
             .output()
             .map_err(|e| format!("git diff failed to start: {e}"))?
     } else {
-        Command::new("git")
+        crate::claude::discovery::command("git")
             .args(["diff", "--no-color", "--no-index", "--", "/dev/null", &path])
             .current_dir(&worktree)
             .output()

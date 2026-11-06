@@ -1,0 +1,6 @@
+# Every process goes through `platform::process`, so no spawn can miss the OS setup in
+# `ProcessHost::prepare` (a console window per command on Windows, for one).
+disallowed-methods = [
+  { path = "std::process::Command::new", reason = "use platform::process::command or claude::discovery::command" },
+  { path = "tokio::process::Command::new", reason = "use platform::process::async_command" },
+]

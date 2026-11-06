@@ -10,6 +10,7 @@ on:
     paths:
       - "src-tauri/**"
       - "src/platform/**"
+      - "scripts/check-platform-boundary.sh"
       - ".github/workflows/cross-platform.yml"
 
 concurrency:
@@ -53,8 +54,12 @@ jobs:
           npm ci
           npm run build
 
+      - name: Platform boundary
+        shell: bash
+        run: scripts/check-platform-boundary.sh
+
       - name: Clippy
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D clippy::disallowed_methods
 
       - name: Test
         run: cargo test --manifest-path src-tauri/Cargo.toml

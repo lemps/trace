@@ -57,7 +57,7 @@ pub async fn orchestrator_cli(
     let claude = find_cli_with_env("claude", Some(&env_map))
         .ok_or_else(|| "Could not find the `claude` CLI on PATH.".to_string())?;
 
-    let mut cmd = tokio::process::Command::new(&claude);
+    let mut cmd = crate::platform::process::async_command(&claude);
     // A neutral cwd (home) so it doesn't absorb a project's CLAUDE.md / context.
     cmd.current_dir(dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")));
     cmd.arg("--print");

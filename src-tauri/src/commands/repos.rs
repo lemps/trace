@@ -195,7 +195,7 @@ pub(crate) fn workspace_dirname(workspace_id: &str) -> String {
 /// Full worktree path for a workspace under `repo`. Every command that
 /// touches a workspace's checkout derives the path through here.
 pub(crate) fn workspace_dir(repo: &str, workspace_id: &str) -> String {
-    format!("{repo}/.worktrees/{}", workspace_dirname(workspace_id))
+    crate::platform::paths::worktree_dir(repo, &workspace_dirname(workspace_id))
 }
 
 /// Record an issue adopting a session's worktree dir (+ the repo assignment).

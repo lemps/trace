@@ -1,15 +1,18 @@
 //! Open a workspace in a desktop editor — an issue's worktree or an exploratory
-//! session's. Ported from the original project's open button. Tries OS-native
-//! launchers first (bundle ids on macOS), then the editor's CLI binary on PATH.
+//! session's. `platform::EditorLauncher` says what to try on this OS.
 //! Falls back to the repo root when the worktree doesn't exist yet.
 
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+
+use crate::platform::ports::{Editor, EditorLauncher};
+use crate::platform::Os;
 
 /// Run a launcher binary detached, reporting whether it started successfully.
-fn try_launch(binary: &str, args: &[&str]) -> bool {
-    Command::new(binary)
+fn try_launch(binary: &str, args: &[&str], path: &str) -> bool {
+    crate::claude::discovery::command(binary)
         .args(args)
+        .arg(path)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -18,50 +21,11 @@ fn try_launch(binary: &str, args: &[&str]) -> bool {
         .unwrap_or(false)
 }
 
-fn open_vscode(path: &str) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        if try_launch("open", &["-b", "com.microsoft.VSCode", path])
-            || try_launch("open", &["-b", "com.microsoft.VSCodeInsiders", path])
-            || try_launch("open", &["-a", "Visual Studio Code", path])
-        {
-            return true;
-        }
-    }
-    try_launch("code", &[path])
-}
-
-fn open_intellij(path: &str) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        if try_launch("open", &["-b", "com.jetbrains.intellij", path])
-            || try_launch("open", &["-b", "com.jetbrains.intellij.ce", path])
-            || try_launch("open", &["-a", "IntelliJ IDEA", path])
-            || try_launch("open", &["-a", "IntelliJ IDEA CE", path])
-        {
-            return true;
-        }
-    }
-    if try_launch("idea", &[path]) {
-        return true;
-    }
-    #[cfg(target_os = "windows")]
-    {
-        if try_launch("idea64.exe", &[path]) {
-            return true;
-        }
-    }
-    false
-}
-
-fn open_cursor(path: &str) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        if try_launch("open", &["-a", "Cursor", path]) {
-            return true;
-        }
-    }
-    try_launch("cursor", &[path])
+/// Try this OS's launchers for `editor`, best first.
+fn open_with(editor: Editor, path: &str) -> bool {
+    Os::launchers(editor)
+        .into_iter()
+        .any(|(binary, args)| try_launch(binary, args, path))
 }
 
 /// Open the workspace's worktree (or the repo root if no worktree yet) in
@@ -88,9 +52,9 @@ pub fn open_in_editor(issue_key: String, editor: String) -> Result<(), String> {
     };
 
     let opened = match editor.trim().to_lowercase().as_str() {
-        "vscode" | "code" => open_vscode(&path),
-        "intellij" | "idea" => open_intellij(&path),
-        "cursor" => open_cursor(&path),
+        "vscode" | "code" => open_with(Editor::VsCode, &path),
+        "intellij" | "idea" => open_with(Editor::IntelliJ, &path),
+        "cursor" => open_with(Editor::Cursor, &path),
         other => return Err(format!("Unsupported editor: {other}")),
     };
 

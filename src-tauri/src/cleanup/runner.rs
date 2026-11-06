@@ -2,7 +2,7 @@
 //! sweeps once shortly after launch and then hourly, while auto-cleanup is on.
 //!
 //! Only the process leading the scheduler sweeps (`schedule::runner`'s
-//! `flock`): a packaged trace.app and a `tauri dev` build share the config
+//! file lock): a packaged trace.app and a `tauri dev` build share the config
 //! dir, and both removing the same worktree would race.
 
 use std::time::Duration;

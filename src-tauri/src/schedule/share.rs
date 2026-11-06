@@ -208,8 +208,7 @@ fn match_repo(repo_name: Option<&str>, repos: &[String]) -> Option<String> {
 }
 
 fn folder_name(path: &str) -> String {
-    let trimmed = path.trim_end_matches('/');
-    trimmed.rsplit('/').next().unwrap_or(trimmed).to_string()
+    crate::platform::paths::basename(path)
 }
 
 #[cfg(test)]

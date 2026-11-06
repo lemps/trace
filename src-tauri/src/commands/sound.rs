@@ -1,22 +1,14 @@
 //! The sound that plays when an agent wants you (off by default).
 //!
-//! macOS already ships well-made alert sounds in `/System/Library/Sounds`, and
-//! keeps the user's own in `~/Library/Sounds` — so trace offers those rather
-//! than bundling audio of its own, and will play any file the user picks
-//! instead. Playback is `afplay`, the system player, so every CoreAudio format
-//! works (aiff/wav/mp3/m4a/caf) with nothing to decode in the renderer.
+//! Each OS already ships alert sounds, so trace offers those (`platform::SoundPlayer`)
+//! rather than bundling audio of its own, and will play any file the user picks.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use serde::Serialize;
 
-/// Where macOS keeps alert sounds: the system set, then the user's own.
-const SOUND_DIRS: [&str; 2] = ["/System/Library/Sounds", "~/Library/Sounds"];
-
-/// What `afplay` will take. Also the guard on a user-picked file — trace hands
-/// the path to a player, so it should be audio and nothing else.
-const AUDIO_EXTENSIONS: [&str; 7] = ["aiff", "aif", "wav", "mp3", "m4a", "caf", "aac"];
+use crate::platform::ports::SoundPlayer;
+use crate::platform::Os;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,32 +22,26 @@ pub struct SoundOption {
     pub source: String,
 }
 
-fn expand(dir: &str) -> Option<PathBuf> {
-    match dir.strip_prefix("~/") {
-        Some(rest) => dirs::home_dir().map(|home| home.join(rest)),
-        None => Some(PathBuf::from(dir)),
-    }
-}
-
-fn is_audio(path: &Path) -> bool {
+fn is_audio_for(path: &Path, extensions: &[&str]) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase())
-        .is_some_and(|e| AUDIO_EXTENSIONS.contains(&e.as_str()))
+        .is_some_and(|e| extensions.contains(&e.as_str()))
 }
 
-/// Sounds to choose from: macOS's, then the user's own, each alphabetical.
+fn is_audio(path: &Path) -> bool {
+    is_audio_for(path, Os::audio_extensions())
+}
+
+/// Sounds to choose from: the system's, then the user's own, each alphabetical.
 #[tauri::command]
 pub fn list_notify_sounds() -> Vec<SoundOption> {
     let mut out = Vec::new();
-    for dir in SOUND_DIRS {
-        let Some(path) = expand(dir) else { continue };
-        let source = if dir.starts_with('~') {
-            "you"
-        } else {
-            "system"
-        };
-        let Ok(entries) = std::fs::read_dir(&path) else {
+    let Some(home) = dirs::home_dir() else {
+        return out;
+    };
+    for folder in Os::sound_folders(&home) {
+        let Ok(entries) = std::fs::read_dir(&folder.path) else {
             continue;
         };
         let mut found: Vec<SoundOption> = entries
@@ -66,7 +52,7 @@ pub fn list_notify_sounds() -> Vec<SoundOption> {
                 Some(SoundOption {
                     name: p.file_stem()?.to_string_lossy().to_string(),
                     path: p.to_string_lossy().to_string(),
-                    source: source.to_string(),
+                    source: folder.source.to_string(),
                 })
             })
             .collect();
@@ -87,10 +73,7 @@ pub fn play_notify_sound(path: String) -> Result<(), String> {
     if !is_audio(&file) {
         return Err(format!("{} isn't an audio file trace can play.", path));
     }
-    let mut child = Command::new("afplay")
-        .arg(&file)
-        .spawn()
-        .map_err(|e| format!("Couldn't play the sound: {e}"))?;
+    let mut child = Os::play(&file).map_err(|e| format!("Couldn't play the sound: {e}"))?;
     // Reap it off-thread — an unwaited child lingers as a zombie, and a sound
     // plays for a second or two.
     std::thread::spawn(move || {
@@ -101,30 +84,22 @@ pub fn play_notify_sound(path: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_audio, list_notify_sounds};
+    use super::{is_audio, is_audio_for, list_notify_sounds};
     use std::path::Path;
 
     #[test]
-    fn only_audio_files_count() {
-        assert!(is_audio(Path::new("/System/Library/Sounds/Glass.aiff")));
-        assert!(is_audio(Path::new("/tmp/My Sound.WAV")));
-        assert!(!is_audio(Path::new("/tmp/notes.txt")));
-        assert!(!is_audio(Path::new("/tmp/noextension")));
+    fn only_playable_files_are_offered() {
+        for sound in list_notify_sounds() {
+            assert!(is_audio(Path::new(&sound.path)), "{}", sound.path);
+        }
     }
 
     #[test]
-    fn macos_ships_sounds_to_offer() {
-        // Every Mac has these; the listing is what fills the Settings picker.
-        let sounds = list_notify_sounds();
-        assert!(sounds
-            .iter()
-            .any(|s| s.name == "Glass" && s.source == "system"));
-        assert!(sounds.iter().all(|s| s.path.ends_with(".aiff")
-            || s.path.ends_with(".wav")
-            || s.path.ends_with(".mp3")
-            || s.path.ends_with(".m4a")
-            || s.path.ends_with(".caf")
-            || s.path.ends_with(".aac")
-            || s.path.ends_with(".aif")));
+    fn recognises_audio_by_extension_in_any_case() {
+        let allowed = ["aiff", "wav"];
+        assert!(is_audio_for(Path::new("/s/Glass.aiff"), &allowed));
+        assert!(is_audio_for(Path::new("/s/My Sound.WAV"), &allowed));
+        assert!(!is_audio_for(Path::new("/s/notes.txt"), &allowed));
+        assert!(!is_audio_for(Path::new("/s/noextension"), &allowed));
     }
 }

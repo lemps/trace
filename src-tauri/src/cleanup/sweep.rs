@@ -8,7 +8,6 @@
 //! `git::create_worktree` checks it back out on the next start.
 
 use std::collections::{HashMap, HashSet};
-use std::process::Command;
 use std::sync::Mutex;
 
 use serde::Serialize;
@@ -158,7 +157,7 @@ fn remove(c: &Candidate, merged: &HashSet<String>) -> Result<bool, String> {
         .map(|b| b.trim().to_string())
         .filter(|b| b.starts_with("workspace/"));
     // --force only to get past submodules: `select` already held anything dirty.
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(["worktree", "remove", "--force", &c.path])
         .current_dir(&c.repo)
         .output()
@@ -175,7 +174,7 @@ fn remove(c: &Candidate, merged: &HashSet<String>) -> Result<bool, String> {
     if !merged.contains(&branch) && unpushed_commits(&c.repo, &branch) != Some(0) {
         return Ok(true);
     }
-    let _ = Command::new("git")
+    let _ = crate::claude::discovery::command("git")
         .args(["branch", "-D", &branch])
         .current_dir(&c.repo)
         .output();

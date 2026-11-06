@@ -5,7 +5,6 @@
 //! conversations that belong to it.
 
 use std::collections::HashMap;
-use std::process::Command;
 
 use serde::Serialize;
 
@@ -50,7 +49,7 @@ pub struct WorkspaceInfo {
 }
 
 fn git(cwd: &str, args: &[&str]) -> Option<String> {
-    let out = Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(args)
         .current_dir(cwd)
         .output()

@@ -18,6 +18,8 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::claude::discovery::find_cli_with_env;
 use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
+use crate::platform::ports::{AgentEnvironment, ProcessHost, ToolLocator};
+use crate::platform::Os;
 use crate::state::AppState;
 
 /// A live interactive Claude TUI hosted in a pseudo-terminal. Dropping `master`
@@ -49,6 +51,9 @@ impl PtySession {
 
     /// Terminate the child process (used by stop).
     pub fn kill(&mut self) {
+        if let Some(pid) = self.child.process_id() {
+            Os::stop_tree(pid);
+        }
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
@@ -120,7 +125,12 @@ pub fn spawn_agent_pty(
 
     // Interactive invocation. CLI-specific flag-building lives here; the env and
     // pump loop below are CLI-agnostic.
-    let mut cmd = CommandBuilder::new(&cli_path);
+    let mut cmd = CommandBuilder::from_argv(
+        Os::pty_invocation(&cli_path)
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+    );
     cmd.cwd(&cwd);
     match cli.as_str() {
         "claude" => {
@@ -190,7 +200,7 @@ pub fn spawn_shell_pty(
         })
         .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
-    let mut cmd = CommandBuilder::new(default_shell());
+    let mut cmd = CommandBuilder::new(Os::default_shell());
     cmd.cwd(&cwd);
     // A `claude` run in this shell must start as its own session too.
     for key in crate::claude::env::INHERITED_SESSION_ENV {
@@ -200,16 +210,26 @@ pub fn spawn_shell_pty(
     run_in_pty(app, workspace_id, pair, cmd, cols, rows)
 }
 
-/// The user's interactive shell, platform-aware.
-fn default_shell() -> String {
-    #[cfg(windows)]
-    {
-        std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".to_string())
-    }
-    #[cfg(not(windows))]
-    {
-        std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string())
-    }
+/// Close the PTY once its process has gone, where exit alone doesn't end the reader:
+/// dropping the session closes the console, which gives the pump thread its EOF.
+fn watch_for_exit(app: AppHandle, workspace_id: String, pid: Option<u32>) {
+    let Some(pid) = pid else { return };
+    std::thread::spawn(move || {
+        while Os::is_alive(pid) {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        // The caller registers the session after this returns, so a process that
+        // exits at once can get here first.
+        for _ in 0..20 {
+            let Some(state) = app.try_state::<AppState>() else {
+                return;
+            };
+            if state.pty_sessions.lock().remove(&workspace_id).is_some() {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
+    });
 }
 
 /// Spawn `cmd` against the PTY `pair`, register a pump thread that streams output
@@ -253,6 +273,10 @@ fn run_in_pty(
                 rows,
             },
         );
+    }
+
+    if !Os::pty_reports_exit() {
+        watch_for_exit(app.clone(), workspace_id.clone(), pid);
     }
 
     let reader_app = app.clone();

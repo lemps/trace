@@ -23,7 +23,7 @@ const LIMIT: &str = "200";
 /// head branch → its most relevant PR (an open one beats a finished one).
 /// Empty when the repo isn't on GitHub or `gh` can't read it.
 pub fn by_branch(cwd: &str) -> HashMap<String, PrRef> {
-    let Some(owner) = std::process::Command::new("git")
+    let Some(owner) = crate::claude::discovery::command("git")
         .args(["remote", "get-url", "origin"])
         .current_dir(cwd)
         .output()

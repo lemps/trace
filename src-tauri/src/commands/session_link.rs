@@ -53,7 +53,7 @@ pub fn link_session_to_issue(
                 .to_string(),
         );
     }
-    let dir = format!("{repo}/.worktrees/{dirname}");
+    let dir = crate::platform::paths::worktree_dir(&repo, &dirname);
     if !std::path::Path::new(&dir).exists() {
         return Err("Start this session once before linking — it has no worktree yet.".to_string());
     }
@@ -78,7 +78,7 @@ pub fn link_session_to_issue(
     // Rename the branch to the issue convention (renames don't touch the cwd).
     let old_branch = format!("workspace/{}", crate::helpers::slugify(&id));
     let new_branch = format!("workspace/{}", crate::helpers::slugify(&issue_key));
-    let out = std::process::Command::new("git")
+    let out = crate::claude::discovery::command("git")
         .args(["branch", "-m", &old_branch, &new_branch])
         .current_dir(&repo)
         .output()

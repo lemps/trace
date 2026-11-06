@@ -24,6 +24,8 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 
 use crate::helpers::trace_bin_dir;
+use crate::platform::ports::AgentBridge;
+use crate::platform::Os;
 
 /// Always exits 0: a failing Stop hook must never keep Claude from stopping.
 /// Reads its coordinates from the agent's env and carries no secret itself.
@@ -153,7 +155,7 @@ const LAST_MESSAGE_CHARS: usize = 600;
 pub fn settings_arg(allow: &[&str]) -> Result<String, String> {
     let script =
         write_script().map_err(|e| format!("Couldn't write the trace-hook script: {e}"))?;
-    let command = shell_quote(&script.to_string_lossy());
+    let command = shell_quote(&Os::shell_path(&script));
     let hook = |event: &str| json!([{ "hooks": [{ "type": "command", "command": format!("{command} {event}") }] }]);
     // PermissionRequest names what a dialog is for (`claude::permission_ask`);
     // the hook prints nothing, so Claude still shows the dialog as usual.
@@ -280,12 +282,7 @@ fn write_script() -> std::io::Result<PathBuf> {
     let bin = trace_bin_dir();
     std::fs::create_dir_all(&bin)?;
     let path = bin.join("trace-hook");
-    std::fs::write(&path, HOOK_SCRIPT)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755))?;
-    }
+    Os::install_script(&path, HOOK_SCRIPT)?;
     Ok(path)
 }
 

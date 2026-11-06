@@ -14,6 +14,7 @@ pub mod helpers;
 pub mod interrupted;
 pub mod issues;
 pub mod jira;
+pub mod platform;
 pub mod pylon;
 pub mod schedule;
 pub mod state;
@@ -25,6 +26,7 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    helpers::secure_config_dir();
     let app_state = AppState::new();
 
     // Reconnect every issue tracker with a saved session.

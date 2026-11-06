@@ -4,10 +4,9 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 pub fn is_git_repo(path: &str) -> bool {
-    Command::new("git")
+    crate::claude::discovery::command("git")
         .args(["rev-parse", "--git-dir"])
         .current_dir(path)
         .output()
@@ -17,7 +16,7 @@ pub fn is_git_repo(path: &str) -> bool {
 
 /// Resolve the repo's default branch (origin/HEAD), falling back to `main`.
 pub fn get_default_branch(repo_path: &str) -> String {
-    let output = Command::new("git")
+    let output = crate::claude::discovery::command("git")
         .args(["symbolic-ref", "refs/remotes/origin/HEAD", "--short"])
         .current_dir(repo_path)
         .output();
@@ -32,14 +31,14 @@ pub fn get_default_branch(repo_path: &str) -> String {
 /// "clean" if safe to mutate, else "busy:<reason>" — a rebase/merge/cherry-pick/
 /// revert in progress would make worktree/branch ops unsafe.
 pub fn git_busy_check(repo_path: &str) -> String {
-    let git_dir = match Command::new("git")
+    let git_dir = match crate::claude::discovery::command("git")
         .args(["rev-parse", "--git-dir"])
         .current_dir(repo_path)
         .output()
     {
         Ok(o) if o.status.success() => {
             let dir = String::from_utf8_lossy(&o.stdout).trim().to_string();
-            if dir.starts_with('/') {
+            if std::path::Path::new(&dir).is_absolute() {
                 PathBuf::from(dir)
             } else {
                 PathBuf::from(repo_path).join(dir)
@@ -75,7 +74,7 @@ pub fn create_worktree(
         return Ok(());
     }
 
-    let fetch = Command::new("git")
+    let fetch = crate::claude::discovery::command("git")
         .args(["fetch", "origin", default_branch])
         .current_dir(repo_path)
         .output()
@@ -90,7 +89,7 @@ pub fn create_worktree(
     // A branch can outlive its checkout — auto-cleanup (`cleanup::sweep`) keeps
     // branches holding unpushed commits. Check it back out rather than failing
     // on `-b`, so restarting the workspace picks its committed work back up.
-    let branch_exists = Command::new("git")
+    let branch_exists = crate::claude::discovery::command("git")
         .args([
             "show-ref",
             "--verify",
@@ -107,7 +106,7 @@ pub fn create_worktree(
     } else {
         vec!["worktree", "add", "-b", branch, worktree_path, &start_point]
     };
-    let output = Command::new("git")
+    let output = crate::claude::discovery::command("git")
         .args(&args)
         .current_dir(repo_path)
         .output()
@@ -126,7 +125,7 @@ pub fn create_worktree(
 /// Best-effort: failing here must not stop the worktree being created.
 fn exclude_worktrees_dir(repo_path: &str) {
     const ENTRY: &str = ".worktrees/";
-    let Ok(out) = Command::new("git")
+    let Ok(out) = crate::claude::discovery::command("git")
         .args(["rev-parse", "--git-path", "info/exclude"])
         .current_dir(repo_path)
         .output()
@@ -158,10 +157,9 @@ fn exclude_worktrees_dir(repo_path: &str) {
 #[cfg(test)]
 mod tests {
     use super::exclude_worktrees_dir;
-    use std::process::Command;
 
     fn git(dir: &str, args: &[&str]) -> std::process::Output {
-        Command::new("git")
+        crate::claude::discovery::command("git")
             .args(args)
             .current_dir(dir)
             .output()

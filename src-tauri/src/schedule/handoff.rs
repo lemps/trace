@@ -31,7 +31,7 @@ pub fn continue_as_session(run_id: &str) -> Result<ScratchSession, String> {
         .or_else(crate::commands::repos::default_repo)
         .ok_or("Add a repository in Settings first.")?;
     let dirname = crate::commands::repos::workspace_dirname(&prompt.id);
-    if !std::path::Path::new(&format!("{repo}/.worktrees/{dirname}")).exists() {
+    if !std::path::Path::new(&crate::platform::paths::worktree_dir(&repo, &dirname)).exists() {
         return Err(
             "The prompt's worktree is gone, so its conversation can't be resumed.".to_string(),
         );
