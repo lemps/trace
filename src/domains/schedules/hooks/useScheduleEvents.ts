@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { toast } from "@/app/toast";
 import { adoptIfAlive } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
 import { playAlertSound } from "@/domains/board/waitingNotify";
@@ -6,6 +7,8 @@ import { onScheduleRun, onSchedulesChanged, type ScheduleRunEvent } from "@/ipc/
 import { notify } from "@/ipc/notify";
 import { runWorkspaceId } from "../ids";
 import { useSchedulesStore } from "../store";
+
+let loadErrorShown = false;
 
 // Runs whose "needs input" was already announced — one ping per run, however
 // many permission prompts it hits.
@@ -99,7 +102,12 @@ export function useScheduleEvents(): void {
         .getState()
         .load()
         .then(reconcileLiveRuns)
-        .catch(() => {})
+        .catch((err) => {
+          // This re-runs on every schedule event, so say it once.
+          if (loadErrorShown) return;
+          loadErrorShown = true;
+          toast.error(`Couldn't load your scheduled prompts: ${String(err)}`);
+        })
         .finally(() => after?.());
 
     sync();

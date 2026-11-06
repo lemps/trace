@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::restrict_perms;
+use crate::helpers::persist::{self, Style};
 
 use super::client;
 use super::parse::parse_user;
@@ -34,25 +34,21 @@ pub async fn validate(conn: &JiraConnection) -> Result<IssueUser, String> {
 
 /// Persist the session (site + email + token) for silent reconnect on launch.
 pub fn save(conn: &JiraConnection) -> Result<(), String> {
-    let path = session_path();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(&StoredSession {
-        site: conn.site.clone(),
-        email: conn.email.clone(),
-        token: conn.token.clone(),
-    })
-    .map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::write_json(
+        &session_path(),
+        Style::Compact,
+        &StoredSession {
+            site: conn.site.clone(),
+            email: conn.email.clone(),
+            token: conn.token.clone(),
+        },
+    )
 }
 
-/// Load the previously-saved connection, if any.
+/// Load the previously-saved connection, if any. A file that can't be read just
+/// means the login form: only credentials the user enters there replace it.
 pub fn load() -> Option<JiraConnection> {
-    let raw = std::fs::read_to_string(session_path()).ok()?;
-    let s: StoredSession = serde_json::from_str(&raw).ok()?;
+    let s = persist::read_or_log::<Option<StoredSession>>(&session_path())?;
     Some(JiraConnection {
         site: s.site,
         email: s.email,

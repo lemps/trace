@@ -1,5 +1,7 @@
 //! Small shared helpers used across modules.
 
+pub mod persist;
+
 use std::path::{Component, Path, PathBuf};
 
 use uuid::Uuid;
@@ -20,9 +22,9 @@ pub fn trace_bin_dir() -> PathBuf {
 }
 
 /// Restrict a config file to user-only access (0600). Everything we persist
-/// under the config dir goes through this — session ids and repo paths aren't
-/// token-grade secrets, but a world-readable session id still lets another
-/// local user resume the conversation.
+/// under the config dir ends up this way (state files via `persist`, which creates
+/// them 0600) — session ids and repo paths aren't token-grade secrets, but a
+/// world-readable session id still lets another local user resume the conversation.
 #[cfg(unix)]
 pub fn restrict_perms(path: &Path) {
     use std::os::unix::fs::PermissionsExt;

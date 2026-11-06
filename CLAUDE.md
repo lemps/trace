@@ -10,7 +10,7 @@ CLI session in an isolated git worktree. Sessions and scheduled prompts work wit
 - **Frontend:** React 19, TypeScript (strict), Vite 7, vanilla CSS with design tokens (no Tailwind).
 - **Backend:** Rust 2021. Interactive Claude via `portable-pty`; git worktrees + `gh` for PRs. Persistence is
   small JSON files in the app config dir (`~/Library/Application Support/trace/` via `dirs`), all written `0600`
-  — there is no database.
+  through `helpers::persist` — there is no database.
 - **Issue trackers:** pluggable providers behind `issues::IssueProvider` (see `.claude/rules/providers.md`).
   **Jira:** Cloud REST (Agile v1.0 + Platform v3), HTTP Basic (email + API token). **Pylon:** REST, Bearer
   token. Credentials live in user-only (`0600`) files in the app config dir — *not* the keychain; see

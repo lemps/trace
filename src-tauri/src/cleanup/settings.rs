@@ -7,7 +7,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::{restrict_perms, trace_dir};
+use crate::helpers::persist::{self, Style};
+use crate::helpers::trace_dir;
 
 /// Which workspaces the rules apply to.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,23 +77,29 @@ fn settings_file() -> PathBuf {
     trace_dir().join("cleanup.json")
 }
 
-/// The saved rules, or the defaults (off) when none were saved or the file is
-/// unreadable — a corrupt file must never turn deletion *on*.
-pub fn load() -> CleanupSettings {
-    std::fs::read_to_string(settings_file())
-        .ok()
-        .and_then(|s| serde_json::from_str::<CleanupSettings>(&s).ok())
+/// The saved rules, or the defaults (off) when none were saved or the file was
+/// corrupt. An error when the file can't be read: a sweep the user asked for mustn't
+/// run on default rules that may be looser than theirs.
+pub fn read() -> Result<CleanupSettings, String> {
+    Ok(persist::read_json::<CleanupSettings>(&settings_file())?
         .map(CleanupSettings::sanitized)
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
 
+/// [`read`] for the background sweep: any failure means the defaults (off), because
+/// a bad file must never turn deletion *on*.
+pub fn load() -> CleanupSettings {
+    read().unwrap_or_else(|e| {
+        eprintln!("trace: {e}");
+        CleanupSettings::default()
+    })
+}
+
+/// Replace the rules. Refuses if the current file can't be read.
 pub fn save(settings: &CleanupSettings) -> Result<(), String> {
-    let path = settings_file();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::update(
+        &settings_file(),
+        Style::Pretty,
+        |saved: &mut CleanupSettings| *saved = settings.clone(),
+    )
 }

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::git;
+use crate::helpers::persist::{self, LoadGate, Style};
 
 #[derive(Default, Serialize, Deserialize)]
 struct ReposConfig {
@@ -91,32 +92,36 @@ fn config_file() -> PathBuf {
         .join("repos.json")
 }
 
-fn load() -> ReposConfig {
-    if let Some(cfg) = std::fs::read_to_string(config_file())
-        .ok()
-        .and_then(|s| serde_json::from_str::<ReposConfig>(&s).ok())
-    {
-        return cfg;
-    }
-    // First run: migrate the old single-repo file into the list.
+/// What a missing `repos.json` means. First run: migrate the old single-repo file
+/// into the list, which is saved with the first real change.
+fn first_run_config() -> ReposConfig {
     let mut cfg = ReposConfig::default();
     if let Some(old) = crate::commands::agent::load_repo_path() {
         cfg.repos.push(old);
-        let _ = save(&cfg);
     }
     cfg
 }
 
-fn save(cfg: &ReposConfig) -> Result<(), String> {
-    let path = config_file();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    crate::helpers::restrict_perms(&path);
-    Ok(())
+fn read() -> Result<ReposConfig, String> {
+    Ok(persist::read_json(&config_file())?.unwrap_or_else(first_run_config))
 }
+
+/// The config for read-only callers: a read failure is logged and reads as empty. It
+/// can't reach the disk, because every write goes through `update`.
+fn load() -> ReposConfig {
+    read().unwrap_or_else(|e| {
+        eprintln!("trace: {e}");
+        ReposConfig::default()
+    })
+}
+
+/// Load, mutate and save `repos.json`, safe against other threads and another trace.
+fn update<R>(f: impl FnOnce(&mut ReposConfig) -> R) -> Result<R, String> {
+    persist::update_or(&config_file(), Style::Pretty, first_run_config, f)
+}
+
+/// Settings holds the whole mapping list and saves it back whole.
+static MAPPINGS_COPY: LoadGate = LoadGate::new();
 
 fn validate_repo(path: &str) -> Result<(), String> {
     if path.is_empty() {
@@ -150,7 +155,7 @@ pub(crate) fn repo_for_matching(workspace_id: &str, match_text: &str) -> Result<
 }
 
 fn resolve_repo(workspace_id: &str, mapping_haystack: &str) -> Result<String, String> {
-    let cfg = load();
+    let cfg = read()?;
     if let Some(repo) = cfg.assignments.get(workspace_id) {
         return Ok(repo.clone());
     }
@@ -171,10 +176,10 @@ fn resolve_repo(workspace_id: &str, mapping_haystack: &str) -> Result<String, St
 /// Pin a workspace to a repo so later commands (diff, PR, tests) resolve the
 /// same checkout without re-running (summary-dependent) mapping resolution.
 pub(crate) fn assign_repo(workspace_id: &str, repo: &str) -> Result<(), String> {
-    let mut cfg = load();
-    cfg.assignments
-        .insert(workspace_id.to_string(), repo.to_string());
-    save(&cfg)
+    update(|cfg| {
+        cfg.assignments
+            .insert(workspace_id.to_string(), repo.to_string());
+    })
 }
 
 /// The worktree directory NAME for a workspace: an adopted dir if linked,
@@ -199,32 +204,31 @@ pub(crate) fn adopt_workspace_dir(
     dirname: &str,
     repo: &str,
 ) -> Result<(), String> {
-    let mut cfg = load();
-    cfg.dir_overrides
-        .insert(issue_key.to_string(), dirname.to_string());
-    cfg.assignments
-        .insert(issue_key.to_string(), repo.to_string());
-    save(&cfg)
+    update(|cfg| {
+        cfg.dir_overrides
+            .insert(issue_key.to_string(), dirname.to_string());
+        cfg.assignments
+            .insert(issue_key.to_string(), repo.to_string());
+    })
 }
 
-/// Workspace ids that adopted the worktree dir `dirname`.
-pub(crate) fn dir_adopters(dirname: &str) -> Vec<String> {
-    load()
+/// Workspace ids that adopted the worktree dir `dirname`. An error when unknown:
+/// this decides whether a checkout is safe to delete.
+pub(crate) fn dir_adopters(dirname: &str) -> Result<Vec<String>, String> {
+    Ok(read()?
         .dir_overrides
         .into_iter()
         .filter(|(_, dir)| dir == dirname)
         .map(|(id, _)| id)
-        .collect()
+        .collect())
 }
 
 /// Drop a deleted workspace's adoption, so it no longer counts as a co-owner of
 /// the dir (see `worktrees::remove_for_workspace`). No-op when there is none.
 pub(crate) fn forget_dir_override(workspace_id: &str) -> Result<(), String> {
-    let mut cfg = load();
-    if cfg.dir_overrides.remove(workspace_id).is_some() {
-        save(&cfg)?;
-    }
-    Ok(())
+    update(|cfg| {
+        cfg.dir_overrides.remove(workspace_id);
+    })
 }
 
 /// Every workspace id with a pinned repo, paired with that repo — every ticket
@@ -246,65 +250,66 @@ pub(crate) fn default_repo() -> Option<String> {
 }
 
 #[tauri::command]
-pub fn list_repos() -> Vec<String> {
-    load().repos
+pub fn list_repos() -> Result<Vec<String>, String> {
+    Ok(read()?.repos)
 }
 
 #[tauri::command]
 pub fn add_repo(path: String) -> Result<Vec<String>, String> {
     let path = path.trim().to_string();
     validate_repo(&path)?;
-    let mut cfg = load();
-    if !cfg.repos.contains(&path) {
-        cfg.repos.push(path);
-    }
-    save(&cfg)?;
-    Ok(cfg.repos)
+    update(|cfg| {
+        if !cfg.repos.contains(&path) {
+            cfg.repos.push(path);
+        }
+        cfg.repos.clone()
+    })
 }
 
 #[tauri::command]
 pub fn remove_repo(path: String) -> Result<Vec<String>, String> {
-    let mut cfg = load();
-    cfg.repos.retain(|r| r != &path);
-    cfg.assignments.retain(|_, v| v != &path);
-    save(&cfg)?;
-    Ok(cfg.repos)
+    update(|cfg| {
+        cfg.repos.retain(|r| r != &path);
+        cfg.assignments.retain(|_, v| v != &path);
+        cfg.repos.clone()
+    })
 }
 
 #[tauri::command]
-pub fn issue_repo(issue_key: String) -> Option<String> {
-    load().assignments.get(&issue_key).cloned()
+pub fn issue_repo(issue_key: String) -> Result<Option<String>, String> {
+    Ok(read()?.assignments.get(&issue_key).cloned())
 }
 
 #[tauri::command]
 pub fn set_issue_repo(issue_key: String, path: String) -> Result<(), String> {
-    let mut cfg = load();
-    if !cfg.repos.contains(&path) {
-        return Err("That repository isn't configured.".to_string());
-    }
-    cfg.assignments.insert(issue_key, path);
-    save(&cfg)
+    update(|cfg| {
+        if !cfg.repos.contains(&path) {
+            return Err("That repository isn't configured.".to_string());
+        }
+        cfg.assignments.insert(issue_key, path);
+        Ok(())
+    })?
 }
 
 #[tauri::command]
-pub fn list_repo_mappings() -> Vec<RepoMapping> {
-    load().mappings
+pub fn list_repo_mappings() -> Result<Vec<RepoMapping>, String> {
+    MAPPINGS_COPY.observe(read().map(|cfg| cfg.mappings))
 }
 
 /// Replace the mapping list (the Settings editor owns ordering/content).
 /// Sanitizes: trims patterns, drops empties and mappings to unknown repos.
 #[tauri::command]
 pub fn set_repo_mappings(mappings: Vec<RepoMapping>) -> Result<Vec<RepoMapping>, String> {
-    let mut cfg = load();
-    cfg.mappings = mappings
-        .into_iter()
-        .map(|mut m| {
-            m.pattern = m.pattern.trim().to_string();
-            m
-        })
-        .filter(|m| !m.pattern.is_empty() && cfg.repos.contains(&m.repo))
-        .collect();
-    let saved = cfg.mappings.clone();
-    save(&cfg)?;
-    Ok(saved)
+    MAPPINGS_COPY.check()?;
+    update(|cfg| {
+        cfg.mappings = mappings
+            .into_iter()
+            .map(|mut m| {
+                m.pattern = m.pattern.trim().to_string();
+                m
+            })
+            .filter(|m| !m.pattern.is_empty() && cfg.repos.contains(&m.repo))
+            .collect();
+        cfg.mappings.clone()
+    })
 }

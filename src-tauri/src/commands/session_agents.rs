@@ -16,7 +16,7 @@ use tauri::{AppHandle, State};
 
 use crate::claude::conversations::forget_session_id;
 use crate::commands::agent::spawn_in;
-use crate::commands::session::{load, save, session_cwd, ScratchSession};
+use crate::commands::session::{load, session_cwd, update, ScratchSession};
 use crate::helpers::new_id;
 use crate::state::{AppState, StartGuard};
 
@@ -53,23 +53,22 @@ pub fn add_session_agent(
     } else {
         None
     };
-    let mut list = load();
-    let Some(session) = list.iter_mut().find(|s| s.id == id) else {
-        return Err("That session no longer exists.".to_string());
-    };
-    if session.agents.len() >= MAX_AGENTS {
-        return Err(format!(
-            "A session can host at most {MAX_AGENTS} extra agents."
-        ));
-    }
-    session.agents.push(SessionAgent {
-        id: new_id(),
-        cli,
-        provider,
-    });
-    let updated = session.clone();
-    save(&list)?;
-    Ok(updated)
+    update(|list| {
+        let Some(session) = list.iter_mut().find(|s| s.id == id) else {
+            return Err("That session no longer exists.".to_string());
+        };
+        if session.agents.len() >= MAX_AGENTS {
+            return Err(format!(
+                "A session can host at most {MAX_AGENTS} extra agents."
+            ));
+        }
+        session.agents.push(SessionAgent {
+            id: new_id(),
+            cli,
+            provider,
+        });
+        Ok(session.clone())
+    })?
 }
 
 /// Remove a companion: kill its PTY, forget its conversation, drop the record.
@@ -82,14 +81,13 @@ pub fn remove_session_agent(
 ) -> Result<ScratchSession, String> {
     discard_agents(&state, std::slice::from_ref(&agent_id));
     let _ = forget_session_id(&agent_id);
-    let mut list = load();
-    let Some(session) = list.iter_mut().find(|s| s.id == id) else {
-        return Err("That session no longer exists.".to_string());
-    };
-    session.agents.retain(|a| a.id != agent_id);
-    let updated = session.clone();
-    save(&list)?;
-    Ok(updated)
+    update(|list| {
+        let Some(session) = list.iter_mut().find(|s| s.id == id) else {
+            return Err("That session no longer exists.".to_string());
+        };
+        session.agents.retain(|a| a.id != agent_id);
+        Ok(session.clone())
+    })?
 }
 
 /// Start (or resume) a companion in its session's worktree — created on demand,

@@ -17,7 +17,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::helpers::restrict_perms;
+use crate::helpers::persist;
 
 /// A third-party Anthropic-compatible endpoint that can back the `claude` CLI.
 pub(crate) struct ProviderSpec {
@@ -203,12 +203,7 @@ fn set_key(spec: &ProviderSpec, key: String) -> Result<(), String> {
         let _ = std::fs::remove_file(&path);
         return Ok(());
     }
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    std::fs::write(&path, key).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::write_atomic(&path, key.as_bytes())
 }
 
 #[tauri::command]

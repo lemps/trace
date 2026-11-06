@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
 import { useSidePanel } from "@/components/useSidePanel";
@@ -99,11 +100,13 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   // picker to the assignment (or the first repo).
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([listRepos(), issueRepo(issue.key)]).then(([all, assigned]) => {
-      if (cancelled) return;
-      setRepos(all);
-      setRepoChoice(assigned ?? all[0] ?? "");
-    });
+    Promise.all([listRepos(), issueRepo(issue.key)])
+      .then(([all, assigned]) => {
+        if (cancelled) return;
+        setRepos(all);
+        setRepoChoice(assigned ?? all[0] ?? "");
+      })
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
     return () => {
       cancelled = true;
     };

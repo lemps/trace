@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
 import { listRepos, setIssueRepo } from "@/ipc/repos";
@@ -17,7 +18,9 @@ export function RepoPickModal({ issueKey }: { issueKey: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void listRepos().then(setRepos);
+    listRepos()
+      .then(setRepos)
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
   }, []);
 
   const pick = async (path: string) => {

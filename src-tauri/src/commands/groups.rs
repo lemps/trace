@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::commands::session::{self, ScratchSession};
-use crate::helpers::restrict_perms;
+use crate::helpers::persist::{self, LoadGate, Style};
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -48,28 +48,13 @@ fn groups_file() -> PathBuf {
         .join("session-groups.json")
 }
 
-pub(crate) fn load() -> SessionGroups {
-    std::fs::read_to_string(groups_file())
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
-}
-
-fn save(groups: &SessionGroups) -> Result<(), String> {
-    let path = groups_file();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(groups).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
-}
+/// The frontend holds the whole structure and saves it back whole.
+static RENDERER_COPY: LoadGate = LoadGate::new();
 
 /// Tabs + sections, in display order.
 #[tauri::command]
-pub fn list_session_groups() -> SessionGroups {
-    load()
+pub fn list_session_groups() -> Result<SessionGroups, String> {
+    RENDERER_COPY.observe(persist::read_or_default(&groups_file()))
 }
 
 /// Enforce the structure's invariants: trimmed non-empty names, and sections
@@ -103,8 +88,13 @@ fn sanitize(mut groups: SessionGroups) -> SessionGroups {
 /// returns the sanitized structure so the frontend can reconcile.
 #[tauri::command]
 pub fn save_session_groups(groups: SessionGroups) -> Result<SessionGroups, String> {
+    RENDERER_COPY.check()?;
     let groups = sanitize(groups);
-    save(&groups)?;
+    persist::update(
+        &groups_file(),
+        Style::Compact,
+        |saved: &mut SessionGroups| *saved = groups.clone(),
+    )?;
     reconcile_groups(&groups)?;
     Ok(groups)
 }
@@ -116,45 +106,38 @@ pub fn set_session_group(
     tab: Option<String>,
     section: Option<String>,
 ) -> Result<ScratchSession, String> {
-    let mut list = session::load();
-    let Some(s) = list.iter_mut().find(|s| s.id == id) else {
-        return Err("That session no longer exists.".to_string());
-    };
-    s.tab = tab;
-    s.section = section;
-    let updated = s.clone();
-    session::save(&list)?;
-    Ok(updated)
+    session::update(|list| {
+        let Some(s) = list.iter_mut().find(|s| s.id == id) else {
+            return Err("That session no longer exists.".to_string());
+        };
+        s.tab = tab;
+        s.section = section;
+        Ok(s.clone())
+    })?
 }
 
 /// Clear session refs to tabs/sections that no longer exist (after a
 /// groups save deleted them). Sessions fall back to default/unsectioned.
 fn reconcile_groups(groups: &SessionGroups) -> Result<(), String> {
-    let mut list = session::load();
-    let mut changed = false;
-    for s in &mut list {
-        if let Some(tab) = &s.tab {
-            if !groups.tabs.iter().any(|t| &t.id == tab) {
-                s.tab = None;
-                s.section = None;
-                changed = true;
+    session::update(|list| {
+        for s in list.iter_mut() {
+            if let Some(tab) = &s.tab {
+                if !groups.tabs.iter().any(|t| &t.id == tab) {
+                    s.tab = None;
+                    s.section = None;
+                }
+            }
+            if let Some(section) = &s.section {
+                let valid = groups
+                    .sections
+                    .iter()
+                    .any(|sec| &sec.id == section && sec.tab == s.tab);
+                if !valid {
+                    s.section = None;
+                }
             }
         }
-        if let Some(section) = &s.section {
-            let valid = groups
-                .sections
-                .iter()
-                .any(|sec| &sec.id == section && sec.tab == s.tab);
-            if !valid {
-                s.section = None;
-                changed = true;
-            }
-        }
-    }
-    if changed {
-        session::save(&list)?;
-    }
-    Ok(())
+    })
 }
 
 #[cfg(test)]

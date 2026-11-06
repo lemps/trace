@@ -10,7 +10,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::{restrict_perms, trace_dir};
+use crate::helpers::persist::{self, Style};
+use crate::helpers::trace_dir;
 use crate::state::OutputHistory;
 
 /// Same shape as `commands::snapshot::PtySnapshot`.
@@ -51,13 +52,7 @@ fn path(run_id: &str) -> Option<PathBuf> {
 
 pub fn save(run_id: &str, transcript: &Transcript) -> Result<(), String> {
     let path = path(run_id).ok_or("Invalid run id.")?;
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(transcript).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::write_json(&path, Style::Compact, transcript)
 }
 
 pub fn load(run_id: &str) -> Option<Transcript> {

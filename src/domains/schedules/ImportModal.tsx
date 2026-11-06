@@ -33,9 +33,11 @@ export function ImportModal({ items, onClose }: ImportModalProps) {
 
   useEffect(() => {
     let cancelled = false;
-    void listRepos().then((all) => {
-      if (!cancelled) setRepos(all);
-    });
+    listRepos()
+      .then((all) => {
+        if (!cancelled) setRepos(all);
+      })
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
     return () => {
       cancelled = true;
     };

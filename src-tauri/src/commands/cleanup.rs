@@ -8,8 +8,8 @@ use crate::cleanup::sweep::{self, CleanupReport, Context};
 use crate::state::AppState;
 
 #[tauri::command]
-pub fn get_cleanup_settings() -> CleanupSettings {
-    settings::load()
+pub fn get_cleanup_settings() -> Result<CleanupSettings, String> {
+    settings::read()
 }
 
 /// Save the rules; returns them as stored (the idle period clamped).
@@ -26,7 +26,8 @@ pub fn set_cleanup_settings(settings: CleanupSettings) -> Result<CleanupSettings
 #[tauri::command]
 pub async fn preview_cleanup(state: State<'_, AppState>) -> Result<CleanupReport, String> {
     let ctx = Context::snapshot(&state);
-    tauri::async_runtime::spawn_blocking(move || sweep::preview(&settings::load(), &ctx))
+    let rules = settings::read()?;
+    tauri::async_runtime::spawn_blocking(move || sweep::preview(&rules, &ctx))
         .await
         .map_err(|e| format!("cleanup preview failed: {e}"))
 }
@@ -39,7 +40,8 @@ pub async fn run_cleanup_now(
     state: State<'_, AppState>,
 ) -> Result<CleanupReport, String> {
     let ctx = Context::snapshot(&state);
-    tauri::async_runtime::spawn_blocking(move || sweep::apply(&app, &settings::load(), &ctx))
+    let rules = settings::read()?;
+    tauri::async_runtime::spawn_blocking(move || sweep::apply(&app, &rules, &ctx))
         .await
         .map_err(|e| format!("cleanup failed: {e}"))
 }

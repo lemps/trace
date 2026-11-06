@@ -152,13 +152,18 @@ pub(crate) fn remove_for_workspace(workspace_id: &str) {
 }
 
 /// Whether worktree dir `dirname` also backs a workspace other than
-/// `workspace_id`: one that adopted it, or the scheduled prompt it's named for.
+/// `workspace_id`: one that adopted it, or the scheduled prompt it's named for. If
+/// either file can't be read it counts as shared: callers delete the checkout when
+/// this is false, and a read error mustn't take someone else's worktree with it.
 pub(crate) fn dir_shared(workspace_id: &str, dirname: &str) -> bool {
-    let adopted = crate::commands::repos::dir_adopters(dirname)
-        .iter()
-        .any(|id| id != workspace_id);
-    adopted
-        || crate::schedule::store::prompts()
+    let (Ok(adopters), Ok(prompts)) = (
+        crate::commands::repos::dir_adopters(dirname),
+        crate::schedule::store::try_prompts(),
+    ) else {
+        return true;
+    };
+    adopters.iter().any(|id| id != workspace_id)
+        || prompts
             .iter()
             .any(|p| p.id != workspace_id && slugify(&p.id) == dirname)
 }

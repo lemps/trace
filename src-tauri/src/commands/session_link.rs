@@ -10,7 +10,7 @@
 use tauri::State;
 
 use crate::claude::conversations::forget_session_id;
-use crate::commands::session::{load, save};
+use crate::commands::session::{read, update};
 use crate::commands::session_agents::discard_agents;
 use crate::state::AppState;
 
@@ -25,7 +25,9 @@ pub fn link_session_to_issue(
     id: String,
     issue_key: String,
 ) -> Result<(), String> {
-    let mut list = load();
+    // A snapshot: the git work below runs outside the file's lock, so the session's
+    // record is only removed in a fresh `update` at the end.
+    let list = read()?;
     let Some(pos) = list.iter().position(|s| s.id == id) else {
         return Err("That session no longer exists.".to_string());
     };
@@ -91,6 +93,5 @@ pub fn link_session_to_issue(
     crate::commands::repos::adopt_workspace_dir(&issue_key, &dirname, &repo)?;
     crate::claude::conversations::move_session_id(&id, &issue_key)?;
 
-    list.remove(pos);
-    save(&list)
+    update(|list| list.retain(|s| s.id != id))
 }

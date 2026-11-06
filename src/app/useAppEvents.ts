@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { toast } from "@/app/toast";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
 import { adoptLiveAgents } from "@/domains/board/adopt";
@@ -85,6 +86,11 @@ export function useAppEvents(): void {
   // Sessions view had happened to load them.
   useEffect(() => {
     void useRichOutputStore.getState().hydrate();
-    if (!useSessionsStore.getState().loaded) void useSessionsStore.getState().load();
+    if (!useSessionsStore.getState().loaded) {
+      useSessionsStore
+        .getState()
+        .load()
+        .catch((err) => toast.error(`Couldn't load your sessions: ${String(err)}`));
+    }
   }, []);
 }

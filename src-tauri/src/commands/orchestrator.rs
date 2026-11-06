@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use crate::claude::discovery::find_cli_with_env;
 use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
-use crate::helpers::restrict_perms;
+use crate::helpers::persist;
 
 fn key_file() -> PathBuf {
     dirs::config_dir()
@@ -39,12 +39,7 @@ pub fn set_anthropic_key(key: String) -> Result<(), String> {
         let _ = std::fs::remove_file(&path);
         return Ok(());
     }
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    std::fs::write(&path, key).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::write_atomic(&path, key.as_bytes())
 }
 
 /// Run the orchestrator through the Claude CLI in print mode (`-p`) — an

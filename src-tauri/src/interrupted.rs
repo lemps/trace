@@ -26,7 +26,8 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-use crate::helpers::{restrict_perms, trace_dir};
+use crate::helpers::persist::{self, Style};
+use crate::helpers::trace_dir;
 use crate::schedule::{now_secs, RUN_PREFIX};
 use crate::state::AppState;
 
@@ -65,27 +66,17 @@ pub fn resume_prompt(launch: &AgentLaunch) -> Option<String> {
     (launch.cli == "claude" && launch.busy).then(|| RESUME_NUDGE.to_string())
 }
 
-/// Serialises ledger read-modify-writes across spawn/exit threads.
-static LEDGER: Mutex<()> = Mutex::new(());
-
 fn ledger_file() -> PathBuf {
     trace_dir().join("running-agents.json")
 }
 
-fn read() -> BTreeMap<String, AgentLaunch> {
-    std::fs::read_to_string(ledger_file())
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
-}
-
-fn write(agents: &BTreeMap<String, AgentLaunch>) {
-    let path = ledger_file();
-    if let Ok(json) = serde_json::to_string_pretty(agents) {
-        if std::fs::write(&path, json).is_ok() {
-            restrict_perms(&path);
-        }
-    }
+/// Read-modify-write the ledger across spawn/exit threads and any other trace. The
+/// ledger is a convenience, so a failure is logged rather than failing the agent.
+fn update<R: Default>(f: impl FnOnce(&mut BTreeMap<String, AgentLaunch>) -> R) -> R {
+    persist::update(&ledger_file(), Style::Pretty, f).unwrap_or_else(|e| {
+        eprintln!("trace: {e}");
+        R::default()
+    })
 }
 
 fn tracked(workspace_id: &str) -> bool {
@@ -99,10 +90,9 @@ pub fn record_start(mut launch: AgentLaunch, pid: Option<u32>) {
     }
     launch.pid = pid;
     launch.started_at = now_secs();
-    let _guard = LEDGER.lock();
-    let mut agents = read();
-    agents.insert(launch.workspace_id.clone(), launch);
-    write(&agents);
+    update(|agents| {
+        agents.insert(launch.workspace_id.clone(), launch);
+    });
 }
 
 /// An agent's process ended. Unlisted unless trace itself is going down — that
@@ -114,11 +104,9 @@ pub fn record_exit(app: &AppHandle, workspace_id: &str) {
     if going_down || !tracked(workspace_id) {
         return;
     }
-    let _guard = LEDGER.lock();
-    let mut agents = read();
-    if agents.remove(workspace_id).is_some() {
-        write(&agents);
-    }
+    update(|agents| {
+        agents.remove(workspace_id);
+    });
 }
 
 /// An agent's turn state changed (`claude::hooks`): keep its ledger entry's
@@ -127,24 +115,24 @@ pub fn record_busy(workspace_id: &str, busy: bool) {
     if !tracked(workspace_id) {
         return;
     }
-    let _guard = LEDGER.lock();
-    let mut agents = read();
-    match agents.get_mut(workspace_id) {
-        Some(a) if a.busy != busy => a.busy = busy,
-        _ => return,
-    }
-    write(&agents);
+    update(|agents| {
+        if let Some(a) = agents.get_mut(workspace_id) {
+            a.busy = busy;
+        }
+    });
 }
 
 /// At launch: move the agents the last session left behind into `interrupted`.
 /// Ones whose process is still alive belong to another running trace and stay
 /// in the ledger.
 pub fn collect_at_launch(state: &AppState) {
-    let _guard = LEDGER.lock();
-    let (alive, gone): (BTreeMap<_, _>, BTreeMap<_, _>) = read()
-        .into_iter()
-        .partition(|(_, a)| a.pid.is_some_and(process_alive));
-    write(&alive);
+    let gone: BTreeMap<String, AgentLaunch> = update(|agents| {
+        let (alive, gone) = std::mem::take(agents)
+            .into_iter()
+            .partition(|(_, a)| a.pid.is_some_and(process_alive));
+        *agents = alive;
+        gone
+    });
     *state.interrupted.lock() = gone.into_values().collect();
 }
 

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::helpers::restrict_perms;
+use crate::helpers::persist::{self, Style};
 use crate::issues::models::IssueUser;
 
 use super::client;
@@ -77,24 +77,20 @@ fn parse_me(v: &serde_json::Value) -> IssueUser {
 
 /// Persist the session (token + resolved region) for silent reconnect on launch.
 pub fn save(conn: &PylonConnection) -> Result<(), String> {
-    let path = session_path();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(&StoredSession {
-        token: conn.token.clone(),
-        base_url: Some(conn.base_url.clone()),
-    })
-    .map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
+    persist::write_json(
+        &session_path(),
+        Style::Compact,
+        &StoredSession {
+            token: conn.token.clone(),
+            base_url: Some(conn.base_url.clone()),
+        },
+    )
 }
 
-/// Load the previously-saved connection, if any.
+/// Load the previously-saved connection, if any. A file that can't be read just
+/// means the login form: only credentials the user enters there replace it.
 pub fn load() -> Option<PylonConnection> {
-    let raw = std::fs::read_to_string(session_path()).ok()?;
-    let s: StoredSession = serde_json::from_str(&raw).ok()?;
+    let s = persist::read_or_log::<Option<StoredSession>>(&session_path())?;
     let mut conn = PylonConnection::new(s.token);
     if let Some(base) = s.base_url {
         conn.base_url = base;

@@ -17,18 +17,18 @@ const PREVIEW_COUNT: usize = 3;
 
 /// Every scheduled prompt, newest first.
 #[tauri::command]
-pub fn list_scheduled_prompts() -> Vec<ScheduledPrompt> {
-    let mut list = store::prompts();
+pub fn list_scheduled_prompts() -> Result<Vec<ScheduledPrompt>, String> {
+    let mut list = store::try_prompts()?;
     list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-    list
+    Ok(list)
 }
 
 /// Every run across all prompts, newest first.
 #[tauri::command]
-pub fn list_schedule_runs() -> Vec<ScheduleRun> {
-    let mut runs = store::runs();
+pub fn list_schedule_runs() -> Result<Vec<ScheduleRun>, String> {
+    let mut runs = store::try_runs()?;
     runs.sort_by(|a, b| b.started_at.cmp(&a.started_at));
-    runs
+    Ok(runs)
 }
 
 #[tauri::command]

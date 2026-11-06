@@ -78,11 +78,13 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
 
   useEffect(() => {
     let cancelled = false;
-    void listRepos().then((all) => {
-      if (cancelled) return;
-      setRepos(all);
-      setDraft((d) => (d.repo ? d : { ...d, repo: all[0] ?? "" }));
-    });
+    listRepos()
+      .then((all) => {
+        if (cancelled) return;
+        setRepos(all);
+        setDraft((d) => (d.repo ? d : { ...d, repo: all[0] ?? "" }));
+      })
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
     return () => {
       cancelled = true;
     };

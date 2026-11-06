@@ -47,6 +47,8 @@
 - Domain logic lives in `claude/`, `issues/` (+ the `jira/` and `pylon/` provider modules), `git.rs`; shared
   mutable state in `state.rs` (`AppState`).
 - Register every command in the single `invoke_handler!` list in `lib.rs`.
+- New persistence goes through `helpers::persist` (atomic `0600` writes, safe reads, locked `update`s): no bare
+  `fs::write` of state, and no load-then-save outside `update`.
 - Rust concurrency (carried over from the old project's hard-won lessons):
   - Use `std::thread::spawn` for Claude/PTY pump threads, not `tokio::spawn` (avoids runtime conflicts).
   - Never hold two `RwLock`/`Mutex` guards at once — clone what you need, drop the guard, then take the next.

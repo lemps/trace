@@ -41,8 +41,8 @@
 - **Never** `eprintln!`/log/emit env vars or secrets (`ANTHROPIC_API_KEY`, AWS keys, Jira tokens).
 - If code ever needs to compare tokens for equality, use a constant-time compare; never `==` on secrets.
   (Nothing in the codebase compares tokens today — keep it that way or add the helper when needed.)
-- Everything persisted under the app config dir is written `0600` (`helpers::restrict_perms`) — new
-  persistence goes through the same helper.
+- Everything persisted under the app config dir is written `0600`, from creation, by `helpers::persist` — new
+  persistence goes through that module.
 - `claude`/`git`/`gh` are resolved via `claude/discovery.rs` — never hardcode an absolute tool path.
 
 ## Platform

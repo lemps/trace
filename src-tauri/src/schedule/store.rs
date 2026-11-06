@@ -1,19 +1,13 @@
 //! Persistence for scheduled prompts and runs: two `0600` JSON files in the
-//! config dir. The runner thread and commands write concurrently, so every
-//! load→mutate→save goes through `update_*`, serialized by a per-file lock. The
-//! two locks are never held at the same time.
+//! config dir. The runner thread, commands and a second trace all write, so every
+//! load→mutate→save goes through `update_*`, serialized by `persist`'s per-file lock.
+//! The two locks are never held at the same time.
 
 use std::path::PathBuf;
-use std::sync::{Mutex, MutexGuard};
-
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 
 use super::model::{RunStatus, ScheduleRun, ScheduledPrompt};
-use crate::helpers::{restrict_perms, trace_dir};
-
-static PROMPTS_LOCK: Mutex<()> = Mutex::new(());
-static RUNS_LOCK: Mutex<()> = Mutex::new(());
+use crate::helpers::persist::{self, Style};
+use crate::helpers::trace_dir;
 
 /// Runs kept per prompt. Older ones — and their transcripts — are pruned.
 const RUNS_PER_PROMPT: usize = 30;
@@ -26,31 +20,15 @@ fn runs_file() -> PathBuf {
     trace_dir().join("schedule-runs.json")
 }
 
-fn lock(m: &'static Mutex<()>) -> MutexGuard<'static, ()> {
-    m.lock().unwrap_or_else(|p| p.into_inner())
-}
-
-fn read<T: DeserializeOwned + Default>(path: PathBuf) -> T {
-    std::fs::read_to_string(path)
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
-}
-
-fn write<T: Serialize>(path: PathBuf, value: &T) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(value).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    restrict_perms(&path);
-    Ok(())
-}
-
-/// Every scheduled prompt, in creation order.
+/// Every scheduled prompt, in creation order. A read failure is logged and reads as
+/// none; anything that would act on "there are none" uses [`try_prompts`].
 pub fn prompts() -> Vec<ScheduledPrompt> {
-    let _guard = lock(&PROMPTS_LOCK);
-    read(prompts_file())
+    persist::read_or_log(&prompts_file())
+}
+
+/// [`prompts`], with a read failure as an error.
+pub fn try_prompts() -> Result<Vec<ScheduledPrompt>, String> {
+    persist::read_or_default(&prompts_file())
 }
 
 pub fn prompt(id: &str) -> Option<ScheduledPrompt> {
@@ -59,26 +37,22 @@ pub fn prompt(id: &str) -> Option<ScheduledPrompt> {
 
 /// Load, mutate and save the prompt list atomically (w.r.t. other writers).
 pub fn update_prompts<R>(f: impl FnOnce(&mut Vec<ScheduledPrompt>) -> R) -> Result<R, String> {
-    let _guard = lock(&PROMPTS_LOCK);
-    let mut list: Vec<ScheduledPrompt> = read(prompts_file());
-    let result = f(&mut list);
-    write(prompts_file(), &list)?;
-    Ok(result)
+    persist::update(&prompts_file(), Style::Compact, f)
 }
 
-/// Every run record, oldest first.
+/// Every run record, oldest first. A read failure is logged and reads as none.
 pub fn runs() -> Vec<ScheduleRun> {
-    let _guard = lock(&RUNS_LOCK);
-    read(runs_file())
+    persist::read_or_log(&runs_file())
+}
+
+/// [`runs`], with a read failure as an error.
+pub fn try_runs() -> Result<Vec<ScheduleRun>, String> {
+    persist::read_or_default(&runs_file())
 }
 
 /// Load, mutate and save the run list atomically (w.r.t. other writers).
 pub fn update_runs<R>(f: impl FnOnce(&mut Vec<ScheduleRun>) -> R) -> Result<R, String> {
-    let _guard = lock(&RUNS_LOCK);
-    let mut list: Vec<ScheduleRun> = read(runs_file());
-    let result = f(&mut list);
-    write(runs_file(), &list)?;
-    Ok(result)
+    persist::update(&runs_file(), Style::Compact, f)
 }
 
 /// Mutate one run; returns its updated copy (`None` if it no longer exists).

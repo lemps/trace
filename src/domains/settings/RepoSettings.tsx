@@ -1,5 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import {
   addRepo,
@@ -26,8 +27,12 @@ export function RepoSettings() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void listRepos().then(setRepos);
-    void listRepoMappings().then((list) => setMappings(list.map(withId)));
+    listRepos()
+      .then(setRepos)
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
+    listRepoMappings()
+      .then((list) => setMappings(list.map(withId)))
+      .catch((err) => toast.error(`Couldn't load your repo mappings: ${String(err)}`));
   }, []);
 
   const persist = (next: EditorRow[]) => {

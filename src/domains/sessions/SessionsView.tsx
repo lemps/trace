@@ -1,4 +1,5 @@
 import { type DragEvent, useEffect, useState } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
 import { useLiveStore } from "@/domains/live/store";
@@ -48,7 +49,9 @@ export function SessionsView() {
   const [addingSection, setAddingSection] = useState(false);
 
   useEffect(() => {
-    if (!loaded) void load();
+    if (!loaded) {
+      load().catch((err) => toast.error(`Couldn't load your sessions: ${String(err)}`));
+    }
   }, [loaded, load]);
 
   const active = sessions.filter((s) => !s.archivedAt);

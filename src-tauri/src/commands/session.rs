@@ -18,6 +18,7 @@ use crate::commands::session_agents::{discard_agents, stop_agents, SessionAgent}
 use crate::commands::session_folder;
 use crate::git;
 use crate::helpers::new_id;
+use crate::helpers::persist::{self, Style};
 use crate::state::{AppState, StartGuard};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -91,22 +92,19 @@ fn sessions_file() -> PathBuf {
         .join("scratch.json")
 }
 
-pub(crate) fn load() -> Vec<ScratchSession> {
-    std::fs::read_to_string(sessions_file())
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default()
+pub(crate) fn read() -> Result<Vec<ScratchSession>, String> {
+    persist::read_or_default(&sessions_file())
 }
 
-pub(crate) fn save(list: &[ScratchSession]) -> Result<(), String> {
-    let path = sessions_file();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string(list).map_err(|e| e.to_string())?;
-    std::fs::write(&path, json).map_err(|e| e.to_string())?;
-    crate::helpers::restrict_perms(&path);
-    Ok(())
+/// The sessions for read-only callers: a read failure is logged and reads as none.
+pub(crate) fn load() -> Vec<ScratchSession> {
+    persist::read_or_log(&sessions_file())
+}
+
+/// Load, mutate and save the list, safe against other threads and another trace.
+/// Quick work only: do git and PTY teardown outside it.
+pub(crate) fn update<R>(f: impl FnOnce(&mut Vec<ScratchSession>) -> R) -> Result<R, String> {
+    persist::update(&sessions_file(), Style::Compact, f)
 }
 
 fn now_secs() -> u64 {
@@ -119,30 +117,30 @@ fn now_secs() -> u64 {
 /// All saved sessions (active + archived), newest first. Archived sessions past
 /// the retention window are purged here (and their Claude ids forgotten).
 #[tauri::command]
-pub fn list_sessions() -> Vec<ScratchSession> {
+pub fn list_sessions() -> Result<Vec<ScratchSession>, String> {
     let now = now_secs();
-    let mut list = load();
-    let before = list.len();
-    list.retain(|s| match s.archived_at {
-        Some(at) => {
-            let keep = now.saturating_sub(at) < ARCHIVE_RETENTION_SECS;
-            if !keep {
-                let _ = forget_session_id(&s.id);
-                for agent in &s.agents {
-                    let _ = forget_session_id(&agent.id);
-                }
-                crate::commands::worktrees::remove_for_workspace(&s.id);
-                session_folder::remove_scratch_folder(s);
-            }
-            keep
+    let expired = |s: &ScratchSession| {
+        s.archived_at
+            .is_some_and(|at| now.saturating_sub(at) >= ARCHIVE_RETENTION_SECS)
+    };
+    let mut list = read()?;
+    // Git runs here, so it's outside the lock; only then do the records go.
+    let mut purged = Vec::new();
+    for s in list.iter().filter(|s| expired(s)) {
+        let _ = forget_session_id(&s.id);
+        for agent in &s.agents {
+            let _ = forget_session_id(&agent.id);
         }
-        None => true,
-    });
-    if list.len() != before {
-        let _ = save(&list);
+        crate::commands::worktrees::remove_for_workspace(&s.id);
+        session_folder::remove_scratch_folder(s);
+        purged.push(s.id.clone());
+    }
+    if !purged.is_empty() {
+        let _ = update(|saved| saved.retain(|s| !(purged.contains(&s.id) && expired(s))));
+        list.retain(|s| !expired(s));
     }
     list.sort_by(|a, b| b.created_at.cmp(&a.created_at));
-    list
+    Ok(list)
 }
 
 /// Create (persist) a new exploratory session. Does not start its agent. With a
@@ -203,9 +201,7 @@ pub fn create_session(
         agents: Vec::new(),
         remote_control,
     };
-    let mut list = load();
-    list.push(session.clone());
-    save(&list)?;
+    update(|list| list.push(session.clone()))?;
     Ok(session)
 }
 
@@ -217,17 +213,12 @@ pub fn rename_session(id: String, title: String) -> Result<ScratchSession, Strin
     if title.is_empty() {
         return Err("Give the session a name.".to_string());
     }
-    let mut list = load();
-    let mut renamed = None;
-    for s in &mut list {
-        if s.id == id {
-            s.title = title.clone();
-            renamed = Some(s.clone());
-        }
-    }
-    let renamed = renamed.ok_or("That session no longer exists.")?;
-    save(&list)?;
-    Ok(renamed)
+    update(|list| {
+        let s = list.iter_mut().find(|s| s.id == id)?;
+        s.title = title;
+        Some(s.clone())
+    })?
+    .ok_or_else(|| "That session no longer exists.".to_string())
 }
 
 /// The session that owns a workspace id: the session itself, or — for a
@@ -305,26 +296,22 @@ pub fn archive_session(state: State<'_, AppState>, id: String) -> Result<(), Str
     if let Some(session) = owning_session(&id) {
         stop_agents(&state, &session.workspace_ids());
     }
-    let mut list = load();
     let now = now_secs();
-    for s in &mut list {
-        if s.id == id {
+    update(|list| {
+        for s in list.iter_mut().filter(|s| s.id == id) {
             s.archived_at = Some(now);
         }
-    }
-    save(&list)
+    })
 }
 
 /// Restore a session from the recycle bin.
 #[tauri::command]
 pub fn unarchive_session(id: String) -> Result<(), String> {
-    let mut list = load();
-    for s in &mut list {
-        if s.id == id {
+    update(|list| {
+        for s in list.iter_mut().filter(|s| s.id == id) {
             s.archived_at = None;
         }
-    }
-    save(&list)
+    })
 }
 
 /// Delete a session: stop its PTY if live, drop its saved Claude id, remove it.
@@ -342,9 +329,7 @@ pub fn delete_session(state: State<'_, AppState>, id: String) -> Result<(), Stri
     // Clean up any worktree/branch backing this workspace — the session is
     // gone for good, so its checkout is too.
     crate::commands::worktrees::remove_for_workspace(&id);
-    let mut list = load();
-    list.retain(|s| s.id != id);
-    save(&list)
+    update(|list| list.retain(|s| s.id != id))
 }
 
 /// Start (or resume) an exploratory session's agent in its worktree.
