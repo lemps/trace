@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { fitTerminal, resetTerminal, syncPtySize } from "@/domains/agent/terminalRegistry";
+import { adoptIfAlive } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
-import { agentRunning, resetAgentSession, stopAgent } from "@/ipc/agent";
+import { resetAgentSession, stopAgent } from "@/ipc/agent";
 
 /** Start/stop lifecycle for one agent, keyed by its workspace id. */
 export interface AgentRun {
@@ -34,25 +35,21 @@ export function useAgentRun(
   const clearOutput = useBoardStore((s) => s.clearOutput);
   const startingRef = useRef(false);
 
-  // Reconcile run-state with the backend when the id changes. A renderer reload
-  // empties the store's `runningAgents` while the backend PTY survives, so a live
-  // agent would wrongly show the "Start" overlay — and clicking Start would no-op
-  // backend-side *after* the frontend cleared the terminal, leaving a blank screen
-  // (an idle agent emits nothing to repaint it). Adopt the backend's truth.
+  // Reconcile run-state with the backend when the id changes. Startup adoption has
+  // usually done this, but this view can mount first — and a live agent would wrongly
+  // show the "Start" overlay, where clicking Start would no-op backend-side *after*
+  // the frontend cleared the terminal, leaving a blank screen (an idle agent emits
+  // nothing to repaint it). Adopt the backend's truth.
   useEffect(() => {
     let cancelled = false;
-    void agentRunning(workspaceId).then((alive) => {
-      if (cancelled) return;
-      if (alive && !useBoardStore.getState().runningAgents.has(workspaceId)) {
-        setAgentRunning(workspaceId, true);
-        // The pane may have resized while the spawn was in flight.
-        syncPtySize(workspaceId);
-      }
+    void adoptIfAlive(workspaceId).then((adopted) => {
+      // The pane may have resized while the spawn was in flight.
+      if (adopted && !cancelled) syncPtySize(workspaceId);
     });
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, setAgentRunning]);
+  }, [workspaceId]);
 
   const start = useCallback(async () => {
     // A re-entrant start would spawn a second agent into the same workspace and

@@ -78,6 +78,7 @@ pub fn run() {
             commands::repos::list_repo_mappings,
             commands::repos::set_repo_mappings,
             commands::agent::agent_running,
+            commands::agent::live_workspaces,
             commands::agent::start_agent,
             commands::agent::start_terminal,
             commands::agent::send_agent_input,

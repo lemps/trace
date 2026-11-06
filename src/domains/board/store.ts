@@ -7,6 +7,7 @@ import { boardOptionFor } from "@/domains/issues/store";
 import type { BoardData, ColumnStatus, ProviderKind, PullRequest } from "@/domains/issues/types";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { getBoard, getIssuePullRequests, transitionIssue } from "@/ipc/issues";
+import { noteAgentGone } from "./adopt";
 import { isStartOfWork } from "./columns";
 import {
   type BoardFilter,
@@ -307,6 +308,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set({ typeFilter: sel });
   },
   setAgentRunning(key, running) {
+    if (!running) noteAgentGone(key);
     const next = new Set(get().runningAgents);
     if (running) next.add(key);
     else next.delete(key);

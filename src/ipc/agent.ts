@@ -6,6 +6,11 @@ export function agentRunning(issueKey: string): Promise<boolean> {
   return invoke("agent_running", { issueKey });
 }
 
+/** Every live PTY's workspace id: agents, sessions, shells (`term:`), runs (`sched:`). */
+export function liveWorkspaces(): Promise<string[]> {
+  return invoke("live_workspaces");
+}
+
 export type AgentCli = "claude" | "codex";
 
 /**

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
+import { adoptIfAlive } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
 import { playAlertSound } from "@/domains/board/waitingNotify";
-import { agentRunning } from "@/ipc/agent";
 import { onScheduleRun, onSchedulesChanged, type ScheduleRunEvent } from "@/ipc/events";
 import { notify } from "@/ipc/notify";
 import { runWorkspaceId } from "../ids";
@@ -71,10 +71,7 @@ function reconcileLiveRuns() {
   for (const run of useSchedulesStore.getState().runs) {
     const ws = runWorkspaceId(run.id);
     if (run.status !== "running" || board.runningAgents.has(ws)) continue;
-    void agentRunning(ws).then((alive) => {
-      const now = useBoardStore.getState();
-      if (alive && !now.runningAgents.has(ws)) now.setAgentRunning(ws, true);
-    });
+    void adoptIfAlive(ws);
   }
 }
 

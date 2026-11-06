@@ -94,6 +94,28 @@ export function dismissAsk(workspaceId: string): void {
   useBoardStore.getState().ackWaiting(workspaceId);
 }
 
+/** A workspace's turn signals, carried across a page reload (`live/reloadMemory`). */
+export interface TurnMemory {
+  armed: boolean;
+  backgroundTasks: number;
+  askingForHuman: boolean;
+}
+
+export function turnMemory(workspaceId: string): TurnMemory {
+  return {
+    armed: armed.has(workspaceId),
+    backgroundTasks: backgroundPending.get(workspaceId) ?? 0,
+    askingForHuman: askingForHuman.has(workspaceId),
+  };
+}
+
+/** Put them back as they were: unlike `armWaitingNotify`, this says nobody did anything. */
+export function restoreTurnMemory(workspaceId: string, memory: TurnMemory): void {
+  if (memory.armed) armed.add(workspaceId);
+  if (memory.backgroundTasks > 0) backgroundPending.set(workspaceId, memory.backgroundTasks);
+  if (memory.askingForHuman) askingForHuman.add(workspaceId);
+}
+
 /** Forget a workspace entirely (agent stopped or exited): arming + timers. */
 export function cancelWaitingWatch(workspaceId: string): void {
   armed.delete(workspaceId);

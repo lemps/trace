@@ -180,6 +180,14 @@ pub fn agent_running(state: State<'_, AppState>, issue_key: String) -> bool {
     state.pty_sessions.lock().contains_key(&issue_key)
 }
 
+/// Every live PTY's workspace id, shells and scheduled runs included. A renderer
+/// reload forgets what's running while the PTYs survive it, so the renderer adopts
+/// this list at startup rather than waiting for each agent to be opened.
+#[tauri::command]
+pub fn live_workspaces(state: State<'_, AppState>) -> Vec<String> {
+    state.pty_sessions.lock().keys().cloned().collect()
+}
+
 /// Start an interactive Claude TUI for an issue, in its own git worktree.
 /// Idempotent: if a session already exists for the issue, it's a no-op.
 #[allow(clippy::too_many_arguments)]

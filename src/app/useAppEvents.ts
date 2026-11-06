@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
+import { adoptLiveAgents } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
 import { askIsOver, noteAgentTurn } from "@/domains/board/waitingNotify";
 import { userActed } from "@/domains/live/answer";
@@ -42,7 +43,14 @@ export function useAppEvents(): void {
         if (cancelled) fn();
         else unlisteners.push(fn);
       });
-    keep(onAgentRunState((p) => setAgentRunning(p.workspaceId, p.running)));
+    const runState = onAgentRunState((p) => setAgentRunning(p.workspaceId, p.running));
+    keep(runState);
+    // A reload empties the run-state while the backend's PTYs survive it. Only once
+    // exits can reach us: one that landed before this was listening is already off
+    // the backend's list, and a later one can't be missed (`adopt` checks for it).
+    void runState.then(() => {
+      if (!cancelled) void adoptLiveAgents().catch(() => {});
+    });
     keep(onPtyOutput((p) => appendOutput(p.workspaceId, p.data, p.seq)));
     // HTML the agent emits via `trace-render` (out-of-band, bypassing the PTY) —
     // pushed to the rich-output store; the panel renders it in a sandboxed iframe.

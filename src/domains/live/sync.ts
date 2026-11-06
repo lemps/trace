@@ -96,6 +96,16 @@ function patchAndRecompute(workspaceId: string, patch: Partial<LiveInfo>) {
   recompute(useBoardStore.getState());
 }
 
+/** An adopted agent's state from before a page reload, ending up as if it never left. */
+export function restoreLive(
+  workspaceId: string,
+  saved: Pick<LiveInfo, "ask" | "lastMessage" | "update" | "since">
+): void {
+  const { since, ...rest } = saved;
+  patchAndRecompute(workspaceId, rest);
+  useLiveStore.getState().patch(workspaceId, { since });
+}
+
 /** A hook-reported turn: remember what the agent asks for, or what it said. */
 export function noteLiveTurn(turn: AgentTurn): void {
   if (!isAgent(turn.workspaceId)) return;
