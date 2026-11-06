@@ -48,6 +48,12 @@ pub trait ToolLocator {
 
     /// The program and leading arguments that run `tool` inside a PTY.
     fn pty_invocation(tool: &str) -> Vec<String>;
+
+    /// Whether a binary found for `name` is one trace can use. An adapter can pass over
+    /// a build that behaves differently, and the search carries on to the next match.
+    fn is_usable(_name: &str, _path: &Path) -> bool {
+        true
+    }
 }
 
 /// The environment and shell agents run in.

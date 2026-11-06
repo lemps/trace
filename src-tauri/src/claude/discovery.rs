@@ -8,16 +8,18 @@ use std::path::{Path, PathBuf};
 use crate::platform::ports::ToolLocator;
 use crate::platform::Os;
 
-fn first_existing(candidates: Vec<PathBuf>) -> Option<String> {
+/// The first candidate that exists and that the OS adapter will use for `name`.
+fn first_existing<L: ToolLocator>(name: &str, candidates: Vec<PathBuf>) -> Option<String> {
     candidates
         .into_iter()
-        .find(|p| p.is_file())
+        .find(|p| p.is_file() && L::is_usable(name, p))
         .map(|p| p.to_string_lossy().to_string())
 }
 
 fn find_in_path<L: ToolLocator>(path_value: &str, name: &str) -> Option<String> {
     let names = L::executable_names(name);
-    first_existing(
+    first_existing::<L>(
+        name,
         std::env::split_paths(path_value)
             .flat_map(|dir| names.iter().map(move |n| dir.join(n)).collect::<Vec<_>>())
             .collect(),
@@ -29,7 +31,7 @@ fn find_with<L: ToolLocator>(
     env_map: Option<&HashMap<String, String>>,
     home: &Path,
 ) -> Option<String> {
-    first_existing(L::user_tool_paths(home, name))
+    first_existing::<L>(name, L::user_tool_paths(home, name))
         .or_else(|| {
             env_map
                 .and_then(|map| map.get("PATH"))
@@ -40,7 +42,7 @@ fn find_with<L: ToolLocator>(
                 .ok()
                 .and_then(|p| find_in_path::<L>(&p, name))
         })
-        .or_else(|| first_existing(L::system_tool_paths(name)))
+        .or_else(|| first_existing::<L>(name, L::system_tool_paths(name)))
 }
 
 /// Find a CLI binary by name, preferring the user's local install, then the
@@ -92,6 +94,26 @@ mod tests {
         fn pty_invocation(tool: &str) -> Vec<String> {
             vec![tool.to_string()]
         }
+        /// Stands in for a build the adapter won't use, like MSYS2's git on Windows.
+        fn is_usable(_name: &str, path: &Path) -> bool {
+            !path.components().any(|c| c.as_os_str() == "posix")
+        }
+    }
+
+    #[test]
+    fn an_unusable_build_first_on_path_is_passed_over() {
+        let home = std::env::temp_dir().join(format!("trace-find-{}", crate::helpers::new_id()));
+        let (posix, real) = (home.join("posix"), home.join("real"));
+        touch(&posix.join("git.fake"));
+        let path = std::env::join_paths([&posix, &real]).unwrap();
+        let env: HashMap<String, String> =
+            [("PATH".to_string(), path.to_string_lossy().to_string())].into();
+        assert_eq!(find_with::<FakeOs>("git", Some(&env), &home), None);
+
+        touch(&real.join("git.fake"));
+        let found = find_with::<FakeOs>("git", Some(&env), &home).unwrap();
+        assert!(found.contains("real"), "{found}");
+        fs::remove_dir_all(&home).unwrap();
     }
 
     fn touch(path: &Path) {
