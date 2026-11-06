@@ -18,7 +18,12 @@ async fn validate_resolves_region_and_user() {
     };
     let (user, conn) = auth::validate(&conn).await.expect("validate failed");
     println!("region: {}", conn.base_url);
-    println!("user: {} ({}) id={}", user.display_name, user.email.as_deref().unwrap_or("-"), user.account_id);
+    println!(
+        "user: {} ({}) id={}",
+        user.display_name,
+        user.email.as_deref().unwrap_or("-"),
+        user.account_id
+    );
     assert!(!user.display_name.is_empty());
 }
 
@@ -32,9 +37,17 @@ async fn board_loads_columns_and_cards() {
 
     let boards = conn.list_boards().await.expect("list_boards failed");
     assert_eq!(boards.len(), 1);
-    let board = conn.get_board(&boards[0].id).await.expect("get_board failed");
+    let board = conn
+        .get_board(&boards[0].id)
+        .await
+        .expect("get_board failed");
 
-    println!("board: {} ({} columns, {} cards)", board.board_name, board.columns.len(), board.issues.len());
+    println!(
+        "board: {} ({} columns, {} cards)",
+        board.board_name,
+        board.columns.len(),
+        board.issues.len()
+    );
     for col in &board.columns {
         let n = board
             .issues
@@ -48,7 +61,11 @@ async fn board_loads_columns_and_cards() {
             "  card {:<6} {:<16} {:<20} {}",
             issue.key,
             issue.status_id,
-            issue.assignee.as_ref().map(|a| a.display_name.as_str()).unwrap_or("-"),
+            issue
+                .assignee
+                .as_ref()
+                .map(|a| a.display_name.as_str())
+                .unwrap_or("-"),
             issue.summary.chars().take(50).collect::<String>()
         );
     }
@@ -58,7 +75,10 @@ async fn board_loads_columns_and_cards() {
     assert_eq!(board.columns.last().unwrap().statuses[0].id, "closed");
     // Every card lands in exactly one column.
     for issue in &board.issues {
-        assert!(board.columns.iter().any(|c| c.statuses.iter().any(|s| s.id == issue.status_id)));
+        assert!(board
+            .columns
+            .iter()
+            .any(|c| c.statuses.iter().any(|s| s.id == issue.status_id)));
     }
 }
 
@@ -70,7 +90,10 @@ async fn thread_loads_for_a_card() {
     };
     let (_, conn) = auth::validate(&conn).await.expect("validate failed");
 
-    let board = conn.get_board("open-issues").await.expect("get_board failed");
+    let board = conn
+        .get_board("open-issues")
+        .await
+        .expect("get_board failed");
     let Some(issue) = board.issues.first() else {
         eprintln!("no issues on the board — skipping thread check");
         return;
@@ -78,7 +101,10 @@ async fn thread_loads_for_a_card() {
     // Exercises GET /issues/{id}/messages + parse_comment against the real API.
     // A card may legitimately have zero messages — the assertion is that the
     // endpoint and parser don't error, not that the thread is non-empty.
-    let comments = conn.list_comments(&issue.id).await.expect("list_comments failed");
+    let comments = conn
+        .list_comments(&issue.id)
+        .await
+        .expect("list_comments failed");
     println!("{}: {} thread message(s)", issue.key, comments.len());
     for c in comments.iter().take(3) {
         let body: String = c.body.chars().take(60).collect();

@@ -9,7 +9,6 @@ use std::time::Instant;
 
 use serde::Serialize;
 
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestRun {
@@ -27,7 +26,11 @@ pub struct TestRun {
 fn detect(dir: &str) -> Option<(&'static str, Vec<&'static str>, &'static str)> {
     let has = |f: &str| Path::new(&format!("{dir}/{f}")).exists();
     if has("gradlew") {
-        return Some(("./gradlew", vec!["test", "--console=plain"], "./gradlew test"));
+        return Some((
+            "./gradlew",
+            vec!["test", "--console=plain"],
+            "./gradlew test",
+        ));
     }
     if has("Cargo.toml") {
         return Some(("cargo", vec!["test"], "cargo test"));
@@ -79,7 +82,9 @@ pub async fn run_tests(issue_key: String) -> Result<TestRun, String> {
 fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
     let worktree = crate::commands::repos::workspace_dir(&repo, issue_key);
     if !Path::new(&worktree).exists() {
-        return Err(format!("No worktree for {issue_key} — start a session on this issue first."));
+        return Err(format!(
+            "No worktree for {issue_key} — start a session on this issue first."
+        ));
     }
 
     let (program, args, display) = detect(&worktree).ok_or_else(|| {

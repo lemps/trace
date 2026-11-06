@@ -58,9 +58,15 @@ pub fn add_session_agent(
         return Err("That session no longer exists.".to_string());
     };
     if session.agents.len() >= MAX_AGENTS {
-        return Err(format!("A session can host at most {MAX_AGENTS} extra agents."));
+        return Err(format!(
+            "A session can host at most {MAX_AGENTS} extra agents."
+        ));
     }
-    session.agents.push(SessionAgent { id: new_id(), cli, provider });
+    session.agents.push(SessionAgent {
+        id: new_id(),
+        cli,
+        provider,
+    });
     let updated = session.clone();
     save(&list)?;
     Ok(updated)
@@ -106,8 +112,10 @@ pub fn start_session_agent(
         return Ok(());
     };
 
-    let session =
-        load().into_iter().find(|s| s.id == id).ok_or("That session no longer exists.")?;
+    let session = load()
+        .into_iter()
+        .find(|s| s.id == id)
+        .ok_or("That session no longer exists.")?;
     let agent = session
         .agents
         .iter()

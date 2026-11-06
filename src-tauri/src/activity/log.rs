@@ -170,7 +170,11 @@ mod tests {
         log.append(&event("one")).unwrap();
         log.append(&event("two")).unwrap();
         let reopened = Log::open(path);
-        let titles: Vec<_> = reopened.newest_first(10).into_iter().map(|e| e.title).collect();
+        let titles: Vec<_> = reopened
+            .newest_first(10)
+            .into_iter()
+            .map(|e| e.title)
+            .collect();
         assert_eq!(titles, ["two", "one"]);
     }
 

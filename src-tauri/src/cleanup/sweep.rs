@@ -87,7 +87,10 @@ pub(crate) fn qualifies(
 
 /// What a pass would delete right now, without deleting anything.
 pub fn preview(settings: &CleanupSettings, ctx: &Context) -> CleanupReport {
-    let items = select(settings, ctx).into_iter().map(|(c, held)| item(c, held)).collect();
+    let items = select(settings, ctx)
+        .into_iter()
+        .map(|(c, held)| item(c, held))
+        .collect();
     CleanupReport { items }
 }
 
@@ -102,7 +105,9 @@ pub fn apply(app: &AppHandle, settings: &CleanupSettings, ctx: &Context) -> Clea
             items.push(item(c, held));
             continue;
         }
-        let merged = merged.entry(c.repo.clone()).or_insert_with(|| merged_branches(&c.repo));
+        let merged = merged
+            .entry(c.repo.clone())
+            .or_insert_with(|| merged_branches(&c.repo));
         match remove(&c, merged) {
             Ok(branch_kept) => {
                 record(app, &c, branch_kept);
@@ -121,7 +126,9 @@ fn select(settings: &CleanupSettings, ctx: &Context) -> Vec<(Candidate, Option<S
         .into_iter()
         .filter(|c| {
             let idle = now.saturating_sub(c.last_active);
-            qualifies(settings, c.kind, c.archived, idle, || ticket_done(ctx, &c.workspace_id))
+            qualifies(settings, c.kind, c.archived, idle, || {
+                ticket_done(ctx, &c.workspace_id)
+            })
         })
         .map(|c| {
             let held = if ctx.running.contains(&c.dirname) {
@@ -168,7 +175,10 @@ fn remove(c: &Candidate, merged: &HashSet<String>) -> Result<bool, String> {
     if !merged.contains(&branch) && unpushed_commits(&c.repo, &branch) != Some(0) {
         return Ok(true);
     }
-    let _ = Command::new("git").args(["branch", "-D", &branch]).current_dir(&c.repo).output();
+    let _ = Command::new("git")
+        .args(["branch", "-D", &branch])
+        .current_dir(&c.repo)
+        .output();
     Ok(false)
 }
 
@@ -227,33 +237,91 @@ mod tests {
     #[test]
     fn nothing_qualifies_before_the_idle_period() {
         let s = rules(CleanupScope::Both, false, false);
-        assert!(!qualifies(&s, WorkspaceKind::Session, true, 6 * DAY, || Some(true)));
-        assert!(qualifies(&s, WorkspaceKind::Session, true, 7 * DAY, || Some(true)));
+        assert!(!qualifies(
+            &s,
+            WorkspaceKind::Session,
+            true,
+            6 * DAY,
+            || Some(true)
+        ));
+        assert!(qualifies(&s, WorkspaceKind::Session, true, 7 * DAY, || {
+            Some(true)
+        }));
     }
 
     #[test]
     fn scope_selects_the_kind() {
         let s = rules(CleanupScope::Sessions, false, false);
-        assert!(qualifies(&s, WorkspaceKind::Session, false, 8 * DAY, || None));
-        assert!(!qualifies(&s, WorkspaceKind::Ticket, false, 8 * DAY, || Some(true)));
+        assert!(qualifies(
+            &s,
+            WorkspaceKind::Session,
+            false,
+            8 * DAY,
+            || None
+        ));
+        assert!(!qualifies(
+            &s,
+            WorkspaceKind::Ticket,
+            false,
+            8 * DAY,
+            || Some(true)
+        ));
         let t = rules(CleanupScope::Tickets, false, false);
-        assert!(!qualifies(&t, WorkspaceKind::Session, true, 8 * DAY, || None));
-        assert!(qualifies(&t, WorkspaceKind::Ticket, false, 8 * DAY, || None));
+        assert!(!qualifies(
+            &t,
+            WorkspaceKind::Session,
+            true,
+            8 * DAY,
+            || None
+        ));
+        assert!(qualifies(&t, WorkspaceKind::Ticket, false, 8 * DAY, || {
+            None
+        }));
     }
 
     #[test]
     fn only_archived_sessions_when_asked() {
         let s = rules(CleanupScope::Both, true, false);
-        assert!(!qualifies(&s, WorkspaceKind::Session, false, 30 * DAY, || None));
-        assert!(qualifies(&s, WorkspaceKind::Session, true, 30 * DAY, || None));
+        assert!(!qualifies(
+            &s,
+            WorkspaceKind::Session,
+            false,
+            30 * DAY,
+            || None
+        ));
+        assert!(qualifies(
+            &s,
+            WorkspaceKind::Session,
+            true,
+            30 * DAY,
+            || None
+        ));
     }
 
     #[test]
     fn only_done_tickets_and_unknown_is_not_done() {
         let s = rules(CleanupScope::Both, false, true);
-        assert!(qualifies(&s, WorkspaceKind::Ticket, false, 30 * DAY, || Some(true)));
-        assert!(!qualifies(&s, WorkspaceKind::Ticket, false, 30 * DAY, || Some(false)));
-        assert!(!qualifies(&s, WorkspaceKind::Ticket, false, 30 * DAY, || None));
+        assert!(qualifies(
+            &s,
+            WorkspaceKind::Ticket,
+            false,
+            30 * DAY,
+            || Some(true)
+        ));
+        assert!(!qualifies(
+            &s,
+            WorkspaceKind::Ticket,
+            false,
+            30 * DAY,
+            || Some(false)
+        ));
+        assert!(!qualifies(
+            &s,
+            WorkspaceKind::Ticket,
+            false,
+            30 * DAY,
+            || None
+        ));
     }
 
     #[test]

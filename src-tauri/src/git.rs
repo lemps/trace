@@ -89,7 +89,12 @@ pub fn create_worktree(
     // branches holding unpushed commits. Check it back out rather than failing
     // on `-b`, so restarting the workspace picks its committed work back up.
     let branch_exists = Command::new("git")
-        .args(["show-ref", "--verify", "--quiet", &format!("refs/heads/{branch}")])
+        .args([
+            "show-ref",
+            "--verify",
+            "--quiet",
+            &format!("refs/heads/{branch}"),
+        ])
         .current_dir(repo_path)
         .status()
         .is_ok_and(|s| s.success());

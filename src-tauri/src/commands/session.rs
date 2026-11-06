@@ -103,7 +103,10 @@ pub(crate) fn save(list: &[ScratchSession]) -> Result<(), String> {
 }
 
 fn now_secs() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 /// All saved sessions (active + archived), newest first. Archived sessions past
@@ -144,7 +147,11 @@ pub fn create_session(
     remote_control: Option<bool>,
 ) -> Result<ScratchSession, String> {
     let title = title.trim();
-    let title = if title.is_empty() { "Exploration".to_string() } else { title.to_string() };
+    let title = if title.is_empty() {
+        "Exploration".to_string()
+    } else {
+        title.to_string()
+    };
     let cli = if cli == "codex" { "codex" } else { "claude" }.to_string();
     // The provider only applies to the Claude harness — keep registered
     // Anthropic-compatible endpoints, drop unknown ids and anything on codex.
@@ -210,7 +217,9 @@ pub fn rename_session(id: String, title: String) -> Result<ScratchSession, Strin
 /// editor action, and cwd resolution without any of them knowing it isn't a
 /// session id.
 pub(crate) fn owning_session(id: &str) -> Option<ScratchSession> {
-    load().into_iter().find(|s| s.id == id || s.agents.iter().any(|a| a.id == id))
+    load()
+        .into_iter()
+        .find(|s| s.id == id || s.agents.iter().any(|a| a.id == id))
 }
 
 /// Whether a workspace id belongs to an exploratory session (vs a Jira issue) —
@@ -256,7 +265,9 @@ pub(crate) fn session_cwd(id: &str, create: bool) -> Result<String, String> {
     }
     let busy = git::git_busy_check(&repo);
     if busy.starts_with("busy") {
-        return Err(format!("Repository is {busy} — finish that git operation first."));
+        return Err(format!(
+            "Repository is {busy} — finish that git operation first."
+        ));
     }
     let branch = format!("workspace/{}", crate::helpers::slugify(&session.id));
     let default_branch = git::get_default_branch(&repo);
@@ -333,8 +344,10 @@ pub fn start_session(
         return Ok(());
     };
 
-    let session =
-        load().into_iter().find(|s| s.id == id).ok_or("That session no longer exists.")?;
+    let session = load()
+        .into_iter()
+        .find(|s| s.id == id)
+        .ok_or("That session no longer exists.")?;
 
     // Worktree sessions get the same isolation as issues (and become linkable to
     // a ticket later), created on demand; legacy sessions stay in the repo root

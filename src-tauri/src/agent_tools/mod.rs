@@ -71,7 +71,12 @@ pub fn defs(app: &AppHandle) -> Vec<Value> {
 
 /// The renderer's answer to a call.
 pub fn resolve(app: &AppHandle, id: &str, text: String, is_error: bool) {
-    let tx = app.state::<AppState>().agent_tools.pending.lock().remove(id);
+    let tx = app
+        .state::<AppState>()
+        .agent_tools
+        .pending
+        .lock()
+        .remove(id);
     if let Some(tx) = tx {
         let _ = tx.send(ToolReply { text, is_error });
     }
@@ -84,13 +89,21 @@ pub fn call(app: &AppHandle, name: &str, arguments: &Value, caller: &str) -> Too
     let state = app.state::<AppState>();
     let tools = &state.agent_tools;
     tools.pending.lock().insert(id.clone(), tx);
-    let event = ToolCall { id: &id, name, arguments, caller };
+    let event = ToolCall {
+        id: &id,
+        name,
+        arguments,
+        caller,
+    };
     let reply = match app.emit("agent-tool-call", event) {
         Ok(()) => rx.recv_timeout(CALL_TIMEOUT).unwrap_or_else(|_| ToolReply {
             text: format!("trace didn't answer {name} in time. Is its window open?"),
             is_error: true,
         }),
-        Err(e) => ToolReply { text: format!("Couldn't reach trace's window: {e}"), is_error: true },
+        Err(e) => ToolReply {
+            text: format!("Couldn't reach trace's window: {e}"),
+            is_error: true,
+        },
     };
     tools.pending.lock().remove(&id);
     reply

@@ -86,7 +86,9 @@ pub fn read_workspace_file(issue_key: String, path: String) -> Result<String, St
     // guard anyway — never let an absolute or `..`-bearing path escape.
     let rel = std::path::Path::new(&path);
     if rel.is_absolute()
-        || rel.components().any(|c| matches!(c, std::path::Component::ParentDir))
+        || rel
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
     {
         return Err("Invalid file path.".to_string());
     }
@@ -148,9 +150,7 @@ fn untracked_files(work_dir: &str) -> Vec<String> {
 fn untracked_line_count(work_dir: &str, path: &str) -> u32 {
     let full = std::path::Path::new(work_dir).join(path);
     match std::fs::read(&full) {
-        Ok(bytes) if !bytes.contains(&0) => {
-            String::from_utf8_lossy(&bytes).lines().count() as u32
-        }
+        Ok(bytes) if !bytes.contains(&0) => String::from_utf8_lossy(&bytes).lines().count() as u32,
         _ => 0,
     }
 }
@@ -213,10 +213,7 @@ pub async fn git_diff_summary(issue_key: String) -> Result<DiffSummary, String> 
 
 /// Per-file unified diff parsed into hunks for the diff viewer.
 #[tauri::command]
-pub fn git_diff_file(
-    issue_key: String,
-    path: String,
-) -> Result<FileDiff, String> {
+pub fn git_diff_file(issue_key: String, path: String) -> Result<FileDiff, String> {
     let (repo, worktree) = work_dir_for(&issue_key)?;
 
     // Untracked files have no base to diff against — synthesize the "all

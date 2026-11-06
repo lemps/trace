@@ -15,7 +15,10 @@ const MAX_COMMENTS: &str = "25";
 
 /// The issue's most recent comments, oldest-first for transcript formatting.
 /// `issue_id` accepts a Jira id or key interchangeably.
-pub async fn list_comments(conn: &JiraConnection, issue_id: &str) -> Result<Vec<IssueComment>, String> {
+pub async fn list_comments(
+    conn: &JiraConnection,
+    issue_id: &str,
+) -> Result<Vec<IssueComment>, String> {
     let path = format!("/rest/api/3/issue/{issue_id}/comment");
     let query = [("orderBy", "-created"), ("maxResults", MAX_COMMENTS)];
     let v = client::get_query(conn, &path, &query).await?;

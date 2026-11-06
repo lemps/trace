@@ -162,7 +162,10 @@ mod tests {
     use super::*;
 
     fn tab(id: &str, name: &str) -> SessionTab {
-        SessionTab { id: id.into(), name: name.into() }
+        SessionTab {
+            id: id.into(),
+            name: name.into(),
+        }
     }
     fn section(id: &str, name: &str, tab: Option<&str>) -> SessionSection {
         SessionSection {
@@ -189,7 +192,10 @@ mod tests {
     fn rehomes_sections_of_deleted_tab() {
         let out = sanitize(SessionGroups {
             tabs: vec![tab("kept", "Kept")],
-            sections: vec![section("s1", "Orphan", Some("deleted")), section("s2", "Home", Some("kept"))],
+            sections: vec![
+                section("s1", "Orphan", Some("deleted")),
+                section("s2", "Home", Some("kept")),
+            ],
         });
         assert_eq!(out.sections[0].tab, None);
         assert_eq!(out.sections[1].tab.as_deref(), Some("kept"));

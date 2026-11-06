@@ -10,7 +10,9 @@ use serde_json::{json, Value};
 use super::client;
 use super::models::{parse_comment, parse_issue, state_category, state_name, BASE_STATES};
 use super::PylonConnection;
-use crate::issues::models::{BoardColumn, BoardData, BoardSummary, ColumnStatus, Issue, IssueComment};
+use crate::issues::models::{
+    BoardColumn, BoardData, BoardSummary, ColumnStatus, Issue, IssueComment,
+};
 
 const OPEN_BOARD_ID: &str = "open-issues";
 /// Cap on issues fetched per board load (runaway guard, mirrors Jira's caps).
@@ -49,7 +51,10 @@ async fn fetch_user_names(conn: &PylonConnection) -> HashMap<String, (String, Op
                             .map(str::to_string)
                     });
                 if let Some(name) = name {
-                    let avatar = u.get("avatar_url").and_then(Value::as_str).map(str::to_string);
+                    let avatar = u
+                        .get("avatar_url")
+                        .and_then(Value::as_str)
+                        .map(str::to_string);
                     map.insert(id.to_string(), (name, avatar));
                 }
             }
@@ -140,8 +145,10 @@ fn visible(issue: &Value) -> bool {
         .and_then(Value::as_str)
         .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok());
     match ts {
-        Some(t) => chrono::Utc::now().signed_duration_since(t.with_timezone(&chrono::Utc))
-            < chrono::Duration::days(CLOSED_KEEP_DAYS),
+        Some(t) => {
+            chrono::Utc::now().signed_duration_since(t.with_timezone(&chrono::Utc))
+                < chrono::Duration::days(CLOSED_KEEP_DAYS)
+        }
         None => true,
     }
 }
@@ -200,7 +207,10 @@ pub async fn add_note(conn: &PylonConnection, issue_key: &str, text: &str) -> Re
             .replace('>', "&gt;")
             .replace('"', "&quot;")
     };
-    let paragraphs: Vec<String> = trimmed.lines().map(|l| format!("<p>{}</p>", escape(l))).collect();
+    let paragraphs: Vec<String> = trimmed
+        .lines()
+        .map(|l| format!("<p>{}</p>", escape(l)))
+        .collect();
     let id = issue_key.trim_start_matches('#');
     let path = format!("/issues/{id}/note");
     client::post(conn, &path, json!({ "body_html": paragraphs.join("") })).await?;
@@ -210,7 +220,10 @@ pub async fn add_note(conn: &PylonConnection, issue_key: &str, text: &str) -> Re
 /// The issue's full conversation thread — customer messages and internal
 /// notes — oldest-first. Paginates `GET /issues/{id}/messages`; `issue_id`
 /// is the native Pylon id (the API also accepts the issue number).
-pub async fn list_comments(conn: &PylonConnection, issue_id: &str) -> Result<Vec<IssueComment>, String> {
+pub async fn list_comments(
+    conn: &PylonConnection,
+    issue_id: &str,
+) -> Result<Vec<IssueComment>, String> {
     let id = issue_id.trim_start_matches('#');
     let path = format!("/issues/{id}/messages");
     let mut out: Vec<IssueComment> = Vec::new();

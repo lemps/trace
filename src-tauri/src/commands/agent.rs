@@ -66,8 +66,12 @@ pub(crate) fn spawn_in(
     }
     let (resume_id, new_id_arg) = claude_session_ids(&workspace_id, &cli, &cwd);
     let resuming = cli == "claude" && resume_id.is_some();
-    let prompt = if resuming { resume_prompt } else { initial_prompt }
-        .filter(|p| !p.trim().is_empty());
+    let prompt = if resuming {
+        resume_prompt
+    } else {
+        initial_prompt
+    }
+    .filter(|p| !p.trim().is_empty());
     // What the caller asked for, before trace adds its own flags below — enough
     // to start it again after an interrupted quit (`interrupted`).
     let launch = crate::interrupted::AgentLaunch {
@@ -103,9 +107,9 @@ pub(crate) fn spawn_in(
         // Best-effort — without them the renderer falls back to its quiet timer.
         // trace's own tools (`agent_tools`), before `--settings` for the same
         // reason: `--mcp-config` is variadic too. Bind failure = no tools.
-        let tools = state.tool_server.get_or_init(|| {
-            crate::agent_tools::server::start(app.clone()).unwrap_or_default()
-        });
+        let tools = state
+            .tool_server
+            .get_or_init(|| crate::agent_tools::server::start(app.clone()).unwrap_or_default());
         let mut allow = Vec::new();
         if tools.port != 0 {
             extra_args.push("--mcp-config".to_string());
@@ -118,7 +122,10 @@ pub(crate) fn spawn_in(
                 extra_args.push(settings);
             }
         }
-        if let Some(spec) = provider.as_deref().and_then(crate::commands::providers::spec) {
+        if let Some(spec) = provider
+            .as_deref()
+            .and_then(crate::commands::providers::spec)
+        {
             // The Settings default model targets Anthropic (e.g. "fable") and
             // doesn't resolve on a third-party endpoint — keep only models that
             // clearly belong to this provider, else use its default. Resolved
@@ -150,7 +157,10 @@ pub(crate) fn spawn_in(
         cols.max(20),
         rows.max(4),
     )?;
-    state.pty_sessions.lock().insert(workspace_id.clone(), session);
+    state
+        .pty_sessions
+        .lock()
+        .insert(workspace_id.clone(), session);
     crate::interrupted::record_start(launch, pid);
     if let Some(pid) = pid {
         state.child_pids.lock().insert(workspace_id, pid);
@@ -205,7 +215,9 @@ pub fn start_agent(
 
     let busy = git::git_busy_check(&repo);
     if busy.starts_with("busy") {
-        return Err(format!("Repository is {busy} — finish that git operation first."));
+        return Err(format!(
+            "Repository is {busy} — finish that git operation first."
+        ));
     }
 
     // Path through the dirname helper: a linked issue adopted its session's
@@ -262,7 +274,9 @@ pub fn start_terminal(
         if !std::path::Path::new(&worktree).exists() {
             let busy = git::git_busy_check(&repo);
             if busy.starts_with("busy") {
-                return Err(format!("Repository is {busy} — finish that git operation first."));
+                return Err(format!(
+                    "Repository is {busy} — finish that git operation first."
+                ));
             }
             let branch = format!("workspace/{}", slugify(&issue_key));
             let default_branch = git::get_default_branch(&repo);

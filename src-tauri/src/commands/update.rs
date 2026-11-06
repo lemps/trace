@@ -19,8 +19,13 @@ pub struct UpdateInfo {
 /// Check the release feed for a newer build. `Ok(None)` means up to date.
 #[tauri::command]
 pub async fn check_app_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
-    let updater = app.updater().map_err(|e| format!("Updater unavailable: {e}"))?;
-    let update = updater.check().await.map_err(|e| format!("Update check failed: {e}"))?;
+    let updater = app
+        .updater()
+        .map_err(|e| format!("Updater unavailable: {e}"))?;
+    let update = updater
+        .check()
+        .await
+        .map_err(|e| format!("Update check failed: {e}"))?;
     Ok(update.map(|u| UpdateInfo {
         current_version: u.current_version.clone(),
         version: u.version.clone(),
@@ -34,7 +39,9 @@ pub async fn check_app_update(app: AppHandle) -> Result<Option<UpdateInfo>, Stri
 /// signature is verified against the bundled pubkey during install.
 #[tauri::command]
 pub async fn install_app_update(app: AppHandle) -> Result<(), String> {
-    let updater = app.updater().map_err(|e| format!("Updater unavailable: {e}"))?;
+    let updater = app
+        .updater()
+        .map_err(|e| format!("Updater unavailable: {e}"))?;
     let update = updater
         .check()
         .await

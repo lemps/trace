@@ -141,8 +141,9 @@ pub fn record_busy(workspace_id: &str, busy: bool) {
 /// in the ledger.
 pub fn collect_at_launch(state: &AppState) {
     let _guard = LEDGER.lock();
-    let (alive, gone): (BTreeMap<_, _>, BTreeMap<_, _>) =
-        read().into_iter().partition(|(_, a)| a.pid.is_some_and(process_alive));
+    let (alive, gone): (BTreeMap<_, _>, BTreeMap<_, _>) = read()
+        .into_iter()
+        .partition(|(_, a)| a.pid.is_some_and(process_alive));
     write(&alive);
     *state.interrupted.lock() = gone.into_values().collect();
 }

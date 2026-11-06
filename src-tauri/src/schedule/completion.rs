@@ -65,7 +65,10 @@ pub fn on_turn(app: &AppHandle, ws: &str, event: HookEvent, input: HookInput) {
 fn on_stop(app: &AppHandle, ws: &str, live: &run::LiveRun, input: HookInput) {
     let pending = input.pending_tasks();
     let wake_in = match pending {
-        0 => input.transcript_path.as_deref().and_then(wakeup::pending_wakeup),
+        0 => input
+            .transcript_path
+            .as_deref()
+            .and_then(wakeup::pending_wakeup),
         _ => None,
     };
     let wakes_at = wake_in.map(|d| now_secs() + i64::try_from(d.as_secs()).unwrap_or(i64::MAX));

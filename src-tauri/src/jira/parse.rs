@@ -65,7 +65,9 @@ pub fn parse_comment(v: &Value) -> Option<IssueComment> {
         return None;
     }
     Some(IssueComment {
-        author: str_at(v, &["author", "displayName"]).unwrap_or("Unknown").to_string(),
+        author: str_at(v, &["author", "displayName"])
+            .unwrap_or("Unknown")
+            .to_string(),
         created: str_at(v, &["created"]).map(str::to_string),
         // Jira comments from this endpoint carry no internal/public flag.
         is_internal: false,
@@ -87,7 +89,9 @@ fn parse_assignee(v: &Value) -> Option<Assignee> {
     if assignee.is_null() {
         return None;
     }
-    let display_name = str_at(assignee, &["displayName"]).unwrap_or("Unknown").to_string();
+    let display_name = str_at(assignee, &["displayName"])
+        .unwrap_or("Unknown")
+        .to_string();
     Some(Assignee {
         account_id: str_at(assignee, &["accountId"]).unwrap_or("").to_string(),
         initial: initial_of(&display_name),
@@ -105,7 +109,12 @@ pub fn parse_issue(v: &Value) -> Option<Issue> {
     let labels = fields
         .get("labels")
         .and_then(Value::as_array)
-        .map(|arr| arr.iter().filter_map(Value::as_str).map(str::to_string).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
         .unwrap_or_default();
 
     let description = fields
@@ -120,14 +129,20 @@ pub fn parse_issue(v: &Value) -> Option<Issue> {
     Some(Issue {
         id,
         key,
-        summary: str_at(fields, &["summary"]).unwrap_or("(no summary)").to_string(),
+        summary: str_at(fields, &["summary"])
+            .unwrap_or("(no summary)")
+            .to_string(),
         status_id: str_at(fields, &["status", "id"]).unwrap_or("").to_string(),
-        status_name: str_at(fields, &["status", "name"]).unwrap_or("").to_string(),
+        status_name: str_at(fields, &["status", "name"])
+            .unwrap_or("")
+            .to_string(),
         status_category: str_at(fields, &["status", "statusCategory", "key"])
             .unwrap_or("new")
             .to_string(),
         priority: map_priority(priority_name),
-        issue_type: str_at(fields, &["issuetype", "name"]).unwrap_or("Task").to_string(),
+        issue_type: str_at(fields, &["issuetype", "name"])
+            .unwrap_or("Task")
+            .to_string(),
         labels,
         assignee: parse_assignee(v),
         description,
@@ -169,7 +184,10 @@ fn parse_epic(fields: &Value) -> (Option<String>, Option<String>, Option<String>
             .and_then(Value::as_str)
             .is_some_and(|n| n.eq_ignore_ascii_case("epic"));
         if is_epic {
-            let key = parent.get("key").and_then(Value::as_str).map(str::to_string);
+            let key = parent
+                .get("key")
+                .and_then(Value::as_str)
+                .map(str::to_string);
             let name = parent
                 .get("fields")
                 .and_then(|f| f.get("summary"))

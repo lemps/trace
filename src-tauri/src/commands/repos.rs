@@ -52,7 +52,10 @@ mod tests {
     use super::{match_mapping, RepoMapping};
 
     fn m(pattern: &str, repo: &str) -> RepoMapping {
-        RepoMapping { pattern: pattern.into(), repo: repo.into() }
+        RepoMapping {
+            pattern: pattern.into(),
+            repo: repo.into(),
+        }
     }
 
     #[test]

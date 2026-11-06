@@ -182,7 +182,12 @@ pub fn spawn_shell_pty(
     rows: u16,
 ) -> Result<(PtySession, Option<u32>), String> {
     let pair = native_pty_system()
-        .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+        .openpty(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        })
         .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
     let mut cmd = CommandBuilder::new(default_shell());

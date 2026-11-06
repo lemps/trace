@@ -99,7 +99,9 @@ mod tests {
         assert!(looks_like_issue_key("TRACE-12"));
         assert!(looks_like_issue_key("PM2-7"));
         assert!(looks_like_issue_key("#123"));
-        assert!(!looks_like_issue_key("3f2a9c1e-0b7d-4c55-9e1a-2b3c4d5e6f70"));
+        assert!(!looks_like_issue_key(
+            "3f2a9c1e-0b7d-4c55-9e1a-2b3c4d5e6f70"
+        ));
         assert!(!looks_like_issue_key("term:TRACE-12"));
         assert!(!looks_like_issue_key("#"));
     }

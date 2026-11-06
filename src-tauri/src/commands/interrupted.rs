@@ -41,7 +41,10 @@ pub fn resume_interrupted_agents(
         .map(|a| {
             let workspace_id = a.workspace_id.clone();
             let error = resume(&app, &state, a).err();
-            Resumed { workspace_id, error }
+            Resumed {
+                workspace_id,
+                error,
+            }
         })
         .collect()
 }
@@ -70,7 +73,10 @@ fn resume(app: &AppHandle, state: &AppState, a: AgentLaunch) -> Result<(), Strin
         ROWS,
     )?;
     // The renderer learns it's running the way it does for scheduled runs.
-    let _ = app.emit("agent-run-state", json!({ "workspaceId": ws, "running": true }));
+    let _ = app.emit(
+        "agent-run-state",
+        json!({ "workspaceId": ws, "running": true }),
+    );
     Ok(())
 }
 

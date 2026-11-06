@@ -78,11 +78,15 @@ pub trait IssueProvider {
     fn current_user(&self) -> impl std::future::Future<Output = Result<IssueUser, String>> + Send;
 
     /// Boards the user can pick from (virtual on providers without boards).
-    fn list_boards(&self) -> impl std::future::Future<Output = Result<Vec<BoardSummary>, String>> + Send;
+    fn list_boards(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Vec<BoardSummary>, String>> + Send;
 
     /// Columns + cards for one board.
-    fn get_board(&self, board_id: &str)
-        -> impl std::future::Future<Output = Result<BoardData, String>> + Send;
+    fn get_board(
+        &self,
+        board_id: &str,
+    ) -> impl std::future::Future<Output = Result<BoardData, String>> + Send;
 
     /// Move an issue to one of the target statuses (a column can map to several).
     fn transition_issue(
@@ -148,7 +152,11 @@ impl IssueProvider for Provider {
         }
     }
 
-    async fn transition_issue(&self, issue_key: &str, target_status_ids: &[String]) -> Result<(), String> {
+    async fn transition_issue(
+        &self,
+        issue_key: &str,
+        target_status_ids: &[String],
+    ) -> Result<(), String> {
         match self {
             Provider::Jira(c) => c.transition_issue(issue_key, target_status_ids).await,
             Provider::Pylon(c) => c.transition_issue(issue_key, target_status_ids).await,
@@ -169,7 +177,11 @@ impl IssueProvider for Provider {
         }
     }
 
-    async fn get_pull_requests(&self, issue_id: &str, fresh: bool) -> Result<Vec<PullRequest>, String> {
+    async fn get_pull_requests(
+        &self,
+        issue_id: &str,
+        fresh: bool,
+    ) -> Result<Vec<PullRequest>, String> {
         match self {
             Provider::Jira(c) => c.get_pull_requests(issue_id, fresh).await,
             Provider::Pylon(c) => c.get_pull_requests(issue_id, fresh).await,

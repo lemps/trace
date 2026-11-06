@@ -69,13 +69,21 @@ pub async fn connect_pylon(state: State<'_, AppState>, token: String) -> Result<
 /// UI skip the login screen on launch without exposing tokens.
 #[tauri::command]
 pub fn provider_sessions(state: State<'_, AppState>) -> Vec<ProviderSession> {
-    state.providers.read().values().map(|p| p.session_info()).collect()
+    state
+        .providers
+        .read()
+        .values()
+        .map(|p| p.session_info())
+        .collect()
 }
 
 /// The authenticated user of one provider — used to pre-select the current
 /// user in the board's assignee filter on launch.
 #[tauri::command]
-pub async fn provider_current_user(state: State<'_, AppState>, provider: String) -> Result<IssueUser, String> {
+pub async fn provider_current_user(
+    state: State<'_, AppState>,
+    provider: String,
+) -> Result<IssueUser, String> {
     let kind = ProviderKind::parse(&provider)?;
     get_provider(&state, kind)?.current_user().await
 }
@@ -91,7 +99,10 @@ pub fn disconnect_provider(state: State<'_, AppState>, provider: String) -> Resu
 }
 
 #[tauri::command]
-pub async fn list_boards(state: State<'_, AppState>, provider: String) -> Result<Vec<BoardSummary>, String> {
+pub async fn list_boards(
+    state: State<'_, AppState>,
+    provider: String,
+) -> Result<Vec<BoardSummary>, String> {
     let kind = ProviderKind::parse(&provider)?;
     get_provider(&state, kind)?.list_boards().await
 }
@@ -127,7 +138,9 @@ pub async fn comment_on_issue(
     body: String,
 ) -> Result<(), String> {
     let kind = ProviderKind::parse(&provider)?;
-    get_provider(&state, kind)?.add_comment(&issue_key, &body).await
+    get_provider(&state, kind)?
+        .add_comment(&issue_key, &body)
+        .await
 }
 
 /// Recent entries in an issue's discussion thread (Jira comments; Pylon

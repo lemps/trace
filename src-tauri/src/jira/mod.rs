@@ -50,7 +50,11 @@ impl IssueProvider for JiraConnection {
         board::get_board(self, id).await
     }
 
-    async fn transition_issue(&self, issue_key: &str, target_status_ids: &[String]) -> Result<(), String> {
+    async fn transition_issue(
+        &self,
+        issue_key: &str,
+        target_status_ids: &[String],
+    ) -> Result<(), String> {
         board::transition_to_status(self, issue_key, target_status_ids).await
     }
 
@@ -62,7 +66,11 @@ impl IssueProvider for JiraConnection {
         comments::list_comments(self, issue_id).await
     }
 
-    async fn get_pull_requests(&self, issue_id: &str, fresh: bool) -> Result<Vec<PullRequest>, String> {
+    async fn get_pull_requests(
+        &self,
+        issue_id: &str,
+        fresh: bool,
+    ) -> Result<Vec<PullRequest>, String> {
         dev::get_pull_requests(self, issue_id, fresh).await
     }
 

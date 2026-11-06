@@ -33,19 +33,46 @@ pub async fn get_pull_requests(
     let v = client::get_query(conn, "/rest/dev-status/latest/issue/detail", &query).await?;
 
     let mut out = Vec::new();
-    for detail in v.get("detail").and_then(Value::as_array).into_iter().flatten() {
-        for pr in detail.get("pullRequests").and_then(Value::as_array).into_iter().flatten() {
+    for detail in v
+        .get("detail")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        for pr in detail
+            .get("pullRequests")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
             // `id` is the PR number (string); status is uppercase ("OPEN", "MERGED", ...).
-            let number = pr.get("id").and_then(Value::as_str).unwrap_or("").to_string();
-            let url = pr.get("url").and_then(Value::as_str).unwrap_or("").to_string();
-            let title = pr.get("name").and_then(Value::as_str).unwrap_or("").to_string();
+            let number = pr
+                .get("id")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let url = pr
+                .get("url")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let title = pr
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
             let state = pr
                 .get("status")
                 .and_then(Value::as_str)
                 .unwrap_or("OPEN")
                 .to_ascii_lowercase();
             if !url.is_empty() {
-                out.push(PullRequest { number, url, state, title });
+                out.push(PullRequest {
+                    number,
+                    url,
+                    state,
+                    title,
+                });
             }
         }
     }

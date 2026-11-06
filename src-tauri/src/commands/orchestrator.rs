@@ -107,7 +107,10 @@ pub async fn orchestrator_cli(
     // would defeat `--model` alias resolution (mirrors claude/pty.rs).
     cmd.env_clear();
     for (key, value) in &env_map {
-        if !MODEL_OVERRIDE_ENV_PREFIXES.iter().any(|p| key.starts_with(p)) {
+        if !MODEL_OVERRIDE_ENV_PREFIXES
+            .iter()
+            .any(|p| key.starts_with(p))
+        {
             cmd.env(key, value);
         }
     }

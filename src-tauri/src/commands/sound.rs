@@ -50,8 +50,14 @@ pub fn list_notify_sounds() -> Vec<SoundOption> {
     let mut out = Vec::new();
     for dir in SOUND_DIRS {
         let Some(path) = expand(dir) else { continue };
-        let source = if dir.starts_with('~') { "you" } else { "system" };
-        let Ok(entries) = std::fs::read_dir(&path) else { continue };
+        let source = if dir.starts_with('~') {
+            "you"
+        } else {
+            "system"
+        };
+        let Ok(entries) = std::fs::read_dir(&path) else {
+            continue;
+        };
         let mut found: Vec<SoundOption> = entries
             .filter_map(Result::ok)
             .map(|e| e.path())
@@ -110,7 +116,9 @@ mod tests {
     fn macos_ships_sounds_to_offer() {
         // Every Mac has these; the listing is what fills the Settings picker.
         let sounds = list_notify_sounds();
-        assert!(sounds.iter().any(|s| s.name == "Glass" && s.source == "system"));
+        assert!(sounds
+            .iter()
+            .any(|s| s.name == "Glass" && s.source == "system"));
         assert!(sounds.iter().all(|s| s.path.ends_with(".aiff")
             || s.path.ends_with(".wav")
             || s.path.ends_with(".mp3")

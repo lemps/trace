@@ -51,14 +51,22 @@ pub fn collect() -> Vec<Candidate> {
         let Some(repo) = s.repo.clone().or_else(default_repo) else {
             continue;
         };
-        let owner = Owner { id: &s.id, label: &s.title, kind: WorkspaceKind::Session };
+        let owner = Owner {
+            id: &s.id,
+            label: &s.title,
+            kind: WorkspaceKind::Session,
+        };
         push(&mut out, &mut seen, owner, repo, s.archived_at);
     }
     for (id, repo) in assigned_workspaces() {
         if session_ids.contains(id.as_str()) || !crate::activity::looks_like_issue_key(&id) {
             continue;
         }
-        let owner = Owner { id: &id, label: &id, kind: WorkspaceKind::Ticket };
+        let owner = Owner {
+            id: &id,
+            label: &id,
+            kind: WorkspaceKind::Ticket,
+        };
         push(&mut out, &mut seen, owner, repo, None);
     }
     out
@@ -103,13 +111,18 @@ fn push(
 /// moment it was archived. Deliberately not the git index — trace's own status
 /// scans rewrite it, which would keep every worktree "active" forever.
 fn last_active(path: &str, archived_at: Option<u64>) -> u64 {
-    let head_commit = git_out(path, &["log", "-1", "--format=%ct"])
-        .and_then(|s| s.trim().parse::<u64>().ok());
-    [mtime(Path::new(path)), head_commit, newest_transcript(path), archived_at]
-        .into_iter()
-        .flatten()
-        .max()
-        .unwrap_or(0)
+    let head_commit =
+        git_out(path, &["log", "-1", "--format=%ct"]).and_then(|s| s.trim().parse::<u64>().ok());
+    [
+        mtime(Path::new(path)),
+        head_commit,
+        newest_transcript(path),
+        archived_at,
+    ]
+    .into_iter()
+    .flatten()
+    .max()
+    .unwrap_or(0)
 }
 
 /// Newest `.jsonl` in Claude's project dir for `cwd` — every conversation an

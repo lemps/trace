@@ -145,10 +145,7 @@ fn key(spec: &ProviderSpec) -> Option<String> {
 /// that the third-party endpoint rejects.
 /// Errors when no key is configured so the user gets a clear message instead
 /// of a TUI that fails auth on first contact.
-pub(crate) fn env(
-    spec: &ProviderSpec,
-    model: &str,
-) -> Result<HashMap<String, String>, String> {
+pub(crate) fn env(spec: &ProviderSpec, model: &str) -> Result<HashMap<String, String>, String> {
     let key = key(spec).ok_or_else(|| {
         let host = if is_wafer(spec) {
             "wafer"
@@ -166,10 +163,19 @@ pub(crate) fn env(
     // through these envs. Pin every alias so a Settings default like "sonnet"
     // or an internal subagent spawn can't leak an Anthropic id.
     env.insert("ANTHROPIC_MODEL".to_string(), model.to_string());
-    env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".to_string(), model.to_string());
-    env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".to_string(), model.to_string());
+    env.insert(
+        "ANTHROPIC_DEFAULT_OPUS_MODEL".to_string(),
+        model.to_string(),
+    );
+    env.insert(
+        "ANTHROPIC_DEFAULT_SONNET_MODEL".to_string(),
+        model.to_string(),
+    );
     let light = spec.haiku_model.unwrap_or(model);
-    env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".to_string(), light.to_string());
+    env.insert(
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL".to_string(),
+        light.to_string(),
+    );
     env.insert("CLAUDE_CODE_SUBAGENT_MODEL".to_string(), light.to_string());
     if let Some(effort) = spec.effort_level {
         env.insert("CLAUDE_CODE_EFFORT_LEVEL".to_string(), effort.to_string());

@@ -11,7 +11,11 @@ use crate::issues::models::{initial_of, Assignee, Issue, IssueComment};
 pub const BASE_STATES: &[(&str, &str, &str)] = &[
     ("new", "New", "new"),
     ("waiting_on_you", "Waiting on You", "indeterminate"),
-    ("waiting_on_customer", "Waiting on Customer", "indeterminate"),
+    (
+        "waiting_on_customer",
+        "Waiting on Customer",
+        "indeterminate",
+    ),
     ("on_hold", "On Hold", "indeterminate"),
     ("closed", "Closed", "done"),
 ];
@@ -41,7 +45,10 @@ pub fn state_category(slug: &str) -> String {
 
 /// Convert one raw Pylon issue Value into the board's card shape. `user_names`
 /// maps user id → (display name, avatar) (assignees arrive as id-only).
-pub fn parse_issue(v: &Value, user_names: &HashMap<String, (String, Option<String>)>) -> Option<Issue> {
+pub fn parse_issue(
+    v: &Value,
+    user_names: &HashMap<String, (String, Option<String>)>,
+) -> Option<Issue> {
     let id = v.get("id")?.as_str()?.to_string();
     let number = v.get("number").and_then(Value::as_i64).unwrap_or(0);
     let key = if number > 0 {
@@ -49,12 +56,21 @@ pub fn parse_issue(v: &Value, user_names: &HashMap<String, (String, Option<Strin
     } else {
         id.clone()
     };
-    let state = v.get("state").and_then(Value::as_str).unwrap_or("new").to_string();
+    let state = v
+        .get("state")
+        .and_then(Value::as_str)
+        .unwrap_or("new")
+        .to_string();
 
     let labels = v
         .get("tags")
         .and_then(Value::as_array)
-        .map(|arr| arr.iter().filter_map(Value::as_str).map(str::to_string).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
         .unwrap_or_default();
 
     let description = v
@@ -92,12 +108,19 @@ pub fn parse_issue(v: &Value, user_names: &HashMap<String, (String, Option<Strin
     })
 }
 
-fn parse_assignee(v: &Value, user_names: &HashMap<String, (String, Option<String>)>) -> Option<Assignee> {
+fn parse_assignee(
+    v: &Value,
+    user_names: &HashMap<String, (String, Option<String>)>,
+) -> Option<Assignee> {
     let a = v.get("assignee")?;
     if a.is_null() {
         return None;
     }
-    let id = a.get("id").and_then(Value::as_str).unwrap_or("").to_string();
+    let id = a
+        .get("id")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let email = a.get("email").and_then(Value::as_str).unwrap_or("");
     let (display_name, avatar_url) = match user_names.get(&id) {
         Some((name, avatar)) => (name.clone(), avatar.clone()),
@@ -135,8 +158,14 @@ pub fn parse_comment(v: &Value) -> Option<IssueComment> {
             .and_then(Value::as_str)
             .unwrap_or("Unknown")
             .to_string(),
-        created: v.get("timestamp").and_then(Value::as_str).map(str::to_string),
-        is_internal: v.get("is_private").and_then(Value::as_bool).unwrap_or(false),
+        created: v
+            .get("timestamp")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        is_internal: v
+            .get("is_private")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
         body,
     })
 }
@@ -159,7 +188,16 @@ pub fn html_to_text(html: &str) -> String {
                 let t = tag.trim_start_matches('/').to_ascii_lowercase();
                 if matches!(
                     t.as_str(),
-                    "br" | "p" | "div" | "li" | "ul" | "ol" | "blockquote" | "h1" | "h2" | "h3" | "tr"
+                    "br" | "p"
+                        | "div"
+                        | "li"
+                        | "ul"
+                        | "ol"
+                        | "blockquote"
+                        | "h1"
+                        | "h2"
+                        | "h3"
+                        | "tr"
                 ) {
                     out.push('\n');
                 }

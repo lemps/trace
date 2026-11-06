@@ -47,12 +47,20 @@ fn parse_me(v: &serde_json::Value) -> IssueUser {
     let user = data.get("user").unwrap_or(data);
     let str_field = |keys: &[&str]| {
         keys.iter()
-            .find_map(|k| user.get(k).and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
+            .find_map(|k| {
+                user.get(k)
+                    .and_then(|x| x.as_str())
+                    .filter(|s| !s.is_empty())
+            })
             .map(str::to_string)
     };
     let email = str_field(&["email"]);
     let display_name = str_field(&["name", "display_name"])
-        .or_else(|| email.as_ref().and_then(|e| e.split('@').next().map(str::to_string)))
+        .or_else(|| {
+            email
+                .as_ref()
+                .and_then(|e| e.split('@').next().map(str::to_string))
+        })
         .or_else(|| {
             data.get("name")
                 .and_then(|n| n.as_str())

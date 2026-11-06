@@ -6,7 +6,6 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-
 /// Run a launcher binary detached, reporting whether it started successfully.
 fn try_launch(binary: &str, args: &[&str]) -> bool {
     Command::new(binary)
@@ -81,7 +80,11 @@ pub fn open_in_editor(issue_key: String, editor: String) -> Result<(), String> {
             .or_else(crate::commands::repos::default_repo)
             .ok_or("Add a repository in Settings first.")?;
         let worktree = crate::commands::repos::workspace_dir(&repo, &issue_key);
-        if Path::new(&worktree).exists() { worktree } else { repo }
+        if Path::new(&worktree).exists() {
+            worktree
+        } else {
+            repo
+        }
     };
 
     let opened = match editor.trim().to_lowercase().as_str() {
@@ -94,6 +97,8 @@ pub fn open_in_editor(issue_key: String, editor: String) -> Result<(), String> {
     if opened {
         Ok(())
     } else {
-        Err(format!("Couldn't open {editor}. Make sure it's installed and on your PATH."))
+        Err(format!(
+            "Couldn't open {editor}. Make sure it's installed and on your PATH."
+        ))
     }
 }

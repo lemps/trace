@@ -29,7 +29,10 @@ pub fn run() {
 
     // Reconnect every issue tracker with a saved session.
     for provider in issues::session::restore_all() {
-        app_state.providers.write().insert(provider.kind(), provider);
+        app_state
+            .providers
+            .write()
+            .insert(provider.kind(), provider);
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -148,7 +151,9 @@ pub fn run() {
             // Quitting or restarting for an update kills every agent; mark it, so
             // they're remembered as interrupted rather than finished.
             if let tauri::RunEvent::Exit = event {
-                app.state::<AppState>().shutting_down.store(true, Ordering::SeqCst);
+                app.state::<AppState>()
+                    .shutting_down
+                    .store(true, Ordering::SeqCst);
             }
         });
 }

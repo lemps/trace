@@ -86,7 +86,10 @@ pub struct StartGuard<'a> {
 impl<'a> StartGuard<'a> {
     pub fn acquire(state: &'a AppState, id: &str) -> Option<Self> {
         if state.starting.lock().insert(id.to_string()) {
-            Some(Self { state, id: id.to_string() })
+            Some(Self {
+                state,
+                id: id.to_string(),
+            })
         } else {
             None
         }

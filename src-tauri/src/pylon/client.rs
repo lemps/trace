@@ -13,7 +13,8 @@ fn http() -> Result<reqwest::Client, String> {
 }
 
 fn authed(conn: &PylonConnection, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    req.bearer_auth(&conn.token).header("Accept", "application/json")
+    req.bearer_auth(&conn.token)
+        .header("Accept", "application/json")
 }
 
 /// GET `path` (e.g. `/me`) and parse JSON.
@@ -27,7 +28,11 @@ pub async fn get(conn: &PylonConnection, path: &str) -> Result<Value, String> {
 }
 
 /// GET `path` with query params.
-pub async fn get_query(conn: &PylonConnection, path: &str, query: &[(&str, &str)]) -> Result<Value, String> {
+pub async fn get_query(
+    conn: &PylonConnection,
+    path: &str,
+    query: &[(&str, &str)],
+) -> Result<Value, String> {
     let url = format!("{}{path}", conn.base_url);
     let resp = authed(conn, http()?.get(&url).query(query))
         .send()
@@ -64,7 +69,10 @@ pub fn data(v: &Value) -> &Value {
 
 async fn read_json(resp: reqwest::Response) -> Result<Value, String> {
     let status = resp.status();
-    let text = resp.text().await.map_err(|e| format!("Read body failed: {e}"))?;
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| format!("Read body failed: {e}"))?;
     if !status.is_success() {
         // Surface a concise Pylon error without leaking the token. Pylon's
         // error shape is {"errors": ["..."]}.

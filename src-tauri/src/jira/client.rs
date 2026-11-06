@@ -60,7 +60,10 @@ pub async fn post(conn: &JiraConnection, path: &str, body: Value) -> Result<Valu
 
 async fn read_json(resp: reqwest::Response) -> Result<Value, String> {
     let status = resp.status();
-    let text = resp.text().await.map_err(|e| format!("Read body failed: {e}"))?;
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| format!("Read body failed: {e}"))?;
     if !status.is_success() {
         // Surface a concise Jira error without leaking credentials.
         let detail = serde_json::from_str::<Value>(&text)

@@ -29,7 +29,10 @@ pub fn start(app: AppHandle) -> Result<ToolServer, String> {
         .map(|a| a.port())
         .ok_or("no loopback port")?;
     let token = new_id();
-    let info = ToolServer { port, token: token.clone() };
+    let info = ToolServer {
+        port,
+        token: token.clone(),
+    };
     std::thread::spawn(move || {
         for request in server.incoming_requests() {
             let (app, token) = (app.clone(), token.clone());
@@ -69,7 +72,9 @@ fn serve(app: &AppHandle, token: &str, port: u16, mut request: Request) {
         return;
     };
     let tools = defs(app);
-    let reply = rpc::handle(&message, &tools, |name, args| call(app, name, &args, &caller));
+    let reply = rpc::handle(&message, &tools, |name, args| {
+        call(app, name, &args, &caller)
+    });
     let response = match reply {
         // A notification or response from the client: accepted, nothing to say.
         None => Response::from_string(String::new()).with_status_code(202),
@@ -82,9 +87,8 @@ fn authorised(request: &Request, token: &str, port: u16) -> bool {
     if header(request, "Origin").is_some() {
         return false;
     }
-    let host_ok = header(request, "Host").is_some_and(|h| {
-        h == format!("127.0.0.1:{port}") || h == format!("localhost:{port}")
-    });
+    let host_ok = header(request, "Host")
+        .is_some_and(|h| h == format!("127.0.0.1:{port}") || h == format!("localhost:{port}"));
     let bearer = header(request, "Authorization")
         .and_then(|h| h.strip_prefix("Bearer ").map(str::to_string))
         .unwrap_or_default();

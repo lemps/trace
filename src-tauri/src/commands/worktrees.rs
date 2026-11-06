@@ -28,7 +28,11 @@ pub struct WorktreeInfo {
 }
 
 pub(crate) fn git_out(dir: &str, args: &[&str]) -> Option<String> {
-    let out = Command::new("git").args(args).current_dir(dir).output().ok()?;
+    let out = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .ok()?;
     if out.status.success() {
         Some(String::from_utf8_lossy(&out.stdout).to_string())
     } else {
@@ -63,8 +67,10 @@ fn parse_worktree_list(porcelain: &str) -> Vec<(String, Option<String>)> {
 pub(crate) fn merged_branches(repo: &str) -> std::collections::HashSet<String> {
     let default = git::get_default_branch(repo);
     for base in [format!("origin/{default}"), default] {
-        if let Some(out) = git_out(repo, &["branch", "--merged", &base, "--format=%(refname:short)"])
-        {
+        if let Some(out) = git_out(
+            repo,
+            &["branch", "--merged", &base, "--format=%(refname:short)"],
+        ) {
             return out
                 .lines()
                 .map(|l| l.trim().to_string())
@@ -193,12 +199,18 @@ fn collect_worktrees(running: &[String]) -> Vec<WorktreeInfo> {
                 .map(|(path, _)| s.spawn(move || is_dirty(path)))
                 .collect();
             // A panicked probe counts as dirty — the safe side (requires confirm).
-            handles.into_iter().map(|h| h.join().unwrap_or(true)).collect()
+            handles
+                .into_iter()
+                .map(|h| h.join().unwrap_or(true))
+                .collect()
         });
         for ((path, branch), dirty) in entries.into_iter().zip(dirt) {
             let name = path.rsplit('/').next().unwrap_or(&path).to_string();
             out.push(WorktreeInfo {
-                merged: branch.as_deref().map(|b| merged.contains(b)).unwrap_or(false),
+                merged: branch
+                    .as_deref()
+                    .map(|b| merged.contains(b))
+                    .unwrap_or(false),
                 dirty,
                 running: running.contains(&name),
                 repo: repo.clone(),
@@ -281,7 +293,10 @@ mod tests {
         assert_eq!(parsed[0], ("/repo".into(), Some("main".into())));
         assert_eq!(
             parsed[1],
-            ("/repo/.worktrees/trace-12".into(), Some("workspace/trace-12".into()))
+            (
+                "/repo/.worktrees/trace-12".into(),
+                Some("workspace/trace-12".into())
+            )
         );
         assert_eq!(parsed[2], ("/repo/.worktrees/detached".into(), None));
     }

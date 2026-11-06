@@ -9,7 +9,9 @@ use uuid::Uuid;
 /// home for persisted JSON and the generated agent tooling. Mirrors the
 /// `dirs::config_dir().join("trace")` pattern used in `commands/*`.
 pub fn trace_dir() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("trace")
+    dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("trace")
 }
 
 /// Dir prepended to every agent's PATH; holds trace-generated CLIs like the

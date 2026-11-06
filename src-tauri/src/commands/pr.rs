@@ -57,7 +57,9 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
     // Create the PR. `gh` reads the title/body via stdin to avoid shell quoting
     // headaches for multi-line bodies.
     let create = crate::claude::discovery::command("gh")
-        .args(["pr", "create", "--title", &title, "--body", &body, "--head", &branch])
+        .args([
+            "pr", "create", "--title", &title, "--body", &body, "--head", &branch,
+        ])
         .current_dir(&worktree)
         .output()
         .map_err(|e| format!("gh pr create failed to start: {e}"))?;
@@ -71,7 +73,9 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
     let stderr = String::from_utf8_lossy(&create.stderr);
     if stderr.contains("already exists") {
         let view = crate::claude::discovery::command("gh")
-            .args(["pr", "view", "--head", &branch, "--json", "url", "--jq", ".url"])
+            .args([
+                "pr", "view", "--head", &branch, "--json", "url", "--jq", ".url",
+            ])
             .current_dir(&worktree)
             .output()
             .map_err(|e| format!("gh pr view failed: {e}"))?;
@@ -87,11 +91,7 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
 
 /// Merge a PR by URL. `method` is `squash` | `merge` | `rebase` (default squash).
 #[tauri::command]
-pub fn merge_pr(
-    issue_key: String,
-    pr_url: String,
-    method: Option<String>,
-) -> Result<(), String> {
+pub fn merge_pr(issue_key: String, pr_url: String, method: Option<String>) -> Result<(), String> {
     let repo = crate::commands::repos::repo_for(&issue_key)?;
     let flag = match method.as_deref().unwrap_or("squash") {
         "merge" => "--merge",

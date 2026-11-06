@@ -78,7 +78,10 @@ fn call_tool(
     if !known {
         return Err((-32602, format!("Unknown tool: {name}")));
     }
-    let arguments = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+    let arguments = params
+        .get("arguments")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
     let reply = call(name, arguments);
     Ok(json!({
         "content": [{ "type": "text", "text": reply.text }],
@@ -121,7 +124,10 @@ mod tests {
             "params": { "name": "get_board", "arguments": { "x": 1 } } });
         let out = handle(&msg, &tools(), |name, args| {
             assert_eq!((name, args["x"].as_i64()), ("get_board", Some(1)));
-            ToolReply { text: "3 tickets".into(), is_error: false }
+            ToolReply {
+                text: "3 tickets".into(),
+                is_error: false,
+            }
         })
         .unwrap();
         assert_eq!(out["result"]["content"][0]["text"], "3 tickets");
@@ -139,6 +145,9 @@ mod tests {
     #[test]
     fn unknown_methods_are_method_not_found() {
         let msg = json!({ "jsonrpc": "2.0", "id": 3, "method": "resources/list" });
-        assert_eq!(handle(&msg, &tools(), never).unwrap()["error"]["code"], -32601);
+        assert_eq!(
+            handle(&msg, &tools(), never).unwrap()["error"]["code"],
+            -32601
+        );
     }
 }

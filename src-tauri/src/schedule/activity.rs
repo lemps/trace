@@ -36,7 +36,10 @@ pub fn log_run(app: &AppHandle, run: &ScheduleRun) {
 pub fn log_needs_input(app: &AppHandle, run: &ScheduleRun) {
     let data = json!({ "promptId": run.prompt_id, "runId": run.id });
     let kind = ActivityKind::AgentNeedsInput;
-    record(app, input(run, kind, Actor::Agent, "needs your input", data));
+    record(
+        app,
+        input(run, kind, Actor::Agent, "needs your input", data),
+    );
 }
 
 fn input(
