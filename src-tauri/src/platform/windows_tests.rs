@@ -86,7 +86,9 @@ fn sids_parse_from_whoami_csv() {
 #[test]
 fn restricting_a_dir_removes_everyone_else_and_reaches_new_files() {
     let dir = temp_dir("acl");
-    Os::restrict_dir(&dir);
+    restrict_acl(&dir).unwrap();
+    let dir_acl = process::command("icacls").arg(&dir).output().unwrap();
+    println!("{}", String::from_utf8_lossy(&dir_acl.stdout));
     let file = dir.join("token");
     Os::owner_only_options()
         .write(true)

@@ -194,25 +194,34 @@ impl PrivateFiles for Os {
 
     fn restrict_file(_path: &Path) {}
 
-    /// Replace inherited access with the current user alone, for the folder and what's
-    /// already in it. New files then inherit this, so each write needs nothing extra.
+    /// Logged rather than returned: a failure mustn't stop trace from opening, but it
+    /// leaves credentials readable by whatever the folder inherits.
     fn restrict_dir(path: &Path) {
-        let Some(sid) = current_user_sid() else {
-            tracing::warn!("couldn't read the current user's SID; config dir ACL unchanged");
-            return;
-        };
-        let status = process::command("icacls")
-            .arg(path)
-            .args(["/inheritance:r", "/grant:r"])
-            .arg(format!("*{sid}:(OI)(CI)F"))
-            .args(["/T", "/C", "/Q"])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
-        if !status.is_ok_and(|s| s.success()) {
-            tracing::warn!("couldn't restrict the config dir's ACL");
+        if let Err(reason) = restrict_acl(path) {
+            tracing::warn!("couldn't restrict the config dir's ACL: {reason}");
         }
     }
+}
+
+/// Replace inherited access with the current user alone, for the folder and what's
+/// already in it. New files then inherit this, so each write needs nothing extra.
+fn restrict_acl(path: &Path) -> Result<(), String> {
+    let sid = current_user_sid().ok_or("couldn't read the current user's SID")?;
+    let out = process::command("icacls")
+        .arg(path)
+        .arg("/grant:r")
+        .arg(format!("*{sid}:(OI)(CI)F"))
+        .args(["/inheritance:r", "/T", "/C", "/Q"])
+        .output()
+        .map_err(|e| format!("couldn't run icacls: {e}"))?;
+    if out.status.success() {
+        return Ok(());
+    }
+    Err(format!(
+        "icacls: {} {}",
+        String::from_utf8_lossy(&out.stdout).trim(),
+        String::from_utf8_lossy(&out.stderr).trim()
+    ))
 }
 
 impl SoundPlayer for Os {

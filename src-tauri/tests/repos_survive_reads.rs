@@ -24,11 +24,16 @@ fn git_repo(path: &Path) -> String {
     path.to_str().unwrap().to_string()
 }
 
+// Windows takes the config dir from the OS, not `HOME`, so this can't be pointed away from
+// the real one there. The logic it protects isn't OS-specific.
 #[test]
+#[cfg_attr(windows, ignore = "the config dir can't be redirected on Windows")]
 fn reads_during_saves_keep_every_repo() {
     let home = std::env::temp_dir().join(format!("trace-repos-{}", std::process::id()));
     fs::create_dir_all(&home).unwrap();
     std::env::set_var("HOME", &home);
+    // Linux prefers this over `HOME`, and CI runners set it.
+    std::env::remove_var("XDG_CONFIG_HOME");
     let config = dirs::config_dir().unwrap();
     assert!(
         config.starts_with(&home),

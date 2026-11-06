@@ -59,7 +59,8 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D clippy::disallowed_methods
 
       - name: Test
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        # Every test target, even after a failure: one OS's bug shouldn't hide another's.
+        run: cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast
 
   # Real installers, without publishing anything: how to get a build onto a test machine,
   # and proof the release workflow's packaging still works. Unsigned, so they can't update.
