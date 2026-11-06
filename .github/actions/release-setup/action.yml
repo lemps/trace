@@ -1,0 +1,113 @@
+name: Release setup
+description: What every OS's release build needs before compiling. Run after checkout.
+
+inputs:
+  signing-key:
+    description: TAURI_SIGNING_PRIVATE_KEY, in any of the forms it has been pasted in.
+    required: false
+  signing-password:
+    description: TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
+    required: false
+
+outputs:
+  has_signing:
+    description: Whether updater artifacts can be signed.
+    value: ${{ steps.signing.outputs.has_signing }}
+
+runs:
+  using: composite
+  steps:
+      - name: Sync app version from release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${RELEASE_TAG#v}"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "::error::RELEASE_TAG '$RELEASE_TAG' does not map to a valid semantic version."
+            exit 1
+          fi
+          echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+          awk -v version="$VERSION" '
+            BEGIN { updated = 0 }
+            !updated && /^version = "/ { print "version = \"" version "\""; updated = 1; next }
+            { print }
+            END { if (!updated) exit 1 }
+          ' src-tauri/Cargo.toml > src-tauri/Cargo.toml.tmp
+          mv src-tauri/Cargo.toml.tmp src-tauri/Cargo.toml
+
+          jq --arg version "$VERSION" '.version = $version' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp
+          mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+          echo "Build version set to $VERSION from tag $RELEASE_TAG"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        shell: bash
+        run: npm ci
+
+      - name: Resolve updater signing secrets (optional)
+        id: signing
+        env:
+          RAW_KEY: ${{ inputs.signing-key }}
+          RAW_PASSWORD: ${{ inputs.signing-password }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${RAW_KEY:-}" ] || [ -z "${RAW_PASSWORD:-}" ]; then
+            echo "has_signing=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Updater signing secrets missing — building without updater assets."
+            exit 0
+          fi
+
+          KEY="${RAW_KEY//$'\r'/}"
+          # Accept keys pasted with literal '\n' sequences.
+          if [[ "$KEY" == *"\\n"* ]]; then
+            KEY="$(printf '%b' "$KEY")"
+          fi
+          # Accept already-base64-encoded key text.
+          if ! printf '%s' "$KEY" | grep -q '^untrusted comment:'; then
+            DECODED="$(printf '%s' "$KEY" | base64 --decode 2>/dev/null || true)"
+            if printf '%s' "$DECODED" | grep -q '^untrusted comment:'; then
+              KEY="$DECODED"
+            fi
+          fi
+          # Accept payload-only secrets (just the RW... line).
+          if ! printf '%s' "$KEY" | grep -q '^untrusted comment:'; then
+            if printf '%s' "$KEY" | grep -Eq '^RW[0-9A-Za-z+/=]+$'; then
+              KEY=$'untrusted comment: minisign encrypted secret key\n'"$KEY"
+            fi
+          fi
+          if ! printf '%s\n' "$KEY" | grep -q -E '^RW[0-9A-Za-z+/=]+$'; then
+            echo "has_signing=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY format not recognized — building without updater assets."
+            exit 0
+          fi
+
+          # Tauri expects the key base64-encoded; mask every transformed form.
+          KEY_B64="$(printf '%s' "$KEY" | base64 | tr -d '\n')"
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$KEY"
+          echo "::add-mask::$KEY_B64"
+          {
+            echo "TAURI_SIGNING_PRIVATE_KEY<<EOF"
+            printf '%s\n' "$KEY_B64"
+            echo "EOF"
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD<<EOF"
+            printf '%s\n' "$RAW_PASSWORD"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+          echo "has_signing=true" >> "$GITHUB_OUTPUT"
