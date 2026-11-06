@@ -23,10 +23,15 @@ fn configured(path: &str) -> Result<(), String> {
 }
 
 /// Save what runs in each new worktree of the repo at `path`; returns it cleaned.
+/// Reads the repo's origin with git, so off the main thread.
 #[tauri::command]
-pub fn set_repo_setup(path: String, setup: SetupConfig) -> Result<SetupConfig, String> {
-    configured(&path)?;
-    repo_catalog::set_setup(&path, setup)
+pub async fn set_repo_setup(path: String, setup: SetupConfig) -> Result<SetupConfig, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        configured(&path)?;
+        repo_catalog::set_setup(&path, setup)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// A suggested setup for the repo at `path`, from its lockfiles.

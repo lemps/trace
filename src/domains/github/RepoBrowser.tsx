@@ -39,7 +39,7 @@ export function RepoBrowser({ onClose, onCloned }: RepoBrowserProps) {
     if (!status) void checkStatus();
   }, [status, checkStatus]);
   useEffect(() => {
-    if (login) void loadOwners();
+    if (login) void loadOwners(login);
   }, [login, loadOwners]);
   useEffect(() => {
     if (current) void loadRepos(current);

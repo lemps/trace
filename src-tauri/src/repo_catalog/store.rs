@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use super::model::{Checkout, RemoteRepo, RepoRecord, SetupConfig};
 use crate::helpers::persist::{self, Style};
 
+/// The whole of `repo-catalog.json`: one record per repo, so a repo's facts and
+/// setup outlive any one checkout of it, plus the clone folder.
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Catalog {

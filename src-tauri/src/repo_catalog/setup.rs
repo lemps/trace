@@ -1,14 +1,18 @@
 //! Running a repo's [`SetupConfig`] in a worktree trace just created.
 //!
 //! Worktrees are created on whatever thread starts an agent, session or scheduled
-//! run, and an install can take minutes, so setup runs on its own thread while the
-//! agent starts. Progress goes to the renderer as `worktree-setup` events (a
-//! toast), so a failed `npm ci` is seen rather than discovered by the agent.
+//! run, and an install can take minutes, so setup runs on its own thread. An
+//! interactive agent starts beside it (its start is a sync command on the main
+//! thread, which can't block for an install); a scheduled run, unattended and on
+//! its own thread, waits for it with [`wait_for`]. Progress goes to the renderer
+//! as `worktree-setup` events (a toast), so a failed `npm ci` is seen rather than
+//! discovered by the agent.
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Stdio;
-use std::sync::OnceLock;
+use std::sync::{Condvar, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -24,6 +28,32 @@ pub const EVENT: &str = "worktree-setup";
 const OUTPUT_TAIL: usize = 1500;
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
+
+/// Worktrees whose setup is still running, and the signal when one finishes.
+static PENDING: Mutex<Vec<String>> = Mutex::new(Vec::new());
+static SETTLED: Condvar = Condvar::new();
+
+fn pending() -> std::sync::MutexGuard<'static, Vec<String>> {
+    PENDING.lock().unwrap_or_else(|p| p.into_inner())
+}
+
+/// Block until `worktree`'s setup (if any is running) finishes, or `timeout`
+/// passes. True when nothing is left running for it.
+pub fn wait_for(worktree: &str, timeout: Duration) -> bool {
+    let deadline = Instant::now() + timeout;
+    let mut guard = pending();
+    while guard.iter().any(|w| w == worktree) {
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            return false;
+        }
+        guard = SETTLED
+            .wait_timeout(guard, left)
+            .unwrap_or_else(|p| p.into_inner())
+            .0;
+    }
+    true
+}
 
 /// Give setup a handle to emit through. Called once from `run()`'s setup.
 pub fn init(app: AppHandle) {
@@ -62,6 +92,8 @@ pub fn after_worktree_created(repo: &str, worktree: &str) {
         return;
     };
     let (repo, worktree) = (repo.to_string(), worktree.to_string());
+    // Marked before the thread starts, so a `wait_for` right after can't miss it.
+    pending().push(worktree.clone());
     std::thread::spawn(move || {
         emit(&repo, &worktree, "running", None);
         let env = crate::claude::env::build_effective_cli_env(&HashMap::new());
@@ -69,6 +101,8 @@ pub fn after_worktree_created(repo: &str, worktree: &str) {
             Ok(()) => emit(&repo, &worktree, "done", None),
             Err(failure) => emit(&repo, &worktree, "failed", Some(failure)),
         }
+        pending().retain(|w| w != &worktree);
+        SETTLED.notify_all();
     });
 }
 
@@ -87,7 +121,9 @@ fn emit(repo: &str, worktree: &str, state: &'static str, failure: Option<StepFai
     let _ = app.emit(EVENT, &event);
 }
 
-/// Copy the files, then run the commands with `env`, stopping at the first
+/// Copy the files, then run the commands with `env` laid over trace's own (not
+/// replacing it: `platform::process` has already set per-OS variables on the
+/// command, like Windows' `core.longpaths` for git), stopping at the first
 /// failure. A file the main checkout doesn't have is skipped (a `.env` the user
 /// hasn't made yet), and one the worktree already has is left alone.
 pub fn run_steps(
@@ -116,7 +152,6 @@ pub fn run_steps(
     for line in &setup.commands {
         let out = Os::shell_line(line)
             .current_dir(worktree)
-            .env_clear()
             .envs(env)
             .stdin(Stdio::null())
             .output()
@@ -211,6 +246,39 @@ mod tests {
         };
         assert_eq!(run_steps(&repo, &wt, &setup, &env()), Ok(()));
         assert!(wt.join("v x.txt").is_file());
+    }
+
+    #[test]
+    fn wait_for_returns_once_setup_settles() {
+        let wt = "wait-for-test-worktree";
+        assert!(wait_for(wt, Duration::ZERO), "nothing running");
+        pending().push(wt.to_string());
+        assert!(
+            !wait_for(wt, Duration::from_millis(20)),
+            "times out while running"
+        );
+        let done = std::thread::spawn(|| {
+            std::thread::sleep(Duration::from_millis(30));
+            pending().retain(|w| w != "wait-for-test-worktree");
+            SETTLED.notify_all();
+        });
+        assert!(wait_for(wt, Duration::from_secs(5)));
+        done.join().unwrap();
+    }
+
+    /// The per-OS variables `platform::process` sets survive the setup's env.
+    #[test]
+    fn keeps_the_platform_env() {
+        let (repo, wt) = (scratch("repo4"), scratch("wt4"));
+        let setup = SetupConfig {
+            copy_files: vec![],
+            commands: vec!["git config core.longpaths > lp.txt".into()],
+        };
+        let _ = run_steps(&repo, &wt, &setup, &HashMap::new());
+        if cfg!(windows) {
+            let lp = std::fs::read_to_string(wt.join("lp.txt")).unwrap_or_default();
+            assert_eq!(lp.trim(), "true", "core.longpaths reached git");
+        }
     }
 
     #[test]

@@ -7,9 +7,9 @@ export function githubStatus(): Promise<GhStatus> {
   return invoke("github_status");
 }
 
-/** The signed-in user, then their orgs. */
-export function githubOwners(): Promise<string[]> {
-  return invoke("github_owners");
+/** The signed-in user (`login`, from `githubStatus`), then their orgs. */
+export function githubOwners(login: string): Promise<string[]> {
+  return invoke("github_owners", { login });
 }
 
 /** An owner's repos (the user's own when null), most recently updated first. */

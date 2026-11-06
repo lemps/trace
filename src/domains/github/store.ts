@@ -3,7 +3,8 @@ import { githubOwners, githubRepos, githubStatus } from "@/ipc/github";
 import type { GhRepo, GhStatus } from "./types";
 
 // The GitHub integration: whether `gh` is signed in, and the repo lists the
-// browser has fetched (per owner, so switching back to one is instant).
+// browser has fetched. Kept per owner so a list shows at once, and refetched each
+// time the browser opens, so "In trace" and new repos don't go stale.
 
 interface GitHubStore {
   /** Null until the first check. */
@@ -16,9 +17,9 @@ interface GitHubStore {
   error: string | null;
 
   checkStatus: () => Promise<void>;
-  loadOwners: () => Promise<void>;
-  /** Fetch an owner's repos; `force` refetches a cached list. */
-  loadRepos: (owner: string, force?: boolean) => Promise<void>;
+  loadOwners: (login: string) => Promise<void>;
+  /** Fetch an owner's repos, showing the cached list meanwhile. */
+  loadRepos: (owner: string) => Promise<void>;
   /** Mark a repo as checked out at `path`, after a clone. */
   markLocal: (fullName: string, path: string) => void;
 }
@@ -42,16 +43,15 @@ export const useGitHubStore = create<GitHubStore>((set, get) => ({
     }
   },
 
-  loadOwners: async () => {
+  loadOwners: async (login) => {
     try {
-      set({ owners: await githubOwners() });
+      set({ owners: await githubOwners(login) });
     } catch (err) {
       set({ error: String(err) });
     }
   },
 
-  loadRepos: async (owner, force = false) => {
-    if (!force && get().repos[owner]) return;
+  loadRepos: async (owner) => {
     set({ loadingOwner: owner, error: null });
     try {
       // The signed-in user's own list is fetched without naming them, as gh expects.

@@ -126,14 +126,16 @@ pub fn orgs() -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// A GitHub user/org login: letters, digits and single inner hyphens. Checked
-/// before it goes on a command line, so it can never read as a flag.
+/// A GitHub user/org login: letters, digits and inner hyphens, plus `_` for
+/// Enterprise Managed Users (`jdoe_acme`). Checked before it goes on a command
+/// line, so it can never read as a flag.
 pub fn is_login(s: &str) -> bool {
     !s.is_empty()
-        && s.len() <= 39
+        && s.len() <= 100
         && !s.starts_with('-')
         && !s.ends_with('-')
-        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 #[cfg(test)]
@@ -210,6 +212,10 @@ mod tests {
             vec!["acme", "beta-co"]
         );
         assert!(is_login("noble1911") && is_login("beta-co"));
+        assert!(
+            is_login("jdoe_acme"),
+            "Enterprise Managed User logins have an underscore"
+        );
         for bad in ["", "-x", "x-", "a/b", "--limit", "a b"] {
             assert!(!is_login(bad), "{bad}");
         }

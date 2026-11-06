@@ -22,13 +22,15 @@ pub async fn github_status() -> Result<GhStatus, String> {
     blocking(|| Ok(account::status())).await
 }
 
-/// Owners whose repos can be listed: the signed-in user, then their orgs.
+/// Owners whose repos can be listed: the signed-in `login` (which the renderer
+/// already has from `github_status`, so gh's auth isn't checked twice), then
+/// their orgs.
 #[tauri::command]
-pub async fn github_owners() -> Result<Vec<String>, String> {
-    blocking(|| {
-        let login = account::status()
-            .login
-            .ok_or("Sign in to GitHub with `gh auth login` first.")?;
+pub async fn github_owners(login: String) -> Result<Vec<String>, String> {
+    blocking(move || {
+        if !repo_list::is_login(&login) {
+            return Err(format!("{login} isn't a GitHub account name."));
+        }
         let mut owners = vec![login];
         owners.extend(repo_list::orgs());
         Ok(owners)
@@ -54,7 +56,7 @@ pub async fn github_clone(full_name: String) -> Result<Cloned, String> {
     blocking(move || {
         let remote = clone::parse_full_name(&full_name)?;
         let saved = repo_catalog::saved_setup(&remote);
-        let cloned = clone::clone_into(&full_name, &store::clone_root(), saved)?;
+        let cloned = clone::clone_into(remote, &store::clone_root(), saved)?;
         repos::add_repo(cloned.path.clone())?;
         let (path, remote, branch) = (
             cloned.path.clone(),

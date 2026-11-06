@@ -55,11 +55,11 @@ pub fn destination(root: &str, repo: &RemoteRepo) -> PathBuf {
 /// same repo is adopted as is; any other existing folder is an error, never
 /// overwritten.
 pub fn clone_into(
-    full_name: &str,
+    remote: RemoteRepo,
     root: &str,
     saved: Option<SetupConfig>,
 ) -> Result<Cloned, String> {
-    let remote = parse_full_name(full_name)?;
+    let full_name = &remote.full_name();
     if root.trim().is_empty() {
         return Err("Choose a folder to clone into.".into());
     }
@@ -151,11 +151,21 @@ mod tests {
     fn clones_a_real_repo_then_adopts_it_the_second_time() {
         let root = std::env::temp_dir().join(format!("trace-clone-real-{}", std::process::id()));
         let root_s = root.to_string_lossy().into_owned();
-        let first = clone_into("octocat/Hello-World", &root_s, None).unwrap();
+        let first = clone_into(
+            parse_full_name("octocat/Hello-World").unwrap(),
+            &root_s,
+            None,
+        )
+        .unwrap();
         assert!(!first.already_present);
         assert!(Path::new(&first.path).join(".git").exists());
         assert_eq!(first.default_branch, "master");
-        let again = clone_into("octocat/hello-world", &root_s, None).unwrap();
+        let again = clone_into(
+            parse_full_name("octocat/hello-world").unwrap(),
+            &root_s,
+            None,
+        )
+        .unwrap();
         assert!(again.already_present, "the existing checkout is adopted");
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -165,7 +175,12 @@ mod tests {
         let root = std::env::temp_dir().join(format!("trace-clone-{}", std::process::id()));
         std::fs::create_dir_all(root.join("trace")).unwrap();
         std::fs::write(root.join("trace").join("mine.txt"), "keep").unwrap();
-        let err = clone_into("o/trace", &root.to_string_lossy(), None).unwrap_err();
+        let err = clone_into(
+            parse_full_name("o/trace").unwrap(),
+            &root.to_string_lossy(),
+            None,
+        )
+        .unwrap_err();
         assert!(err.contains("already exists"), "{err}");
         assert!(root.join("trace").join("mine.txt").is_file());
         let _ = std::fs::remove_dir_all(&root);
