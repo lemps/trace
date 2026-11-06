@@ -8,7 +8,7 @@ WAIT=20
 case "$(uname -s)" in
   Linux)
     export DISPLAY=:99
-    Xvfb "$DISPLAY" -screen 0 1280x832x24 &
+    Xvfb "$DISPLAY" -screen 0 1280x832x24 +extension GLX &
     xvfb=$!
     sleep 2
     # Without a window manager, nothing gives the window its size.
@@ -17,12 +17,21 @@ case "$(uname -s)" in
     src-tauri/target/release/trace &
     app=$!
     sleep "$WAIT"
+    xwininfo -root -tree | grep -i trace || echo "::warning::No trace window."
     import -window root first-screen.png || echo "::warning::No screenshot."
     if ! kill -0 "$app" 2>/dev/null; then
       wait "$app"
       echo "::error::trace exited during startup with status $?."
       exit 1
     fi
+    kill "$app"
+    wait "$app" 2>/dev/null
+    # There's no GPU here, which WebKitGTK's compositing can draw nothing without.
+    WEBKIT_DISABLE_COMPOSITING_MODE=1 src-tauri/target/release/trace &
+    app=$!
+    sleep "$WAIT"
+    xwininfo -root -tree | grep -i trace || echo "::warning::No trace window."
+    import -window root first-screen-no-compositing.png || echo "::warning::No screenshot."
     kill "$app" "$xvfb"
     ;;
   MINGW* | MSYS*)
