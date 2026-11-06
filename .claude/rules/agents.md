@@ -47,5 +47,11 @@
 
 ## Platform
 
-- macOS only. Windows support was dropped (2026-06); don't add `#[cfg(windows)]` paths or spend effort keeping
-  Windows building.
+- macOS ships today; Windows and Linux are being added (`docs/WINDOWS_LINUX_PLAN.md`). Don't break their builds:
+  `.github/workflows/cross-platform.yml` checks all three.
+- OS differences live behind the ports in `src-tauri/src/platform/`, one trait per concern, like
+  `issues::IssueProvider`. Domain code never knows which OS it's on.
+- `#[cfg(...)]` for an OS, `std::os::*` and `libc` belong only in `platform/`. Spawn processes through
+  `platform::process`, never with a direct `Command::new`.
+- Only add a port where behaviour really differs. Pure logic with per-OS inputs (paths, slugs) stays a plain tested
+  function.

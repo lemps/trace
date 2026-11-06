@@ -6,7 +6,8 @@ CLI session in an isolated git worktree. Sessions and scheduled prompts work wit
 
 ## Stack
 
-- **Shell:** Tauri 2 (Rust backend + React/TypeScript/Vite frontend). macOS only.
+- **Shell:** Tauri 2 (Rust backend + React/TypeScript/Vite frontend). Ships on macOS; Windows and Linux are in
+  progress (`docs/WINDOWS_LINUX_PLAN.md`).
 - **Frontend:** React 19, TypeScript (strict), Vite 7, vanilla CSS with design tokens (no Tailwind).
 - **Backend:** Rust 2021. Interactive Claude via `portable-pty`; git worktrees + `gh` for PRs. Persistence is
   small JSON files in the app config dir (`~/Library/Application Support/trace/` via `dirs`), all written `0600`
@@ -71,6 +72,7 @@ real work lives in domain modules (`claude/`, `issues/`, `jira/`, `pylon/`, `git
 src-tauri/src/
 ├── lib.rs                  # run() + invoke_handler registration ONLY
 ├── state.rs helpers.rs git.rs
+├── platform/               # OS ports + the macOS/Linux/Windows adapters; the only home for OS-specific code
 ├── claude/                 # discovery, env, pty, turn hooks, conversation ids  (the interactive TUI transport)
 ├── activity/               # persisted activity log (JSONL) + `activity-event`; every producer records here
 ├── issues/                 # IssueProvider trait, Provider enum, shared models, active-provider session
@@ -186,5 +188,5 @@ cargo test --manifest-path src-tauri/Cargo.toml
 - Components never call `invoke` directly — go through `src/ipc/`.
 - **Never log, emit, or return secrets** (Jira tokens, env). Jira credentials stay on the Rust side in a `0600`
   config file and never cross to the renderer.
-- macOS is the only supported platform, but never hardcode tool paths — `git`/`gh`/`claude` discovery goes
-  through `claude/discovery.rs`.
+- OS-specific code lives only in `src-tauri/src/platform/` and `src/platform/` (see `.claude/rules/agents.md`).
+  Never hardcode tool paths — `git`/`gh`/`claude` discovery goes through `claude/discovery.rs`.

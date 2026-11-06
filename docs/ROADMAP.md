@@ -11,10 +11,11 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 
 ## Wanted
 
-- [ ] **Cloud VMs:** run a repository and its agent in the cloud, through a new Vercel integration.
+- [~] **Windows and Linux builds:** the current priority. See
+      [the plan](WINDOWS_LINUX_PLAN.md).
+- [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
+      Vercel integration. This comes after the Windows and Linux builds.
 - [ ] **iPhone and Android apps.**
-- [ ] **Windows and Linux support.** Today's macOS-only rules in `CLAUDE.md` and
-      `.claude/rules/agents.md` change when this work starts.
 
 ## Candidates
 
