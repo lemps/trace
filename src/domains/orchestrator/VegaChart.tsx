@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { VegaEmbed } from "react-vega";
 import type { VisualizationSpec } from "vega-embed";
+import { useThemeKey } from "@/domains/appearance/useThemeKey";
 
 // Renders a freeform Vega-Lite spec the assistant built from data it has or
 // fetched (e.g. via MCP) — the open-ended counterpart to the deterministic
@@ -11,7 +12,7 @@ function token(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** A dark Vega config from the design tokens (read at render, never hardcoded). */
+/** A Vega config from the current theme's design tokens (read at render, never hardcoded). */
 function themeConfig(): Record<string, unknown> {
   const fg0 = token("--fg-0");
   const fg2 = token("--fg-2");
@@ -41,9 +42,13 @@ function themeConfig(): Record<string, unknown> {
 
 export function VegaChart({ spec }: { spec: Record<string, unknown> }) {
   const [failed, setFailed] = useState(false);
+  // The chart's SVG bakes the token values in, so rebuild it when they change.
+  const themeKey = useThemeKey();
 
   // Force a container-fit width (the model doesn't know the panel size) and our
   // theme as the base config, while letting the spec's own config override.
+  // themeKey isn't read in the memo, but the tokens themeConfig() reads change with it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: themeKey invalidates the token read
   const full = useMemo<VisualizationSpec>(() => {
     const userConfig = spec.config && typeof spec.config === "object" ? spec.config : {};
     // The spec is dynamic (AI-supplied), so cross into Vega's type via unknown.
@@ -53,11 +58,12 @@ export function VegaChart({ spec }: { spec: Record<string, unknown> }) {
       autosize: { type: "fit", contains: "padding" },
       config: { ...themeConfig(), ...userConfig },
     } as unknown as VisualizationSpec;
-  }, [spec]);
+  }, [spec, themeKey]);
 
   if (failed) return <div className="chart-err">Couldn't render that chart.</div>;
   return (
     <VegaEmbed
+      key={themeKey}
       className="vega-chart"
       spec={full}
       options={{ renderer: "svg", actions: false }}

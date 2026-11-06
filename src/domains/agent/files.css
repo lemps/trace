@@ -113,20 +113,20 @@
   white-space: pre;
 }
 .diff-line.add {
-  background: oklch(0.74 0.14 155 / 0.08);
+  background: color-mix(in oklch, var(--c-done) 8%, transparent);
 }
 .diff-line.add .content {
-  color: oklch(0.85 0.12 155);
+  color: var(--diff-add-fg);
 }
 .diff-line.add .content::before {
   content: "+ ";
   color: var(--c-done);
 }
 .diff-line.del {
-  background: oklch(0.68 0.18 25 / 0.08);
+  background: color-mix(in oklch, var(--c-danger) 8%, transparent);
 }
 .diff-line.del .content {
-  color: oklch(0.82 0.13 25);
+  color: var(--diff-del-fg);
 }
 .diff-line.del .content::before {
   content: "- ";

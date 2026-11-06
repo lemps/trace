@@ -12,7 +12,7 @@
   min-inline-size: 0;
   border: 1px solid var(--state-needs-border);
   border-radius: var(--radius);
-  background: oklch(0.8 0.15 75 / 0.06);
+  background: color-mix(in oklch, var(--state-needs) 6%, transparent);
 }
 .answer-text {
   flex: 1;
@@ -23,11 +23,12 @@
 .btn.primary-needs {
   background: var(--state-needs);
   border-color: transparent;
-  color: oklch(0.2 0.04 75);
+  color: var(--on-needs);
   font-weight: 600;
 }
 .btn.primary-needs:hover {
-  background: var(--state-needs-fg);
+  /* A step toward the text colour: lighter on dark themes, darker on light. */
+  background: color-mix(in oklch, var(--state-needs) 85%, var(--fg-0));
 }
 /* The Esc hint on a detail's back button. */
 .detail-top .back .kbd,

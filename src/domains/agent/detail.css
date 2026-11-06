@@ -30,7 +30,7 @@
   gap: 14px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-faint);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  background: linear-gradient(180deg, var(--sheen), transparent);
 }
 .detail-top .back {
   display: inline-flex;
@@ -142,12 +142,12 @@
   background: var(--bg-2);
 }
 .btn.success {
-  background: oklch(0.74 0.14 155 / 0.15);
+  background: color-mix(in oklch, var(--c-done) 15%, transparent);
   color: var(--c-done);
-  border-color: oklch(0.74 0.14 155 / 0.4);
+  border-color: var(--c-done-border);
 }
 .btn.success:hover {
-  background: oklch(0.74 0.14 155 / 0.22);
+  background: color-mix(in oklch, var(--c-done) 22%, transparent);
 }
 
 .status-pill {
@@ -322,16 +322,16 @@
   /* Clip the xterm canvas so a transient over-wide fit can't push the grid
      column wider, which would feed back into the ResizeObserver and oscillate. */
   overflow: hidden;
-  background: var(--bg-0);
+  background: var(--pty-bg);
   padding: 8px 10px;
 }
 .pty-pane .xterm {
   height: 100%;
 }
 /* xterm.css paints its viewport #000. Any space below the last whole row would show
-   as a black band around the terminal, so match the theme's background instead. */
+   as a black band around the terminal, so match the terminal scheme's background. */
 .pty-pane .xterm .xterm-viewport {
-  background-color: var(--bg-0);
+  background-color: var(--pty-bg);
 }
 
 .amsg {

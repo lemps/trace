@@ -2,12 +2,13 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
+import { useAppearance } from "@/domains/appearance/store";
+import { terminalAppearance, terminalAppearanceKey } from "@/domains/appearance/terminalTheme";
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
 import { isAppKey, isLinkClick, isTerminalCopy, isTerminalPaste } from "@/platform/shortcuts";
 import { useRichOutputStore } from "./richOutputStore";
-import { termFontFamily, termFontSize, termLineHeight } from "./terminalPrefs";
 
 /**
  * Open a link surfaced in terminal output in the system browser. The webview
@@ -34,12 +35,6 @@ function openLink(term: Terminal, event: MouseEvent, uri: string) {
 // Keys that can't be the user handing an agent work — they only ever accompany
 // another keystroke, so they must not arm a waiting notification on their own.
 const BARE_MODIFIERS = new Set(["Shift", "Control", "Alt", "Meta", "CapsLock"]);
-
-// xterm paints to a canvas and can't resolve CSS variables, so these mirror
-// tokens.css (--bg-0 / --fg-1). If the tokens change, change these too.
-// (The font has the same constraint — see `terminalPrefs.ts`.)
-const PTY_BG = "#050505"; // --bg-0
-const PTY_FG = "#ededed"; // --fg-1
 
 // Private OSC opcode the agent uses to ship base64-encoded HTML to the companion
 // panel out-of-band (OSC 7700 ; base64(html) ST). Bypasses the character grid
@@ -118,11 +113,9 @@ export function getTerminal(issueKey: string): TerminalEntry {
   container.style.width = "100%";
 
   const term = new Terminal({
-    fontFamily: termFontFamily(),
-    fontSize: termFontSize(),
-    lineHeight: termLineHeight(),
-    cursorBlink: true,
-    theme: { background: PTY_BG, foreground: PTY_FG, cursor: PTY_FG },
+    // Colours, fonts and cursor come from Settings → Appearance. xterm paints
+    // to a canvas and can't resolve CSS variables, so they're literal values.
+    ...terminalAppearance(),
     // OSC 8 hyperlinks (gh and modern CLIs emit these) are ignored by xterm
     // unless a handler is set.
     linkHandler: { activate: (event, uri) => openLink(term, event, uri) },
@@ -320,20 +313,17 @@ export function resetTerminal(issueKey: string): void {
 }
 
 /**
- * Push the current presentation prefs into every live terminal. Terminals
+ * Push the current appearance (colours, fonts, cursor) into every live terminal. Terminals
  * outlive Settings (the registry keeps them across navigation), so changes
  * must be applied in place. New metrics change cols/rows, so each visible
  * terminal is refitted and its PTY resized — with the same changed-size guard
  * as `syncPtySize` (a same-size SIGWINCH makes TUIs repaint over themselves).
  */
 export function applyTerminalPrefs(): void {
-  const fontFamily = termFontFamily();
-  const fontSize = termFontSize();
-  const lineHeight = termLineHeight();
+  const options = terminalAppearance();
   for (const [key, entry] of registry) {
-    entry.term.options.fontFamily = fontFamily;
-    entry.term.options.fontSize = fontSize;
-    entry.term.options.lineHeight = lineHeight;
+    // Setting `options` merges: only the keys given change.
+    entry.term.options = options;
     // A detached container measures 0×0 and fit() is a no-op — the next
     // mount's sync picks up the new metrics instead.
     syncPtySize(key);
@@ -352,6 +342,16 @@ export function disposeTerminal(issueKey: string): void {
   // Rendered HTML cards are intentionally kept (persisted) so they survive a
   // teardown — see the note in `resetTerminal`.
 }
+
+// A theme, scheme, cursor or zoom change re-themes the live terminals in place;
+// other appearance edits (UI font, density, accent) don't touch them.
+let appearanceKey = terminalAppearanceKey();
+useAppearance.subscribe((s) => {
+  const next = terminalAppearanceKey(s);
+  if (next === appearanceKey) return;
+  appearanceKey = next;
+  applyTerminalPrefs();
+});
 
 // A hot update would leave subscribers on a stale copy of this state, so reload instead.
 import.meta.hot?.accept(() => location.reload());

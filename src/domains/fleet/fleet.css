@@ -64,10 +64,10 @@
   background: var(--bg-2);
 }
 .fl-row.needs {
-  background: oklch(0.8 0.15 75 / 0.04);
+  background: color-mix(in oklch, var(--state-needs) 4%, transparent);
 }
 .fl-row.needs:hover {
-  background: oklch(0.8 0.15 75 / 0.08);
+  background: color-mix(in oklch, var(--state-needs) 8%, transparent);
 }
 .fl-row.dragging {
   opacity: 0.5;

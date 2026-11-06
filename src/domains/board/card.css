@@ -44,7 +44,7 @@
 }
 .card .priority.p0 {
   background: var(--c-danger);
-  box-shadow: 0 0 8px oklch(0.68 0.18 25 / 0.5);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--c-danger) 50%, transparent);
 }
 .card .priority.p1 {
   background: var(--c-warn);
@@ -71,7 +71,7 @@
   color: var(--c-review);
   background: var(--c-review-bg);
   background: color-mix(in srgb, currentColor 12%, transparent);
-  border: 1px solid oklch(0.72 0.16 290 / 0.3);
+  border: 1px solid color-mix(in oklch, var(--c-review) 30%, transparent);
   border-color: color-mix(in srgb, currentColor 32%, transparent);
   border-radius: 4px;
   padding: 1px 6px;
@@ -90,7 +90,7 @@ button.epic-chip {
 }
 button.epic-chip:hover {
   /* Keep the epic's colour on hover (it carries meaning) — just firm up the chip. */
-  border-color: oklch(0.72 0.16 290 / 0.55);
+  border-color: color-mix(in oklch, var(--c-review) 55%, transparent);
   border-color: color-mix(in srgb, currentColor 60%, transparent);
   background: color-mix(in srgb, currentColor 18%, transparent);
 }
@@ -130,7 +130,7 @@ button.epic-chip:hover {
   place-items: center;
   font-size: 10px;
   font-weight: 700;
-  color: #0a0a0a;
+  color: var(--on-bright);
   flex-shrink: 0;
 }
 .agent-avatar.lg {
@@ -163,7 +163,7 @@ button.epic-chip:hover {
 .progress > span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, oklch(0.72 0.16 290), oklch(0.78 0.15 70));
+  background: linear-gradient(90deg, var(--c-accent), var(--c-prog));
   border-radius: 999px;
 }
 
@@ -252,7 +252,7 @@ button.epic-chip:hover {
 }
 .pr-pill.open {
   color: var(--c-review);
-  border-color: oklch(0.72 0.16 290 / 0.4);
+  border-color: color-mix(in oklch, var(--c-review) 40%, transparent);
   background: var(--c-review-bg);
 }
 .pr-pill.draft {
@@ -260,13 +260,13 @@ button.epic-chip:hover {
 }
 .pr-pill.merged {
   color: var(--c-done);
-  border-color: oklch(0.74 0.14 155 / 0.4);
+  border-color: var(--c-done-border);
   background: var(--c-done-bg);
 }
 .pr-pill.closed {
   color: var(--c-danger);
-  border-color: oklch(0.68 0.18 25 / 0.4);
-  background: oklch(0.68 0.18 25 / 0.12);
+  border-color: var(--c-danger-border);
+  background: var(--c-danger-bg);
 }
 
 /* Drag ghost */

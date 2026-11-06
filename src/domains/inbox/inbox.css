@@ -247,7 +247,7 @@
 }
 .ib-card.ask {
   border-color: var(--state-needs-border);
-  background: oklch(0.8 0.15 75 / 0.05);
+  background: color-mix(in oklch, var(--state-needs) 5%, transparent);
 }
 .ib-ask-head {
   display: flex;
@@ -266,8 +266,8 @@
 }
 .btn.primary-needs .kbd {
   background: transparent;
-  border-color: oklch(0.2 0.04 75 / 0.35);
-  color: oklch(0.2 0.04 75);
+  border-color: color-mix(in oklch, var(--on-needs) 35%, transparent);
+  color: var(--on-needs);
 }
 .ib-lbl {
   font-size: 10.5px;

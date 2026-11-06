@@ -3,7 +3,14 @@
    Ported verbatim from the ClaudeOrchestrator design handoff.
    ============================================================ */
 
-:root {
+/* The Dark theme — trace's original look, and the default. The other themes
+   (themes.css) override these same names under their own [data-theme]; the
+   Appearance settings pick one (domains/appearance). A theme preview sets
+   data-theme on a small element, so every value here must also hold there.
+   Midnight starts from these too (it only re-tints the surfaces). */
+:root,
+[data-theme="dark"],
+[data-theme="midnight"] {
   --bg-0: #050505;
   --bg-1: #0a0a0a;
   --bg-2: #111111;
@@ -24,43 +31,93 @@
 
   /* Status hues — oklch, all chroma ~0.13, lightness ~0.72 */
   --c-todo: oklch(0.72 0.01 250); /* neutral */
-  --c-todo-bg: oklch(0.72 0.01 250 / 0.1);
   --c-prog: oklch(0.78 0.15 70); /* amber */
-  --c-prog-bg: oklch(0.78 0.15 70 / 0.12);
-  --c-prog-border: oklch(0.78 0.15 70 / 0.3);
   --c-review: oklch(0.72 0.16 290); /* violet */
-  --c-review-bg: oklch(0.72 0.16 290 / 0.14);
   --c-done: oklch(0.74 0.14 155); /* green */
-  --c-done-bg: oklch(0.74 0.14 155 / 0.12);
 
   /* Agent state — one colour per light, used on every surface (StatusLight).
      Colour is reserved for state: amber needs you, blue working, green ready;
-     stopped is the absence of colour. PR/CI state never borrows these. */
+     stopped is the absence of colour. PR/CI state never borrows these.
+     The bare token is a fill (dots, buttons); -fg is the same hue as text. */
   --state-needs: oklch(0.8 0.15 75);
   --state-needs-fg: oklch(0.86 0.13 75);
-  --state-needs-bg: oklch(0.8 0.15 75 / 0.13);
-  --state-needs-border: oklch(0.8 0.15 75 / 0.32);
   --state-working: oklch(0.74 0.12 235);
   --state-working-fg: oklch(0.82 0.1 235);
-  --state-working-bg: oklch(0.74 0.12 235 / 0.12);
   --state-ready: oklch(0.76 0.14 155);
   --state-ready-fg: oklch(0.82 0.12 155);
-  --state-ready-bg: oklch(0.76 0.14 155 / 0.11);
-  --state-stopped: var(--fg-3);
 
-  --c-accent: oklch(0.72 0.16 290);
+  /* The brand accent's lightness + chroma; its hue (--accent-h, below) is the
+     user's accent choice, so each theme keeps the accent legible on itself. */
+  --accent-l: 0.72;
+  --accent-c: 0.16;
   --c-danger: oklch(0.68 0.18 25);
   --c-warn: oklch(0.78 0.15 70);
+  /* Diff text: the add/remove hues, light enough to read on dark. */
+  --diff-add-fg: oklch(0.85 0.12 155);
+  --diff-del-fg: oklch(0.82 0.13 25);
+  /* Lightness of per-epic hues (board/epicColor), drawn as text. */
+  --epic-l: 0.72;
 
   /* Brand hues for integration icons */
   --c-jira: oklch(0.55 0.18 250);
+
+  /* Surface effects: a faint top sheen on panels, the modal scrim, the page glow. */
+  --sheen: rgba(255, 255, 255, 0.02);
+  --hover-tint: oklch(1 0 0 / 0.012);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --glow-strength: 10%;
+  --scrollbar: #222;
+  --scrollbar-hover: #2e2e2e;
+  --shadow-inset: rgba(255, 255, 255, 0.03);
+  --shadow-drop: rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* Derived tokens — declared wherever a theme is, so they resolve against that
+   theme's base values (custom properties compute where they're declared). */
+:root,
+[data-theme] {
+  --c-accent: oklch(var(--accent-l) calc(var(--accent-c) * var(--accent-sat)) var(--accent-h));
+  --c-accent-bg: color-mix(in oklch, var(--c-accent) 8%, transparent);
+  --c-todo-bg: color-mix(in oklch, var(--c-todo) 10%, transparent);
+  --c-prog-bg: color-mix(in oklch, var(--c-prog) 12%, transparent);
+  --c-prog-border: color-mix(in oklch, var(--c-prog) 30%, transparent);
+  --c-review-bg: color-mix(in oklch, var(--c-review) 14%, transparent);
+  --c-done-bg: color-mix(in oklch, var(--c-done) 12%, transparent);
+  --c-done-border: color-mix(in oklch, var(--c-done) 40%, transparent);
+  --c-danger-bg: color-mix(in oklch, var(--c-danger) 12%, transparent);
+  --c-danger-border: color-mix(in oklch, var(--c-danger) 40%, transparent);
+  --state-needs-bg: color-mix(in oklch, var(--state-needs) 13%, transparent);
+  --state-needs-border: color-mix(in oklch, var(--state-needs) 32%, transparent);
+  --state-working-bg: color-mix(in oklch, var(--state-working) 12%, transparent);
+  --state-ready-bg: color-mix(in oklch, var(--state-ready) 11%, transparent);
+  --state-stopped: var(--fg-3);
+  /* Text drawn on a bright fill (avatars, a ticked box, the amber answer button):
+     dark in every theme, because the fill is bright in every theme. */
+  --on-bright: #0a0a0a;
+  --on-needs: oklch(0.2 0.04 75);
+  /* Behind the terminal canvas: the terminal scheme's background (Appearance
+     sets --term-bg on the root when a scheme is chosen). */
+  --pty-bg: var(--term-bg, var(--bg-0));
+
+  --shadow-card: 0 1px 0 var(--shadow-inset) inset, 0 0 0 1px var(--border);
+  --shadow-pop: 0 20px 60px -10px var(--shadow-drop), 0 0 0 1px var(--border);
+}
+
+/* Sizes and fonts don't change per theme (density and fonts are their own
+   Appearance settings — see themes.css and domains/appearance/apply.ts). */
+:root {
+  /* The accent choice (Appearance overrides these inline on <html>): a hue,
+     and a saturation factor that a neutral accent sets to 0. */
+  --accent-h: 290;
+  --accent-sat: 1;
 
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 14px;
 
   /* Control heights — every interactive control is one of three sizes, so a
-     row of them lines up (see .claude/skills/trace-ui). */
+     row of them lines up (see .claude/skills/trace-ui). Density rescales them. */
   --control-h: 30px; /* buttons, icon buttons, toggles, header status — headers & toolbars */
   --control-h-sm: 26px; /* chips, segmented controls, filters */
   --control-h-xs: 20px; /* pills inside cards and list rows */
@@ -77,11 +134,12 @@
   --text-meta: 11.5px; /* metadata, timestamps, hints */
   --text-label: 10.5px; /* uppercase section labels, mono counts */
 
-  --font-sans: "Geist", -apple-system, "Helvetica Neue", Helvetica, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 0 0 1px var(--border);
-  --shadow-pop: 0 20px 60px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border);
+  /* A UI font chosen in Appearance goes in --font-ui, in front of the
+     defaults, so missing glyphs still fall back to something sane. */
+  --font-sans-default: "Geist", -apple-system, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  --font-mono-default: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-ui, var(--font-sans-default));
+  --font-mono: var(--font-mono-default);
 }
 
 * {
@@ -106,8 +164,16 @@ body,
 body {
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, oklch(0.72 0.16 290 / 0.1), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 95% 105%, oklch(0.78 0.15 70 / 0.06), transparent 60%),
+    radial-gradient(
+      ellipse 80% 50% at 10% -10%,
+      color-mix(in oklch, var(--c-accent) var(--glow-strength), transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 95% 105%,
+      color-mix(in oklch, var(--c-prog) calc(var(--glow-strength) * 0.6), transparent),
+      transparent 60%
+    ),
     var(--bg-0);
 }
 
@@ -137,10 +203,10 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #222;
+  background: var(--scrollbar);
   border-radius: 10px;
   border: 2px solid var(--bg-0);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2e2e2e;
+  background: var(--scrollbar-hover);
 }

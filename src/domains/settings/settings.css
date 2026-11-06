@@ -87,6 +87,10 @@
   background: var(--fg-2);
   transition: left 0.15s, background 0.15s;
 }
+.switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .switch.on {
   background: var(--fg-0);
   border-color: var(--fg-0);

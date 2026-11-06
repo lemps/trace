@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { AgentDefaultsSettings } from "./AgentDefaultsSettings";
+import { AppearanceSettings } from "./AppearanceSettings";
 import { AssistantSettings } from "./AssistantSettings";
 import { AutoCleanupSettings } from "./AutoCleanupSettings";
 import { BuddySettings } from "./BuddySettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
-import { TerminalSettings } from "./TerminalSettings";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
 
@@ -14,7 +14,7 @@ type SettingsTab =
   | "agents"
   | "notifications"
   | "assistant"
-  | "terminal"
+  | "appearance"
   | "shortcuts"
   | "worktrees"
   | "updates";
@@ -22,7 +22,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "agents", label: "Agents" },
   { id: "notifications", label: "Notifications" },
   { id: "assistant", label: "Assistant" },
-  { id: "terminal", label: "Terminal" },
+  { id: "appearance", label: "Appearance" },
   { id: "shortcuts", label: "Shortcuts" },
   { id: "worktrees", label: "Worktrees" },
   { id: "updates", label: "Updates" },
@@ -69,7 +69,7 @@ export function SettingsView() {
               <BuddySettings />
             </>
           )}
-          {tab === "terminal" && <TerminalSettings />}
+          {tab === "appearance" && <AppearanceSettings />}
           {tab === "shortcuts" && <ShortcutSettings />}
           {tab === "worktrees" && (
             <>

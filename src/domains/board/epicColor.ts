@@ -27,12 +27,15 @@ function hashHue(seed: string): number {
   return h;
 }
 
-/** CSS colour for an epic chip (chip-friendly oklch). */
+/**
+ * CSS colour for an epic chip (chip-friendly oklch). Lightness comes from the
+ * theme's --epic-l, so the chip's text stays readable on light themes too.
+ */
 export function epicColor(
   epicKey: string | null | undefined,
   colorKey: string | null | undefined
 ): string {
-  if (colorKey === "color_7") return "oklch(0.72 0.02 250)"; // Jira's grey
+  if (colorKey === "color_7") return "oklch(var(--epic-l) 0.02 250)"; // Jira's grey
   const hue = (colorKey ? KEY_HUE[colorKey] : undefined) ?? hashHue(epicKey ?? "epic");
-  return `oklch(0.72 0.13 ${hue})`;
+  return `oklch(var(--epic-l) 0.13 ${hue})`;
 }

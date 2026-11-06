@@ -1,0 +1,132 @@
+/* ============================================================
+   Themes beyond the default Dark (tokens.css), plus the density and motion
+   switches. domains/appearance/apply.ts sets data-theme / data-density /
+   data-motion on <html>; a theme preview sets data-theme on itself.
+   Each theme overrides only base tokens — the derived ones (tints, shadows,
+   --c-accent) recompute from these in tokens.css.
+   ============================================================ */
+
+/* Light themes share the status hues: darker than Dark's, so a pill's text
+   reads on white (≥ 4.5:1), while the -fill tokens stay bright enough to
+   carry dark text (--on-bright / --on-needs). */
+[data-theme="light"],
+[data-theme="paper"] {
+  --c-todo: oklch(0.52 0.01 250);
+  --c-prog: oklch(0.52 0.14 65);
+  --c-review: oklch(0.5 0.18 290);
+  --c-done: oklch(0.5 0.13 155);
+  --state-needs: oklch(0.76 0.16 72);
+  --state-needs-fg: oklch(0.5 0.12 65);
+  --state-working: oklch(0.6 0.14 240);
+  --state-working-fg: oklch(0.47 0.14 245);
+  --state-ready: oklch(0.64 0.15 155);
+  --state-ready-fg: oklch(0.45 0.12 155);
+  --accent-l: 0.52;
+  --accent-c: 0.2;
+  --c-danger: oklch(0.54 0.2 25);
+  --c-warn: oklch(0.52 0.14 65);
+  --diff-add-fg: oklch(0.4 0.11 155);
+  --diff-del-fg: oklch(0.45 0.16 25);
+  --epic-l: 0.5;
+  --c-jira: oklch(0.5 0.18 250);
+  --sheen: transparent;
+  --hover-tint: oklch(0 0 0 / 0.025);
+  --overlay: rgba(20, 20, 28, 0.32);
+  --glow-strength: 7%;
+  --shadow-inset: rgba(255, 255, 255, 0.7);
+  --shadow-drop: rgba(0, 0, 0, 0.16);
+  color-scheme: light;
+}
+
+/* Light: neutral greys, white raised surfaces. bg-0 is the page; bg-2 is
+   cards and inputs (the most raised), bg-3 their hover. */
+[data-theme="light"] {
+  --bg-0: #f4f4f5;
+  --bg-1: #fafafa;
+  --bg-2: #ffffff;
+  --bg-3: #ededef;
+  --bg-elev: #ffffff;
+  --border-faint: #e9e9ec;
+  --border: #dcdce0;
+  --border-strong: #c4c4ca;
+  --fg-0: #09090b;
+  --fg-1: #1f1f23;
+  --fg-2: #52525a;
+  --fg-3: #6b6b73;
+  --fg-4: #a1a1a9;
+  --scrollbar: #d4d4d8;
+  --scrollbar-hover: #b8b8bf;
+}
+
+/* Paper: a warm, low-glare light theme. */
+[data-theme="paper"] {
+  --bg-0: #f1ece1;
+  --bg-1: #f7f3ea;
+  --bg-2: #fdfaf3;
+  --bg-3: #ebe4d6;
+  --bg-elev: #fffcf6;
+  --border-faint: #e6dfcf;
+  --border: #dbd1bd;
+  --border-strong: #c6b9a0;
+  --fg-0: #1c1810;
+  --fg-1: #2d281f;
+  --fg-2: #5a5244;
+  --fg-3: #6e6555;
+  --fg-4: #a59a86;
+  --accent-l: 0.5;
+  --accent-c: 0.17;
+  --scrollbar: #d8ceb9;
+  --scrollbar-hover: #c2b59c;
+}
+
+/* Midnight: Dark's layout in deep navy, for less contrast against black. */
+[data-theme="midnight"] {
+  --bg-0: #080c16;
+  --bg-1: #0c111d;
+  --bg-2: #111827;
+  --bg-3: #172033;
+  --bg-elev: #1a2338;
+  --border-faint: #18213a;
+  --border: #222d47;
+  --border-strong: #32405f;
+  --fg-0: #f3f6fc;
+  --fg-1: #e1e7f2;
+  --fg-2: #a0abc2;
+  --fg-3: #7682a0;
+  --fg-4: #4f5a76;
+  --accent-l: 0.74;
+  --accent-c: 0.15;
+  --scrollbar: #1f2840;
+  --scrollbar-hover: #2b3654;
+  --glow-strength: 14%;
+}
+
+/* Density: control heights and the type scale, so every row and toolbar built
+   on the tokens tightens or loosens together. */
+:root[data-density="compact"] {
+  --control-h: 26px;
+  --control-h-sm: 22px;
+  --control-h-xs: 18px;
+  --text-body: 13px;
+  --text-ui: 12px;
+  --text-meta: 11px;
+}
+:root[data-density="comfortable"] {
+  --control-h: 34px;
+  --control-h-sm: 30px;
+  --control-h-xs: 22px;
+  --text-body: 14px;
+  --text-ui: 13px;
+  --text-meta: 12px;
+  --text-label: 11px;
+}
+
+/* Reduced motion — set from the OS preference or forced on in Appearance.
+   (The OS-only @media blocks elsewhere still apply; this covers the rest.) */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}

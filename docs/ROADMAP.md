@@ -18,6 +18,10 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **iPhone and Android apps.**
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.
+      ([#13](https://github.com/noble1911/trace/pull/13))
+- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
+      plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
+      ([#14](https://github.com/noble1911/trace/pull/14))
 
 ## Candidates
 
