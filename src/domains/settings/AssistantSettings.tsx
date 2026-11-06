@@ -5,7 +5,7 @@ import {
   useOrchestratorStore,
 } from "@/domains/orchestrator/store";
 import { getAnthropicKey, setAnthropicKey } from "@/ipc/orchestrator";
-import { hints } from "@/platform/shortcuts";
+import { useHint } from "@/platform/shortcuts";
 import { SettingRow } from "./SettingRow";
 
 // Orchestrator (⌘J) backend: the Anthropic SDK (your API key, full chat +
@@ -13,6 +13,7 @@ import { SettingRow } from "./SettingRow";
 // is stored 0600 on the Rust side and never echoed back — a saved key shows as
 // a masked placeholder.
 export function AssistantSettings() {
+  const orchestratorHint = useHint("orchestrator");
   const backend = useOrchestratorStore((s) => s.backend);
   const setBackend = useOrchestratorStore((s) => s.setBackend);
   const speed = useOrchestratorStore((s) => s.speed);
@@ -45,8 +46,8 @@ export function AssistantSettings() {
     <section className="setting-group">
       <h2>Assistant</h2>
       <div className="desc">
-        The Orchestrator ({hints.orchestrator}) talks to Claude either through the Anthropic API
-        (your key) or your logged-in Claude CLI.
+        The Orchestrator ({orchestratorHint}) talks to Claude either through the Anthropic API (your
+        key) or your logged-in Claude CLI.
       </div>
       <SettingRow
         label="Backend"

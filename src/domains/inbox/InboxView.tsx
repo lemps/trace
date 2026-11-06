@@ -6,8 +6,8 @@ import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
 import { useLiveStore } from "@/domains/live/store";
 import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useNow } from "@/hooks/useNow";
-import { hints } from "@/platform/shortcuts";
 import { InboxDetail } from "./InboxDetail";
+import { InboxKeyHints } from "./InboxKeyHints";
 import { InboxRow } from "./InboxRow";
 import { useInboxKeys } from "./useInboxKeys";
 
@@ -126,24 +126,7 @@ export function InboxView({ onOpen }: InboxViewProps) {
           ))}
           {drag.dropAtEnd() && <div className="ib-drop" aria-hidden="true" />}
         </div>
-        <div className="ib-keys">
-          <span>
-            <span className="kbd">J</span> <span className="kbd">K</span> move
-          </span>
-          <span>
-            <span className="kbd">⏎</span> open
-          </span>
-          <span>
-            <span className="kbd">E</span> dismiss
-          </span>
-          <span>
-            <span className="kbd">{hints.moveUp}</span>{" "}
-            <span className="kbd">{hints.moveDown}</span> reorder
-          </span>
-          <span>
-            <span className="kbd">{hints.nextAgent}</span> next needing you, anywhere
-          </span>
-        </div>
+        <InboxKeyHints />
       </section>
       {selected ? (
         <InboxDetail

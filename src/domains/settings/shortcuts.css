@@ -1,0 +1,28 @@
+/* Settings → Shortcuts. */
+.sc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.setting-row.sc-row {
+  grid-template-columns: 1fr auto;
+  padding: 10px 0;
+}
+.sc-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn.sc-keys {
+  min-width: 96px;
+  justify-content: center;
+  font-size: var(--text-ui);
+}
+.btn.sc-keys.recording {
+  border-color: var(--c-accent);
+  color: var(--fg-1);
+}
+.setting-row .hint.sc-problem {
+  color: var(--c-danger);
+}

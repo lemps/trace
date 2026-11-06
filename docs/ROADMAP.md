@@ -16,6 +16,8 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
       Vercel integration. This comes after the Windows and Linux builds.
 - [ ] **iPhone and Android apps.**
+- [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
+      rebinds them, refusing keys a terminal or the system needs and ones already taken.
 
 ## Candidates
 

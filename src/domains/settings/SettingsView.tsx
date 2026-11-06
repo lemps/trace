@@ -5,16 +5,25 @@ import { AutoCleanupSettings } from "./AutoCleanupSettings";
 import { BuddySettings } from "./BuddySettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
+import { ShortcutSettings } from "./ShortcutSettings";
 import { TerminalSettings } from "./TerminalSettings";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
 
-type SettingsTab = "agents" | "notifications" | "assistant" | "terminal" | "worktrees" | "updates";
+type SettingsTab =
+  | "agents"
+  | "notifications"
+  | "assistant"
+  | "terminal"
+  | "shortcuts"
+  | "worktrees"
+  | "updates";
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "agents", label: "Agents" },
   { id: "notifications", label: "Notifications" },
   { id: "assistant", label: "Assistant" },
   { id: "terminal", label: "Terminal" },
+  { id: "shortcuts", label: "Shortcuts" },
   { id: "worktrees", label: "Worktrees" },
   { id: "updates", label: "Updates" },
 ];
@@ -61,6 +70,7 @@ export function SettingsView() {
             </>
           )}
           {tab === "terminal" && <TerminalSettings />}
+          {tab === "shortcuts" && <ShortcutSettings />}
           {tab === "worktrees" && (
             <>
               <AutoCleanupSettings onCleaned={() => setWorktreeScan((n) => n + 1)} />
