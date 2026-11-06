@@ -18,6 +18,7 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **iPhone and Android apps.**
 - [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
       plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
+      ([#14](https://github.com/noble1911/trace/pull/14))
 
 ## Candidates
 
