@@ -98,6 +98,8 @@ interface BoardStore {
   outputBuffers: Record<string, OutputChunk[]>;
 
   loadBoard: (boardKey: string) => Promise<void>;
+  /** Forget the loaded board: its tracker was disconnected. */
+  clearBoard: () => void;
   refresh: () => Promise<void>;
   moveIssue: (key: string, status: ColumnStatus) => Promise<void>;
   openIssue: (key: string) => void;
@@ -141,6 +143,8 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set({ boardKey, provider: option.provider, loading: true, error: null, pullRequests: {} });
     try {
       const data = await getBoard(option.provider, option.boardId);
+      // The user switched board (or disconnected) while this was loading.
+      if (get().boardKey !== boardKey) return;
       set({ data, loading: false });
       // Fan out PR lookups in the background — cards render immediately and pop
       // a badge in as each issue's dev-status response lands. Failures are silent
@@ -150,15 +154,27 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
         for (const issue of data.issues) {
           getIssuePullRequests(option.provider, issue.id)
             .then((prs) => {
-              if (prs.length === 0) return;
+              if (prs.length === 0 || get().boardKey !== boardKey) return;
               set((s) => ({ pullRequests: { ...s.pullRequests, [issue.key]: prs } }));
             })
             .catch(() => {});
         }
       }
     } catch (err) {
-      set({ loading: false, error: String(err) });
+      if (get().boardKey === boardKey) set({ loading: false, error: String(err) });
     }
+  },
+
+  clearBoard() {
+    set({
+      boardKey: null,
+      provider: null,
+      data: null,
+      loading: false,
+      error: null,
+      pullRequests: {},
+      selectedIssueKey: null,
+    });
   },
 
   async refresh() {

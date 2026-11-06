@@ -1,7 +1,9 @@
 //! Git worktree operations. Each agent runs in an isolated worktree so parallel
 //! sessions never collide. Adapted from the previous project.
 
-use std::path::PathBuf;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub fn is_git_repo(path: &str) -> bool {
@@ -98,6 +100,7 @@ pub fn create_worktree(
         .current_dir(repo_path)
         .status()
         .is_ok_and(|s| s.success());
+    exclude_worktrees_dir(repo_path);
     let start_point = format!("origin/{default_branch}");
     let args: Vec<&str> = if branch_exists {
         vec!["worktree", "add", worktree_path, branch]
@@ -118,18 +121,71 @@ pub fn create_worktree(
     Ok(())
 }
 
-/// Remove a worktree (force). Safe to call if it's already gone.
-pub fn remove_worktree(repo_path: &str, worktree_path: &str) -> Result<(), String> {
-    let output = Command::new("git")
-        .args(["worktree", "remove", worktree_path, "--force"])
+/// Keep `.worktrees/` out of the user's `git status`, since trace creates it inside
+/// their repo. Uses `info/exclude` so their tracked `.gitignore` stays untouched.
+/// Best-effort: failing here must not stop the worktree being created.
+fn exclude_worktrees_dir(repo_path: &str) {
+    const ENTRY: &str = ".worktrees/";
+    let Ok(out) = Command::new("git")
+        .args(["rev-parse", "--git-path", "info/exclude"])
         .current_dir(repo_path)
         .output()
-        .map_err(|e| format!("Failed to remove worktree: {e}"))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        if !stderr.contains("is not a working tree") {
-            return Err(format!("Git worktree remove failed: {stderr}"));
-        }
+    else {
+        return;
+    };
+    if !out.status.success() {
+        return;
     }
-    Ok(())
+    // Relative to the repo unless the repo is itself a worktree; `join` handles both.
+    let path = Path::new(repo_path).join(String::from_utf8_lossy(&out.stdout).trim());
+    let existing = std::fs::read_to_string(&path).unwrap_or_default();
+    if existing.lines().any(|line| line.trim() == ENTRY) {
+        return;
+    }
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let separator = if existing.is_empty() || existing.ends_with('\n') {
+        ""
+    } else {
+        "\n"
+    };
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&path) {
+        let _ = writeln!(file, "{separator}{ENTRY}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::exclude_worktrees_dir;
+    use std::process::Command;
+
+    fn git(dir: &str, args: &[&str]) -> std::process::Output {
+        Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .output()
+            .expect("git runs")
+    }
+
+    #[test]
+    fn exclude_ignores_worktrees_once_and_keeps_existing_rules() {
+        let dir = std::env::temp_dir().join(format!("trace-git-{}", crate::helpers::new_id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let repo = dir.to_str().expect("utf-8 path");
+        assert!(git(repo, &["init", "-q"]).status.success());
+        let exclude = dir.join(".git/info/exclude");
+        std::fs::create_dir_all(exclude.parent().expect("parent")).expect("info dir");
+        std::fs::write(&exclude, "my-rule").expect("seed exclude");
+
+        exclude_worktrees_dir(repo);
+        exclude_worktrees_dir(repo);
+
+        let content = std::fs::read_to_string(&exclude).expect("exclude file");
+        assert_eq!(content, "my-rule\n.worktrees/\n");
+        assert!(git(repo, &["check-ignore", "-q", ".worktrees/x"])
+            .status
+            .success());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

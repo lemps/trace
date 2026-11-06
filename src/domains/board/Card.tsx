@@ -85,14 +85,16 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               age={ageLabel(live.since, now * 1000)}
             />
           ) : (
-            <button
-              type="button"
-              className="card-go"
-              onClick={onKickoff}
-              title={`Start an agent on ${issue.key} with the ticket brief`}
-            >
-              <I.Play size={10} /> Start
-            </button>
+            issue.statusCategory !== "done" && (
+              <button
+                type="button"
+                className="card-go"
+                onClick={onKickoff}
+                title={`Start an agent on ${issue.key} with the ticket brief`}
+              >
+                <I.Play size={10} /> Start
+              </button>
+            )
           )}
           <AgentAvatar assignee={issue.assignee} />
         </span>

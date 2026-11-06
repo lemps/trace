@@ -65,8 +65,3 @@ pub fn find_cli_with_env(name: &str, env_map: Option<&HashMap<String, String>>) 
 pub fn command(name: &str) -> std::process::Command {
     std::process::Command::new(find_cli_with_env(name, None).unwrap_or_else(|| name.to_string()))
 }
-
-/// Backwards-compatible alias kept so the PTY runner's older call sites still resolve.
-pub fn find_claude_cli_with_env(env_map: Option<&HashMap<String, String>>) -> Option<String> {
-    find_cli_with_env("claude", env_map)
-}

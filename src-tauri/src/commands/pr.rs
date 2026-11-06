@@ -92,6 +92,10 @@ pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<Raised
 /// Merge a PR by URL. `method` is `squash` | `merge` | `rebase` (default squash).
 #[tauri::command]
 pub fn merge_pr(issue_key: String, pr_url: String, method: Option<String>) -> Result<(), String> {
+    // gh would parse a leading dash as one of its own flags.
+    if pr_url.starts_with('-') {
+        return Err("Invalid pull request URL.".to_string());
+    }
     let repo = crate::commands::repos::repo_for(&issue_key)?;
     let flag = match method.as_deref().unwrap_or("squash") {
         "merge" => "--merge",

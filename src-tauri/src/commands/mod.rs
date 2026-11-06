@@ -19,6 +19,7 @@ pub mod rich_output;
 pub mod schedules;
 pub mod session;
 pub mod session_agents;
+pub mod session_folder;
 pub mod session_link;
 pub mod snapshot;
 pub mod sound;

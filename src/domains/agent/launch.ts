@@ -1,7 +1,7 @@
 import { activity } from "@/domains/activity/store";
 import type { ActivityActor } from "@/domains/activity/types";
 import { useBoardStore } from "@/domains/board/store";
-import type { Issue, IssueComment } from "@/domains/issues/types";
+import type { Issue } from "@/domains/issues/types";
 import { type AgentCli, type AgentProvider, startAgent } from "@/ipc/agent";
 import { listIssueComments } from "@/ipc/issues";
 import {
@@ -13,36 +13,11 @@ import {
   setAgentCli,
   setAgentProvider,
 } from "./defaults";
+import { fillKickoffTemplate, formatComments } from "./kickoffBrief";
 import { agentLabel } from "./providerLabel";
 import { fitTerminal, resetTerminal, syncPtySize } from "./terminalRegistry";
 
 const MAX_DESCRIPTION_CHARS = 2000;
-const MAX_COMMENTS_CHARS = 3000;
-
-/** Format the issue's thread as a compact transcript, keeping the newest
- * messages when the cap forces a cut (the brief's value is recent context). */
-function formatComments(comments: IssueComment[]): string {
-  if (comments.length === 0) return "(no comments yet)";
-  const lines = comments.map((c) => {
-    const when = c.created ? `${c.created.slice(0, 16).replace("T", " ")} ` : "";
-    const tag = c.isInternal ? " [internal]" : "";
-    return `— ${when}${c.author}${tag}: ${c.body}`;
-  });
-  const kept: string[] = [];
-  let total = 0;
-  for (let i = lines.length - 1; i >= 0; i--) {
-    total += lines[i].length + 1;
-    if (total > MAX_COMMENTS_CHARS) break;
-    kept.unshift(lines[i]);
-  }
-  if (kept.length === 0) {
-    // A single message bigger than the cap — keep its tail rather than nothing.
-    return `…(truncated)\n${lines[lines.length - 1].slice(0, MAX_COMMENTS_CHARS)}`;
-  }
-  const omitted = lines.length - kept.length;
-  const header = omitted > 0 ? `…(${omitted} earlier message(s) omitted)\n` : "";
-  return header + kept.join("\n");
-}
 
 /** Best-effort thread fetch: a failure degrades to a placeholder line — it
  * must never block an agent launch. */
@@ -63,11 +38,12 @@ export async function kickoffPrompt(issue: Issue): Promise<string> {
   const description = (issue.description ?? "").slice(0, MAX_DESCRIPTION_CHARS) || "(none)";
   const template = kickoffPromptTemplate();
   const comments = template.includes("{comments}") ? await fetchComments(issue) : "";
-  return template
-    .replace(/\{key\}/g, issue.key)
-    .replace(/\{summary\}/g, issue.summary)
-    .replace(/\{description\}/g, description)
-    .replace(/\{comments\}/g, comments);
+  return fillKickoffTemplate(template, {
+    key: issue.key,
+    summary: issue.summary,
+    description,
+    comments,
+  });
 }
 
 interface LaunchOptions {

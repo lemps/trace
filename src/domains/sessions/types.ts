@@ -32,6 +32,8 @@ export interface ScratchSession {
   worktree?: boolean;
   /** Configured repo path this session runs in; null/undefined = default repo. */
   repo?: string | null;
+  /** Plain folder it runs in when it has no repo; no git features apply there. */
+  folder?: string | null;
   /** Extra agents sharing this session's worktree (empty/undefined = just one). */
   agents?: SessionAgent[];
   /** Started with Remote Control — also drivable from claude.ai/code. */

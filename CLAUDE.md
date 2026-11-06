@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-Guidance for working in **trace** — an issue-tracker-driven Kanban desktop app for managing parallel Claude
-coding sessions. Each card is an issue from the connected tracker (Jira or Pylon); starting work on one
-spawns an interactive Claude CLI session in an isolated git worktree.
+Guidance for working in **trace** — a desktop app for managing parallel Claude coding sessions. Its Kanban board
+shows issues from a connected tracker (Jira or Pylon, optional); starting work on one spawns an interactive Claude
+CLI session in an isolated git worktree. Sessions and scheduled prompts work with no tracker connected.
 
 ## Stack
 
@@ -54,6 +54,10 @@ src/
     ├── schedules/          # scheduled prompts: list, form, run history + run viewer
     ├── prs/                # pull-request list view
     ├── activity/           # activity feed — renders the backend activity log (types + store)
+    ├── inbox/              # agents that need you, answered in place
+    ├── fleet/              # every running agent
+    ├── live/               # each agent's live state (the source for StatusLight) + answering its prompts
+    ├── orchestrator/       # the assistant in the side panel
     ├── agentTools/         # the tools agents call on trace (board = the orchestrator's, + scheduled prompts)
     ├── buddy/              # rail pixel buddy: mood from board/activity, Haiku speech; art is data (art/ART.md)
     └── settings/           # repos, agent defaults, integrations
@@ -112,8 +116,9 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   key lives Rust-side in a `0600` config file and never crosses to the renderer. A non-Anthropic
   provider also overrides a foreign `--model` default (e.g. a Settings default like "fable") with
   its own.
-- **Exploratory session:** the same agent transport without a tracker issue — a named scratch session in its
-  own worktree (`domains/sessions/`, `commands/session.rs`).
+- **Exploratory session:** the same agent transport without a tracker issue (`domains/sessions/`,
+  `commands/session.rs`). Git is optional: it runs in a worktree of a configured repo, or in a plain `folder`
+  (one the user picked, or a scratch folder under the app config dir that's deleted with the session).
 - **Scheduled prompt:** a prompt that fires on a schedule (interval / daily / weekly / monthly / cron) from
   a Rust runner thread (`schedule/runner.rs`, only while trace is open; one process leads via a `flock`).
   Each prompt owns a worktree; each run is a fresh conversation in a PTY keyed `sched:<runId>`. A run
@@ -135,8 +140,9 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   doesn't, so the next launch offers those agents back (`app/InterruptedAgents.tsx`). Resuming is
   `spawn_in` again, which `--resume`s the saved conversation; entries whose pid is alive belong to another
   running trace and are left alone.
-- **Lifecycle:** moving a card transitions the tracker's issue AND triggers the matching action — start agent
-  (→ in progress), raise PR (→ review), merge (→ done).
+- **Lifecycle:** moving a card transitions the tracker's issue. With Settings' auto-start on, landing in the first
+  in-progress column also starts its agent. That's the only automation: agents raise their own PRs, and the
+  detail view's PR actions are explicit clicks.
 - **Agent workspace tabs:** beyond the chat PTY, each agent has a ticket view, a diff/file viewer
   (`commands/diff.rs`), a plain shell terminal, a test runner (`commands/tests.rs`, auto-detects the toolchain),
   an open-in-editor action (`commands/editor.rs`), and a PR pane.
@@ -148,6 +154,7 @@ npm install                                  # frontend deps
 npm run tauri dev                            # run app (hot reload)
 npm run tauri build                          # package
 npx tsc --noEmit                             # typecheck frontend
+cargo fmt --manifest-path src-tauri/Cargo.toml  # format Rust
 npx @biomejs/biome check src                 # lint + format check
 cargo test --manifest-path src-tauri/Cargo.toml
 ```

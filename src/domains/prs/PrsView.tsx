@@ -37,11 +37,13 @@ function bucketOf(state: string): Tab {
   }
 }
 
-// Unified list of every PR linked to a current-sprint issue, from Jira's dev panel.
+// Unified list of every PR linked to an issue on the current board. Only Jira reports
+// these (its dev panel), so other trackers explain the empty list.
 export function PrsView() {
   const data = useBoardStore((s) => s.data);
   const pullRequests = useBoardStore((s) => s.pullRequests);
   const openIssue = useBoardStore((s) => s.openIssue);
+  const provider = useBoardStore((s) => s.provider);
   const [tab, setTab] = useState<Tab>("open");
 
   // Bucket every PR once, de-duplicating by url with state finality — the
@@ -60,13 +62,18 @@ export function PrsView() {
     buckets[bucketOf(pr.state)].push({ pr, issue });
   }
   const list = buckets[tab];
+  const empty = !provider
+    ? "Connect a tracker to see the pull requests linked to its tickets."
+    : provider === "jira"
+      ? `No ${TAB_LABEL[tab].toLowerCase()} pull requests.`
+      : "This tracker doesn't report linked pull requests.";
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
           <h1>Pull requests</h1>
-          <div className="desc">PRs linked to your current sprint, from Jira's dev panel.</div>
+          <div className="desc">Pull requests linked to the tickets on this board.</div>
         </div>
       </div>
       <div className="tab-bar">
@@ -93,7 +100,7 @@ export function PrsView() {
             <span className="col-state">State</span>
           </div>
           {list.length === 0 ? (
-            <div className="pr-empty">No {TAB_LABEL[tab].toLowerCase()} pull requests.</div>
+            <div className="pr-empty">{empty}</div>
           ) : (
             list.map(({ pr, issue }) => (
               <PrRow key={pr.url} pr={pr} issue={issue} onOpenIssue={openIssue} />

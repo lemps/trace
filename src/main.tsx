@@ -1,10 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "@/App";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Stylesheets: tokens + shared first, then one per domain. All imported here
 // so the cascade order is explicit in one place.
 import "@/styles/tokens.css";
 import "@/styles/globals.css";
+import "@/components/error-boundary.css";
 import "@/components/menu.css";
 import "@/components/status-light.css";
 import "@/components/side-panel.css";
@@ -27,6 +29,7 @@ import "@/domains/sessions/session-list.css";
 import "@/domains/sessions/rail-recents.css";
 import "@/domains/schedules/schedules.css";
 import "@/domains/schedules/share.css";
+import "@/domains/issues/connect.css";
 import "@/domains/settings/settings.css";
 import "@/domains/settings/cleanup.css";
 import "@/domains/activity/activity.css";
@@ -37,6 +40,12 @@ import "@/domains/buddy/buddy.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary
+      label="trace crashed"
+      actionLabel="Reload trace"
+      onBack={() => window.location.reload()}
+    >
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );

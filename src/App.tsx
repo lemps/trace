@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BoardActions } from "@/app/BoardActions";
 import { InterruptedAgents } from "@/app/InterruptedAgents";
 import { NAV_LABELS, type NavId } from "@/app/nav";
 import { openWorkspace } from "@/app/openWorkspace";
@@ -6,9 +7,10 @@ import { PagePanel } from "@/app/PagePanel";
 import { Rail } from "@/app/Rail";
 import { Topbar } from "@/app/Topbar";
 import { useAppEvents } from "@/app/useAppEvents";
+import { useFocusRefresh } from "@/app/useFocusRefresh";
 import { useGlobalKeys } from "@/app/useGlobalKeys";
+import { useUpdateCheck } from "@/app/useUpdateCheck";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { I } from "@/components/Icon";
 import { Toaster } from "@/components/Toaster";
 import { ActivityView } from "@/domains/activity/ActivityView";
 import { useActivityFeed } from "@/domains/activity/hooks/useActivityFeed";
@@ -18,7 +20,6 @@ import { useBoardAutoRefresh } from "@/domains/board/hooks/useBoardAutoRefresh";
 import { useBoardStore } from "@/domains/board/store";
 import { FleetView } from "@/domains/fleet/FleetView";
 import { InboxView } from "@/domains/inbox/InboxView";
-import { ProviderLogin } from "@/domains/issues/components/ProviderLogin";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useLiveStore } from "@/domains/live/store";
 import { PrsView } from "@/domains/prs/PrsView";
@@ -29,29 +30,23 @@ import { SessionDetail } from "@/domains/sessions/SessionDetail";
 import { SessionsView } from "@/domains/sessions/SessionsView";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { SettingsView } from "@/domains/settings/SettingsView";
-import { consumeNotificationClick, setDockBadge } from "@/ipc/notify";
-import { checkAppUpdate } from "@/ipc/update";
-import { toast } from "./app/toast";
+import { setDockBadge } from "@/ipc/notify";
 
-// Once per app run (module-level so StrictMode's double-mount can't re-check).
-let updateCheckDone = false;
-
-// Shell only — boot, the issue-tracker login gate, nav routing, and the detail overlay.
+// Shell only — boot, nav routing, and the detail overlay. A tracker is optional: without
+// one, the Board page offers to connect and everything else works as usual.
 // All feature logic lives in src/domains/*.
 export function App() {
   const [nav, setNav] = useState<NavId>("board");
 
   const initialized = useIssuesStore((s) => s.initialized);
   const trackerSessions = useIssuesStore((s) => s.sessions);
-  const boards = useIssuesStore((s) => s.boards);
   const selectedBoardKey = useIssuesStore((s) => s.selectedBoardKey);
-  const selectBoard = useIssuesStore((s) => s.selectBoard);
   const init = useIssuesStore((s) => s.init);
   const hasSession = Object.keys(trackerSessions).length > 0;
 
   const data = useBoardStore((s) => s.data);
   const loadBoard = useBoardStore((s) => s.loadBoard);
-  const refresh = useBoardStore((s) => s.refresh);
+  const clearBoard = useBoardStore((s) => s.clearBoard);
   const selectedIssueKey = useBoardStore((s) => s.selectedIssueKey);
   const closeIssue = useBoardStore((s) => s.closeIssue);
   const liveInfo = useLiveStore((s) => s.info);
@@ -69,47 +64,16 @@ export function App() {
 
   useAppEvents();
 
-  // Load the board whenever the selected board changes.
+  // Load the board whenever the selected board changes. No selection means the last
+  // tracker was disconnected, so its cards mustn't linger.
   useEffect(() => {
-    if (hasSession && selectedBoardKey != null) void loadBoard(selectedBoardKey);
-  }, [hasSession, selectedBoardKey, loadBoard]);
+    if (selectedBoardKey != null) void loadBoard(selectedBoardKey);
+    else clearBoard();
+  }, [selectedBoardKey, loadBoard, clearBoard]);
 
-  // Quiet update check shortly after launch — publishing a GitHub release IS
-  // the rollout, so surface it without requiring a trip to Settings. Errors
-  // are silent (dev builds have no release feed behind them).
-  useEffect(() => {
-    if (updateCheckDone) return;
-    updateCheckDone = true;
-    const t = setTimeout(() => {
-      checkAppUpdate()
-        .then((update) => {
-          if (update) toast.info(`trace v${update.version} is available — Settings → Updates`);
-        })
-        .catch(() => {});
-    }, 5000);
-    return () => clearTimeout(t);
-  }, []);
-
+  useUpdateCheck();
   useBoardAutoRefresh();
-
-  const refreshAllPrs = useBoardStore((s) => s.refreshAllPrs);
-  useEffect(() => {
-    let lastPrRefresh = 0;
-    const onFocus = () => {
-      // A focus right after a waiting notification ≈ the user clicked it:
-      // jump straight to that workspace's detail (issue card or session).
-      const target = consumeNotificationClick();
-      if (target) openWorkspace(target, setNav);
-      // PR statuses change outside the app (agents run gh; merges happen in
-      // the browser) — re-check on focus, at most once a minute.
-      if (Date.now() - lastPrRefresh >= 60_000) {
-        lastPrRefresh = Date.now();
-        refreshAllPrs();
-      }
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [refreshAllPrs]);
+  useFocusRefresh(setNav);
 
   // Agents that need you — the inbox's count, on the rail and the Dock.
   const waitingCount = Object.values(liveInfo).filter((i) => i.light === "attention").length;
@@ -130,8 +94,6 @@ export function App() {
     );
   }
 
-  if (!hasSession) return <ProviderLogin />;
-
   const openIssue = selectedIssueKey
     ? (data?.issues.find((i) => i.key === selectedIssueKey) ?? null)
     : null;
@@ -151,40 +113,6 @@ export function App() {
     setNav(id);
   };
 
-  const boardActions = (
-    <>
-      {boards.length > 1 && (
-        <select
-          value={selectedBoardKey ?? ""}
-          onChange={(e) => selectBoard(e.target.value)}
-          style={{
-            background: "var(--bg-2)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            color: "var(--fg-1)",
-            height: 30,
-            padding: "0 8px",
-            fontSize: 12.5,
-          }}
-        >
-          {boards.map((b) => (
-            <option key={b.key} value={b.key}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-      )}
-      <button
-        type="button"
-        className="btn ghost"
-        title="Refresh board"
-        onClick={() => void refresh()}
-      >
-        <I.Activity size={14} />
-      </button>
-    </>
-  );
-
   return (
     <div className="app-root">
       <div className="app">
@@ -192,20 +120,22 @@ export function App() {
         <Topbar
           nav={nav}
           project={project}
-          extra={nav === "board" ? boardActions : undefined}
+          extra={nav === "board" && hasSession ? <BoardActions /> : undefined}
           onNav={handleNav}
         />
         <main className="main">
-          {nav === "inbox" && <InboxView onOpen={(id) => openWorkspace(id, setNav)} />}
-          {nav === "board" && <Board />}
-          {nav === "fleet" && <FleetView onOpen={(id) => openWorkspace(id, setNav)} />}
-          {nav === "sessions" && <SessionsView />}
-          {nav === "scheduled" && <SchedulesView />}
-          {nav === "pr" && <PrsView />}
-          {nav === "activity" && <ActivityView />}
-          {nav === "settings" && <SettingsView />}
-          {/* The orchestrator, on the pages where it helps (⌘J). */}
-          {(nav === "board" || nav === "sessions") && <PagePanel key={nav} place={nav} />}
+          <ErrorBoundary key={nav} inPage label={`The ${NAV_LABELS[nav]} page crashed`}>
+            {nav === "inbox" && <InboxView onOpen={(id) => openWorkspace(id, setNav)} />}
+            {nav === "board" && <Board />}
+            {nav === "fleet" && <FleetView onOpen={(id) => openWorkspace(id, setNav)} />}
+            {nav === "sessions" && <SessionsView />}
+            {nav === "scheduled" && <SchedulesView />}
+            {nav === "pr" && <PrsView />}
+            {nav === "activity" && <ActivityView />}
+            {nav === "settings" && <SettingsView />}
+            {/* The orchestrator, on the pages where it helps (⌘J). */}
+            {(nav === "board" || nav === "sessions") && <PagePanel key={nav} place={nav} />}
+          </ErrorBoundary>
         </main>
       </div>
 

@@ -56,6 +56,12 @@ export const I = {
       <path d="m14 8-3-3 3-3" />
     </Base>
   ),
+  Refresh: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+      <path d="M21 3v5h-5" />
+    </Base>
+  ),
   Activity: (p: IconProps) => (
     <Base {...p}>
       <path d="M22 12h-4l-3 9-6-18-3 9H2" />

@@ -42,7 +42,8 @@ interface SessionsStore {
     title: string,
     cli: AgentCli,
     repo?: string | null,
-    provider?: AgentProvider
+    provider?: AgentProvider,
+    folder?: string | null
   ) => Promise<ScratchSession>;
   /** List a session created elsewhere (an agent's tool call) without opening it. */
   adopt: (session: ScratchSession) => void;
@@ -113,8 +114,8 @@ export const useSessionsStore = create<SessionsStore>((set) => ({
     const [sessions, groups] = await Promise.all([listSessions(), listSessionGroups()]);
     set({ sessions, groups, loaded: true });
   },
-  async create(title, cli, repo, provider) {
-    const session = await createSession(title, cli, repo, provider);
+  async create(title, cli, repo, provider, folder) {
+    const session = await createSession(title, cli, repo, provider, undefined, folder);
     set((s) => {
       const recent = pushRecent(s.recent, session.id);
       saveRecent(recent);

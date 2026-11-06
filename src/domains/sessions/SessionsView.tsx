@@ -82,11 +82,17 @@ export function SessionsView() {
     void saveGroups(patchSectionIn(groups, id, patch));
   const deleteSection = (id: string) => void saveGroups(withoutSection(groups, id)).then(load);
 
-  const onCreate = (title: string, cli: AgentCli, repo: string | null, provider: AgentProvider) => {
+  const onCreate = (
+    title: string,
+    cli: AgentCli,
+    repo: string | null,
+    provider: AgentProvider,
+    folder: string | null
+  ) => {
     setAgentCli(cli);
     setAgentProvider(provider);
     setCreating(false);
-    void create(title, cli, repo, provider).then((s) => {
+    void create(title, cli, repo, provider, folder).then((s) => {
       if (activeTab) void assign(s.id, activeTab, null);
     });
   };
@@ -166,8 +172,8 @@ export function SessionsView() {
               </span>
               <div className="title">No exploratory sessions yet</div>
               <div className="hint">
-                Spin up an interactive agent for spikes, debugging, or poking around — it runs in
-                your repo, with no Jira ticket attached.
+                Spin up an interactive agent for spikes, debugging, or poking around — in a repo or
+                any folder, with no ticket attached.
               </div>
               <button
                 type="button"

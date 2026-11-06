@@ -1,8 +1,7 @@
 //! Small shared helpers used across modules.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
-use chrono::Utc;
 use uuid::Uuid;
 
 /// trace's config/data dir (`~/Library/Application Support/trace` on macOS). The
@@ -33,9 +32,17 @@ pub fn restrict_perms(path: &Path) {
 #[cfg(not(unix))]
 pub fn restrict_perms(_path: &Path) {}
 
-/// Current time as an RFC3339 string.
-pub fn now_rfc3339() -> String {
-    Utc::now().to_rfc3339()
+/// Validate a path the renderer sent that must stay under some root. Only plain
+/// names are allowed: anything absolute or containing `..` could read or remove
+/// files outside the worktree the caller is scoped to.
+pub fn safe_relative_path(path: &str) -> Result<&Path, String> {
+    let rel = Path::new(path);
+    let is_safe = !path.is_empty() && rel.components().all(|c| matches!(c, Component::Normal(_)));
+    if is_safe {
+        Ok(rel)
+    } else {
+        Err("Invalid file path.".to_string())
+    }
 }
 
 /// A fresh random id.
@@ -61,7 +68,23 @@ pub fn slugify(input: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::slugify;
+    use super::{safe_relative_path, slugify};
+
+    #[test]
+    fn safe_relative_path_allows_only_paths_below_the_root() {
+        assert!(safe_relative_path("src/main.rs").is_ok());
+        assert!(safe_relative_path("a b/c.txt").is_ok());
+        for bad in [
+            "",
+            "/etc/passwd",
+            "../secret",
+            "src/../../secret",
+            "./x",
+            "/",
+        ] {
+            assert!(safe_relative_path(bad).is_err(), "{bad} should be rejected");
+        }
+    }
 
     #[test]
     fn slugify_issue_keys_and_edges() {

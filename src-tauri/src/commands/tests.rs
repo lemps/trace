@@ -3,6 +3,7 @@
 //! best-effort across common toolchains; the suite-level pass/fail is the
 //! process exit code (per-test parsing is framework-specific and out of scope).
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::time::Instant;
@@ -60,7 +61,12 @@ fn tail(s: &str, max: usize) -> String {
     if s.len() <= max {
         return s.to_string();
     }
-    let start = s.len() - max;
+    // Test output is full of multibyte characters (✓, box drawing), and slicing
+    // inside one panics. Move forward to the next boundary.
+    let mut start = s.len() - max;
+    while !s.is_char_boundary(start) {
+        start += 1;
+    }
     format!("…\n{}", &s[start..])
 }
 
@@ -80,7 +86,7 @@ pub async fn run_tests(issue_key: String) -> Result<TestRun, String> {
 
 /// The blocking work — detect the toolchain and run its test command.
 fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
-    let worktree = crate::commands::repos::workspace_dir(&repo, issue_key);
+    let worktree = crate::commands::repos::workspace_dir(repo, issue_key);
     if !Path::new(&worktree).exists() {
         return Err(format!(
             "No worktree for {issue_key} — start a session on this issue first."
@@ -93,9 +99,14 @@ fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
             .to_string()
     })?;
 
+    // An app opened from Finder has a minimal PATH with no npm, cargo or mvn.
+    // Setting the user's PATH here makes `Command` search it for `program` too,
+    // and lets the tool find what it calls in turn (npm needs node).
+    let env = crate::claude::env::build_effective_cli_env(&HashMap::new());
     let started = Instant::now();
     let out = Command::new(program)
         .args(&args)
+        .envs(&env)
         .current_dir(&worktree)
         .output()
         .map_err(|e| format!("Failed to run {display}: {e}"))?;
@@ -111,4 +122,20 @@ fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
         duration_ms,
         output: tail(combined.trim(), 16_000),
     })
+}
+
+#[cfg(test)]
+mod tail_tests {
+    use super::tail;
+
+    #[test]
+    fn tail_keeps_short_output_whole() {
+        assert_eq!(tail("ok", 10), "ok");
+    }
+
+    #[test]
+    fn tail_never_cuts_inside_a_multibyte_character() {
+        // "✓" is 3 bytes, so a 4-byte tail starts inside the first of these two.
+        assert_eq!(tail("✓✓", 4), "…\n✓");
+    }
 }

@@ -15,7 +15,7 @@ interface RailProps {
 }
 
 export function Rail({ nav, onNav, waitingCount }: RailProps) {
-  // Prefer the Jira identity for the rail avatar; fall back to any provider.
+  // Prefer the Jira identity for the rail avatar; fall back to any provider, or none.
   const user = useIssuesStore((s) => s.users.jira ?? s.users.pylon ?? null);
   const scheduledNeedsYou = useScheduledNeedsYou();
   const buddyOn = useBuddyStore((s) => s.enabled);
@@ -31,6 +31,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "inbox" ? " active" : ""}`}
           onClick={() => onNav("inbox")}
           title={waitingCount > 0 ? `Inbox — ${waitingCount} need you` : "Inbox"}
+          aria-label={waitingCount > 0 ? `Inbox, ${waitingCount} need you` : "Inbox"}
         >
           <I.Inbox size={16} />
           {waitingCount > 0 && <span className="badge count">{waitingCount}</span>}
@@ -40,6 +41,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "board" ? " active" : ""}`}
           onClick={() => onNav("board")}
           title="Board"
+          aria-label="Board"
         >
           <I.Board size={16} />
         </button>
@@ -48,6 +50,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "fleet" ? " active" : ""}`}
           onClick={() => onNav("fleet")}
           title="Fleet — every running agent"
+          aria-label="Fleet"
         >
           <I.Fleet size={16} />
         </button>
@@ -59,6 +62,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
             className={`nav-btn${nav === "sessions" ? " active" : ""}`}
             onClick={() => onNav("sessions")}
             title="Sessions"
+            aria-label="Sessions"
           >
             <I.Agents size={16} />
           </button>
@@ -69,6 +73,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "scheduled" ? " active" : ""}`}
           onClick={() => onNav("scheduled")}
           title="Scheduled prompts"
+          aria-label="Scheduled prompts"
         >
           <I.Clock size={16} />
           {scheduledNeedsYou && <span className="badge" />}
@@ -78,6 +83,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "pr" ? " active" : ""}`}
           onClick={() => onNav("pr")}
           title="Pull requests"
+          aria-label="Pull requests"
         >
           <I.PR size={16} />
         </button>
@@ -86,6 +92,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           className={`nav-btn${nav === "activity" ? " active" : ""}`}
           onClick={() => onNav("activity")}
           title="Activity"
+          aria-label="Activity"
         >
           <I.Activity size={16} />
         </button>
@@ -95,16 +102,20 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
         type="button"
         className={`nav-btn${nav === "settings" ? " active" : ""}`}
         title="Settings"
+        aria-label="Settings"
         style={{ marginTop: "auto" }}
         onClick={() => onNav("settings")}
       >
         <I.Settings size={16} />
       </button>
-      {/* The connected Jira account; opens Settings (where the connection lives). */}
+      {/* The connected tracker account; opens Settings (where the connection lives). */}
       <button
         type="button"
         className="me"
-        title={user ? user.displayName : "Not connected"}
+        title={user ? user.displayName : "No tracker connected"}
+        aria-label={
+          user ? `${user.displayName}, open Settings` : "No tracker connected, open Settings"
+        }
         onClick={() => onNav("settings")}
       >
         {user?.avatarUrl ? (

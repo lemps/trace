@@ -185,14 +185,11 @@
   color: var(--c-done);
   background: var(--c-done-bg);
 }
-.ig-status.disconnected {
-  color: var(--fg-3);
-  background: var(--bg-3);
-}
-/* The connected pill doubles as the disconnect action. */
-button.ig-status.connected:hover {
-  color: var(--c-danger);
-  background: oklch(0.68 0.18 25 / 0.12);
+.ig-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 /* Worktree status chips */

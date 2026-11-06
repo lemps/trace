@@ -31,8 +31,7 @@ pub fn link_session_to_issue(
     };
     if !list[pos].worktree {
         return Err(
-            "This session predates worktree sessions and shares the repo root — it can't be \
-             bound to a ticket."
+            "This session doesn't have its own worktree, so it can't be bound to a ticket."
                 .to_string(),
         );
     }

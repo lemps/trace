@@ -1,6 +1,7 @@
-//! Exploratory ("scratch") sessions — interactive agents not tied to a Jira
-//! issue. New sessions run in their own worktree (like issues, and linkable to a
-//! ticket later); legacy sessions predating that field stay in the repo root.
+//! Exploratory ("scratch") sessions — interactive agents not tied to a tracker
+//! issue. A session picks a configured repo and runs in its own worktree (like
+//! issues, and linkable to a ticket later), or needs no repo at all and runs in a
+//! plain folder. Legacy sessions predating these fields stay in the repo root.
 //! Metadata persists locally so they survive restarts. The PTY transport, the
 //! stop/input/resize commands, and Claude session-id resume are all shared with
 //! board agents (`commands::agent`), keyed by the session id.
@@ -14,6 +15,7 @@ use tauri::{AppHandle, State};
 use crate::claude::conversations::forget_session_id;
 use crate::commands::agent::spawn_in;
 use crate::commands::session_agents::{discard_agents, stop_agents, SessionAgent};
+use crate::commands::session_folder;
 use crate::git;
 use crate::helpers::new_id;
 use crate::state::{AppState, StartGuard};
@@ -52,6 +54,11 @@ pub struct ScratchSession {
     /// configured repo at start time).
     #[serde(default)]
     pub repo: Option<String>,
+    /// The plain folder this session runs in when it has no repo: one the user
+    /// picked, or a scratch folder trace made for it (see `scratch_root`). Git is
+    /// never involved, so `worktree` is false. `None` on repo-backed sessions.
+    #[serde(default)]
+    pub folder: Option<String>,
     /// Extra agents sharing this session's worktree (`commands::session_agents`) —
     /// e.g. a codex agent continuing work claude started. Each has its own PTY and
     /// conversation; the worktree belongs to the session.
@@ -125,6 +132,7 @@ pub fn list_sessions() -> Vec<ScratchSession> {
                     let _ = forget_session_id(&agent.id);
                 }
                 crate::commands::worktrees::remove_for_workspace(&s.id);
+                session_folder::remove_scratch_folder(s);
             }
             keep
         }
@@ -137,13 +145,16 @@ pub fn list_sessions() -> Vec<ScratchSession> {
     list
 }
 
-/// Create (persist) a new exploratory session. Does not start its agent.
+/// Create (persist) a new exploratory session. Does not start its agent. With a
+/// `repo` it gets a worktree of that repo. Without one it runs in `folder`, or in a
+/// new scratch folder if that's absent too, so no session needs git.
 #[tauri::command]
 pub fn create_session(
     title: String,
     cli: String,
     provider: Option<String>,
     repo: Option<String>,
+    folder: Option<String>,
     remote_control: Option<bool>,
 ) -> Result<ScratchSession, String> {
     let title = title.trim();
@@ -164,14 +175,21 @@ pub fn create_session(
     // and on Anthropic — a third-party endpoint can't serve it.
     let remote_control = remote_control.unwrap_or(false) && cli == "claude";
     let provider = if remote_control { None } else { provider };
-    // Only honor a repo that's actually configured; anything else falls back to
-    // the default repo at start time (`None`).
-    let repo = repo.and_then(|r| {
-        let r = r.trim().to_string();
-        (!r.is_empty() && crate::commands::repos::all_repos().contains(&r)).then_some(r)
-    });
+    let repo = repo.map(|r| r.trim().to_string()).filter(|r| !r.is_empty());
+    if repo
+        .as_ref()
+        .is_some_and(|r| !crate::commands::repos::all_repos().contains(r))
+    {
+        return Err("That repository isn't configured in Settings.".to_string());
+    }
+    let id = new_id();
+    let folder = if repo.is_some() {
+        None
+    } else {
+        Some(session_folder::resolve_folder(folder, &title, &id)?)
+    };
     let session = ScratchSession {
-        id: new_id(),
+        id,
         title,
         cli,
         provider,
@@ -179,8 +197,9 @@ pub fn create_session(
         archived_at: None,
         tab: None,
         section: None,
-        worktree: true,
+        worktree: repo.is_some(),
         repo,
+        folder,
         agents: Vec::new(),
         remote_control,
     };
@@ -241,13 +260,16 @@ pub(crate) fn is_session(id: &str) -> bool {
 ///   shouldn't materialize a git worktree as a side effect.
 ///
 /// Legacy sessions without a worktree always resolve to the repo root, where
-/// their Claude conversation is keyed.
+/// their Claude conversation is keyed. Sessions with a plain `folder` run there.
 ///
 /// `id` may be a companion agent's id: the worktree belongs to the *session*, so
 /// every agent on it resolves to the same directory — that shared cwd is the
 /// whole point of companions.
 pub(crate) fn session_cwd(id: &str, create: bool) -> Result<String, String> {
     let session = owning_session(id).ok_or("That session no longer exists.")?;
+    if let Some(folder) = &session.folder {
+        return session_folder::folder_cwd(&session_folder::scratch_root(), folder, create);
+    }
     let repo = session
         .repo
         .clone()
@@ -314,6 +336,7 @@ pub fn delete_session(state: State<'_, AppState>, id: String) -> Result<(), Stri
         for agent in &session.agents {
             let _ = forget_session_id(&agent.id);
         }
+        session_folder::remove_scratch_folder(&session);
     }
     let _ = forget_session_id(&id);
     // Clean up any worktree/branch backing this workspace — the session is

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "@/app/toast";
 import {
   connectJira,
   connectPylon,
@@ -18,7 +19,7 @@ import {
 const SELECTED_BOARD_KEY = "trace.selectedBoardKey";
 
 interface IssuesStore {
-  /** Connected providers, keyed by kind. Empty = show the login gate. */
+  /** Connected providers, keyed by kind. Empty = the Board page offers to connect one. */
   sessions: Partial<Record<ProviderKind, ProviderSession>>;
   users: Partial<Record<ProviderKind, IssueUser>>;
   /** Boards from all connected providers, merged for the switcher. */
@@ -47,7 +48,11 @@ async function loadProvider(
   provider: ProviderKind
 ): Promise<void> {
   const [boards, user] = await Promise.all([
-    listBoards(provider).catch(() => []),
+    // An expired token lands here; without the toast it just looks like an empty board.
+    listBoards(provider).catch((err) => {
+      toast.error(`Couldn't load your ${provider} boards: ${String(err)}`);
+      return [];
+    }),
     providerCurrentUser(provider).catch(() => null),
   ]);
   const options: BoardOption[] = boards.map((b) => ({
@@ -80,12 +85,18 @@ export const useIssuesStore = create<IssuesStore>((set) => ({
   initialized: false,
 
   async init() {
-    const sessions = await providerSessions();
-    const map: Partial<Record<ProviderKind, ProviderSession>> = {};
-    for (const s of sessions) map[s.provider] = s;
-    set({ sessions: map });
-    for (const s of sessions) {
-      await loadProvider(set, s.provider);
+    // A tracker is optional, so failing to restore one must not strand the app on
+    // its splash screen: say why and carry on without it.
+    try {
+      const sessions = await providerSessions();
+      const map: Partial<Record<ProviderKind, ProviderSession>> = {};
+      for (const s of sessions) map[s.provider] = s;
+      set({ sessions: map });
+      for (const s of sessions) {
+        await loadProvider(set, s.provider);
+      }
+    } catch (err) {
+      toast.error(`Couldn't restore your tracker connections: ${String(err)}`);
     }
     set((s) => ({
       initialized: true,

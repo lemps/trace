@@ -55,6 +55,11 @@ pub struct FileDiff {
 /// repo root and have none, so we fall back to the repo itself. Returns
 /// `(repo, work_dir)` where the diff is computed in `work_dir`.
 fn work_dir_for(workspace_id: &str) -> Result<(String, String), String> {
+    // A session in a plain folder has no repo. The fallback below would show the
+    // diff of an unrelated default repo as if it were this session's.
+    if crate::commands::session::owning_session(workspace_id).is_some_and(|s| s.folder.is_some()) {
+        return Err("This session runs in a plain folder, so it has no diff.".to_string());
+    }
     // Issues resolve to their assigned repo; sessions (and anything unassigned)
     // fall back to the default repo.
     let repo = crate::commands::repos::repo_for(workspace_id)
@@ -83,15 +88,8 @@ pub fn read_workspace_file(issue_key: String, path: String) -> Result<String, St
     const MAX_BYTES: usize = 1024 * 1024; // 1 MiB — generous for any document
     let (_repo, worktree) = work_dir_for(&issue_key)?;
     // The path comes from the diff summary (relative, inside the worktree), but
-    // guard anyway — never let an absolute or `..`-bearing path escape.
-    let rel = std::path::Path::new(&path);
-    if rel.is_absolute()
-        || rel
-            .components()
-            .any(|c| matches!(c, std::path::Component::ParentDir))
-    {
-        return Err("Invalid file path.".to_string());
-    }
+    // guard anyway — never let it escape.
+    let rel = crate::helpers::safe_relative_path(&path)?;
     let full = std::path::Path::new(&worktree).join(rel);
     let bytes = std::fs::read(&full).map_err(|e| format!("Couldn't read {path}: {e}"))?;
     if bytes.len() > MAX_BYTES {
@@ -215,6 +213,8 @@ pub async fn git_diff_summary(issue_key: String) -> Result<DiffSummary, String> 
 #[tauri::command]
 pub fn git_diff_file(issue_key: String, path: String) -> Result<FileDiff, String> {
     let (repo, worktree) = work_dir_for(&issue_key)?;
+    // `--no-index` below would happily read any file on disk.
+    crate::helpers::safe_relative_path(&path)?;
 
     // Untracked files have no base to diff against — synthesize the "all
     // added" diff with --no-index, which exits 1 when differences exist.

@@ -43,7 +43,7 @@ export const SESSION_TOOLS: Anthropic.Tool[] = [
   {
     name: "start_session",
     description:
-      "Start a new standalone Claude session in its own worktree of one of trace's repos — for work that isn't a ticket. It shows on trace's Sessions page. With remote_control it's started with Claude Code's Remote Control, so it can also be driven from claude.ai/code and the Claude app; the link is returned when it appears. Give a prompt to set it working straight away; otherwise it waits at its prompt for send_to_session.",
+      "Start a new standalone Claude session in its own worktree of one of trace's repos (or an empty scratch folder when none are configured) — for work that isn't a ticket. It shows on trace's Sessions page. With remote_control it's started with Claude Code's Remote Control, so it can also be driven from claude.ai/code and the Claude app; the link is returned when it appears. Give a prompt to set it working straight away; otherwise it waits at its prompt for send_to_session.",
     input_schema: {
       type: "object",
       properties: {
@@ -122,10 +122,10 @@ function bool(input: unknown, key: string): boolean {
 const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /** Match a repo by path or folder name; an unknown or ambiguous one names the choices. */
-async function resolveRepo(wanted: string): Promise<string> {
+async function resolveRepo(wanted: string): Promise<string | null> {
   const repos = await listRepos();
-  if (repos.length === 0)
-    throw new Error("No repositories are configured in trace (Settings → Repos).");
+  // No repos configured: the session runs in a scratch folder, which needs no git.
+  if (repos.length === 0 && !wanted) return null;
   if (!wanted) {
     if (repos.length === 1) return repos[0];
     throw new Error(`Say which repo: ${repos.map(basename).join(", ")}.`);
@@ -206,7 +206,7 @@ async function start(input: unknown): Promise<string> {
     title: `created session “${session.title}”`,
   });
   await launch(session, str(input, "prompt"));
-  const head = `Started session "${session.title}" (id ${session.id}) in ${basename(repo)}.`;
+  const head = `Started session "${session.title}" (id ${session.id}) in ${repo ? basename(repo) : "a scratch folder"}.`;
   if (!remote) return head;
   const link = await waitForLink(session.id);
   return link
@@ -243,7 +243,7 @@ async function list(): Promise<string> {
   if (sessions.length === 0) return "No sessions.";
   return sessions
     .map((s) => {
-      const repo = s.repo ? basename(s.repo) : "default repo";
+      const repo = s.folder ? basename(s.folder) : s.repo ? basename(s.repo) : "default repo";
       const rc = s.remoteControl ? " · Remote Control" : "";
       return `- ${s.id} "${s.title}" · ${repo} · ${s.cli} · ${stateOf(s.id)}${rc}`;
     })

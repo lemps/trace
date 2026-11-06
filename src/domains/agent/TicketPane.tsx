@@ -1,6 +1,6 @@
 import type { Issue } from "@/domains/issues/types";
 
-// The "Ticket" tab — the linked Jira issue's fields.
+// The "Ticket" tab — the linked issue's fields.
 export function TicketPane({ issue }: { issue: Issue }) {
   const paragraphs = (issue.description ?? "").split(/\n{2,}/).filter((p) => p.trim());
   // Key by content + occurrence count: descriptions can repeat a line (e.g. a

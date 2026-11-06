@@ -328,3 +328,12 @@
   color: var(--fg-1);
 }
 
+.board-switcher {
+  height: var(--control-h);
+  padding: 0 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-1);
+  font-size: var(--text-ui);
+}

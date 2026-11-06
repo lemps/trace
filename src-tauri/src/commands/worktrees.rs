@@ -234,7 +234,11 @@ pub async fn remove_worktree(
     branch: Option<String>,
     force: bool,
 ) -> Result<(), String> {
-    if !path.starts_with(&format!("{repo}/.worktrees/")) {
+    // The prefix alone isn't enough: `<repo>/.worktrees/../../other` passes it.
+    let inside = path
+        .strip_prefix(&format!("{repo}/.worktrees/"))
+        .is_some_and(|rest| crate::helpers::safe_relative_path(rest).is_ok());
+    if !inside {
         return Err("Not a trace-managed worktree.".to_string());
     }
     let name = path.rsplit('/').next().unwrap_or("").to_string();

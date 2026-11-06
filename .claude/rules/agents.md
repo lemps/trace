@@ -21,14 +21,17 @@
 
 - Each agent runs in an isolated worktree at `<repo>/.worktrees/<slug>` on branch `workspace/<slug>`, where
   `<slug>` is the slugified issue key (`helpers::slugify`, e.g. `TRACE-12` → `trace-12`). One agent per worktree.
+- `git::create_worktree` adds `.worktrees/` to the repo's `info/exclude`, so it never shows in the user's status.
+- A session without a repo has a plain `folder` and `worktree: false`. Never fall back to the default repo for one:
+  `session_cwd` and `diff::work_dir_for` both check `folder` first.
 - Use `git_busy_check` before mutating a repo; respect the detected default branch.
 
-## Lifecycle ⇄ actions (replaces the prototype's mock `onMove` side-effects)
+## Lifecycle ⇄ actions
 
-- → **in progress** column: ensure a worktree exists for the issue, then `spawn_agent_pty`.
-- → **review** column: `git push` + `gh pr create` (reused `commands/pr.rs`).
-- → **done** column: merge the PR.
-- Each transition ALSO fires the matching tracker transition (Jira: `jira.md`; Pylon: `providers.md`). UI moves
+- → first **in progress** column, with Settings' auto-start on: ensure a worktree exists, then `spawn_agent_pty`.
+- Nothing else is automatic. Moving a card never raises or merges a PR: agents raise their own, and `commands/pr.rs`
+  backs the explicit buttons in the detail view.
+- Every move fires the matching tracker transition (Jira: `jira.md`; Pylon: `providers.md`). UI moves
   optimistically; reconcile on result.
 
 ## Security (carried over — these were learned the hard way)

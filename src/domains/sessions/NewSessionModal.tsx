@@ -1,4 +1,6 @@
+import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "@/app/toast";
 import { Modal } from "@/components/Modal";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
@@ -7,15 +9,26 @@ interface NewSessionModalProps {
   defaultCli: AgentCli;
   defaultProvider: AgentProvider;
   onClose: () => void;
-  onCreate: (title: string, cli: AgentCli, repo: string | null, provider: AgentProvider) => void;
+  onCreate: (
+    title: string,
+    cli: AgentCli,
+    repo: string | null,
+    provider: AgentProvider,
+    folder: string | null
+  ) => void;
 }
 
 // Show the repo's folder name, not its full path — matches the board's picker.
 const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
-// Title + agent + repository picker for a new exploratory session. Title is
-// optional (the backend falls back to "Exploration" when blank); the session
-// runs in an isolated worktree of the chosen repo.
+// Values of the "Runs in" picker that aren't a repo's path (those are always absolute).
+const SCRATCH = "scratch";
+const FOLDER = "folder";
+const CHOOSE_FOLDER = "choose";
+
+// Title + agent + where it runs, for a new exploratory session. Title is optional (the
+// backend falls back to "Exploration" when blank). A repo gives it an isolated worktree;
+// it doesn't need one, and can run in a folder of the user's or an empty scratch folder.
 export function NewSessionModal({
   defaultCli,
   defaultProvider,
@@ -26,7 +39,8 @@ export function NewSessionModal({
   const [cli, setCli] = useState<AgentCli>(defaultCli);
   const [provider, setProvider] = useState<AgentProvider>(defaultProvider);
   const [repos, setRepos] = useState<string[]>([]);
-  const [repo, setRepo] = useState("");
+  const [place, setPlace] = useState(SCRATCH);
+  const [folder, setFolder] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus the title field on open (without the lint-flagged autoFocus attribute).
@@ -37,17 +51,47 @@ export function NewSessionModal({
   // Load configured repos and default the picker to the first one.
   useEffect(() => {
     let cancelled = false;
-    void listRepos().then((all) => {
-      if (cancelled) return;
-      setRepos(all);
-      setRepo(all[0] ?? "");
-    });
+    listRepos()
+      .then((all) => {
+        if (cancelled) return;
+        setRepos(all);
+        if (all[0]) setPlace(all[0]);
+      })
+      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const submit = () => onCreate(title.trim() || "Exploration", cli, repo || null, provider);
+  const choosePlace = async (next: string) => {
+    if (next !== CHOOSE_FOLDER) {
+      setPlace(next);
+      return;
+    }
+    // A cancelled dialog leaves the current choice alone.
+    const picked = await open({ directory: true, multiple: false, title: "Choose a folder" });
+    if (typeof picked !== "string") return;
+    setFolder(picked);
+    setPlace(FOLDER);
+  };
+
+  const submit = () => {
+    const isRepo = place !== SCRATCH && place !== FOLDER;
+    onCreate(
+      title.trim() || "Exploration",
+      cli,
+      isRepo ? place : null,
+      provider,
+      place === FOLDER ? folder : null
+    );
+  };
+
+  const note =
+    place === SCRATCH
+      ? "Runs in a new empty folder, which is deleted along with the session."
+      : place === FOLDER
+        ? "Runs directly in this folder. Without a worktree, there's no isolation or Files tab."
+        : "Runs in an isolated worktree of the selected repository.";
 
   return (
     <Modal
@@ -58,7 +102,7 @@ export function NewSessionModal({
           <button type="button" className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn primary" onClick={submit} disabled={!repo}>
+          <button type="button" className="btn primary" onClick={submit}>
             Create
           </button>
         </>
@@ -74,7 +118,7 @@ export function NewSessionModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && repo) submit();
+            if (e.key === "Enter") submit();
           }}
         />
       </label>
@@ -106,26 +150,24 @@ export function NewSessionModal({
           </select>
         </label>
       )}
-      {repos.length === 0 ? (
-        <div className="field">
-          <span className="field-label">Repository</span>
-          <div className="field-note">
-            No repositories configured — add one in Settings → Repos.
-          </div>
-        </div>
-      ) : (
-        <label className="field">
-          <span className="field-label">Repository</span>
-          <select className="field-input" value={repo} onChange={(e) => setRepo(e.target.value)}>
-            {repos.map((r) => (
-              <option key={r} value={r}>
-                {basename(r)}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      <div className="field-note">Runs in an isolated worktree of the selected repository.</div>
+      <label className="field">
+        <span className="field-label">Runs in</span>
+        <select
+          className="field-input"
+          value={place}
+          onChange={(e) => void choosePlace(e.target.value)}
+        >
+          {repos.map((r) => (
+            <option key={r} value={r}>
+              {basename(r)}
+            </option>
+          ))}
+          {folder && <option value={FOLDER}>{basename(folder)}</option>}
+          <option value={SCRATCH}>New empty folder</option>
+          <option value={CHOOSE_FOLDER}>Choose a folder…</option>
+        </select>
+      </label>
+      <div className="field-note">{note}</div>
     </Modal>
   );
 }

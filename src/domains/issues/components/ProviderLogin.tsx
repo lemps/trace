@@ -4,38 +4,41 @@ import { I } from "@/components/Icon";
 import { useIssuesStore } from "../store";
 import type { ProviderKind } from "../types";
 
-// Mandatory login gate. The board cannot render without an issue tracker.
+const TRACKERS: { kind: ProviderKind; label: string }[] = [
+  { kind: "jira", label: "Jira" },
+  { kind: "pylon", label: "Pylon" },
+];
+
+// What the Board page shows with no tracker connected. Optional: everything else in
+// trace works without one.
 export function ProviderLogin() {
   const [tab, setTab] = useState<ProviderKind>("jira");
 
   return (
-    <div style={{ display: "grid", placeItems: "center", height: "100vh" }}>
-      <div className="modal" style={{ width: "min(440px, calc(100vw - 32px))" }}>
-        <div className="modal-head">
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+    <div className="tracker-connect">
+      <div className="modal">
+        <div className="tracker-connect-head">
+          <div className="tracker-connect-title">
             <AppLogo size={28} />
-            <h2 style={{ margin: 0 }}>Connect your tracker</h2>
+            <h2>Connect a tracker</h2>
           </div>
           <div className="desc">
-            trace builds your board from your issue tracker — columns from its statuses, cards from
-            its current work.
+            The board's columns and cards come from your issue tracker. It's optional: sessions and
+            scheduled prompts work without one.
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <button
-              type="button"
-              className={`btn ${tab === "jira" ? "primary" : ""}`}
-              onClick={() => setTab("jira")}
-            >
-              Jira
-            </button>
-            <button
-              type="button"
-              className={`btn ${tab === "pylon" ? "primary" : ""}`}
-              onClick={() => setTab("pylon")}
-            >
-              Pylon
-            </button>
-          </div>
+          <fieldset className="seg" aria-label="Tracker">
+            {TRACKERS.map((t) => (
+              <button
+                key={t.kind}
+                type="button"
+                aria-pressed={tab === t.kind}
+                className={tab === t.kind ? "on" : undefined}
+                onClick={() => setTab(t.kind)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </fieldset>
         </div>
         {tab === "jira" ? <JiraForm /> : <PylonForm />}
       </div>
@@ -90,7 +93,7 @@ export function JiraForm() {
           />
           <span className="hint">
             Create one at id.atlassian.com → Security → API tokens. Stored in a private file only
-            your user account can read; it never leaves this Mac.
+            your user account can read, and only ever sent to Atlassian.
           </span>
         </div>
         {error && <div style={{ color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>}
@@ -131,7 +134,7 @@ export function PylonForm() {
           />
           <span className="hint">
             Create one in Pylon → Settings → API tokens (Admin only). Stored in a private file only
-            your user account can read; it never leaves this Mac.
+            your user account can read, and only ever sent to Pylon.
           </span>
         </div>
         {error && <div style={{ color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>}

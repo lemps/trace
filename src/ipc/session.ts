@@ -15,12 +15,14 @@ export function createSession(
   cli: AgentCli,
   repo?: string | null,
   provider?: AgentProvider,
-  remoteControl?: boolean
+  remoteControl?: boolean,
+  folder?: string | null
 ): Promise<ScratchSession> {
   return invoke("create_session", {
     title,
     cli,
     repo: repo ?? null,
+    folder: folder ?? null,
     provider: provider ?? null,
     remoteControl: remoteControl ?? null,
   });

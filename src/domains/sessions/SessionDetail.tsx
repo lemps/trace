@@ -101,7 +101,9 @@ export function SessionDetail({
     setConfirmRemove(false);
   };
   // ⌘1… = each agent tab, then Files and Terminal; Esc goes back.
-  const keyTabs = [...turnIds, "files", "terminal"];
+  // A plain folder has no git, so nothing for Files to show.
+  const hasFiles = !session.folder;
+  const keyTabs = [...turnIds, ...(hasFiles ? ["files"] : []), "terminal"];
   useDetailKeys(onBack, keyTabs, (t) => {
     if (t === "files" || t === "terminal") setPane(t);
     else showAgent(t);
@@ -148,11 +150,13 @@ export function SessionDetail({
       .catch((err) => toast.error(String(err)));
   };
 
-  const startHint = active.companion
-    ? "Runs in this session's worktree — it sees everything the other agents here have written."
-    : session.worktree
-      ? "The agent runs in an isolated worktree for this session."
-      : "The agent runs in your repo root and shares your working tree.";
+  const startHint = session.folder
+    ? "The agent runs directly in this session's folder, with no git worktree."
+    : active.companion
+      ? "Runs in this session's worktree — it sees everything the other agents here have written."
+      : session.worktree
+        ? "The agent runs in an isolated worktree for this session."
+        : "The agent runs in your repo root and shares your working tree.";
 
   return (
     <div className="detail">
@@ -225,7 +229,7 @@ export function SessionDetail({
           <PopMenu
             trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
             sections={[
-              { title: "Worktree", items: editorItems(session.id) },
+              { title: session.folder ? "Folder" : "Worktree", items: editorItems(session.id) },
               {
                 title: "Session",
                 items: [
@@ -267,7 +271,9 @@ export function SessionDetail({
                   className={`detail-tab${selected ? " active" : ""}`}
                   onClick={() => showAgent(entry.workspaceId)}
                   title={
-                    entry.companion ? "Companion agent — same worktree" : "This session's agent"
+                    entry.companion
+                      ? `Companion agent — same ${session.folder ? "folder" : "worktree"}`
+                      : "This session's agent"
                   }
                 >
                   <I.Chat size={13} /> {entry.label}
@@ -280,13 +286,15 @@ export function SessionDetail({
               disabled={companionsOf(session).length >= MAX_COMPANIONS}
             />
             <span className="detail-tab-sep" />
-            <button
-              type="button"
-              className={`detail-tab${pane === "files" ? " active" : ""}`}
-              onClick={() => setPane("files")}
-            >
-              <I.Code size={13} /> Files
-            </button>
+            {hasFiles && (
+              <button
+                type="button"
+                className={`detail-tab${pane === "files" ? " active" : ""}`}
+                onClick={() => setPane("files")}
+              >
+                <I.Code size={13} /> Files
+              </button>
+            )}
             <button
               type="button"
               className={`detail-tab${pane === "terminal" ? " active" : ""}`}

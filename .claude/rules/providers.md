@@ -20,8 +20,9 @@ target provider as an argument. Each provider implements `issues::IssueProvider`
   cross to the renderer and are never logged.
 - `issues/session.rs` restores every saved provider on launch (`restore_all`). Disconnecting a
   provider removes only its credential file.
-- The login UI (`domains/issues/components/ProviderLogin.tsx`) gates the app until at least one
-  provider is connected; Settings → Integrations connects/disconnects each independently.
+- A tracker is optional. With none connected, the Board page shows the connect card
+  (`domains/issues/components/ProviderLogin.tsx`) and the rest of the app works as usual; Settings →
+  Integrations connects/disconnects each independently.
 
 ## Pylon specifics
 

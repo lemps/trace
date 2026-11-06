@@ -6,6 +6,10 @@ interface ErrorBoundaryProps {
   label?: string;
   /** Optional escape hatch (e.g. close the detail overlay) rendered as a button. */
   onBack?: () => void;
+  /** Text for that button (default "Go back"). */
+  actionLabel?: string;
+  /** Fill the parent rather than the window, leaving the app's navigation usable. */
+  inPage?: boolean;
 }
 
 interface ErrorBoundaryState {
@@ -35,7 +39,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (!error) return this.props.children;
     const trace = error.stack ?? `${error.name}: ${error.message}`;
     return (
-      <div className="error-boundary">
+      <div className={`error-boundary${this.props.inPage ? " in-page" : ""}`}>
         <div className="error-boundary-card">
           <div className="error-boundary-title">{this.props.label ?? "This view crashed"}</div>
           <div className="error-boundary-msg">{error.message || String(error)}</div>
@@ -45,7 +49,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </pre>
           {this.props.onBack && (
             <button type="button" className="btn" onClick={this.props.onBack}>
-              Go back
+              {this.props.actionLabel ?? "Go back"}
             </button>
           )}
         </div>
