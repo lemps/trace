@@ -266,7 +266,9 @@ mod tests {
         done.join().unwrap();
     }
 
-    /// The per-OS variables `platform::process` sets survive the setup's env.
+    /// The per-OS variables `platform::process` sets survive the setup's env: a setup
+    /// command's git sees what trace's own git does (Windows' `core.longpaths=true`,
+    /// nothing elsewhere), with no OS check here.
     #[test]
     fn keeps_the_platform_env() {
         let (repo, wt) = (scratch("repo4"), scratch("wt4"));
@@ -275,10 +277,14 @@ mod tests {
             commands: vec!["git config core.longpaths > lp.txt".into()],
         };
         let _ = run_steps(&repo, &wt, &setup, &HashMap::new());
-        if cfg!(windows) {
-            let lp = std::fs::read_to_string(wt.join("lp.txt")).unwrap_or_default();
-            assert_eq!(lp.trim(), "true", "core.longpaths reached git");
-        }
+        let expected = crate::claude::discovery::command("git")
+            .args(["config", "core.longpaths"])
+            .current_dir(&wt)
+            .output()
+            .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+            .unwrap_or_default();
+        let lp = std::fs::read_to_string(wt.join("lp.txt")).unwrap_or_default();
+        assert_eq!(lp.trim(), expected, "core.longpaths reached git");
     }
 
     #[test]
