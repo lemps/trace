@@ -29,7 +29,7 @@ use crate::platform::Os;
 
 /// Always exits 0: a failing Stop hook must never keep Claude from stopping.
 /// Reads its coordinates from the agent's env and carries no secret itself.
-const HOOK_SCRIPT: &str = r#"#!/usr/bin/env bash
+pub(crate) const HOOK_SCRIPT: &str = r#"#!/usr/bin/env bash
 # trace-hook — relays a Claude Code hook event from a trace agent to trace.
 # Wired up by the --settings trace passes to its agents; not for manual use.
 if [ -z "${TRACE_RENDER_PORT:-}" ] || [ -z "${TRACE_RENDER_TOKEN:-}" ] || [ -z "${TRACE_ISSUE_KEY:-}" ]; then

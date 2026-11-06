@@ -203,15 +203,16 @@ impl PrivateFiles for Os {
     }
 }
 
-/// Replace inherited access with the current user alone, for the folder and what's
-/// already in it. New files then inherit this, so each write needs nothing extra.
-fn restrict_acl(path: &Path) -> Result<(), String> {
-    let sid = current_user_sid().ok_or("couldn't read the current user's SID")?;
+/// Everyone, Authenticated Users and Users: who a folder can inherit access from.
+const ORDINARY_USERS: [&str; 3] = ["*S-1-1-0", "*S-1-5-11", "*S-1-5-32-545"];
+/// SYSTEM and Administrators keep access: like root on Unix, which `0600` doesn't stop,
+/// they can take any file anyway, and backup and security tools run as them.
+const ADMINS: [&str; 2] = ["*S-1-5-18", "*S-1-5-32-544"];
+
+fn icacls(path: &Path, args: &[String]) -> Result<(), String> {
     let out = process::command("icacls")
         .arg(path)
-        .arg("/grant:r")
-        .arg(format!("*{sid}:(OI)(CI)F"))
-        .args(["/inheritance:r", "/T", "/C", "/Q"])
+        .args(args)
         .output()
         .map_err(|e| format!("couldn't run icacls: {e}"))?;
     if out.status.success() {
@@ -222,6 +223,25 @@ fn restrict_acl(path: &Path) -> Result<(), String> {
         String::from_utf8_lossy(&out.stdout).trim(),
         String::from_utf8_lossy(&out.stderr).trim()
     ))
+}
+
+/// The equivalent of `0600` for a folder and everything in it: no other ordinary user can
+/// read it. New files inherit this, so each write needs nothing extra.
+fn restrict_acl(path: &Path) -> Result<(), String> {
+    let sid = current_user_sid().ok_or("couldn't read the current user's SID")?;
+    let mut grant = vec!["/grant:r".to_string(), format!("*{sid}:(OI)(CI)F")];
+    grant.extend(ADMINS.iter().map(|admin| format!("{admin}:(OI)(CI)F")));
+    grant.extend([
+        "/inheritance:r".to_string(),
+        "/C".to_string(),
+        "/Q".to_string(),
+    ]);
+    icacls(path, &grant)?;
+    // Removing inheritance can leave what was inherited behind as explicit entries.
+    let mut remove = vec!["/remove:g".to_string()];
+    remove.extend(ORDINARY_USERS.iter().map(ToString::to_string));
+    remove.extend(["/T".to_string(), "/C".to_string(), "/Q".to_string()]);
+    icacls(path, &remove)
 }
 
 impl SoundPlayer for Os {

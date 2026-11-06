@@ -108,3 +108,14 @@ jobs:
           name: trace-${{ matrix.os }}
           path: ${{ matrix.path }}
           if-no-files-found: error
+
+      - name: Check the app starts
+        shell: bash
+        run: scripts/smoke-start.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-screen-${{ matrix.os }}
+          path: first-screen.png
+          if-no-files-found: warn

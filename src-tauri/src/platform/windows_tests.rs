@@ -83,12 +83,35 @@ fn sids_parse_from_whoami_csv() {
     assert_eq!(parse_sid("not csv"), None);
 }
 
+fn acl_of(path: &std::path::Path) -> String {
+    let out = process::command("icacls").arg(path).output().unwrap();
+    String::from_utf8_lossy(&out.stdout).to_string()
+}
+
+const OTHER_USERS: [&str; 3] = ["Everyone", "BUILTIN\\Users", "Authenticated Users"];
+
 #[test]
-fn restricting_a_dir_removes_everyone_else_and_reaches_new_files() {
-    let dir = temp_dir("acl");
+fn restricting_a_dir_shuts_out_other_users_and_reaches_new_files() {
+    // The worst case: a parent that hands other users access, which the folder inherits.
+    let parent = temp_dir("acl");
+    icacls(
+        &parent,
+        &[
+            "/grant".to_string(),
+            "*S-1-5-32-545:(OI)(CI)R".to_string(),
+            "*S-1-1-0:(OI)(CI)R".to_string(),
+        ],
+    )
+    .unwrap();
+    let dir = parent.join("trace");
+    fs::create_dir(&dir).unwrap();
+    let existing = dir.join("existing");
+    fs::write(&existing, "written before").unwrap();
+    let before = acl_of(&existing);
+    assert!(before.contains("Everyone"), "test can't fail: {before}");
+
     restrict_acl(&dir).unwrap();
-    let dir_acl = process::command("icacls").arg(&dir).output().unwrap();
-    println!("{}", String::from_utf8_lossy(&dir_acl.stdout));
+
     let file = dir.join("token");
     Os::owner_only_options()
         .write(true)
@@ -96,36 +119,25 @@ fn restricting_a_dir_removes_everyone_else_and_reaches_new_files() {
         .truncate(true)
         .open(&file)
         .unwrap();
-    let acl = process::command("icacls").arg(&file).output().unwrap();
-    let acl = String::from_utf8_lossy(&acl.stdout).to_string();
-    for other in [
-        "Everyone",
-        "BUILTIN\\Users",
-        "Authenticated Users",
-        "BUILTIN\\Administrators",
-        "NT AUTHORITY\\SYSTEM",
-    ] {
-        assert!(!acl.contains(other), "{other} still has access: {acl}");
+    for path in [&dir, &existing, &file] {
+        let acl = acl_of(path);
+        for other in OTHER_USERS {
+            assert!(!acl.contains(other), "{other} still has access: {acl}");
+        }
     }
     fs::write(&file, "readable by its owner").unwrap();
     assert_eq!(fs::read_to_string(&file).unwrap(), "readable by its owner");
-    fs::remove_dir_all(&dir).unwrap();
+    assert_eq!(fs::read_to_string(&existing).unwrap(), "written before");
+    fs::remove_dir_all(&parent).unwrap();
 }
 
-/// The real relay, end to end: bash reaches a loopback listener through `/dev/tcp`.
+/// The real relay, end to end: Git Bash runs `trace-hook`, which reaches a loopback
+/// listener through `/dev/tcp`, as it does when Claude Code fires a hook.
 #[test]
-fn git_bash_can_run_the_hook_relay() {
+fn git_bash_can_run_the_real_hook_relay() {
     let dir = temp_dir("relay");
-    let script = dir.join("relay");
-    Os::install_script(
-        &script,
-        "#!/usr/bin/env bash\n\
-         payload=\"$(base64 | tr -d '\\n')\"\n\
-         exec 3<>\"/dev/tcp/127.0.0.1/$TRACE_RENDER_PORT\"\n\
-         printf '%s\\n' \"$payload $1\" >&3\n\
-         exec 3<&-\n",
-    )
-    .unwrap();
+    let script = dir.join("trace-hook");
+    Os::install_script(&script, crate::claude::hooks::HOOK_SCRIPT).unwrap();
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
 
@@ -133,6 +145,8 @@ fn git_bash_can_run_the_hook_relay() {
         .arg("-c")
         .arg(format!("'{}' stop", Os::shell_path(&script)))
         .env("TRACE_RENDER_PORT", port.to_string())
+        .env("TRACE_RENDER_TOKEN", "token")
+        .env("TRACE_ISSUE_KEY", "KEY-1")
         .stdin(Stdio::piped())
         .spawn()
         .unwrap();
@@ -144,8 +158,86 @@ fn git_bash_can_run_the_hook_relay() {
     let mut line = String::new();
     stream.read_to_string(&mut line).unwrap();
     assert!(child.wait().unwrap().success());
-    assert_eq!(line.trim(), "aGk= stop");
+    assert_eq!(line.trim(), "token KEY-1 !stop aGk=");
     fs::remove_dir_all(&dir).unwrap();
+}
+
+fn open_pty() -> portable_pty::PtyPair {
+    portable_pty::native_pty_system()
+        .openpty(portable_pty::PtySize {
+            rows: 24,
+            cols: 200,
+            pixel_width: 0,
+            pixel_height: 0,
+        })
+        .unwrap()
+}
+
+/// npm installs CLIs as `.cmd` files, and trace passes Claude its settings as JSON: quotes,
+/// braces and all. A shim like npm's has to hand the program those arguments intact.
+#[test]
+fn json_arguments_survive_a_batch_file_in_a_pty() {
+    if process::command("node").arg("--version").output().is_err() {
+        return; // Only CI is sure to have node; it's what npm's shims run.
+    }
+    let dir = temp_dir("shim");
+    let out = dir.join("arg.txt");
+    let tool = dir.join("tool.cmd");
+    fs::write(
+        &tool,
+        "@node -e \"require('fs').writeFileSync(process.env.ARG_OUT, process.argv[1])\" %*\r\n",
+    )
+    .unwrap();
+    let json = r#"{"hooks":{"Stop":[{"command":"'C:/a b/trace-hook' stop & more"}]},"n":"100%"}"#;
+
+    let pair = open_pty();
+    let mut argv = Os::pty_invocation(&tool.to_string_lossy());
+    argv.push(json.to_string());
+    let mut cmd =
+        portable_pty::CommandBuilder::from_argv(argv.into_iter().map(Into::into).collect());
+    cmd.env("ARG_OUT", &out);
+    cmd.env("PATH", std::env::var("PATH").unwrap());
+    cmd.cwd(&dir);
+    let mut child = pair.slave.spawn_command(cmd).unwrap();
+    drop(pair.slave);
+    child.wait().unwrap();
+
+    assert_eq!(fs::read_to_string(&out).unwrap(), json);
+    drop(pair.master);
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+/// Why `pty_reports_exit` is false, and why closing the console is the cure: this is what
+/// `claude::pty::watch_for_exit` depends on.
+#[test]
+fn a_pseudo_console_only_ends_its_reader_once_closed() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let pair = open_pty();
+    let mut cmd = portable_pty::CommandBuilder::new("cmd.exe");
+    cmd.args(["/c", "exit"]);
+    let mut child = pair.slave.spawn_command(cmd).unwrap();
+    drop(pair.slave);
+    let mut reader = pair.master.try_clone_reader().unwrap();
+    let (eof_tx, eof_rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut buf = [0u8; 1024];
+        while matches!(reader.read(&mut buf), Ok(n) if n > 0) {}
+        let _ = eof_tx.send(());
+    });
+
+    let pid = child.process_id().unwrap();
+    child.wait().unwrap();
+    assert!(!Os::is_alive(pid));
+    assert!(
+        eof_rx.recv_timeout(Duration::from_secs(2)).is_err(),
+        "the reader ended by itself, so pty_reports_exit could be true"
+    );
+    drop(pair.master);
+    eof_rx
+        .recv_timeout(Duration::from_secs(10))
+        .expect("closing the console should end the reader");
 }
 
 /// `commands::diff` shows untracked files this way.
