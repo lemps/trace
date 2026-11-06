@@ -10,18 +10,17 @@ import {
   setNotifySoundPath,
 } from "@/domains/agent/defaults";
 import { listNotifySounds, playNotifySound, type SoundOption } from "@/ipc/sound";
+import { basename } from "@/platform/paths";
+import { audioExtensions } from "@/platform/sounds";
 import { SettingRow } from "./SettingRow";
 
 /** Audio formats `afplay` handles — the filter on the "choose a file" dialog. */
-const AUDIO_EXTENSIONS = ["aiff", "aif", "wav", "mp3", "m4a", "caf", "aac"];
 
 /** What to play the first time someone turns the sound on. */
 function firstChoice(options: SoundOption[]): string {
   const glass = options.find((o) => o.name === "Glass");
   return (glass ?? options[0])?.path ?? "";
 }
-
-const fileName = (path: string) => path.split("/").pop() ?? path;
 
 // The Notifications section of Settings: how trace gets your attention when an
 // agent needs you. The sound is off by default and plays whenever you're pinged,
@@ -80,7 +79,7 @@ export function NotificationSettings() {
     const picked = await open({
       multiple: false,
       title: "Choose a notification sound",
-      filters: [{ name: "Audio", extensions: AUDIO_EXTENSIONS }],
+      filters: [{ name: "Audio", extensions: audioExtensions }],
     });
     if (typeof picked === "string") chooseSound(picked);
   };
@@ -116,7 +115,7 @@ export function NotificationSettings() {
             >
               {custom && (
                 <optgroup label="Chosen file">
-                  <option value={custom}>{fileName(custom)}</option>
+                  <option value={custom}>{basename(custom)}</option>
                 </optgroup>
               )}
               {mine.length > 0 && (
@@ -128,7 +127,7 @@ export function NotificationSettings() {
                   ))}
                 </optgroup>
               )}
-              <optgroup label="macOS">
+              <optgroup label="System">
                 {system.map((o) => (
                   <option key={o.path} value={o.path}>
                     {o.name}

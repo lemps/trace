@@ -17,6 +17,7 @@ import { useLiveStore } from "@/domains/live/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { startSession, startSessionAgent } from "@/ipc/session";
+import { basename } from "@/platform/paths";
 import { AddAgentMenu } from "./AddAgentMenu";
 import { AgentPane } from "./AgentPane";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
@@ -26,8 +27,6 @@ import { SessionPanel } from "./SessionPanel";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
 import type { ScratchSession } from "./types";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /** Which pane the body shows. Agent tabs all share the "agent" pane. */
 type PaneId = "agent" | "files" | "terminal";

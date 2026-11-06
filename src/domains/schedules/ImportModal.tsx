@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { Modal } from "@/components/Modal";
 import { listRepos } from "@/ipc/repos";
+import { basename } from "@/platform/paths";
 import { ShareRow } from "./ShareRow";
 import { countLabel } from "./share";
 import { useSchedulesStore } from "./store";
@@ -17,7 +18,6 @@ interface Row extends ImportItem {
   picked: boolean;
 }
 
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 const nameKey = (title: string) => title.trim().toLowerCase();
 
 // Preview a shared file before anything is saved: which prompts to keep, and the

@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import { I } from "@/components/Icon";
 import { Switch } from "@/components/Switch";
 import { agentLabel } from "@/domains/agent/providerLabel";
+import { basename } from "@/platform/paths";
 import { describeSchedule, relative } from "./describe";
 import { RunBadge } from "./RunBadge";
 import type { ScheduledPrompt, ScheduleRun } from "./types";
@@ -16,8 +17,6 @@ interface ScheduleRowProps {
   onToggle: (enabled: boolean) => void;
   onRunNow: () => void;
 }
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 // One scheduled prompt in the list: what it is, when it next fires, how the last
 // run went, and the quick actions (pause, run now).

@@ -5,6 +5,7 @@ import { useIssuesStore } from "@/domains/issues/store";
 import { orderIds } from "@/domains/live/order";
 import { useLiveStore } from "@/domains/live/store";
 import { useSessionsStore } from "@/domains/sessions/store";
+import { isNextAgentKey, isOrchestratorKey } from "@/platform/shortcuts";
 import { landingNav, type NavId } from "./nav";
 import { openWorkspace } from "./openWorkspace";
 
@@ -27,8 +28,7 @@ export function nextNeedingYou(): string | null {
 export function useGlobalKeys(setNav: (nav: NavId) => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === "j" && !e.shiftKey) {
+      if (isOrchestratorKey(e)) {
         e.preventDefault();
         // The orchestrator lives in the right-edge panel of whatever's in front;
         // a page without one (Inbox, Fleet, …) hands over to a board's, or to Sessions'
@@ -38,7 +38,7 @@ export function useGlobalKeys(setNav: (nav: NavId) => void): void {
           showView(page === "sessions" ? "sessions" : "board", "orchestrator");
           setNav(page);
         }
-      } else if (e.shiftKey && e.key.toLowerCase() === "n") {
+      } else if (isNextAgentKey(e)) {
         e.preventDefault();
         const next = nextNeedingYou();
         if (next) openWorkspace(next, setNav);

@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import type { Issue } from "@/domains/issues/types";
+import { hints } from "@/platform/shortcuts";
 import { ALL_TYPES, isAllTypes, type TypeSelection, toggleType } from "./typeSelection";
 
 /** Every issue type on the board, alphabetical — stable, so chips don't reshuffle as counts move. */
@@ -52,7 +53,7 @@ export function TypeFilter({ types, visible, selected, onSelect }: TypeFilterPro
             type="button"
             className={`tf-chip${state}${count === 0 ? " empty" : ""}`}
             onClick={(e) => onChip(e, t)}
-            title={`Click to show ${t} · ⌥-click to hide it`}
+            title={`Click to show ${t} · ${hints.altClick} to hide it`}
           >
             {t}
             <span className="tf-count">{count}</span>

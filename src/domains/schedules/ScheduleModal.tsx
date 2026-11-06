@@ -5,6 +5,7 @@ import { Switch } from "@/components/Switch";
 import { agentArgsRaw, agentModelRaw, agentProvider } from "@/domains/agent/defaults";
 import type { AgentProvider } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
+import { basename } from "@/platform/paths";
 import { ScheduleFields } from "./ScheduleFields";
 import { useSchedulesStore } from "./store";
 import type { Schedule, ScheduledPrompt } from "./types";
@@ -14,8 +15,6 @@ interface ScheduleModalProps {
   prompt?: ScheduledPrompt;
   onClose: () => void;
 }
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 // Mirrors `schedule::template::render` in Rust.
 const VARIABLES = ["date", "time", "weekday", "now", "lastRunAt", "title", "repo"];

@@ -4,14 +4,13 @@ import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
 import type { AgentLight } from "@/domains/live/types";
 import type { SessionOverview } from "@/ipc/workspace";
+import { basename } from "@/platform/paths";
 import { companionsOf } from "./agentRoster";
 import { sessionsDrag } from "./dragState";
 import type { SessionDiffStat } from "./hooks/useSessionDiffs";
 import { TitleEditor } from "./TitleEditor";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /**
  * The branch worth showing: not the auto-named `workspace/<session id>` every

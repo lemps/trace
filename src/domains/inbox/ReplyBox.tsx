@@ -2,6 +2,7 @@ import { type KeyboardEvent, useState } from "react";
 import { toast } from "@/app/toast";
 import { reply, TERMINAL_ONLY } from "@/domains/live/answer";
 import type { AskKind } from "@/domains/live/types";
+import { hints, isSendAndNext } from "@/platform/shortcuts";
 
 interface ReplyBoxProps {
   workspaceId: string;
@@ -37,7 +38,7 @@ export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
     e.preventDefault();
-    send(e.metaKey);
+    send(isSendAndNext(e));
   };
   return (
     <label className="ib-reply">
@@ -53,7 +54,8 @@ export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps
         aria-label="Reply to the agent"
       />
       <span className="ib-reply-hint">
-        <span className="kbd">⏎</span> send · <span className="kbd">⌘⏎</span> send &amp; next
+        <span className="kbd">⏎</span> send · <span className="kbd">{hints.sendAndNext}</span> send
+        &amp; next
       </span>
     </label>
   );

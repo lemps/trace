@@ -1,10 +1,11 @@
+import { basename, forwardSlashes } from "@/platform/paths";
 import { useWorkspaceInfo } from "./hooks/useWorkspaceInfo";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /** `.worktrees/x` for a worktree under the repo, else the path's last segment. */
 function shortCwd(cwd: string, repo: string): string {
-  return cwd.startsWith(`${repo}/`) ? cwd.slice(repo.length + 1) : basename(cwd);
+  const prefix = `${forwardSlashes(repo)}/`;
+  const path = forwardSlashes(cwd);
+  return path.startsWith(prefix) ? path.slice(prefix.length) : basename(cwd);
 }
 
 interface WorkspaceSectionProps {

@@ -5,6 +5,7 @@ import { Terminal } from "@xterm/xterm";
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
+import { isAppKey, isLinkClick, isTerminalCopy, isTerminalPaste } from "@/platform/shortcuts";
 import { useRichOutputStore } from "./richOutputStore";
 import { termFontFamily, termFontSize, termLineHeight } from "./terminalPrefs";
 
@@ -22,10 +23,11 @@ import { termFontFamily, termFontSize, termLineHeight } from "./terminalPrefs";
  * expects the emulator to own Cmd+click): the xterm mouse protocol has no meta
  * bit, so the app can never even see a Cmd+click, and xterm treats alt-clicks
  * as a selection gesture and never reports them.
+ * Off macOS, Ctrl-click takes Cmd-click's place (`isLinkClick`).
  */
 function openLink(term: Terminal, event: MouseEvent, uri: string) {
   if (!/^https?:\/\//i.test(uri)) return;
-  if (term.modes.mouseTrackingMode !== "none" && !event.altKey && !event.metaKey) return;
+  if (term.modes.mouseTrackingMode !== "none" && !isLinkClick(event)) return;
   void openUrl(uri);
 }
 
@@ -157,6 +159,22 @@ export function getTerminal(issueKey: string): TerminalEntry {
     // byte stream) is what re-arms the session's waiting notification.
     if (e.type === "keydown" && !BARE_MODIFIERS.has(e.key)) {
       useBoardStore.getState().noteUserTurn(issueKey);
+    }
+    if (isAppKey(e)) return false;
+    if (isTerminalCopy(e)) {
+      if (e.type === "keydown" && term.hasSelection()) {
+        void navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+      }
+      return false;
+    }
+    if (isTerminalPaste(e)) {
+      if (e.type === "keydown") {
+        void navigator.clipboard
+          .readText()
+          .then((text) => term.paste(text))
+          .catch(() => {});
+      }
+      return false;
     }
     if (e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // Inject once on keydown, but swallow EVERY phase: WebKit also fires a

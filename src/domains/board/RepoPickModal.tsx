@@ -3,9 +3,8 @@ import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
 import { listRepos, setIssueRepo } from "@/ipc/repos";
+import { basename } from "@/platform/paths";
 import { useBoardStore } from "./store";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 // Shown when a board kickoff needs a repo and none can be inferred (multiple
 // repos, no assignment, no learned project default). Picking assigns the repo,

@@ -8,6 +8,7 @@ import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useSessionDiffs } from "@/domains/sessions/hooks/useSessionDiffs";
 import { useSessionsOverview } from "@/domains/sessions/hooks/useSessionsOverview";
 import { useNow } from "@/hooks/useNow";
+import { basename } from "@/platform/paths";
 import { type FleetPr, FleetRow } from "./FleetRow";
 
 type Filter = "all" | AgentLight;
@@ -18,8 +19,6 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "working", label: "Working" },
   { id: "ready", label: "Ready" },
 ];
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 interface FleetViewProps {
   onOpen: (workspaceId: string) => void;

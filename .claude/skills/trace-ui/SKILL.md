@@ -39,7 +39,8 @@ even they take the control's height and corner (`StatusLight size="lg"`).
   in a header row beside bordered buttons — that's what made headers look mixed.
 - **`.seg`** — mutually exclusive view options (card density).
 - **`.filter-chip`** — a toggleable filter.
-- **`.kbd`** — a keyboard hint inside a button or hint row.
+- **`.kbd`** — a keyboard hint inside a button or hint row. Take the label and the key
+  check from `src/platform/shortcuts.ts`: `⌘` chords are `Ctrl+Shift` off macOS.
 
 ## 2. Agent state is drawn one way: `StatusLight`
 

@@ -10,8 +10,7 @@ import {
   removeRepo,
   setRepoMappings,
 } from "@/ipc/repos";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
+import { basename } from "@/platform/paths";
 
 // The Repositories section: the configured repos plus the ticket→repo mapping
 // table. A ticket whose key contains a mapping's pattern (case-insensitive)

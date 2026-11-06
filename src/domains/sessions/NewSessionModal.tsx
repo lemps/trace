@@ -4,6 +4,7 @@ import { toast } from "@/app/toast";
 import { Modal } from "@/components/Modal";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
+import { basename } from "@/platform/paths";
 
 interface NewSessionModalProps {
   defaultCli: AgentCli;
@@ -19,8 +20,6 @@ interface NewSessionModalProps {
 }
 
 // Show the repo's folder name, not its full path — matches the board's picker.
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
-
 // Values of the "Runs in" picker that aren't a repo's path (those are always absolute).
 const SCRATCH = "scratch";
 const FOLDER = "folder";

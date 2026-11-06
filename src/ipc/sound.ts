@@ -1,8 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
-// Notification sounds: macOS's own (`/System/Library/Sounds`), the user's
-// (`~/Library/Sounds`), or any audio file they pick. The backend plays them
-// with `afplay` — see `commands::sound`.
+// Notification sounds: the system's, the user's own folder, or any audio file
+// they pick. The backend plays them: see `commands::sound`.
 
 export interface SoundOption {
   /** Absolute path — also what's stored as the preference. */

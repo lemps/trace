@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { tabKeyIndex } from "@/platform/shortcuts";
 
 /** Somewhere typing owns the keys — an input, or the terminal (xterm's textarea). */
 export function isTyping(target: EventTarget | null): boolean {
@@ -35,8 +36,9 @@ export function useDetailKeys<T extends string>(
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || overlayOpen()) return;
       const { onBack, tabs, setTab } = ref.current;
-      if (e.metaKey && !e.shiftKey && e.key >= "1" && e.key <= "9") {
-        const tab = tabs[Number(e.key) - 1];
+      const index = tabKeyIndex(e);
+      if (index !== null) {
+        const tab = tabs[index];
         if (tab) {
           e.preventDefault();
           setTab(tab);

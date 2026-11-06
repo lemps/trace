@@ -6,6 +6,7 @@ import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
 import { useLiveStore } from "@/domains/live/store";
 import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useNow } from "@/hooks/useNow";
+import { hints } from "@/platform/shortcuts";
 import { InboxDetail } from "./InboxDetail";
 import { InboxRow } from "./InboxRow";
 import { useInboxKeys } from "./useInboxKeys";
@@ -136,10 +137,11 @@ export function InboxView({ onOpen }: InboxViewProps) {
             <span className="kbd">E</span> dismiss
           </span>
           <span>
-            <span className="kbd">⌥↑</span> <span className="kbd">⌥↓</span> reorder
+            <span className="kbd">{hints.moveUp}</span>{" "}
+            <span className="kbd">{hints.moveDown}</span> reorder
           </span>
           <span>
-            <span className="kbd">⌘⇧N</span> next needing you, anywhere
+            <span className="kbd">{hints.nextAgent}</span> next needing you, anywhere
           </span>
         </div>
       </section>

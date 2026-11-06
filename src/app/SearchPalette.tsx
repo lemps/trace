@@ -3,6 +3,7 @@ import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react"
 import { I } from "@/components/Icon";
 import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useSessionsStore } from "@/domains/sessions/store";
+import { hints, isSearchKey } from "@/platform/shortcuts";
 import { buildCommands, type Command } from "./commands";
 import type { NavId } from "./nav";
 import { runSearch, type SearchHit } from "./search";
@@ -66,7 +67,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
   // ⌘/ (the hint on the box) and ⌘K both focus the search.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === "/" || e.key === "k")) {
+      if (isSearchKey(e)) {
         e.preventDefault();
         inputRef.current?.focus();
         setOpen(true);
@@ -149,7 +150,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
       />
-      <kbd>⌘ /</kbd>
+      <kbd>{hints.search}</kbd>
       {open && (
         <div className="search-pop">
           {!hasResults && <div className="sr-empty">No matches.</div>}

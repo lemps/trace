@@ -9,6 +9,7 @@ import type { ScratchSession } from "@/domains/sessions/types";
 import { type AgentCli, sendAgentInput } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
+import { basename } from "@/platform/paths";
 
 // Standalone-session tools for trace's agents: open a session in one of trace's
 // repos (optionally with Remote Control, so it can be driven from claude.ai/code),
@@ -118,8 +119,6 @@ function str(input: unknown, key: string): string {
 function bool(input: unknown, key: string): boolean {
   return !!input && typeof input === "object" && (input as Record<string, unknown>)[key] === true;
 }
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /** Match a repo by path or folder name; an unknown or ambiguous one names the choices. */
 async function resolveRepo(wanted: string): Promise<string | null> {

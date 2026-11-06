@@ -3,12 +3,11 @@ import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useSessionsOverview } from "@/domains/sessions/hooks/useSessionsOverview";
 import { type DiffSummary, gitDiffSummary } from "@/ipc/diff";
+import { basename } from "@/platform/paths";
 import { AskCard } from "./AskCard";
 import { ReplyBox } from "./ReplyBox";
 
 const OPEN_WHAT = { ticket: "ticket", session: "session", scheduled: "run" } as const;
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
 
 /** The worktree's changes vs its base — refetched when the agent's state moves on. */
 function useDiff(worktreeId: string | null, refreshKey: string | null): DiffSummary | null {

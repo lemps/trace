@@ -1,6 +1,5 @@
 import { I } from "@/components/Icon";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
+import { basename } from "@/platform/paths";
 
 interface StartPromptProps {
   onStart: () => void;

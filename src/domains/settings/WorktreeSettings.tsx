@@ -2,8 +2,7 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
 import { listWorktrees, removeWorktree, type WorktreeInfo } from "@/ipc/worktrees";
-
-const basename = (p: string) => p.replace(/\/+$/, "").split("/").pop() || p;
+import { basename } from "@/platform/paths";
 
 // Worktree housekeeping: every .worktrees/ checkout across the configured
 // repos, with merged/dirty/running status and one-click removal. Dirty

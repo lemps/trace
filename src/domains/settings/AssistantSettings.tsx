@@ -5,6 +5,7 @@ import {
   useOrchestratorStore,
 } from "@/domains/orchestrator/store";
 import { getAnthropicKey, setAnthropicKey } from "@/ipc/orchestrator";
+import { hints } from "@/platform/shortcuts";
 import { SettingRow } from "./SettingRow";
 
 // Orchestrator (⌘J) backend: the Anthropic SDK (your API key, full chat +
@@ -44,8 +45,8 @@ export function AssistantSettings() {
     <section className="setting-group">
       <h2>Assistant</h2>
       <div className="desc">
-        The Orchestrator (⌘J) talks to Claude either through the Anthropic API (your key) or your
-        logged-in Claude CLI.
+        The Orchestrator ({hints.orchestrator}) talks to Claude either through the Anthropic API
+        (your key) or your logged-in Claude CLI.
       </div>
       <SettingRow
         label="Backend"

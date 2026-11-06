@@ -6,6 +6,7 @@ import { useLiveStore } from "@/domains/live/store";
 import { workspaceTitle } from "@/domains/sessions/agentRoster";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { stopAgent } from "@/ipc/agent";
+import { hints } from "@/platform/shortcuts";
 import { isNavAvailable, NAV_LABELS, type NavId } from "./nav";
 import { openWorkspace } from "./openWorkspace";
 import { toast } from "./toast";
@@ -88,7 +89,7 @@ export function buildCommands(query: string, setNav: (nav: NavId) => void): Comm
       id: "next-needs",
       group: "action",
       label: "Next agent needing you",
-      kbd: "⌘⇧N",
+      kbd: hints.nextAgent,
       run: () => {
         const next = nextNeedingYou();
         if (next) openWorkspace(next, setNav);
