@@ -26,27 +26,33 @@ export function ChatSurface({ workspaceId, cli, children }: ChatSurfaceProps) {
   const view = useAgentView(workspaceId);
   const showTranscript = view === "transcript" && cli !== "codex";
   const hasTranscript = useTranscriptStore((s) => (s.feeds[workspaceId]?.items.length ?? 0) > 0);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
+  const shownBefore = useRef<boolean | null>(null);
   useAgentViewKey(workspaceId, cli);
 
   // Keys follow what's shown: typing into a terminal you can't see would send
-  // keystrokes to the agent blind.
+  // keystrokes to the agent blind. The cover takes focus (so arrows and Page
+  // keys scroll it, even while it's still loading); flipping back hands focus
+  // to the terminal. Opening the pane on the terminal leaves focus alone.
   useEffect(() => {
     const term = getTerminal(workspaceId).term;
+    const flipped = shownBefore.current !== null && shownBefore.current !== showTranscript;
+    shownBefore.current = showTranscript;
     if (showTranscript) {
       term.blur();
-      wrapRef.current?.querySelector<HTMLElement>(".tx-scroll")?.focus();
-    } else if (wrapRef.current?.contains(document.activeElement)) {
+      const cover = coverRef.current;
+      (cover?.querySelector<HTMLElement>(".tx-scroll") ?? cover)?.focus();
+    } else if (flipped) {
       term.focus();
     }
   }, [showTranscript, workspaceId]);
 
   return (
     <>
-      <div className="pty-host-wrap" ref={wrapRef}>
+      <div className="pty-host-wrap">
         <PtyTerminal issueKey={workspaceId} />
         {showTranscript && (
-          <div className="tx-cover">
+          <div className="tx-cover" ref={coverRef} tabIndex={-1}>
             <TranscriptView workspaceId={workspaceId} cli={cli} />
           </div>
         )}

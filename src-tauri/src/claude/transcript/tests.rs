@@ -98,6 +98,35 @@ fn harness_records_become_commands_and_notices_or_vanish() {
 }
 
 #[test]
+fn a_prompt_mentioning_a_harness_tag_is_still_a_prompt() {
+    let items = kinds(concat!(
+        r#"{"type":"user","uuid":"p","message":{"content":"Why does this log say <command-name>/foo</command-name>?"}}"#,
+        "\n",
+        r#"{"type":"user","uuid":"q","message":{"content":"Parse <bash-stdout>ok</bash-stdout> lines"}}"#,
+    ));
+    assert!(matches!(
+        &items[..],
+        [TranscriptItem::Prompt { .. }, TranscriptItem::Prompt { .. }]
+    ));
+}
+
+#[test]
+fn a_shell_commands_stderr_shows_even_beside_empty_stdout() {
+    let items = kinds(concat!(
+        r#"{"type":"user","uuid":"b","message":{"content":"<bash-input>nope</bash-input>"}}"#,
+        "\n",
+        r#"{"type":"user","uuid":"o","message":{"content":"<bash-stdout></bash-stdout><bash-stderr>nope: command not found</bash-stderr>"}}"#,
+    ));
+    assert_eq!(
+        items[1],
+        TranscriptItem::Notice {
+            id: "o".into(),
+            text: "nope: command not found".into(),
+        }
+    );
+}
+
+#[test]
 fn long_tool_inputs_are_clipped() {
     let big = "x".repeat(20_000);
     let raw = format!(

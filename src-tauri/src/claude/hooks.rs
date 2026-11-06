@@ -21,7 +21,7 @@ use std::path::PathBuf;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::helpers::trace_bin_dir;
 use crate::platform::ports::AgentBridge;
@@ -183,6 +183,12 @@ pub fn settings_arg(allow: &[&str]) -> Result<String, String> {
 /// from agent `ws`. Uninteresting notifications (`idle_prompt`, …) are dropped here.
 pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
     let (name, payload) = message.split_once(' ').unwrap_or((message, ""));
+    let input = decode(payload);
+    // Every event names the conversation file Claude is writing now (it moves on /clear).
+    if let Some(path) = input.transcript_path.as_deref() {
+        let state = app.state::<crate::state::AppState>();
+        super::transcript::live::note(&state, ws, path);
+    }
     if name == "permission" {
         super::permission_ask::on_request(app, ws, payload);
         return;
@@ -201,7 +207,6 @@ pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
     let Some(event) = HookEvent::parse(name) else {
         return;
     };
-    let input = decode(payload);
     if event == HookEvent::Stop {
         // Background work still pending means the agent isn't done: a restart
         // kills it, and the resumed agent should pick the work back up.

@@ -67,6 +67,9 @@ pub struct AppState {
     pub shutting_down: AtomicBool,
     /// Agents the previous run left interrupted, until resumed or dismissed.
     pub interrupted: crate::interrupted::Interrupted,
+    /// The conversation file each running Claude agent's hooks last named —
+    /// it moves on `/clear` (`claude::transcript::live`).
+    pub live_transcripts: Mutex<HashMap<String, String>>,
 }
 
 impl AppState {

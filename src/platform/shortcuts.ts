@@ -37,7 +37,8 @@ export function isNextAgentKey(e: KeyChord): boolean {
 /** Flip the agent in view between its formatted transcript and its terminal. */
 export function isAgentViewKey(e: KeyChord): boolean {
   if (lower(e) !== "t") return false;
-  return isMac ? (e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey : appChord(e);
+  // macOS: ⌘ only — a focused terminal keeps Ctrl+Shift+T (it's ^T to the TUI).
+  return isMac ? e.metaKey && e.shiftKey && !e.altKey : appChord(e);
 }
 
 /** Focus the search box. Shift+/ reads as "?" on most layouts. */

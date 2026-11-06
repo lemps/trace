@@ -10,6 +10,7 @@
 //! calls with their inputs and results, slash commands and turn boundaries — what
 //! a transcript needs to show *what the agent did*, not just what it said.
 
+pub mod live;
 mod parse;
 #[cfg(test)]
 mod tests;
@@ -86,21 +87,17 @@ pub struct TranscriptPage {
     pub items: Vec<TranscriptItem>,
 }
 
-/// Read a workspace's conversation from `offset` on. `known_session` is the
+/// Read the conversation in `path` from `offset` on. `known_session` is the
 /// conversation the caller's offset belongs to; a different one restarts at 0.
-/// `None` when the conversation isn't on disk yet (Claude writes it lazily, on
-/// the first message).
-pub fn read_page(
-    cwd: &str,
-    session_id: &str,
-    known_session: Option<&str>,
-    offset: u64,
-) -> Option<TranscriptPage> {
-    let path = super::conversations::conversation_path(cwd, session_id)?;
-    let same = known_session == Some(session_id);
-    read_file(&path, if same { offset } else { 0 }, !same).map(|(offset, reset, items)| {
+/// `None` when the file isn't on disk yet (Claude writes it lazily, on the
+/// first message).
+pub fn read_page(path: &Path, known_session: Option<&str>, offset: u64) -> Option<TranscriptPage> {
+    // Claude names each conversation file after its session id.
+    let session_id = path.file_stem()?.to_string_lossy().into_owned();
+    let same = known_session == Some(session_id.as_str());
+    read_file(path, if same { offset } else { 0 }, !same).map(|(offset, reset, items)| {
         TranscriptPage {
-            session_id: session_id.to_string(),
+            session_id,
             offset,
             reset,
             items,
@@ -132,7 +129,8 @@ fn read_file(path: &Path, offset: u64, reset: bool) -> Option<(u64, bool, Vec<Tr
     Some((start + complete as u64, reset, items))
 }
 
-/// Cut `text` to `max` characters, marking the cut.
+/// Cut `text` to `max` characters, marking the cut. Unlike `activity::clip` it
+/// never trims: tool inputs (an Edit's `old_string`) keep their indentation.
 fn clip(text: &str, max: usize) -> String {
     match text.char_indices().nth(max) {
         None => text.to_string(),

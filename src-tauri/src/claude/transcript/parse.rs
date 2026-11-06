@@ -98,29 +98,40 @@ fn user_text(text: &str, id: String, at: Option<String>) -> Vec<TranscriptItem> 
     {
         return Vec::new();
     }
-    if let Some(name) = tag(trimmed, "command-name") {
+    // Harness records *start* with their tag; a prompt that merely mentions one
+    // (pasted code, logs) is still a prompt.
+    let opens = |name: &str| trimmed.starts_with(&format!("<{name}>"));
+    if opens("command-name") || opens("command-message") {
+        let name = tag(trimmed, "command-name").or_else(|| tag(trimmed, "command-message"));
         let args = tag(trimmed, "command-args").unwrap_or_default();
-        let text = format!("{name} {args}").trim().to_string();
+        let text = format!("{} {args}", name.unwrap_or_default())
+            .trim()
+            .to_string();
         return vec![TranscriptItem::Command { id, text }];
     }
-    if let Some(cmd) = tag(trimmed, "bash-input") {
+    if opens("bash-input") {
+        let cmd = tag(trimmed, "bash-input").unwrap_or_default();
         return vec![TranscriptItem::Command {
             id,
             text: format!("! {cmd}"),
         }];
     }
-    for output in [
+    const OUTPUTS: [&str; 4] = [
         "local-command-stdout",
-        "bash-stdout",
         "local-command-stderr",
-    ] {
-        if let Some(out) = tag(trimmed, output) {
-            let out = strip_ansi(&out);
-            return notice(id, out.trim());
-        }
-    }
-    if trimmed.starts_with("<bash-stderr") {
-        return Vec::new();
+        "bash-stdout",
+        "bash-stderr",
+    ];
+    if OUTPUTS.iter().any(|name| opens(name)) {
+        // stdout and stderr arrive together; either may be empty.
+        let out = OUTPUTS
+            .iter()
+            .filter_map(|name| tag(trimmed, name))
+            .map(|out| strip_ansi(&out).trim().to_string())
+            .filter(|out| !out.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
+        return notice(id, &out);
     }
     if trimmed.starts_with("<task-notification") {
         let summary = tag(trimmed, "summary");

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { I } from "@/components/Icon";
 import { Markdown } from "@/components/Markdown";
 import { useBoardStore } from "@/domains/board/store";
@@ -69,6 +69,14 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
     if (el && followingRef.current) el.scrollTop = el.scrollHeight;
   }, [blocks]);
 
+  // The cover holds focus while this loads; once there's something to scroll,
+  // the scroller takes it, so arrows and Page keys move it.
+  const hasBlocks = feed.loaded && blocks.length > 0;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (hasBlocks && el && document.activeElement === el.closest(".tx-cover")) el.focus();
+  }, [hasBlocks]);
+
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
@@ -90,7 +98,7 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
   const working = light === "working";
   return (
     <div className="tx-wrap">
-      <div className="tx-scroll" ref={scrollRef} onScroll={onScroll}>
+      <div className="tx-scroll" ref={scrollRef} onScroll={onScroll} tabIndex={-1}>
         <div className="tx-col">
           {blocks.map((block, i) => (
             <BlockView
@@ -128,6 +136,16 @@ interface BlockViewProps {
   isCurrent: boolean;
 }
 
+// A reply's Markdown parse is the costly part of a render; text never changes
+// once written, so each new item re-renders the list without re-parsing them.
+const Reply = memo(function Reply({ text }: { text: string }) {
+  return (
+    <div className="tx-reply">
+      <Markdown text={text} />
+    </div>
+  );
+});
+
 function BlockView({ block, workspaceId, root, isCurrent }: BlockViewProps) {
   switch (block.type) {
     case "prompt":
@@ -137,11 +155,7 @@ function BlockView({ block, workspaceId, root, isCurrent }: BlockViewProps) {
         </div>
       );
     case "reply":
-      return (
-        <div className="tx-reply">
-          <Markdown text={block.item.text} />
-        </div>
-      );
+      return <Reply text={block.item.text} />;
     case "command":
       return (
         <div className="tx-prompt">

@@ -33,8 +33,10 @@ const PREFERRED_KEY = "trace.agentView";
 const EMPTY_FEED: Feed = { sessionId: null, offset: 0, items: [], loaded: false };
 
 // One read per workspace at a time: two overlapping reads from the same offset
-// would append the same items twice.
+// would append the same items twice. A refresh asked for meanwhile (a turn
+// ending mid-poll, the agent's last poll) runs once the read in flight lands.
 const inFlight = new Set<string>();
+const again = new Set<string>();
 
 function loadPreferred(): AgentView {
   try {
@@ -49,7 +51,10 @@ export const useTranscriptStore = create<TranscriptState>((set, get) => ({
   views: {},
   preferred: loadPreferred(),
   refresh: async (workspaceId) => {
-    if (inFlight.has(workspaceId)) return;
+    if (inFlight.has(workspaceId)) {
+      again.add(workspaceId);
+      return;
+    }
     inFlight.add(workspaceId);
     try {
       const feed = get().feeds[workspaceId] ?? EMPTY_FEED;
@@ -57,6 +62,8 @@ export const useTranscriptStore = create<TranscriptState>((set, get) => ({
       const current = get().feeds[workspaceId] ?? EMPTY_FEED;
       let next: Feed;
       if (!page) {
+        // No conversation (yet, or any more). Already showing that: change nothing.
+        if (current.loaded && current.items.length === 0) return;
         next = { ...EMPTY_FEED, loaded: true };
       } else if (page.reset) {
         next = { sessionId: page.sessionId, offset: page.offset, items: page.items, loaded: true };
@@ -76,6 +83,7 @@ export const useTranscriptStore = create<TranscriptState>((set, get) => ({
       // A failed read leaves the feed as it was; the next poll tries again.
     } finally {
       inFlight.delete(workspaceId);
+      if (again.delete(workspaceId)) void get().refresh(workspaceId);
     }
   },
   setView: (workspaceId, view) => {
