@@ -1,7 +1,8 @@
 import { Fragment, type ReactNode } from "react";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
-import { copyText, fileMenu } from "./fileActions";
+import { copyText } from "../copyText";
+import { fileMenu } from "./fileActions";
 import { crumbsOf } from "./filePaths";
 import { STATUS } from "./TreeRow";
 import type { Change } from "./tree";
@@ -31,7 +32,7 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
             <Fragment key={c.path}>
               {i > 0 && (
                 <span className="fx-crumb-sep" aria-hidden="true">
-                  <I.Chevron size={11} />
+                  <I.Chevron size={13} />
                 </span>
               )}
               <button
@@ -76,7 +77,7 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
             <I.Code size={14} />
             Open in
             <span className="fx-caret" aria-hidden="true">
-              <I.Chevron size={11} />
+              <I.Chevron size={13} />
             </span>
           </button>
         )}

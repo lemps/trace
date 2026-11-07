@@ -31,6 +31,8 @@ export interface TreeState {
    */
   reveal: (path: string, isDir?: boolean) => void;
   focus: TreeFocus | null;
+  /** The tree has shown `focus`: forget it, so a remounted tree doesn't jump back. */
+  clearFocus: () => void;
   /** The first changed file in tree order, to open when nothing is. */
   firstChange: string | null;
   /** Whether `path` is still in the worktree (unknown, so true, until the lists load). */
@@ -66,12 +68,12 @@ export function useTreeState(
   const query = useMemo(() => toQuery(filterText), [filterText]);
   const filtered = useMemo(() => (tree && query ? filterTree(tree, query) : null), [tree, query]);
   // While filtering, folders the user opens or closes, over the filter's own choice.
-  // Dropped whenever the filter changes.
-  const [override, setOverride] = useState<{ key: Filtered | null; open: Map<string, boolean> }>({
-    key: null,
+  // Dropped when the filter text changes (not when a refresh rebuilds the tree).
+  const [override, setOverride] = useState<{ key: string; open: Map<string, boolean> }>({
+    key: "",
     open: new Map(),
   });
-  const overrides = override.key === filtered ? override.open : null;
+  const overrides = override.key === filterText ? override.open : null;
 
   const { changesClosed, allOpen, flat } = view;
   const isOpen = useCallback(
@@ -93,14 +95,14 @@ export function useTreeState(
       if (filtered) {
         const next = new Map(overrides ?? []);
         next.set(dir.path, open);
-        setOverride({ key: filtered, open: next });
+        setOverride({ key: filterText, open: next });
       } else if (mode === "changes") {
         patch({ changesClosed: withKey(changesClosed, dir.path, !open) });
       } else {
         patch({ allOpen: withKey(allOpen, dir.path, open) });
       }
     },
-    [filtered, overrides, mode, changesClosed, allOpen, patch]
+    [filtered, filterText, overrides, mode, changesClosed, allOpen, patch]
   );
 
   const [focus, setFocus] = useState<TreeFocus | null>(null);
@@ -131,6 +133,8 @@ export function useTreeState(
     [changesTree, allTree, mode, changesClosed, allOpen, patch]
   );
 
+  const clearFocus = useCallback(() => setFocus(null), []);
+
   const exists = useCallback(
     (path: string) => {
       if (changes.has(path)) return true;
@@ -151,6 +155,7 @@ export function useTreeState(
     toggle,
     reveal,
     focus,
+    clearFocus,
     firstChange,
     exists,
   };

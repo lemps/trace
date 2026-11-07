@@ -125,6 +125,7 @@ describe("filterTree", () => {
     const f = filter("COMPONENTS");
     const rows = visibleRows(f.root, (d) => f.open.has(d.path));
     assert.deepEqual(paths(rows), ["src", "src/components"]);
+    assert.equal(f.hits, 1);
     assert.equal(dirAt(f.root, "src/components").children.length, 1);
   });
 

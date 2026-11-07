@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type PointerEvent, useRef } from "react";
+import { type KeyboardEvent, type PointerEvent, useEffect, useRef } from "react";
 import { SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN, useSidebarWidth } from "./store";
 
 /** How far one arrow press moves the divider (Shift: further). */
@@ -13,6 +13,18 @@ export function SidebarDivider() {
   const { setWidth, save } = useSidebarWidth.getState();
   const drag = useRef<{ x: number; w: number } | null>(null);
 
+  // However a drag ends (released, cancelled, capture lost, or this unmounting),
+  // stop resizing and put the page's cursor back.
+  const stop = () => {
+    if (!drag.current) return;
+    drag.current = null;
+    document.body.classList.remove("fx-resizing");
+    save();
+  };
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+  useEffect(() => () => stopRef.current(), []);
+
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -22,14 +34,16 @@ export function SidebarDivider() {
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
-    if (d) setWidth(d.w + e.clientX - d.x);
+    if (!d) return;
+    // The button came up somewhere we didn't hear about: the drag is over.
+    if ((e.buttons & 1) === 0) stop();
+    else setWidth(d.w + e.clientX - d.x);
   };
   const end = (e: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    drag.current = null;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    document.body.classList.remove("fx-resizing");
-    save();
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    stop();
   };
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const by = e.shiftKey ? BIG_STEP : STEP;
@@ -63,6 +77,7 @@ export function SidebarDivider() {
       onPointerMove={onPointerMove}
       onPointerUp={end}
       onPointerCancel={end}
+      onLostPointerCapture={stop}
       onDoubleClick={() => {
         setWidth(SIDEBAR_DEFAULT);
         save();

@@ -27,6 +27,7 @@ interface FilesSidebarProps {
   selected: string | null;
   query: Query | null;
   focus: TreeFocus | null;
+  onFocusDone: () => void;
   onToggle: (dir: DirNode, open: boolean) => void;
   onOpen: (file: FileNode) => void;
   onRefresh: () => void;
@@ -144,6 +145,7 @@ export function FilesSidebar(p: FilesSidebarProps) {
           flat={isChanges && p.flat}
           showStats={isChanges}
           focus={p.focus}
+          onFocusDone={p.onFocusDone}
           label={isChanges ? "Changed files" : "All files"}
           onToggle={p.onToggle}
           onOpen={p.onOpen}

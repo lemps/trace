@@ -31,6 +31,8 @@ interface FileTreeProps {
   flat: boolean;
   showStats: boolean;
   focus: TreeFocus | null;
+  /** `focus` has been shown. */
+  onFocusDone: () => void;
   label: string;
   onToggle: (dir: DirNode, open: boolean) => void;
   onOpen: (file: FileNode) => void;
@@ -60,7 +62,8 @@ function useMeasure() {
 // worktree scrolls like a small one. Focus stays on the tree itself; a cursor moves
 // over the rows (aria-activedescendant), separate from the file open in the viewer.
 export function FileTree(props: FileTreeProps) {
-  const { rows, isOpen, selected, query, flat, showStats, focus, label, onToggle, onOpen } = props;
+  const { rows, isOpen, selected, query, flat, showStats, focus, onFocusDone, label } = props;
+  const { onToggle, onOpen } = props;
   const { scroller, probe, viewport, row: rowH } = useMeasure();
   const [scrollTop, setScrollTop] = useState(0);
   const [cursorPath, setCursorPath] = useState<string | null>(selected);
@@ -88,15 +91,14 @@ export function FileTree(props: FileTreeProps) {
 
   // A reveal (breadcrumb, Quick Open): put the cursor there and bring it into view
   // once its folders are open, which is the render after the request.
-  const handledFocus = useRef<number | null>(null);
   useLayoutEffect(() => {
-    if (!focus || handledFocus.current === focus.nonce) return;
+    if (!focus) return;
     const i = rows.findIndex((r) => r.node.path === focus.path);
     if (i < 0) return;
-    handledFocus.current = focus.nonce;
     setCursorPath(focus.path);
     scrollToIndex(i, true);
-  }, [focus, rows, scrollToIndex]);
+    onFocusDone();
+  }, [focus, rows, scrollToIndex, onFocusDone]);
 
   const moveTo = (i: number) => {
     const target = rows[i];

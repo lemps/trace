@@ -26,12 +26,12 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
   const [view, patch] = useFilesView(workspaceId);
   const [sideOpen, toggleSide] = usePersistedFlag("trace.filesSidebarOpen", true);
   const width = useSidebarWidth((s) => s.width);
-  const data = useFilesData(workspaceId, view.mode);
+  const data = useFilesData(workspaceId, view.mode, view.selected);
   const { summary } = data;
   const t = useTreeState(data.mode, summary, data.all, view, patch);
   const selected = view.selected;
   const change = selected ? t.changes.get(selected) : undefined;
-  const file = useFileDiff(workspaceId, selected, change?.oldPath, summary);
+  const file = useFileDiff(workspaceId, selected, change?.oldPath, data.version);
 
   // Nothing open yet: start on the first change.
   useEffect(() => {
@@ -43,14 +43,16 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
   const pick = useQuickOpenStore((s) => s.reveals[workspaceId]);
   const clearPick = useQuickOpenStore((s) => s.clearReveal);
   const { reveal } = t;
+  const summaryKnown = summary !== null || data.summaryError !== null;
   useEffect(() => {
-    if (!pick) return;
+    // Wait for the changes: they decide whether the pick shows under Changes or All files.
+    if (!pick || !summaryKnown) return;
     const path = toTreePath(worktreeRelative(pick.path, currentOs));
     patch({ selected: path });
     if (!sideOpen) toggleSide();
     reveal(path, false);
     clearPick(workspaceId);
-  }, [pick, workspaceId, clearPick, patch, reveal, sideOpen, toggleSide]);
+  }, [pick, summaryKnown, workspaceId, clearPick, patch, reveal, sideOpen, toggleSide]);
 
   const showInTree = (path: string) => {
     if (!sideOpen) toggleSide();
@@ -77,6 +79,7 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
           selected={selected}
           query={t.query}
           focus={t.focus}
+          onFocusDone={t.clearFocus}
           onToggle={t.toggle}
           onOpen={(f) => patch({ selected: f.path })}
           onRefresh={data.refresh}
@@ -165,7 +168,7 @@ function sidebarNotice(t: TreeState, data: FilesData, filter: string): ReactNode
 function footnote(t: TreeState, data: FilesData): string | null {
   if (t.filtered) {
     const n = t.filtered.hits;
-    return `${n.toLocaleString()} matching file${n === 1 ? "" : "s"}`;
+    return `${n.toLocaleString()} match${n === 1 ? "" : "es"}`;
   }
   if (t.mode === "all" && data.all?.truncated) {
     return `Showing the first ${data.all.files.length.toLocaleString()} files.`;

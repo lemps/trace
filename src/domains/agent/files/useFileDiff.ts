@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type DiffSummary, type FileDiff, gitDiffFile } from "@/ipc/diff";
+import { type FileDiff, gitDiffFile } from "@/ipc/diff";
 
 export interface FileDiffState {
   diff: FileDiff | null;
@@ -8,7 +8,7 @@ export interface FileDiffState {
 }
 
 /**
- * The open file's diff, re-read whenever the summary reloads (the agent may have
+ * The open file's diff, re-read on each reload (`version`: the agent may have
  * changed it since). `oldPath` pairs a renamed file with its old self. A failure
  * stays in this file's view: the rest of the tab keeps working.
  */
@@ -16,10 +16,10 @@ export function useFileDiff(
   workspaceId: string,
   path: string | null,
   oldPath: string | undefined,
-  summary: DiffSummary | null
+  version: number
 ): FileDiffState {
   const [state, setState] = useState<FileDiffState>({ diff: null, error: null, loading: false });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: summary is a refresh trigger
+  // biome-ignore lint/correctness/useExhaustiveDependencies: version is a refresh trigger
   useEffect(() => {
     if (!path) {
       setState({ diff: null, error: null, loading: false });
@@ -42,6 +42,6 @@ export function useFileDiff(
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, path, oldPath, summary]);
+  }, [workspaceId, path, oldPath, version]);
   return state;
 }

@@ -54,7 +54,7 @@ export interface Filtered {
   root: DirNode;
   /** Folders holding a match: shown open until the user closes one. */
   open: Set<string>;
-  /** Files that matched. */
+  /** Files and folders that matched. */
   hits: number;
 }
 
@@ -76,6 +76,7 @@ export function filterTree(root: DirNode, query: Query): Filtered {
         }
       } else if (!query.byPath && matches(child, query)) {
         kept.push(child);
+        hits += 1;
       } else {
         const sub = walk(child);
         if (sub) kept.push(sub);

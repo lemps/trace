@@ -4,18 +4,12 @@ import type { MenuItem } from "@/components/PopMenu";
 import { workspaceInfo } from "@/ipc/workspace";
 import { currentOs } from "@/platform/os";
 import { joinNative } from "@/platform/paths";
+import { copyText } from "../copyText";
 import { editorItems } from "../editorItems";
 
 // What can be done with a worktree file from the Files viewer: the terminal's link
 // menu's own items (Open in VS Code / IntelliJ / Cursor, Show in folder, Copy path),
 // plus the full path, which the viewer's relative one lacks.
-
-export function copyText(text: string, what: string): void {
-  void navigator.clipboard
-    .writeText(text)
-    .then(() => toast.success(`Copied the ${what}.`))
-    .catch((e) => toast.error(`Couldn't copy: ${String(e)}`));
-}
 
 /** `path` (relative, git's form) as a full path in the OS's own separators. */
 async function fullPath(workspaceId: string, path: string): Promise<string | null> {
