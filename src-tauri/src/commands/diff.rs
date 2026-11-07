@@ -5,16 +5,9 @@
 use serde::Serialize;
 
 use crate::diff_parse::{parse_unified, FileDiff};
+use crate::diff_summary::{parse_raw_numstat, ChangeKind, FileSummary};
 use crate::git;
 use crate::workspace_dir::work_dir_for;
-
-#[derive(Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct FileSummary {
-    pub path: String,
-    pub add: u32,
-    pub del: u32,
-}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -74,19 +67,22 @@ fn diff_base(work_dir: &str, base: &str) -> String {
 }
 
 /// Paths git doesn't track yet — exactly what an agent's brand-new files are
-/// until something commits them. `git diff` never reports these.
-fn untracked_files(work_dir: &str) -> Vec<String> {
+/// until something commits them. `git diff` never reports these. `-z` keeps
+/// names verbatim (no C-quoting of spaces or non-ASCII); `pathspec` narrows it
+/// to the given paths (all of them when empty).
+fn untracked_files(work_dir: &str, pathspec: &[&str]) -> Vec<String> {
     crate::claude::discovery::command("git")
-        .args(["ls-files", "--others", "--exclude-standard"])
+        .args(["ls-files", "-z", "--others", "--exclude-standard", "--"])
+        .args(pathspec)
         .current_dir(work_dir)
         .output()
         .ok()
         .filter(|o| o.status.success())
         .map(|o| {
-            String::from_utf8_lossy(&o.stdout)
-                .lines()
-                .filter(|l| !l.is_empty())
-                .map(str::to_string)
+            o.stdout
+                .split(|b| *b == 0)
+                .filter(|p| !p.is_empty())
+                .map(|p| String::from_utf8_lossy(p).into_owned())
                 .collect()
         })
         .unwrap_or_default()
@@ -108,8 +104,10 @@ fn diff_summary_blocking(issue_key: &str) -> Result<DiffSummary, String> {
     let (repo, worktree) = work_dir_for(issue_key)?;
     let base = base_ref(&repo);
     let against = diff_base(&worktree, &base);
+    // `--raw` adds each path's status to numstat's counts; `-z` keeps paths verbatim
+    // (renames as two plain paths); `-M` finds renames whatever `diff.renames` says.
     let out = crate::claude::discovery::command("git")
-        .args(["diff", "--numstat", &against])
+        .args(["diff", "--raw", "--numstat", "-z", "-M", &against])
         .current_dir(&worktree)
         .output()
         .map_err(|e| format!("git diff --numstat failed to start: {e}"))?;
@@ -120,28 +118,18 @@ fn diff_summary_blocking(issue_key: &str) -> Result<DiffSummary, String> {
         ));
     }
 
-    let text = String::from_utf8_lossy(&out.stdout);
-    let mut files = Vec::new();
-    for line in text.lines() {
-        // numstat is "<add>\t<del>\t<path>"; binary files emit "-\t-\t<path>".
-        let mut it = line.splitn(3, '\t');
-        let add_s = it.next().unwrap_or("0");
-        let del_s = it.next().unwrap_or("0");
-        let path = match it.next() {
-            Some(p) if !p.is_empty() => p.to_string(),
-            _ => continue,
-        };
-        files.push(FileSummary {
-            path,
-            add: add_s.parse().unwrap_or(0),
-            del: del_s.parse().unwrap_or(0),
-        });
-    }
+    let mut files = parse_raw_numstat(&out.stdout);
     // New (untracked) files are the agent's most common output and `git diff`
     // can't see them — list them as pure additions.
-    for path in untracked_files(&worktree) {
+    for path in untracked_files(&worktree, &[]) {
         let add = untracked_line_count(&worktree, &path);
-        files.push(FileSummary { path, add, del: 0 });
+        files.push(FileSummary {
+            path,
+            add,
+            del: 0,
+            status: ChangeKind::Untracked,
+            old_path: None,
+        });
     }
     Ok(DiffSummary { base, files })
 }
@@ -158,44 +146,66 @@ pub async fn git_diff_summary(issue_key: String) -> Result<DiffSummary, String> 
         .map_err(|e| format!("diff summary task failed: {e}"))?
 }
 
-/// Per-file unified diff parsed into hunks for the diff viewer.
+/// Per-file unified diff parsed into hunks for the diff viewer. `old_path` is a
+/// renamed file's path in the base, so the diff pairs the two instead of showing
+/// the new path as wholly added. Off the main thread, like the summary: a big
+/// file's diff takes git a moment.
 #[tauri::command]
-pub fn git_diff_file(issue_key: String, path: String) -> Result<FileDiff, String> {
-    let (repo, worktree) = work_dir_for(&issue_key)?;
+pub async fn git_diff_file(
+    issue_key: String,
+    path: String,
+    old_path: Option<String>,
+) -> Result<FileDiff, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        diff_file_blocking(&issue_key, &path, old_path.as_deref())
+    })
+    .await
+    .map_err(|e| format!("diff task failed: {e}"))?
+}
+
+fn diff_file_blocking(
+    issue_key: &str,
+    path: &str,
+    old_path: Option<&str>,
+) -> Result<FileDiff, String> {
+    let (repo, worktree) = work_dir_for(issue_key)?;
     // `--no-index` below would happily read any file on disk.
-    crate::helpers::safe_relative_path(&path)?;
+    crate::helpers::safe_relative_path(path)?;
+    if let Some(old) = old_path {
+        crate::helpers::safe_relative_path(old)?;
+    }
 
     // Untracked files have no base to diff against — synthesize the "all
-    // added" diff with --no-index, which exits 1 when differences exist.
-    let tracked = crate::claude::discovery::command("git")
-        .args(["ls-files", "--error-unmatch", "--", &path])
-        .current_dir(&worktree)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false);
-    let out = if tracked {
-        let base = base_ref(&repo);
-        let against = diff_base(&worktree, &base);
+    // added" diff with --no-index, which exits 1 when differences exist. Asked
+    // as "is it untracked" rather than "is it in the index", so a staged
+    // deletion (gone from both disk and index) still diffs against the base.
+    let untracked = !untracked_files(&worktree, &[path]).is_empty();
+    let out = if untracked {
         crate::claude::discovery::command("git")
-            .args(["diff", "--no-color", &against, "--", &path])
+            .args(["diff", "--no-color", "--no-index", "--", "/dev/null", path])
             .current_dir(&worktree)
             .output()
             .map_err(|e| format!("git diff failed to start: {e}"))?
     } else {
+        let base = base_ref(&repo);
+        let against = diff_base(&worktree, &base);
+        let mut paths = vec![path];
+        paths.extend(old_path);
         crate::claude::discovery::command("git")
-            .args(["diff", "--no-color", "--no-index", "--", "/dev/null", &path])
+            .args(["diff", "--no-color", "-M", &against, "--"])
+            .args(&paths)
             .current_dir(&worktree)
             .output()
             .map_err(|e| format!("git diff failed to start: {e}"))?
     };
     // --no-index reports differences via exit code 1, so only treat >1 (or a
     // tracked-diff non-zero) with stderr content as failure.
-    if !out.status.success() && (tracked || out.status.code() != Some(1)) {
+    if !out.status.success() && (!untracked || out.status.code() != Some(1)) {
         return Err(format!(
             "git diff failed: {}",
             String::from_utf8_lossy(&out.stderr).trim()
         ));
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    Ok(parse_unified(&path, &text))
+    Ok(parse_unified(path, &text))
 }
