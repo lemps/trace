@@ -1,12 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { activity } from "@/domains/activity/store";
 import { agentArgs, agentCli, agentProvider } from "@/domains/agent/defaults";
+import { submitLine } from "@/domains/agent/submitLine";
 import { decodePtyChunk, transcriptText } from "@/domains/agent/transcript";
 import { useBoardStore } from "@/domains/board/store";
 import { useLiveStore } from "@/domains/live/store";
 import { useSessionsStore } from "@/domains/sessions/store";
 import type { ScratchSession } from "@/domains/sessions/types";
-import { type AgentCli, sendAgentInput } from "@/ipc/agent";
+import type { AgentCli } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
@@ -231,7 +232,7 @@ async function send(input: unknown): Promise<string> {
     return `"${session.title}" wasn't running — started it with that as its first message.`;
   }
   board.noteUserTurn(session.id);
-  await sendAgentInput(session.id, `${message}\r`);
+  await submitLine(session.id, message);
   return `Sent to "${session.title}".`;
 }
 

@@ -94,3 +94,20 @@
   transform: rotate(90deg);
 }
 
+
+/* FontField: a text box and the button listing every suggested font. */
+.font-field {
+  display: flex;
+  gap: 6px;
+  width: 220px;
+}
+.setting-row .font-field input[type="text"],
+.ap-page .setting-row .font-field input[type="text"] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+.font-field .pop-menu-pop {
+  max-height: 320px;
+  overflow-y: auto;
+}

@@ -1,5 +1,6 @@
 import type { ITerminalOptions } from "@xterm/xterm";
 import { termFontFamily, termFontSize, termLineHeight } from "@/domains/agent/terminalPrefs";
+import { minimumContrastFor } from "./contrast";
 import { activeTheme, isMotionReduced, useAppearance } from "./store";
 import { resolveTermScheme } from "./terminalSchemes";
 
@@ -10,8 +11,10 @@ import { resolveTermScheme } from "./terminalSchemes";
 export function terminalAppearance(): ITerminalOptions {
   const s = useAppearance.getState();
   const { prefs } = s;
+  const theme = resolveTermScheme(prefs.termScheme, activeTheme(s)).theme;
   return {
-    theme: resolveTermScheme(prefs.termScheme, activeTheme(s)).theme,
+    theme,
+    minimumContrastRatio: minimumContrastFor(theme.background),
     fontFamily: termFontFamily(),
     // The terminal's size is its own setting, so undo the interface zoom that
     // is on screen: a 14px terminal stays 14px at 125%.

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { FontField } from "@/components/FontField";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { setTermFont, setTermFontSize, setTermLineHeight } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
+import { installedOnly, UI_FONT_SUGGESTIONS } from "@/domains/appearance/installedFonts";
 import { type Density, UI_SCALES } from "@/domains/appearance/prefs";
 import { useAppearance } from "@/domains/appearance/store";
 import { AccentPicker, ThemePicker } from "@/domains/appearance/ThemePicker";
@@ -15,8 +17,6 @@ const DENSITIES: { value: Density; label: string }[] = [
   { value: "comfortable", label: "Comfortable" },
 ];
 const SCALES = UI_SCALES.map((s) => ({ value: s, label: `${s}%` }));
-// Suggestions only — any installed family can be typed.
-const UI_FONTS = ["Geist", "Inter", "Segoe UI", "SF Pro Text", "Helvetica Neue", "system-ui"];
 
 // Settings → Appearance: theme, accent, text and layout, terminal, motion.
 // Every control writes the appearance store, which applies itself live
@@ -27,6 +27,8 @@ export function AppearanceSettings() {
   const update = useAppearance((s) => s.update);
   const reset = useAppearance((s) => s.reset);
   const [resets, setResets] = useState(0);
+  // Measured once per visit: only suggestions this machine can show.
+  const [uiFonts] = useState(() => installedOnly(UI_FONT_SUGGESTIONS));
 
   const resetAll = () => {
     setTermFont("");
@@ -73,19 +75,13 @@ export function AppearanceSettings() {
           />
         </SettingRow>
         <SettingRow label="Font" hint="Any installed font. Blank uses Geist.">
-          <input
-            type="text"
-            aria-label="Interface font"
-            placeholder="Geist"
-            list="ap-ui-fonts"
+          <FontField
+            label="Interface font"
             value={prefs.uiFont}
-            onChange={(e) => update({ uiFont: e.target.value })}
+            onChange={(uiFont) => update({ uiFont })}
+            suggestions={uiFonts}
+            defaultFamily="Geist"
           />
-          <datalist id="ap-ui-fonts">
-            {UI_FONTS.map((f) => (
-              <option key={f} value={f} />
-            ))}
-          </datalist>
         </SettingRow>
       </section>
 
