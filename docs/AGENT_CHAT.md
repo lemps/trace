@@ -109,7 +109,7 @@ one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from
 
 **The choice.** Settings → Agents → *Shows as* is the default (Chat; stored in the renderer like
 the other agent defaults). The New session dialog and the ticket's Start ▾ menu can pick the
-other for one agent. Brands without a chat adapter (`agent_session::adapters::CHAT_BRANDS`, which
+other for one agent. Brands without a chat adapter (`agent_session::brands::CHAT_BRANDS`, which
 `chat_agent_brands` returns) always get the terminal, and those controls say so. Sessions with
 Remote Control are terminals (it's a TUI feature).
 
@@ -119,14 +119,15 @@ Remote Control are terminals (it's a TUI feature).
 else the terminal (the renderer passes Settings' default for a workspace that never ran). It moves
 with a session linked to a ticket, and goes with a deleted session or companion (its journal too).
 
-**Every start goes through `commands::agent::spawn_in`**, which routes by transport: a chat
+There is no separate chat start command (the `start_chat_agent` of the first cut is gone):
+**every start goes through `commands::agent::spawn_in`**, which routes by transport: a chat
 agent to `agent_session::runtime::start`, a terminal one to the PTY. So the ticket start and
 board kickoff (`start_agent`, which the orchestrator's `start_agent` tool reaches through the
 board's kickoff), `start_session` (the session view and the MCP `start_session` tool),
 `start_session_agent` (companions), the scheduled runs (always terminal) and resume-after-quit
 (`resume_interrupted_agents`, the ledger records the transport) all honour it. A chat agent gets
 the same model, provider and extra args as a terminal agent would, plus trace's MCP tools and
-hooks (`adapters::wiring` → `claude::launch`). The kickoff brief (or, resuming a conversation
+hooks (`brands::wiring` → `claude::launch` for Claude). The kickoff brief (or, resuming a conversation
 cut off by a quit, the "carry on" nudge) is sent as the first chat message once the agent is up.
 
 **Stop, restart, state.** `stop_agent` stops either kind; `agent_running` and `live_workspaces`
@@ -146,9 +147,54 @@ send chat messages to chat agents; `read_session` returns the end of the convers
 *Open in terminal* (chat agent) or *Open as chat* (terminal agent, brand with a chat adapter).
 Each is: stop, wait until the process is gone (`agentChat/switch.ts`), start again on the chosen
 transport. Both transports key the conversation by workspace (`claude::conversations`), so the
-start `--resume`s it. Switching is only offered while the agent is idle (not mid-turn, nothing
+start `--resume`s it. That holds for Claude only: a Codex chat agent's thread
+(`codex-threads.json`) isn't one its TUI can resume, so Codex isn't offered the move. Switching
+is only offered while the agent is idle (not mid-turn, nothing
 waiting on an answer). The chat journal covers only what ran as a chat; turns taken in the
 terminal aren't replayed into it.
+
+## The Codex adapter, as built
+
+`agent_session::codex`, built against codex-cli 0.147.0 (`codex app-server generate-ts
+--experimental` for the types, recordings in `codex/fixtures/`). One `codex app-server` per
+agent, JSON-RPC over stdio (no `jsonrpc` field on the wire), threaded like the Claude adapter.
+`brands` picks the adapter by the start's `cli` ("claude" when unset); `brands::supports_chat`
+/ `CHAT_BRANDS` say which brands run as chat.
+
+- Handshake: `initialize` (with `experimentalApi`, for approvals' `availableDecisions`), then
+  `initialized` and `thread/start`, or `thread/resume` (`excludeTurns`) of `spec.resume` or the
+  workspace's saved thread (`codex-threads.json`, apart from Claude's `sessions.json`). A resume
+  Codex refuses with "no rollout found" (no turn ever ran) starts a fresh thread. The thread id is
+  `SessionInfo.conversationId` and is saved as it arrives.
+- Settings → Agents flags are the TUI's, which app-server doesn't take: `-m`, `-a`, `-s`,
+  `--full-auto`, `--yolo` become the thread's `model` / `approvalPolicy` / `sandbox`; `-c`,
+  `--enable`, `--disable` go to app-server; anything else is dropped with a warning row. With no
+  flags the user's `config.toml` decides, as for a terminal Codex. trace's MCP tools and hooks
+  aren't wired for Codex yet; the render bridge env is.
+- A message is `turn/start` (text, pictures as `localImage`, other files named by path), or
+  `turn/steer` into the running turn; before the thread is up it waits. Interrupt is
+  `turn/interrupt`, sent once Codex has named the turn.
+
+| Codex sends | Row |
+| --- | --- |
+| `item/agentMessage/delta`, `item/reasoning/*Delta` | `message` (assistant / reasoning), streaming until `item/completed` |
+| `commandExecution` item | `tool` "shell", input `{command, cwd}` (the parsed command, not the `powershell -Command` wrapper), output `aggregatedOutput` capped |
+| `fileChange` item | `tool` "apply_patch" (input in apply_patch form, so the view names the files), plus a `diff` per file once applied: add → `after`, delete → `before`, update → `patch` |
+| `mcpToolCall`, `dynamicToolCall`, `webSearch`, `imageView` items | `tool` `mcp__<server>__<tool>`, the tool's name, `web_search`, `view_image` |
+| `turn/plan/updated` | `plan`, one per turn |
+| `item/commandExecution/requestApproval`, `item/fileChange/requestApproval` | `approval`: Codex's `availableDecisions` (accept → allow once, acceptForSession and exec-policy / network amendments → always, cancel → "Deny and stop"), plus `decline` ("Deny", the turn goes on) when Codex didn't list it; answered with the request's response |
+| `item/tool/requestUserInput` | `question`, answered as `{answers: {id: {answers}}}` |
+| `serverRequest/resolved` for a prompt still open | that prompt cancelled |
+| `turn/completed` | `turn` with Codex's `durationMs`; usage is the sum of each request's `thread/tokenUsage/updated` `last` (cached input split out); Codex reports no cost |
+| `error` | `status` (a warning while Codex retries; otherwise an error, once, with the API's own message) |
+| `warning`, `configWarning`, `deprecationNotice` | `status` warning, each text once |
+| `account/rateLimits/updated` | `SessionInfo.limits`, windows named by length (`five_hour`, `seven_day`) |
+
+Other server requests are answered at once (MCP elicitation declined, extra permissions not
+granted, dynamic tool calls failed, the rest a JSON-RPC error) so Codex never waits on one.
+Notifications from another thread (a subagent's) are dropped. Not mapped yet: subagent
+(`collabAgentToolCall`) activity, a denial's note (Codex's decline carries none), hooks,
+context-window size, Codex's own slash commands.
 
 ## The chat view
 
@@ -169,8 +215,8 @@ terminal aren't replayed into it.
 3. The Codex adapter. 4. The transport setting, "Open in terminal" and resume (done; see above).
 5. ACP.
 
-Adding a brand: its adapter, then one entry in `adapters::CHAT_BRANDS` and one arm each in
-`adapters::launch`, `adapters::wiring` and `adapters::resumable`. The renderer asks
+Adding a brand: its adapter, then one entry in `brands::CHAT_BRANDS` and one arm each in
+`brands::launch`, `brands::wiring` and `brands::resumable`. The renderer asks
 `chat_agent_brands`, so its menus and Settings follow.
 
 ## Prior art

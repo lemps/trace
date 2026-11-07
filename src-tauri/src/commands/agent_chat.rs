@@ -22,7 +22,7 @@ pub fn chat_agent_state(state: State<'_, AppState>, workspace_id: String) -> Cha
 /// The CLIs that can run as a chat agent; the rest run in a terminal.
 #[tauri::command]
 pub fn chat_agent_brands() -> Vec<&'static str> {
-    crate::agent_session::adapters::CHAT_BRANDS.to_vec()
+    crate::agent_session::brands::CHAT_BRANDS.to_vec()
 }
 
 /// Choose a workspace's transport before its agent first starts (the New

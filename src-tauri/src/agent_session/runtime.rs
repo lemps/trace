@@ -13,7 +13,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use super::journal::{Answer, JournalBody, JournalRow};
 use super::registry::Begin;
 use super::transport::Transport;
-use super::{adapters, settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
+use super::{brands, settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
 use crate::state::AppState;
 
 /// `agent-journal`'s payload (`JournalEvent` in types.ts).
@@ -100,7 +100,7 @@ impl JournalSink for Sink {
 /// same as a terminal agent (`commands::agent::spawn_in`).
 pub struct StartRequest {
     pub workspace_id: String,
-    /// The brand ("claude"); `adapters` says which have a chat adapter.
+    /// The brand ("claude"); `brands` says which have a chat adapter.
     pub cli: String,
     pub cwd: String,
     pub model: Option<String>,
@@ -120,7 +120,7 @@ pub fn start(app: &AppHandle, state: &AppState, req: StartRequest) -> Result<(),
         return Ok(());
     };
     let workspace_id = req.workspace_id.clone();
-    let resume = adapters::resumable(&req.cli, &req.workspace_id, &req.cwd);
+    let resume = brands::resumable(&req.cli, &req.workspace_id, &req.cwd);
     let prompt = if resume.is_some() {
         req.resume_prompt.clone()
     } else {
@@ -176,7 +176,7 @@ fn launch(
     instance: u64,
     resume: Option<String>,
 ) -> Result<Box<dyn super::AgentAdapter>, String> {
-    let wiring = adapters::wiring(
+    let wiring = brands::wiring(
         app,
         state,
         &req.cli,
@@ -207,7 +207,7 @@ fn launch(
         path,
         instance,
     });
-    let adapter = adapters::launch(&req.cli, spec, sink.clone())?;
+    let adapter = brands::launch(&req.cli, spec, sink.clone())?;
     // The view knows it's a chat agent, and its model, before the first turn.
     sink.info(SessionInfo {
         agent: req.cli,

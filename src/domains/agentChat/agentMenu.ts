@@ -35,7 +35,9 @@ export function useAgentMenuItems({
   const run = (work: Promise<void>) =>
     void work.catch((e) => toast.error(`Couldn't do that: ${String(e)}`));
   if (running) items.push({ label: "Restart agent", onSelect: () => run(restart()) });
-  if (current === "chat" || (current !== undefined && canChat)) {
+  // Only Claude's chat and TUI share one conversation (`claude::conversations`):
+  // Codex's chat thread isn't one its TUI can resume, so it doesn't move across.
+  if (cli === "claude" && (current === "chat" || (current !== undefined && canChat))) {
     const label = to === "terminal" ? "Open in terminal" : "Open as chat";
     items.push({
       id: "switch",

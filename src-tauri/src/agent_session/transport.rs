@@ -89,7 +89,7 @@ pub fn transfer(from: &str, to: &str) {
 /// always gets the terminal.
 pub fn resolve(requested: Option<Transport>, stored: Option<Transport>, cli: &str) -> Transport {
     match requested.or(stored).unwrap_or_default() {
-        Transport::Chat if super::adapters::has_chat(cli) => Transport::Chat,
+        Transport::Chat if super::brands::supports_chat(cli) => Transport::Chat,
         _ => Transport::Terminal,
     }
 }

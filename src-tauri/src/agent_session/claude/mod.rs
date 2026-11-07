@@ -6,10 +6,10 @@
 //! `Translator`) and handles one message at a time, so no state is shared and
 //! no lock is taken. The adapter's methods just queue a message for it.
 
-mod book;
+pub(crate) mod book;
 mod content;
 mod prompts;
-mod tools;
+pub(crate) mod tools;
 pub mod translate;
 
 #[cfg(test)]
@@ -252,11 +252,11 @@ fn run(
 
 /// When each streaming row last went out.
 #[derive(Default)]
-struct Pacer(HashMap<String, Instant>);
+pub(crate) struct Pacer(HashMap<String, Instant>);
 
 impl Pacer {
     /// Whether this revision goes out now.
-    fn passes(&mut self, row: &crate::agent_session::journal::JournalRow) -> bool {
+    pub(crate) fn passes(&mut self, row: &crate::agent_session::journal::JournalRow) -> bool {
         use crate::agent_session::journal::JournalBody;
         let streaming = matches!(&row.body, JournalBody::Message(m) if m.streaming);
         if !streaming {
