@@ -68,6 +68,20 @@ const rev = (row: JournalRow) => row.revision + 1;
 /** Arrange rows (sorted by `seq`) into turns. */
 export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
   const tools = new Map<string, ToolItem>();
+  /** A nested call's parent, and the turn each top-level call is drawn in. */
+  const parentOf = new Map<ToolItem, ToolItem>();
+  const turnOf = new Map<ToolItem, ChatTurn>();
+  /** A change under `tool` re-renders it, every call it's nested in, and their turn. */
+  const bump = (tool: ToolItem, by: number) => {
+    let at: ToolItem = tool;
+    at.version += by;
+    for (let up = parentOf.get(at); up; up = parentOf.get(at)) {
+      up.version += by;
+      at = up;
+    }
+    const owner = turnOf.get(at);
+    if (owner) owner.version += by;
+  };
   const turns: ChatTurn[] = [];
   const byId = new Map<string, ChatTurn>();
   const bound = new Set<ChatTurn>();
@@ -139,22 +153,33 @@ export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
           : create(`row:${row.id}`, row.at)
         : (current ?? create(`row:${row.id}`, row.at));
     }
-    turn.version += rev(row);
     const item = toItem(row);
     if (item.type === "tool") {
       tools.set(item.call.callId, item);
       const parent = item.call.parentCallId ? tools.get(item.call.parentCallId) : undefined;
       if (parent) {
+        // Drawn inside its parent, wherever that is (an earlier turn, for a background agent).
         parent.children.push(item);
-        parent.version += item.version;
+        parentOf.set(item, parent);
+        bump(parent, item.version);
         continue;
       }
+      turnOf.set(item, turn);
     }
+    turn.version += rev(row);
     if (item.type === "message" && isPrompt && turn.items.length === 0) turn.prompts.push(item);
     else turn.items.push(item);
   }
 
-  for (const row of attached) attach(row, tools, turns);
+  for (const row of attached) {
+    const { body } = row;
+    const callId = body.kind === "approval" || body.kind === "diff" ? body.callId : undefined;
+    const tool = callId ? tools.get(callId) : undefined;
+    if (!tool) continue;
+    if (body.kind === "approval") tool.approval = { row, approval: body };
+    else if (body.kind === "diff") tool.diffs.push({ row, diff: body });
+    bump(tool, rev(row));
+  }
   for (const turn of turns) fold(turn);
   return turns;
 }
@@ -180,24 +205,6 @@ function toItem(row: JournalRow): ChatItem {
     case "turn":
       throw new Error("turn rows are summaries, not items");
   }
-}
-
-function attach(row: JournalRow, tools: Map<string, ToolItem>, turns: ChatTurn[]): void {
-  const { body } = row;
-  const callId = body.kind === "approval" || body.kind === "diff" ? body.callId : undefined;
-  const tool = callId ? tools.get(callId) : undefined;
-  if (!tool) return;
-  if (body.kind === "approval") tool.approval = { row, approval: body };
-  else if (body.kind === "diff") tool.diffs.push({ row, diff: body });
-  tool.version += rev(row);
-  const turn = turns.find((t) => t.items.includes(tool) || hasChild(t.items, tool));
-  if (turn) turn.version += rev(row);
-}
-
-function hasChild(items: ChatItem[], tool: ToolItem): boolean {
-  return items.some(
-    (i) => i.type === "tool" && (i.children.includes(tool) || hasChild(i.children, tool))
-  );
 }
 
 /** Whether a prompt still waits on the user (never folded away). */

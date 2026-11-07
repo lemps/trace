@@ -22,12 +22,16 @@ interface AgentChatState {
   answering: Record<string, boolean>;
   /** A queued message was just sent; hold the next until the agent picks it up. */
   sending: Record<string, boolean>;
+  /** A queued send failed; hold the queue until the agent is heard from again. */
+  paused: Record<string, boolean>;
   applyRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
   setInfo: (workspaceId: string, info: SessionInfo) => void;
   markLoaded: (workspaceId: string) => void;
   enqueue: (workspaceId: string, text: string) => void;
   editQueued: (workspaceId: string, id: string, text: string) => void;
   removeQueued: (workspaceId: string, id: string) => void;
+  /** Put a message that failed to send back at the front of the queue, and pause it. */
+  requeue: (workspaceId: string, message: QueuedMessage) => void;
   setAnswering: (key: string, on: boolean) => void;
   setSending: (workspaceId: string, on: boolean) => void;
 }
@@ -41,6 +45,7 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
   queues: {},
   answering: {},
   sending: {},
+  paused: {},
   applyRows: (workspaceId, rows) =>
     set((s) => {
       const current = s.journals[workspaceId] ?? EMPTY_JOURNAL;
@@ -51,11 +56,13 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
       return {
         journals: { ...s.journals, [workspaceId]: next },
         sending: picked ? { ...s.sending, [workspaceId]: false } : s.sending,
+        paused: { ...s.paused, [workspaceId]: false },
       };
     }),
   setInfo: (workspaceId, info) =>
     set((s) => ({
       info: { ...s.info, [workspaceId]: info },
+      paused: { ...s.paused, [workspaceId]: false },
       sending: info.busy ? { ...s.sending, [workspaceId]: false } : s.sending,
     })),
   markLoaded: (workspaceId) => set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } })),
@@ -78,6 +85,12 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
         ...s.queues,
         [workspaceId]: (s.queues[workspaceId] ?? []).filter((q) => q.id !== id),
       },
+    })),
+  requeue: (workspaceId, message) =>
+    set((s) => ({
+      queues: { ...s.queues, [workspaceId]: [message, ...(s.queues[workspaceId] ?? [])] },
+      sending: { ...s.sending, [workspaceId]: false },
+      paused: { ...s.paused, [workspaceId]: true },
     })),
   setAnswering: (key, on) =>
     set((s) => {

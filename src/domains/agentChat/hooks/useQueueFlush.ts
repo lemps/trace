@@ -14,18 +14,25 @@ export function useQueueFlush(workspaceId: string, busy: boolean): void {
   const actions = useChatActions();
   const queue = useQueue(workspaceId);
   const sending = useAgentChatStore((s) => s.sending[workspaceId] ?? false);
+  const paused = useAgentChatStore((s) => s.paused[workspaceId] ?? false);
   const next = queue[0];
 
   useEffect(() => {
-    if (busy || sending || !next) return;
-    const { removeQueued, setSending } = useAgentChatStore.getState();
-    removeQueued(workspaceId, next.id);
-    setSending(workspaceId, true);
-    void actions.send(workspaceId, { text: next.text, attachments: [] }).catch((e) => {
-      setSending(workspaceId, false);
-      toast.error(`Couldn't send the queued message: ${String(e)}`);
+    if (busy || sending || paused || !next) return;
+    // Decide from the store as it is now, not as this render saw it: a second run
+    // of the effect (StrictMode, or another pane on the same workspace) must not
+    // send the same message again.
+    const state = useAgentChatStore.getState();
+    const head = state.queues[workspaceId]?.[0];
+    if (state.sending[workspaceId] || head?.id !== next.id) return;
+    state.removeQueued(workspaceId, head.id);
+    state.setSending(workspaceId, true);
+    void actions.send(workspaceId, { text: head.text, attachments: [] }).catch((e) => {
+      // Back at the front, held until the agent is heard from again (no retry loop).
+      useAgentChatStore.getState().requeue(workspaceId, head);
+      toast.error(`Couldn't send the queued message (it's still queued): ${String(e)}`);
     });
-  }, [busy, sending, next, workspaceId, actions]);
+  }, [busy, sending, paused, next, workspaceId, actions]);
 
   // Fallback: an agent that never reports busy shouldn't strand the queue.
   useEffect(() => {

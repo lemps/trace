@@ -101,6 +101,32 @@ describe("buildTurns", () => {
     assert.ok(parent.type === "tool" && parent.children.length === 1);
   });
 
+  it("re-renders a subagent's parent and its turn when the child's approval lands", () => {
+    const base = [user("u", "x", "t1"), tool("p", "c1", "t1"), tool("k", "c2", "t1", "c1")];
+    const ask = r(
+      "a",
+      { kind: "approval", requestId: "q", callId: "c2", tool: "Bash", title: "ls", options: [] },
+      "t1"
+    );
+    const before = buildTurns(base)[0];
+    const after = buildTurns([...base, ask])[0];
+    assert.ok(after.items[0].version > before.items[0].version);
+    assert.ok(after.version > before.version);
+  });
+
+  it("re-renders the earlier turn a background subagent's call lands in", () => {
+    const base = [
+      user("u", "x", "t1"),
+      tool("p", "c1", "t1"),
+      done("e", "t1"),
+      user("u2", "y", "t2"),
+    ];
+    const before = buildTurns(base);
+    const after = buildTurns([...base, tool("k", "c2", "t2", "c1")]);
+    assert.ok(after[0].version > before[0].version);
+    assert.equal(after[1].version, before[1].version);
+  });
+
   it("folds a finished turn's work behind its final answer", () => {
     const [turn] = buildTurns([
       user("u", "x", "t1"),

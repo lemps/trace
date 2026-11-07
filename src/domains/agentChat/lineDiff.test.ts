@@ -39,6 +39,23 @@ describe("parsePatch", () => {
     assert.ok(del && del.kind === "del" && del.oldNo === 4);
   });
 
+  it("keeps removed lines that start with -- inside a hunk", () => {
+    const patch = [
+      "--- a/q.sql",
+      "+++ b/q.sql",
+      "@@ -1,2 +1,2 @@",
+      "--- old note",
+      "+++ new note",
+      " select 1;",
+    ].join("\n");
+    assert.deepEqual(shape(parsePatch(patch)), [
+      "~@@ -1,2 +1,2 @@",
+      "--- old note",
+      "+++ new note",
+      " select 1;",
+    ]);
+  });
+
   it("parses Codex patches", () => {
     const out = parsePatch("*** Begin Patch\n*** Update File: a\n@@\n-x\n+y\n*** End Patch");
     assert.deepEqual(countChanges(out), { added: 1, removed: 1 });

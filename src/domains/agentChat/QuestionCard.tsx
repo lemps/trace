@@ -77,7 +77,7 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
                 if (!q.multiSelect && value) setPicks((p) => ({ ...p, [q.id]: [] }));
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && ready) send();
+                if (e.key === "Enter" && !e.nativeEvent.isComposing && ready) send();
               }}
             />
           )}

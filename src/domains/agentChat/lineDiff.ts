@@ -115,25 +115,31 @@ export function parsePatch(patch: string): DiffLine[] {
   const out: DiffLine[] = [];
   let oldNo = 0;
   let newNo = 0;
+  // Header lines (`--- a/x`) only count outside a hunk: inside one, `--- x` is a
+  // removed line that starts with "--".
+  let inHunk = false;
   for (const raw of splitLines(patch)) {
+    if (/^(diff --git |\*\*\* )/.test(raw)) {
+      inHunk = false;
+      continue;
+    }
     const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$/.exec(raw);
     if (hunk) {
       oldNo = Number(hunk[1]);
       newNo = Number(hunk[2]);
+      inHunk = true;
       out.push({ kind: "gap", text: hunk[3].trim() || raw });
       continue;
     }
     if (raw.startsWith("@@")) {
+      inHunk = true;
       out.push({ kind: "gap", text: raw.slice(2).trim() || "…" });
       continue;
     }
-    if (
-      /^(diff --git|index |--- |\+\+\+ |\*\*\* |new file mode|deleted file mode|\\ No newline)/.test(
-        raw
-      )
-    ) {
+    if (!inHunk && /^(index |--- |\+\+\+ |new file mode|deleted file mode)/.test(raw)) {
       continue;
     }
+    if (raw.startsWith("\\ No newline")) continue;
     if (raw.startsWith("+")) {
       out.push({ kind: "add", text: raw.slice(1), newNo: newNo ? newNo++ : undefined });
     } else if (raw.startsWith("-")) {

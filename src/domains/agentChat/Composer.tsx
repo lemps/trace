@@ -56,6 +56,8 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter while an IME is composing commits the candidate; it isn't a send.
+    if (e.nativeEvent.isComposing) return;
     if (matches) {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();

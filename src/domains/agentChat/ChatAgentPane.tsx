@@ -39,9 +39,13 @@ export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneP
   );
   useQueueFlush(workspaceId, busy);
 
-  // Esc from anywhere in the pane interrupts a running turn.
+  // Esc in the pane interrupts a running turn, but not from a text box (a
+  // question's typed answer): Esc there means leave the box, not stop the agent.
+  // The composer handles its own Esc.
   const onKeyDown = (e: KeyboardEvent) => {
     if (!busy || e.defaultPrevented || !isShortcut("chatInterrupt", e)) return;
+    const el = e.target as HTMLElement;
+    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return;
     e.preventDefault();
     e.stopPropagation();
     void actions.interrupt(workspaceId).catch((err) => toast.error(String(err)));
@@ -62,7 +66,9 @@ export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneP
           <ChatList
             turns={turns}
             working={busy}
-            since={busy && last ? (last.prompts[0]?.row.at ?? last.startedAt) : null}
+            since={
+              busy && isTurnLive(last) && last ? (last.prompts[0]?.row.at ?? last.startedAt) : null
+            }
           />
         )}
         <Composer workspaceId={workspaceId} busy={busy} slashCommands={info?.slashCommands ?? []} />

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { toast } from "@/app/toast";
 import { onAgentJournal, onAgentSessionInfo } from "@/ipc/agentChat";
 import { useChatActions } from "../actions";
 import { useAgentChatStore } from "../store";
@@ -10,6 +11,8 @@ import { useAgentChatStore } from "../store";
 // the order irrelevant.
 
 let listening = false;
+/** Workspaces whose saved journal was read; a failed read is retried on the next mount. */
+const fetched = new Set<string>();
 
 /** Start the app-wide event subscription (idempotent). */
 export function ensureChatListeners(): void {
@@ -27,15 +30,18 @@ export function useJournalFeed(workspaceId: string): void {
   const actions = useChatActions();
   useEffect(() => {
     ensureChatListeners();
-    const { loaded, applyRows, markLoaded } = useAgentChatStore.getState();
-    if (loaded[workspaceId]) return;
+    const { applyRows, markLoaded } = useAgentChatStore.getState();
+    if (fetched.has(workspaceId)) return;
     let cancelled = false;
     void actions
       .load(workspaceId)
       .then((rows) => {
+        fetched.add(workspaceId);
         if (!cancelled) applyRows(workspaceId, rows);
       })
-      .catch(() => {})
+      .catch((e) => {
+        if (!cancelled) toast.error(`Couldn't read the conversation: ${String(e)}`);
+      })
       .finally(() => {
         if (!cancelled) markLoaded(workspaceId);
       });
