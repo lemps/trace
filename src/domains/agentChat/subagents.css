@@ -236,3 +236,12 @@
 .ac-head-stop {
   flex-shrink: 0;
 }
+/* "Open beside" on a subagent card: square, beside Stop. */
+.btn.icon.ac-agent-beside {
+  width: var(--control-h-sm);
+  justify-content: center;
+  color: var(--fg-2);
+}
+.btn.icon.ac-agent-beside:hover {
+  color: var(--fg-0);
+}

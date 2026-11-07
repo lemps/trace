@@ -113,6 +113,48 @@ export const SHORTCUTS: ShortcutDef[] = [
     pc: ["Ctrl+Shift+p"],
   },
   {
+    id: "paneSplitRight",
+    label: "Open the tab in a new pane to the right",
+    group: "detail",
+    scope: "detail",
+    mac: ["Meta+d"],
+    pc: ["Ctrl+Shift+d"],
+  },
+  {
+    id: "paneSplitDown",
+    label: "Open the tab in a new pane below",
+    group: "detail",
+    scope: "detail",
+    mac: ["Shift+Meta+d"],
+    // Ctrl+Shift+D is the split right; Shift can't tell the two apart off macOS.
+    pc: ["Ctrl+Shift+e"],
+  },
+  {
+    id: "paneFocusNext",
+    label: "Focus the next pane",
+    group: "detail",
+    scope: "detail",
+    mac: ["Meta+]"],
+    // Off macOS Ctrl+Shift+] is the chat's next tab (Shift can't tell ⌘] from ⇧⌘]).
+    pc: ["Ctrl+Shift+."],
+  },
+  {
+    id: "paneFocusPrev",
+    label: "Focus the previous pane",
+    group: "detail",
+    scope: "detail",
+    mac: ["Meta+["],
+    pc: ["Ctrl+Shift+,"],
+  },
+  {
+    id: "paneMoveTab",
+    label: "Move the tab to the next pane",
+    group: "detail",
+    scope: "detail",
+    mac: ["Shift+Meta+m"],
+    pc: ["Ctrl+Shift+m"],
+  },
+  {
     id: "detailBack",
     label: "Go back (not from inside a terminal)",
     group: "detail",

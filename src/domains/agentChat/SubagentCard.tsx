@@ -7,6 +7,7 @@ import { useChatView } from "./chatContext";
 import type { ToolItem } from "./projection";
 import { plainLine, SubagentStatusWord, useElapsed } from "./SubagentBits";
 import { useAgentChatStore } from "./store";
+import { openSubagentBeside } from "./subagentPanel";
 import type { SubagentThread } from "./subagents";
 
 // A subagent in the main timeline: one card that stays where its call was and
@@ -52,6 +53,15 @@ function CardBody({ item }: { item: ToolItem }) {
           <span className="ac-agent-go" aria-hidden>
             <I.Chevron size={12} />
           </span>
+        </button>
+        <button
+          type="button"
+          className="btn icon ac-agent-stop ac-agent-beside"
+          onClick={() => openSubagentBeside(workspaceId, thread.callId)}
+          title="Open beside: its conversation in a pane next to the chat"
+          aria-label="Open beside"
+        >
+          <I.SplitRight size={13} />
         </button>
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>

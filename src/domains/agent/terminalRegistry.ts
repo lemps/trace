@@ -5,6 +5,7 @@ import { terminalAppearance, terminalAppearanceKey } from "@/domains/appearance/
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
+import { ptyCompat } from "@/platform/pty";
 import {
   isAppKey,
   isCopyContext,
@@ -102,6 +103,7 @@ export function getTerminal(issueKey: string): TerminalEntry {
     // Colours, fonts and cursor come from Settings → Appearance. xterm paints
     // to a canvas and can't resolve CSS variables, so they're literal values.
     ...terminalAppearance(),
+    ...ptyCompat,
     // Find's match highlights are decorations, which xterm still calls proposed API.
     allowProposedApi: true,
   });
@@ -243,6 +245,21 @@ export function getTerminal(issueKey: string): TerminalEntry {
   return entry;
 }
 
+/** Real pixels, below which a fit would shrink the PTY to nothing. */
+const MIN_FIT_PX = { w: 80, h: 40 };
+
+/**
+ * Whether the terminal's host can be measured: in the document, shown, and not a
+ * transient sliver (mid-move between panes, a hidden or collapsing container). The
+ * fit addon would read those as a 2×1 grid, and resizing the PTY there and back makes
+ * it redraw over its own output.
+ */
+function measurable(entry: TerminalEntry): boolean {
+  const host = entry.container;
+  if (!host.isConnected) return false;
+  return host.clientWidth >= MIN_FIT_PX.w && host.clientHeight >= MIN_FIT_PX.h;
+}
+
 /**
  * Fit the terminal to its host for a *spawn*: records the size as last-sent
  * (the PTY is about to be created at it) so PtyTerminal's first post-spawn
@@ -250,7 +267,7 @@ export function getTerminal(issueKey: string): TerminalEntry {
  */
 export function fitTerminal(issueKey: string): { cols: number; rows: number } | null {
   const entry = registry.get(issueKey);
-  if (!entry?.opened) return null;
+  if (!entry?.opened || !measurable(entry)) return null;
   try {
     entry.fit.fit();
     const size = { cols: entry.term.cols, rows: entry.term.rows };
@@ -271,7 +288,7 @@ export function fitTerminal(issueKey: string): { cols: number; rows: number } | 
  */
 export function syncPtySize(issueKey: string): void {
   const entry = registry.get(issueKey);
-  if (!entry?.opened) return;
+  if (!entry?.opened || !measurable(entry)) return;
   try {
     entry.fit.fit();
   } catch {

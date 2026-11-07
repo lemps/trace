@@ -131,6 +131,13 @@ export const I = {
       <path d="M15 4v16" />
     </Base>
   ),
+  /** Open beside: a pane split down the middle. */
+  SplitRight: (p: IconProps) => (
+    <Base {...p}>
+      <rect width="18" height="16" x="3" y="4" rx="2" />
+      <path d="M12 4v16" />
+    </Base>
+  ),
   More: (p: IconProps) => (
     <Base {...p}>
       <circle cx="5" cy="12" r="1" />

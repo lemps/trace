@@ -1,44 +1,36 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
-import { agentArgs } from "@/domains/agent/defaults";
 import { editorItems } from "@/domains/agent/editorItems";
 import { useHasExited } from "@/domains/agent/exitedStore";
-import { FilesPane } from "@/domains/agent/FilesPane";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
 import { RestartChip } from "@/domains/agent/RestartChip";
-import { RichOutputPanel } from "@/domains/agent/RichOutputPanel";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
-import { TerminalPane } from "@/domains/agent/TerminalPane";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
 import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
-import { useIsChatAgent } from "@/domains/agentChat/transport";
 import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
+import { focusedGroup } from "@/domains/panes/model";
+import { PaneArea } from "@/domains/panes/PaneArea";
+import { layoutItems } from "@/domains/panes/paneMenu";
+import { type Panes, usePanes } from "@/domains/panes/usePanes";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
-import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
-import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
-import { startSession, startSessionAgent } from "@/ipc/session";
+import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { basename } from "@/platform/paths";
-import { AddAgentMenu } from "./AddAgentMenu";
-import { AgentPane } from "./AgentPane";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
-import { useAgentRun } from "./hooks/useAgentRun";
+import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
+import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
 import type { ScratchSession } from "./types";
-
-/** Which pane the body shows. Agent tabs all share the "agent" pane; "html" shows the
- * viewed agent's `trace-render` cards. */
-type PaneId = "agent" | "html" | "files" | "terminal";
 
 // Full-screen detail for one exploratory session. Reuses the agent detail shell
 // (`.detail`), the live terminal, and the Files/Diff pane — all keyed by workspace
@@ -47,6 +39,8 @@ type PaneId = "agent" | "html" | "files" | "terminal";
 // A session can host several agents in ONE worktree (see `agentRoster`): the agent
 // it was created with, plus companions added here. Each gets its own tab, PTY and
 // conversation, so work claude started can be continued by codex on the same code.
+// The tabs can be arranged side by side in panes (`domains/panes`); the header acts on
+// the agent last in focus.
 export function SessionDetail({
   session,
   onBack,
@@ -57,7 +51,6 @@ export function SessionDetail({
   /** The page Back returns to ("Inbox", "Sessions", …). */
   backLabel: string;
 }) {
-  const [pane, setPane] = useState<PaneId>("agent");
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -85,17 +78,7 @@ export function SessionDetail({
   // when the companion whose tab was open is removed.
   const active = roster.find((r) => r.workspaceId === selectedAgent) ?? roster[0];
 
-  // The only difference between agents: how the backend spawns them.
-  const spawn = useCallback(
-    (cols: number, rows: number, transport: Transport) =>
-      active.companion
-        ? startSessionAgent(session.id, active.workspaceId, cols, rows, agentArgs(), transport)
-        : startSession(session.id, cols, rows, agentArgs(), undefined, transport),
-    [session.id, active.companion, active.workspaceId]
-  );
-  const run = useAgentRun(active.workspaceId, active.cli, spawn);
-  // A chat agent has no terminal/transcript switch: the chat is its only view.
-  const activeIsChat = useIsChatAgent(active.workspaceId);
+  const run = useSessionAgentRun(session, active);
   const agentItems = useAgentMenuItems({
     workspaceId: active.workspaceId,
     cli: active.cli,
@@ -113,21 +96,39 @@ export function SessionDetail({
     if (waiting) ackWaiting(active.workspaceId);
   }, [waiting, active.workspaceId, ackWaiting]);
 
+  const panels = sessionPanels({
+    session,
+    roster,
+    active,
+    live,
+    htmlCount,
+    onAddAgent: (cli, provider) => onAddAgent(cli, provider),
+    addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
+  });
+  const owners = useMemo(
+    () => Object.fromEntries(turnIds.map((id) => [id, agentTab(id)])),
+    [turnIds]
+  );
+  const panes = usePanes(`session:${session.id}`, panels, owners);
+  useFollowAgent(panes, roster, selectedAgent, selectAgent);
+  // Arming "remove" is for the agent in view; another taking the header disarms it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run when the agent changes
+  useEffect(() => setConfirmRemove(false), [active.workspaceId]);
+
   const showAgent = (workspaceId: string) => {
     selectAgent(workspaceId);
-    setPane("agent");
-    setConfirmRemove(false);
+    panes.select(agentTab(workspaceId));
   };
-  // ⌘1… = each agent tab, then HTML, Files and Terminal; Esc goes back.
+  // ⌘1… = each tab in its natural order, wherever it is; Esc goes back.
   // A plain folder has no git, so nothing for Files to show.
   const hasFiles = !session.folder;
   const exited = useHasExited(active.workspaceId);
-  const quickOpen = useQuickOpen(session.id, hasFiles, () => setPane("files"));
-  const keyTabs = [...turnIds, "html", ...(hasFiles ? ["files"] : []), "terminal"];
-  useDetailKeys(onBack, keyTabs, (t) => {
-    if (t === "html" || t === "files" || t === "terminal") setPane(t);
-    else showAgent(t);
-  });
+  const quickOpen = useQuickOpen(session.id, hasFiles, () => panes.select("files"));
+  useDetailKeys(
+    onBack,
+    panels.map((p) => p.id),
+    panes.select
+  );
 
   const onAddAgent = (cli: AgentCli, provider?: AgentProvider) => {
     void addAgent(session.id, cli, provider)
@@ -169,14 +170,6 @@ export function SessionDetail({
       })
       .catch((err) => toast.error(String(err)));
   };
-
-  const startHint = session.folder
-    ? "The agent runs directly in this session's folder, with no git worktree."
-    : active.companion
-      ? "Runs in this session's worktree — it sees everything the other agents here have written."
-      : session.worktree
-        ? "The agent runs in an isolated worktree for this session."
-        : "The agent runs in your repo root and shares your working tree.";
 
   return (
     <div className="detail">
@@ -270,6 +263,7 @@ export function SessionDetail({
                     : []),
                 ],
               },
+              { title: "Layout", items: layoutItems(panes) },
             ]}
           />
         </div>
@@ -283,74 +277,7 @@ export function SessionDetail({
 
       <div className="detail-body">
         <div className="detail-left">
-          <div className="detail-tabs">
-            {roster.map((entry) => {
-              const light = live[entry.workspaceId]?.light ?? "stopped";
-              const selected = pane === "agent" && entry.workspaceId === active.workspaceId;
-              return (
-                <button
-                  key={entry.workspaceId}
-                  type="button"
-                  className={`detail-tab${selected ? " active" : ""}`}
-                  onClick={() => showAgent(entry.workspaceId)}
-                  title={
-                    entry.companion
-                      ? `Companion agent — same ${session.folder ? "folder" : "worktree"}`
-                      : "This session's agent"
-                  }
-                >
-                  <I.Chat size={13} /> {entry.label}
-                  <StatusLight light={light} />
-                </button>
-              );
-            })}
-            <AddAgentMenu
-              onAdd={onAddAgent}
-              disabled={companionsOf(session).length >= MAX_COMPANIONS}
-            />
-            <span className="detail-tab-sep" />
-            <button
-              type="button"
-              className={`detail-tab${pane === "html" ? " active" : ""}`}
-              onClick={() => setPane("html")}
-              title={`What ${active.label} rendered with trace-render`}
-            >
-              <I.Sparkles size={13} /> HTML
-              {htmlCount > 0 && <span className="count">{htmlCount}</span>}
-            </button>
-            {hasFiles && (
-              <button
-                type="button"
-                className={`detail-tab${pane === "files" ? " active" : ""}`}
-                onClick={() => setPane("files")}
-              >
-                <I.Code size={13} /> Files
-              </button>
-            )}
-            <button
-              type="button"
-              className={`detail-tab${pane === "terminal" ? " active" : ""}`}
-              onClick={() => setPane("terminal")}
-            >
-              <I.Terminal size={13} /> Terminal
-            </button>
-            {pane === "agent" && !activeIsChat && (
-              <ViewSwitch workspaceId={active.workspaceId} cli={active.cli} />
-            )}
-          </div>
-
-          {pane === "agent" && (
-            <AgentPane
-              key={active.workspaceId}
-              workspaceId={active.workspaceId}
-              cli={active.cli}
-              run={run}
-              hint={startHint}
-            />
-          )}
-          {pane === "html" && <RichOutputPanel issueKey={active.workspaceId} />}
-          {pane === "files" && <FilesPane workspaceId={session.id} />}
-          {pane === "terminal" && <TerminalPane issueKey={session.id} />}
+          <PaneArea panes={panes} />
           {linking && <LinkTicketModal onClose={() => setLinking(false)} onPick={onPickIssue} />}
         </div>
       </div>
@@ -364,4 +291,37 @@ export function SessionDetail({
       {quickOpen}
     </div>
   );
+}
+
+/**
+ * Keep the header's agent and the panes in step. Selecting an agent from outside
+ * (opening the session, a notification for a companion) shows its tab; focusing an
+ * agent's tab — clicking it, or its pane — makes it the one the header acts on, and
+ * the one whose turns count as watched. Focusing Files or Terminal changes neither.
+ */
+function useFollowAgent(
+  panes: Panes,
+  roster: { workspaceId: string }[],
+  selected: string | null,
+  select: (workspaceId: string) => void
+): void {
+  const seen = useRef<string | null>(null);
+  const focusedTab = focusedGroup(panes.layout).active;
+  const show = panes.select;
+  // An agent picked before its tab exists (a companion just added) waits for it.
+  const rosterKey = roster.map((r) => r.workspaceId).join(" ");
+  useEffect(() => {
+    const has = (id: string) => rosterKey.split(" ").includes(id);
+    if (selected !== seen.current) {
+      if (selected && !has(selected)) return;
+      seen.current = selected;
+      if (selected) show(agentTab(selected));
+      return;
+    }
+    const agent = agentOfTab(focusedTab);
+    if (agent && agent !== selected && has(agent)) {
+      seen.current = agent;
+      select(agent);
+    }
+  }, [selected, focusedTab, rosterKey, show, select]);
 }

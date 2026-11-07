@@ -10,6 +10,7 @@ import { useJournalFeed } from "./hooks/useJournalFeed";
 import { useWorkspaceRoot } from "./hooks/useWorkspaceRoot";
 import { ItemView } from "./ItemView";
 import { SubagentStatusWord, useElapsed } from "./SubagentBits";
+import { openSubagentBeside } from "./subagentPanel";
 import type { SubagentThread } from "./subagents";
 
 interface SubagentViewProps {
@@ -38,7 +39,7 @@ export function SubagentView({ workspaceId, callId }: SubagentViewProps) {
     <ChatViewContext.Provider value={view}>
       <div className="ac-subview">
         {thread ? (
-          <Thread thread={thread} />
+          <Thread thread={thread} inChat={inPane} />
         ) : (
           <div className="tx-empty">
             <div className="ib-empty">This subagent isn't in the conversation.</div>
@@ -49,7 +50,8 @@ export function SubagentView({ workspaceId, callId }: SubagentViewProps) {
   );
 }
 
-function Thread({ thread }: { thread: SubagentThread }) {
+/** `inChat`: shown as a tab of the chat pane, so it can open beside it instead. */
+function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean }) {
   const { workspaceId } = useChatView();
   const actions = useChatActions();
   const elapsed = useElapsed(thread);
@@ -80,6 +82,16 @@ function Thread({ thread }: { thread: SubagentThread }) {
           </span>
           {thread.background && <span>background</span>}
         </span>
+        {inChat && (
+          <button
+            type="button"
+            className="btn ac-agent-stop"
+            onClick={() => openSubagentBeside(workspaceId, thread.callId)}
+            title="Show it in a pane beside the chat"
+          >
+            <I.SplitRight size={13} /> Open beside
+          </button>
+        )}
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
             <I.X size={13} /> Stop subagent

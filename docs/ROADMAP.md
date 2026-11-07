@@ -90,7 +90,8 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 
 ### Workspace
 
-- [ ] **Split panes:** agents, terminals, diffs and a browser side by side.
+- [x] **Split panes:** a detail's tabs (agents, HTML, Files, terminals) side by side or stacked,
+      resizable, remembered per workspace (`domains/panes`). A browser pane comes with the browser.
 - [ ] **Embedded browser with Design Mode:** click an element to send its HTML, styles and selector
       to the agent.
 - [x] **Worktree setup hooks:** run commands like `npm install` or restoring `.env` after a worktree

@@ -27,6 +27,7 @@ import "@/domains/agent/files.css";
 import "@/domains/agent/files/files-tree.css";
 import "@/domains/quickOpen/quick-open.css";
 import "@/domains/agent/panes.css";
+import "@/domains/panes/pane-layout.css";
 import "@/domains/agent/terminal/terminal-extras.css";
 import "@/domains/transcript/transcript.css";
 import "@/domains/agentChat/chat.css";

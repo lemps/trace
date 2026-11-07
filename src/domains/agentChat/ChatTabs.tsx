@@ -1,9 +1,12 @@
-import type { ReactNode } from "react";
+import { type MouseEvent, type ReactNode, useState } from "react";
+import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
 import { useHint } from "@/platform/shortcuts";
+import { useChatView } from "./chatContext";
 import type { SubagentSummary } from "./hooks/useChat";
 import { SubagentMark } from "./SubagentBits";
+import { openSubagentBeside } from "./subagentPanel";
 
 interface ChatTabsProps {
   subagents: SubagentSummary[];
@@ -26,6 +29,14 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
   const picked = subagents.find((s) => s.callId === active);
   if (picked && !shown.includes(picked)) shown = [picked, ...shown.slice(1)];
   const rest = subagents.filter((s) => !shown.includes(s));
+  const { workspaceId } = useChatView();
+  const [menu, setMenu] = useState<{ callId: string; x: number; y: number } | null>(null);
+  const openMenu = (callId: string) => (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const r = e.currentTarget.getBoundingClientRect();
+    const keyboard = e.clientX === 0 && e.clientY === 0;
+    setMenu({ callId, x: keyboard ? r.left : e.clientX, y: keyboard ? r.bottom : e.clientY });
+  };
   return (
     <div className="ac-tabs" role="tablist" aria-label="Main chat and subagents">
       <Tab id="main" active={active} onPick={onPick} title={`Main chat (${next} for the next tab)`}>
@@ -38,7 +49,8 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
           id={s.callId}
           active={active}
           onPick={onPick}
-          title={`${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls`}
+          onContextMenu={openMenu(s.callId)}
+          title={`${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls (right-click to open beside)`}
         >
           <SubagentMark status={s.status} pending={s.pending} />
           <span className="ac-tab-label">{s.label}</span>
@@ -72,6 +84,23 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
           ]}
         />
       )}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          sections={[
+            {
+              items: [
+                {
+                  label: "Open beside",
+                  onSelect: () => openSubagentBeside(workspaceId, menu.callId),
+                },
+              ],
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }
@@ -81,12 +110,14 @@ function Tab({
   active,
   onPick,
   title,
+  onContextMenu,
   children,
 }: {
   id: string;
   active: string;
   onPick: (tab: string) => void;
   title: string;
+  onContextMenu?: (e: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   const on = id === active;
@@ -97,6 +128,7 @@ function Tab({
       aria-selected={on}
       className={`ac-tab${on ? " on" : ""}`}
       onClick={() => onPick(id)}
+      onContextMenu={onContextMenu}
       title={title}
     >
       {children}

@@ -1,7 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/app/toast";
-import { I } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
 import { useSidePanel } from "@/components/useSidePanel";
 import { activity } from "@/domains/activity/store";
@@ -15,13 +14,14 @@ import type { Issue, PullRequest } from "@/domains/issues/types";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { OrchestratorPane } from "@/domains/orchestrator/OrchestratorPane";
+import { PaneArea } from "@/domains/panes/PaneArea";
+import { layoutItems } from "@/domains/panes/paneMenu";
+import { usePanes } from "@/domains/panes/usePanes";
 import { discoverPrs, usePrWatch } from "@/domains/prs/hooks/usePrWatch";
-import { PrRailSection } from "@/domains/prs/PrRailSection";
 import { primaryPr } from "@/domains/prs/primaryPr";
 import { canonicalPrUrl } from "@/domains/prs/prUrl";
 import { usePrWatchStore } from "@/domains/prs/watchStore";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
-import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
 import {
   type AgentCli,
   type AgentProvider,
@@ -36,30 +36,12 @@ import { ContextRail } from "./ContextRail";
 import { DetailHeader } from "./DetailHeader";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaults";
 import { useHasExited } from "./exitedStore";
-import { FilesPane } from "./FilesPane";
 import { launchIssueAgent } from "./launch";
 import { agentLabel } from "./providerLabel";
-import { RichOutputPanel } from "./RichOutputPanel";
 import { useRichOutputStore } from "./richOutputStore";
 import { StartPrompt } from "./StartPrompt";
-import { TerminalPane } from "./TerminalPane";
-import { TestsPane } from "./TestsPane";
-import { TicketPane } from "./TicketPane";
+import { TICKET_CHAT_TAB, ticketPanels } from "./ticketPanels";
 import { useDetailKeys } from "./useDetailKeys";
-
-type TabId = "chat" | "html" | "ticket" | "files" | "terminal" | "tests" | "pr";
-
-const TABS: { id: TabId; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
-  { id: "chat", label: "Chat", icon: I.Chat },
-  { id: "html", label: "HTML", icon: I.Sparkles },
-  { id: "ticket", label: "Ticket", icon: I.Ticket },
-  { id: "files", label: "Files", icon: I.Code },
-  { id: "terminal", label: "Terminal", icon: I.Terminal },
-  { id: "tests", label: "Tests", icon: I.Beaker },
-  { id: "pr", label: "Pull request", icon: I.GitPR },
-];
-
-const TAB_IDS = TABS.map((t) => t.id);
 
 interface AgentDetailProps {
   issue: Issue;
@@ -74,8 +56,6 @@ interface AgentDetailProps {
 const EMPTY_PRS: PullRequest[] = [];
 
 export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps) {
-  const [tab, setTab] = useState<TabId>("chat");
-  useDetailKeys(onBack, TAB_IDS, setTab);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"raise" | "merge" | null>(null);
   const [cli, setCli] = useState<AgentCli>(agentCli);
@@ -90,7 +70,6 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const [repoChoice, setRepoChoice] = useState("");
   const running = useBoardStore((s) => s.runningAgents.has(issue.key));
   const exited = useHasExited(issue.key);
-  const quickOpen = useQuickOpen(issue.key, true, () => setTab("files"));
   // Selecting a primitive (length) keeps this referentially stable across renders.
   const htmlCount = useRichOutputStore((s) => s.blocks[issue.key]?.length ?? 0);
   const status = useBoardStore((s) =>
@@ -246,6 +225,40 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
     }
   };
 
+  // The agent's own tab: its chat, or its terminal — mounted even before the session
+  // starts so it can be measured and fitted to the real pane; StartPrompt covers it.
+  const chat = isChat ? (
+    <ChatAgentPane
+      workspaceId={issue.key}
+      onStart={() => void start()}
+      onStop={() => void stop()}
+    />
+  ) : (
+    <ChatSurface workspaceId={issue.key} cli={cli}>
+      {!running && (
+        <StartPrompt
+          onStart={() => void start()}
+          onStartFresh={startFresh}
+          repos={repos}
+          repoChoice={repoChoice}
+          onRepoChange={setRepoChoice}
+          agentName={agentLabel(cli, provider)}
+          cliName={cli}
+          exited={exited}
+          asChat={hasChat(cli) && (nextTransport ?? ranOn ?? defaultTransport(cli)) === "chat"}
+        />
+      )}
+    </ChatSurface>
+  );
+  const panels = ticketPanels({ issue, cli, chat, htmlCount, prUrls });
+  const panes = usePanes(`ticket:${issue.key}`, panels, { [issue.key]: TICKET_CHAT_TAB });
+  useDetailKeys(
+    onBack,
+    panels.map((p) => p.id),
+    panes.select
+  );
+  const quickOpen = useQuickOpen(issue.key, true, () => panes.select("files"));
+
   return (
     <div className="detail">
       <DetailHeader
@@ -270,6 +283,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         transport={nextTransport ?? ranOn}
         onChooseTransport={setNextTransport}
         agentItems={agentItems}
+        layoutItems={layoutItems(panes)}
       />
 
       {error && (
@@ -278,70 +292,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
 
       <div className="detail-body">
         <div className="detail-left">
-          <div className="detail-tabs">
-            {TABS.map((t) => {
-              const Ico = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`detail-tab${tab === t.id ? " active" : ""}`}
-                  onClick={() => setTab(t.id)}
-                >
-                  <Ico size={13} />
-                  {t.label}
-                  {t.id === "html" && htmlCount > 0 && <span className="count">{htmlCount}</span>}
-                </button>
-              );
-            })}
-            {tab === "chat" && !isChat && <ViewSwitch workspaceId={issue.key} cli={cli} />}
-          </div>
-
-          {tab === "chat" && isChat && (
-            <ChatAgentPane
-              workspaceId={issue.key}
-              onStart={() => void start()}
-              onStop={() => void stop()}
-            />
-          )}
-          {tab === "chat" && !isChat && (
-            // The terminal mounts even before the session starts so it can be
-            // measured/fitted to the real pane; StartPrompt overlays it until then.
-            <ChatSurface workspaceId={issue.key} cli={cli}>
-              {!running && (
-                <StartPrompt
-                  onStart={() => void start()}
-                  onStartFresh={startFresh}
-                  repos={repos}
-                  repoChoice={repoChoice}
-                  onRepoChange={setRepoChoice}
-                  agentName={agentLabel(cli, provider)}
-                  cliName={cli}
-                  exited={exited}
-                  asChat={
-                    hasChat(cli) && (nextTransport ?? ranOn ?? defaultTransport(cli)) === "chat"
-                  }
-                />
-              )}
-            </ChatSurface>
-          )}
-          {tab === "html" && <RichOutputPanel issueKey={issue.key} />}
-          {tab === "ticket" && <TicketPane issue={issue} />}
-          {tab === "files" && <FilesPane workspaceId={issue.key} />}
-          {tab === "terminal" && <TerminalPane issueKey={issue.key} />}
-          {tab === "tests" && <TestsPane issue={issue} />}
-          {tab === "pr" && (
-            <div className="tab-pane pr-tab">
-              {prUrls.length > 0 ? (
-                <PrRailSection urls={prUrls} />
-              ) : (
-                <div className="pr-muted">
-                  No pull request yet — raise one from the header, or it appears here as soon as the
-                  agent opens one.
-                </div>
-              )}
-            </div>
-          )}
+          <PaneArea panes={panes} />
         </div>
       </div>
       {/* PRs, workspace, ticket — docked on the right edge, folding to a strip. */}
