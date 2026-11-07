@@ -64,6 +64,16 @@ pub fn launch(
     }
 }
 
+/// The conversation a `cli` chat agent for `workspace_id` in `cwd` would
+/// resume, if any: whether its start sends the kickoff brief or the resume prompt.
+pub fn resumable(cli: &str, workspace_id: &str, cwd: &str) -> Option<String> {
+    match cli {
+        "claude" => crate::claude::conversations::resumable(workspace_id, cwd),
+        "codex" => super::codex::threads::saved(workspace_id),
+        _ => None,
+    }
+}
+
 fn unsupported(cli: &str) -> String {
     format!("{cli} can't run as a chat agent yet; start it in a terminal.")
 }

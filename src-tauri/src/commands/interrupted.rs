@@ -69,6 +69,7 @@ fn resume(app: &AppHandle, state: &AppState, a: AgentLaunch) -> Result<(), Strin
         None,
         nudge,
         a.provider,
+        Some(a.transport),
         COLS,
         ROWS,
     )?;

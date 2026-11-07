@@ -73,6 +73,7 @@ pub fn link_session_to_issue(
     discard_agents(&state, &list[pos].workspace_ids());
     for agent in &list[pos].agents {
         let _ = forget_session_id(&agent.id);
+        crate::agent_session::runtime::forget(&agent.id);
     }
 
     // Rename the branch to the issue convention (renames don't touch the cwd).
@@ -92,6 +93,7 @@ pub fn link_session_to_issue(
 
     crate::commands::repos::adopt_workspace_dir(&issue_key, &dirname, &repo)?;
     crate::claude::conversations::move_session_id(&id, &issue_key)?;
+    crate::agent_session::runtime::transfer(&id, &issue_key);
 
     update(|list| list.retain(|s| s.id != id))
 }

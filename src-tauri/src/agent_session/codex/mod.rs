@@ -9,7 +9,7 @@
 mod args;
 mod input;
 mod prompts;
-mod threads;
+pub(crate) mod threads;
 pub mod translate;
 
 #[cfg(test)]

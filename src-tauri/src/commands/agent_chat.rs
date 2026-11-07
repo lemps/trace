@@ -1,53 +1,37 @@
-//! Chat agents: start one headless over stream-json, talk to it, and read its
-//! journal. Thin wrappers over `agent_session::runtime`; see docs/AGENT_CHAT.md.
+//! Chat agents: talk to one, and read its journal and state. Thin wrappers
+//! over `agent_session::runtime`; see docs/AGENT_CHAT.md. A chat agent starts,
+//! stops and resumes through the same commands as a terminal one
+//! (`start_agent`, `start_session`, `stop_agent`, …), which pick the transport.
 
-use tauri::{AppHandle, State};
+use tauri::State;
 
 use crate::agent_session::journal::{Answer, JournalRow};
-use crate::agent_session::runtime::{self, StartRequest};
+use crate::agent_session::runtime::{self, ChatAgentState};
+use crate::agent_session::transport::Transport;
 use crate::agent_session::UserMessage;
-use crate::state::{AppState, StartGuard};
+use crate::state::AppState;
 
-/// Start a chat agent for an issue (in its worktree) or a session (where the
-/// session runs). Idempotent: a no-op while one runs.
+/// The workspace's chat agent as it is now: its transport, whether one runs,
+/// and what it last reported. What a view reads on mount, so a reload or an
+/// agent started before the view subscribed still shows as a chat.
 #[tauri::command]
-#[allow(clippy::too_many_arguments)]
-pub fn start_chat_agent(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    workspace_id: String,
-    // "claude" (when unset) or "codex": `agent_session::brands`.
-    cli: Option<String>,
-    model: Option<String>,
-    provider: Option<String>,
-    extra_args: Option<Vec<String>>,
-    // An issue's summary + labels, for repo mappings (as `start_agent`).
-    match_text: Option<String>,
-) -> Result<(), String> {
-    if state.pty_sessions.lock().contains_key(&workspace_id) {
-        return Err("This agent is running in a terminal. Stop it first.".to_string());
-    }
-    // The same reservation a terminal start takes, so the two can't race into
-    // one conversation while a worktree is being made.
-    let Some(_guard) = StartGuard::acquire(&state, &workspace_id) else {
-        return Ok(());
-    };
-    let id = workspace_id.clone();
-    let cwd = move || {
-        if crate::commands::session::is_session(&id) {
-            crate::commands::session::session_cwd(&id, true)
-        } else {
-            crate::commands::agent::issue_worktree(&id, match_text.as_deref().unwrap_or(""))
-        }
-    };
-    let req = StartRequest {
-        workspace_id,
-        cli: cli.unwrap_or_else(|| "claude".to_string()),
-        model,
-        provider,
-        extra_args: extra_args.unwrap_or_default(),
-    };
-    runtime::start(&app, &state, req, cwd)
+pub fn chat_agent_state(state: State<'_, AppState>, workspace_id: String) -> ChatAgentState {
+    runtime::current(&state, &workspace_id)
+}
+
+/// The CLIs that can run as a chat agent; the rest run in a terminal.
+#[tauri::command]
+pub fn chat_agent_brands() -> Vec<&'static str> {
+    crate::agent_session::brands::CHAT_BRANDS.to_vec()
+}
+
+/// Choose a workspace's transport before its agent first starts (the New
+/// session dialog). Its next start runs on it.
+#[tauri::command]
+pub fn set_agent_transport(workspace_id: String, transport: String) -> Result<(), String> {
+    let transport = Transport::parse(&transport).ok_or("Unknown transport.")?;
+    crate::agent_session::transport::remember(&workspace_id, transport);
+    Ok(())
 }
 
 /// A user turn. Sent while a turn runs, Claude queues it.
@@ -81,12 +65,6 @@ pub fn interrupt_chat_agent(
     workspace_id: String,
 ) -> Result<(), String> {
     runtime::interrupt(&state, &workspace_id)
-}
-
-/// End the agent. A no-op if none runs.
-#[tauri::command]
-pub fn stop_chat_agent(state: State<'_, AppState>, workspace_id: String) {
-    runtime::stop(&state, &workspace_id);
 }
 
 /// The workspace's journal, each row at its latest revision, in order.

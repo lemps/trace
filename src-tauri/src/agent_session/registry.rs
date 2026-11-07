@@ -13,13 +13,16 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use parking_lot::Mutex;
 
-use super::AgentAdapter;
+use super::{AgentAdapter, SessionInfo};
 
 /// Chat agents by workspace id. Lives in `AppState`.
 #[derive(Default)]
 pub struct ChatAgents {
     slots: Mutex<HashMap<String, Slot>>,
     next_instance: AtomicU64,
+    /// The last `SessionInfo` each workspace's agent reported, kept after it
+    /// exits (not busy then), so a view mounted later knows what it was.
+    infos: Mutex<HashMap<String, SessionInfo>>,
 }
 
 enum Slot {
@@ -85,7 +88,13 @@ impl ChatAgents {
     }
 
     /// The process is up. It runs, or, when stop came first, is stopped now.
-    pub fn register(&self, workspace_id: &str, instance: u64, mut adapter: Box<dyn AgentAdapter>) {
+    /// False when its process had already ended.
+    pub fn register(
+        &self,
+        workspace_id: &str,
+        instance: u64,
+        mut adapter: Box<dyn AgentAdapter>,
+    ) -> bool {
         let mut slots = self.slots.lock();
         let (cancelled, ended) = match slots.get(workspace_id) {
             Some(Slot::Starting {
@@ -95,7 +104,7 @@ impl ChatAgents {
             }) if *i == instance => (*cancelled, *ended),
             _ => {
                 adapter.stop();
-                return;
+                return false;
             }
         };
         let next = match (ended, cancelled) {
@@ -110,6 +119,7 @@ impl ChatAgents {
             Some(slot) => slots.insert(workspace_id.to_string(), slot),
             None => slots.remove(workspace_id),
         };
+        !ended
     }
 
     /// Run `f` on a running workspace's adapter.
@@ -145,19 +155,75 @@ impl ChatAgents {
     }
 
     /// An instance's process ended: forget it, unless a newer one took its place.
-    pub fn ended(&self, workspace_id: &str, instance: u64) {
+    /// True when it was the workspace's agent (so the workspace is free now).
+    pub fn ended(&self, workspace_id: &str, instance: u64) -> bool {
         let mut slots = self.slots.lock();
-        match slots.get_mut(workspace_id) {
+        let current = match slots.get_mut(workspace_id) {
             Some(Slot::Starting {
                 instance: i, ended, ..
-            }) if *i == instance => *ended = true,
+            }) if *i == instance => {
+                *ended = true;
+                true
+            }
             Some(Slot::Running { instance: i, .. } | Slot::Stopping { instance: i })
                 if *i == instance =>
             {
                 slots.remove(workspace_id);
+                true
             }
-            _ => {}
+            _ => false,
+        };
+        drop(slots);
+        if current {
+            if let Some(info) = self.infos.lock().get_mut(workspace_id) {
+                info.busy = false;
+            }
         }
+        current
+    }
+
+    /// The agent reported its session info. What it doesn't say yet (the model
+    /// before Claude's `init`) is kept from before. Returns what's stored now.
+    pub fn note_info(&self, workspace_id: &str, mut info: SessionInfo) -> SessionInfo {
+        let mut infos = self.infos.lock();
+        if let Some(prev) = infos.get(workspace_id) {
+            if info.model.is_none() {
+                info.model = prev.model.clone();
+            }
+            if info.conversation_id.is_none() {
+                info.conversation_id = prev.conversation_id.clone();
+            }
+            if info.slash_commands.is_empty() {
+                info.slash_commands = prev.slash_commands.clone();
+            }
+            if info.limits.is_empty() {
+                info.limits = prev.limits.clone();
+            }
+        }
+        infos.insert(workspace_id.to_string(), info.clone());
+        info
+    }
+
+    /// The workspace's last reported session info, if a chat agent ran this launch.
+    pub fn info(&self, workspace_id: &str) -> Option<SessionInfo> {
+        self.infos.lock().get(workspace_id).cloned()
+    }
+
+    /// Every workspace with a chat agent in any state, for the renderer to adopt.
+    pub fn workspaces(&self) -> Vec<String> {
+        self.slots.lock().keys().cloned().collect()
+    }
+
+    /// The process ids of the running and stopping agents.
+    pub fn pids(&self) -> Vec<u32> {
+        self.slots
+            .lock()
+            .values()
+            .filter_map(|slot| match slot {
+                Slot::Running { adapter, .. } => adapter.pid(),
+                _ => None,
+            })
+            .collect()
     }
 }
 

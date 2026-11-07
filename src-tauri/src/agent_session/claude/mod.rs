@@ -67,6 +67,7 @@ enum Cmd {
 /// A running Claude chat agent. Dropping it stops the process.
 pub struct ClaudeAdapter {
     tx: Sender<Cmd>,
+    pid: u32,
 }
 
 impl ClaudeAdapter {
@@ -75,6 +76,7 @@ impl ClaudeAdapter {
     /// agent does (`claude::conversations`), unless `spec.resume` names one.
     pub fn launch(spec: LaunchSpec, sink: Arc<dyn JournalSink>) -> Result<Self, String> {
         let mut child = spawn(&spec)?;
+        let pid = child.id();
         let stdin = child
             .stdin
             .take()
@@ -101,7 +103,7 @@ impl ClaudeAdapter {
         }
         let translator = Translator::new(spec.next_seq, book::now_ms);
         std::thread::spawn(move || run(rx, child, stdin, translator, sink));
-        Ok(Self { tx })
+        Ok(Self { tx, pid })
     }
 
     fn queue(&self, cmd: Cmd) -> Result<(), String> {
@@ -126,6 +128,10 @@ impl AgentAdapter for ClaudeAdapter {
 
     fn stop(&mut self) {
         let _ = self.tx.send(Cmd::Stop);
+    }
+
+    fn pid(&self) -> Option<u32> {
+        Some(self.pid)
     }
 }
 

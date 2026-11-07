@@ -2,35 +2,35 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   Answer,
+  ChatAgentState,
   JournalEvent,
   JournalRow,
   SessionInfoEvent,
+  Transport,
   UserMessage,
 } from "@/domains/agentChat/types";
 
 // Typed wrappers around `commands/agent_chat.rs`: chat agents, which run headless
 // over a structured protocol and report as journal rows. See docs/AGENT_CHAT.md.
 
-export interface StartChatAgentArgs {
-  workspaceId: string;
-  /** Which agent runs: Claude when unset. */
-  cli?: "claude" | "codex";
-  model?: string;
-  /** A registered model provider ("moonshot", "wafer", …); Anthropic when unset. */
-  provider?: string;
-  /** Flags from Settings → Agents, as for a terminal agent. */
-  extraArgs?: string[];
-  /** An issue's summary + labels, for repo mappings. */
-  matchText?: string;
+/**
+ * A workspace's chat agent as it is now: its transport, whether one runs, and
+ * what it last reported. Read on mount, since events only tell what changes.
+ * Chat agents start, stop and resume through the same commands as terminal ones
+ * (`startAgent`, `startSession`, `stopAgent` in ipc/agent.ts and ipc/session.ts).
+ */
+export function chatAgentState(workspaceId: string): Promise<ChatAgentState> {
+  return invoke("chat_agent_state", { workspaceId });
 }
 
-/**
- * Start a chat agent: in its issue's worktree, or where its session runs. Resumes
- * the workspace's saved conversation. A no-op while one runs; fails while the
- * workspace's terminal agent runs, since they'd share the conversation.
- */
-export function startChatAgent(args: StartChatAgentArgs): Promise<void> {
-  return invoke("start_chat_agent", { ...args });
+/** The CLIs that can run as a chat agent; the rest run in a terminal. */
+export function chatAgentBrands(): Promise<string[]> {
+  return invoke("chat_agent_brands");
+}
+
+/** Choose a workspace's transport before its agent first starts. */
+export function setWorkspaceTransport(workspaceId: string, transport: Transport): Promise<void> {
+  return invoke("set_agent_transport", { workspaceId, transport });
 }
 
 /** A user turn. Sent during a turn, Claude queues it. */
@@ -50,11 +50,6 @@ export function answerChatPrompt(
 /** Stop the running turn; the agent stays up. */
 export function interruptChatAgent(workspaceId: string): Promise<void> {
   return invoke("interrupt_chat_agent", { workspaceId });
-}
-
-/** End the agent. A no-op if none runs. */
-export function stopChatAgent(workspaceId: string): Promise<void> {
-  return invoke("stop_chat_agent", { workspaceId });
 }
 
 /**

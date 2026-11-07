@@ -21,7 +21,9 @@ interface AgentPaneProps {
 // workspace id and how they're spawned (see useAgentRun).
 export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
   const isChat = useIsChatAgent(workspaceId);
-  if (isChat) return <ChatAgentPane workspaceId={workspaceId} />;
+  if (isChat) {
+    return <ChatAgentPane workspaceId={workspaceId} onStart={() => void run.start()} />;
+  }
   return (
     <ChatSurface workspaceId={workspaceId} cli={cli}>
       {!run.running && (

@@ -1,12 +1,13 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { I } from "@/components/Icon";
+import type { MenuItem } from "@/components/PopMenu";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
 import { StatusPill } from "@/components/StatusPill";
 import type { Issue, PullRequest } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import type { AgentLight } from "@/domains/live/types";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { editorItems } from "./editorItems";
 import { StartSplitButton } from "./StartSplitButton";
 
@@ -32,6 +33,11 @@ interface DetailHeaderProps {
   onStop: () => void;
   onChooseCli: (cli: AgentCli) => void;
   onChooseProvider: (provider: AgentProvider) => void;
+  /** Chat or terminal for the next start; undefined = Settings' default. */
+  transport: Transport | undefined;
+  onChooseTransport: (transport: Transport) => void;
+  /** Restart, Open in terminal / as chat (`agentChat/agentMenu`). */
+  agentItems: MenuItem[];
 }
 
 const isLive = (state: string) => state === "open" || state === "draft";
@@ -99,6 +105,9 @@ export function DetailHeader({
   onStop,
   onChooseCli,
   onChooseProvider,
+  transport,
+  onChooseTransport,
+  agentItems,
 }: DetailHeaderProps) {
   const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
   return (
@@ -141,11 +150,16 @@ export function DetailHeader({
               onChooseCli(nextCli);
               onChooseProvider(nextProvider);
             }}
+            transport={transport}
+            onChooseTransport={onChooseTransport}
           />
         )}
         <PopMenu
           trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
-          sections={[{ title: "Worktree", items: editorItems(issue.key) }]}
+          sections={[
+            { title: "Worktree", items: editorItems(issue.key) },
+            { title: "Agent", items: agentItems },
+          ]}
         />
       </div>
     </div>

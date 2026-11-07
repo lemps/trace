@@ -50,7 +50,6 @@ const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
 export const fixtureActions: ChatActions = {
   load: async () => [],
-  start: async () => setBusy(false),
   answer: async (_ws, requestId, answer) => {
     await wait(250);
     resolve(requestId, answer);
@@ -94,5 +93,4 @@ export const fixtureActions: ChatActions = {
     put(`int${++seq}`, { kind: "status", text: "Interrupted by you.", tone: "info" });
     setBusy(false);
   },
-  stop: async () => setBusy(false),
 };

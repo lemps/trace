@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 
+use crate::agent_session::runtime::{self, StartRequest};
+use crate::agent_session::transport::{self, Transport};
 use crate::claude::conversations::{claude_session_ids, forget_session_id};
 use crate::claude::launch;
 use crate::claude::pty::{spawn_agent_pty, spawn_shell_pty};
@@ -34,10 +36,12 @@ pub fn load_repo_path() -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-/// Spawn an interactive agent PTY for `workspace_id` rooted at `cwd`, register it
-/// in state, and wire its Claude session-id persistence. Identifier-agnostic —
-/// `workspace_id` is a Jira key for board agents or a session id for exploratory
-/// ones. Idempotent: a no-op if a session is already live for the id.
+/// Start `workspace_id`'s agent in `cwd`, on the transport `transport::resolve`
+/// picks: a chat agent (`agent_session::runtime`), or an interactive PTY
+/// registered in state with its Claude session-id persistence wired. Every
+/// start path comes through here, so each honours the workspace's transport.
+/// Identifier-agnostic — `workspace_id` is a Jira key for board agents or a
+/// session id for exploratory ones. Idempotent: a no-op if its agent is live.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn spawn_in(
     app: AppHandle,
@@ -57,15 +61,40 @@ pub(crate) fn spawn_in(
     // "deepseek" / "deepseek-pro"). Only meaningful with cli == "claude";
     // ignored otherwise.
     provider: Option<String>,
+    // Chat or terminal, as the caller chose; `None` keeps what the workspace
+    // ran on last (the terminal if it never ran).
+    transport: Option<Transport>,
     cols: u16,
     rows: u16,
 ) -> Result<(), String> {
+    let transport = transport::resolve(transport, transport::stored(&workspace_id), &cli);
+    if transport == Transport::Chat {
+        if state.pty_sessions.lock().contains_key(&workspace_id) {
+            return Err("This agent is running in a terminal. Stop it first.".to_string());
+        }
+        transport::remember(&workspace_id, transport);
+        let req = StartRequest {
+            workspace_id,
+            cli,
+            cwd,
+            model,
+            provider,
+            extra_args,
+            initial_prompt,
+            resume_prompt,
+        };
+        return runtime::start(&app, state, req);
+    }
     if state.pty_sessions.lock().contains_key(&workspace_id) {
         return Ok(());
     }
     // One process per conversation: a chat agent on it would collide on its id.
     if state.chat_agents.is_running(&workspace_id) {
         return Err("This agent is running as a chat. Stop it first.".to_string());
+    }
+    // Scheduled runs are always terminals, and there's one id per run.
+    if !workspace_id.starts_with(crate::schedule::RUN_PREFIX) {
+        transport::remember(&workspace_id, transport);
     }
     let (resume_id, new_id_arg) = claude_session_ids(&workspace_id, &cli, &cwd);
     // Until this spawn's hooks report, its conversation is the one just resolved.
@@ -90,6 +119,7 @@ pub(crate) fn spawn_in(
         pid: None,
         // A prompt starts a turn; the hooks keep this current from here on.
         busy: prompt.is_some(),
+        transport: Transport::Terminal,
     };
     // trace's wiring (`claude::launch`): the render bridge for every CLI, and for
     // Claude its tools, turn hooks and the provider's endpoint + model.
@@ -139,9 +169,10 @@ pub fn reset_agent_session(issue_key: String) -> Result<(), String> {
     forget_session_id(&issue_key)
 }
 
+/// Whether the workspace's agent is live, on either transport.
 #[tauri::command]
 pub fn agent_running(state: State<'_, AppState>, issue_key: String) -> bool {
-    state.pty_sessions.lock().contains_key(&issue_key)
+    state.pty_sessions.lock().contains_key(&issue_key) || state.chat_agents.is_running(&issue_key)
 }
 
 /// Every live PTY's workspace id, shells and scheduled runs included. A renderer
@@ -149,7 +180,9 @@ pub fn agent_running(state: State<'_, AppState>, issue_key: String) -> bool {
 /// this list at startup rather than waiting for each agent to be opened.
 #[tauri::command]
 pub fn live_workspaces(state: State<'_, AppState>) -> Vec<String> {
-    state.pty_sessions.lock().keys().cloned().collect()
+    let mut ids: Vec<String> = state.pty_sessions.lock().keys().cloned().collect();
+    ids.extend(state.chat_agents.workspaces());
+    ids
 }
 
 /// Start an interactive Claude TUI for an issue, in its own git worktree.
@@ -170,6 +203,8 @@ pub fn start_agent(
     // The ticket's summary + labels, so repo mappings can match a tag like "[BE]"
     // that lives in the title rather than the key.
     match_text: Option<String>,
+    // "chat" | "terminal"; unset keeps what the ticket ran on last.
+    transport: Option<String>,
 ) -> Result<(), String> {
     if state.pty_sessions.lock().contains_key(&issue_key) {
         return Ok(());
@@ -194,6 +229,7 @@ pub fn start_agent(
         initial_prompt,
         None,
         provider,
+        transport.as_deref().and_then(Transport::parse),
         cols,
         rows,
     )
@@ -314,9 +350,11 @@ pub fn resize_agent(
 }
 
 /// Stop an agent: take it out of state and kill the child (its EOF triggers the
-/// pump thread's run-state cleanup).
+/// pump thread's run-state cleanup). A chat agent is asked to end; it reports
+/// its exit the same way once its process is gone.
 #[tauri::command]
 pub fn stop_agent(state: State<'_, AppState>, issue_key: String) -> Result<(), String> {
+    runtime::stop(&state, &issue_key);
     let session = state.pty_sessions.lock().remove(&issue_key);
     state.child_pids.lock().remove(&issue_key);
     if let Some(mut session) = session {

@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { toast } from "@/app/toast";
 import { onAgentJournal, onAgentSessionInfo } from "@/ipc/agentChat";
 import { useChatActions } from "../actions";
+import { noteChatInfo, noteChatRows } from "../liveBridge";
 import { useAgentChatStore } from "../store";
 
 // Keeps the store fed: one app-wide subscription to `agent-journal` and
-// `agent-session-info` (started by the first chat view, never torn down, so rows
-// for agents not on screen still land), and each view's saved journal read once.
+// `agent-session-info` (started with the app, never torn down, so rows for
+// agents not on screen still land and reach the board via `liveBridge`), and
+// each view's saved journal read once.
 // Rows from the load and from events can interleave; upserting by revision makes
 // the order irrelevant.
 
@@ -19,10 +21,16 @@ export function ensureChatListeners(): void {
   if (listening) return;
   listening = true;
   const { applyRows, setInfo } = useAgentChatStore.getState();
-  void onAgentJournal((e) => applyRows(e.workspaceId, e.rows)).catch(() => {
+  void onAgentJournal((e) => {
+    applyRows(e.workspaceId, e.rows);
+    noteChatRows(e.workspaceId, e.rows);
+  }).catch(() => {
     listening = false;
   });
-  void onAgentSessionInfo((e) => setInfo(e.workspaceId, e.info)).catch(() => {});
+  void onAgentSessionInfo((e) => {
+    noteChatInfo(e.workspaceId, e.info);
+    setInfo(e.workspaceId, e.info);
+  }).catch(() => {});
 }
 
 /** Load `workspaceId`'s saved journal and keep it current. */
@@ -37,7 +45,10 @@ export function useJournalFeed(workspaceId: string): void {
       .load(workspaceId)
       .then((rows) => {
         fetched.add(workspaceId);
-        if (!cancelled) applyRows(workspaceId, rows);
+        if (cancelled) return;
+        applyRows(workspaceId, rows);
+        // A running agent's prompt still open from before this view (or a reload).
+        noteChatRows(workspaceId, rows);
       })
       .catch((e) => {
         if (!cancelled) toast.error(`Couldn't read the conversation: ${String(e)}`);
