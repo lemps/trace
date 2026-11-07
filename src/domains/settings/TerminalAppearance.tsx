@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FontField } from "@/components/FontField";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import {
@@ -12,6 +13,7 @@ import {
   termLineHeightRaw,
 } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
+import { installedOnly, MONO_FONT_SUGGESTIONS } from "@/domains/appearance/installedFonts";
 import type { CursorStyle } from "@/domains/appearance/prefs";
 import { isMotionReduced, useAppearance } from "@/domains/appearance/store";
 import { isTermSchemeChoice, TERM_SCHEMES } from "@/domains/appearance/terminalSchemes";
@@ -34,6 +36,8 @@ export function TerminalAppearance() {
   const [font, setFont] = useState(termFontRaw);
   const [size, setSize] = useState(termFontSizeRaw);
   const [lineHeight, setLineHeight] = useState(termLineHeightRaw);
+  // Measured once per visit: only suggestions this machine can show.
+  const [monoFonts] = useState(() => installedOnly(MONO_FONT_SUGGESTIONS));
 
   const changeFont = (next: string) => {
     setFont(next);
@@ -78,12 +82,12 @@ export function TerminalAppearance() {
         </select>
       </SettingRow>
       <SettingRow label="Font" hint="Any installed monospace font; missing glyphs fall back.">
-        <input
-          type="text"
-          aria-label="Terminal font"
-          placeholder="Geist Mono"
+        <FontField
+          label="Terminal font"
           value={font}
-          onChange={(e) => changeFont(e.target.value)}
+          onChange={changeFont}
+          suggestions={monoFonts}
+          defaultFamily="Geist Mono"
         />
       </SettingRow>
       <SettingRow
