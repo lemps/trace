@@ -24,6 +24,7 @@ import "@/domains/agent/rail.css";
 import "@/domains/agent/files.css";
 import "@/domains/quickOpen/quick-open.css";
 import "@/domains/agent/panes.css";
+import "@/domains/agent/terminal/terminal-extras.css";
 import "@/domains/transcript/transcript.css";
 import "@/domains/prs/prs.css";
 import "@/domains/prs/rail.css";

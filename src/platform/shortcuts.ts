@@ -59,6 +59,12 @@ export const isTerminalCopy = (e: KeyChord) => !isMac && isShortcut("termCopy", 
 /** Paste into a terminal. macOS's ⌘V reaches the webview on its own. */
 export const isTerminalPaste = (e: KeyChord) => !isMac && isShortcut("termPaste", e);
 
+/** Open the terminal's find bar. */
+export const isTerminalFind = (e: KeyChord) => isShortcut("termFind", e);
+
+/** Copy the terminal's selection or last lines with a header saying where they came from. */
+export const isCopyContext = (e: KeyChord) => isShortcut("termCopyContext", e);
+
 const APP_SCOPES = new Set(["app", "detail"]);
 const APP_IDS = SHORTCUTS.filter((s) => APP_SCOPES.has(s.scope) && !s.isFixed).map((s) => s.id);
 

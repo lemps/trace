@@ -137,6 +137,8 @@ describe("binding rules", () => {
     ]) {
       assert.ok(terminalNeeds(chord, "windows"), chord);
       assert.match(bindingProblem(def("orchestrator"), chord, win, "windows") ?? "", /terminal/);
+      // The terminal's own shortcuts (find) mustn't take its keys either.
+      assert.match(bindingProblem(def("termFind"), chord, win, "windows") ?? "", /terminal/);
     }
     assert.ok(!terminalNeeds("Ctrl+Shift+o", "windows"));
     assert.ok(!terminalNeeds("Ctrl+#", "windows"));
