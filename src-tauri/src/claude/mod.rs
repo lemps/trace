@@ -7,6 +7,7 @@ pub mod conversations;
 pub mod discovery;
 pub mod env;
 pub mod hooks;
+pub mod launch;
 pub mod permission_ask;
 pub mod pty;
 pub mod render_bridge;

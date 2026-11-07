@@ -67,6 +67,43 @@ there is no database). Loading keeps each id's highest revision. Reopening an ag
 journal; resuming it restarts the adapter against the saved conversation. Bounded payloads keep
 the file small: tool output and file contents are capped, with a marker when cut.
 
+As built (`agent_session::store`, `runtime`, `settle`):
+
+- Streaming text isn't written until its final revision, or a long answer would be written once
+  per token. It still reaches the renderer as every revision (`agent-journal`).
+- A start rewrites the journal without superseded revisions once they outnumber its rows.
+- Rows a vanished process left open (trace quit mid-turn) are settled: a start appends their
+  ended revisions, and `load_journal` shows them ended while no agent runs. Prompts become
+  cancelled, running tools failed, running turns interrupted.
+
+## The Claude adapter, as built
+
+`agent_session::claude`. One `claude -p … --permission-prompt-tool stdio` per agent, with the
+conversation (`claude::conversations`), `--mcp-config`, `--settings` hooks, provider env and model
+from `claude::launch`, the code the terminal transport uses too. Three threads: stdout and stderr
+readers, and one that owns the child, its stdin and the translator, so nothing is shared or
+locked. A terminal and a chat agent can't run on one workspace at once (one conversation).
+
+The translator (`translate`) is pure and replayed in tests against recorded stream-json
+(`claude/fixtures/`):
+
+| Claude sends | Row |
+| --- | --- |
+| `stream_event` text / thinking deltas | `message` (assistant / reasoning), `streaming` until its block stops; the final `assistant` copy is skipped |
+| `assistant` `tool_use` | `tool`, running; `parentCallId` from `parent_tool_use_id` |
+| `user` `tool_result` | that `tool` completed or failed, output capped |
+| … for Edit, MultiEdit, Write | plus `diff`: `before`/`after` from the input, `patch` from `structuredPatch`, Write's add vs edit from `tool_use_result.type` |
+| `tool_use` TodoWrite | `plan`, one per turn (no tool row) |
+| `control_request` `can_use_tool` | `approval`: allow once, one "always" option per `permission_suggestions` entry (sent back as `updatedPermissions`), deny (with the note as its message) |
+| … for AskUserQuestion | `question`; the answer goes back as `updatedInput.answers`, keyed by question text, several labels joined with ", " |
+| `control_cancel_request` | that prompt cancelled |
+| `result` | `turn` with `usage`; `costUsd` is the turn's share of the cumulative `total_cost_usd`; interrupted if trace asked or `terminal_reason` is `aborted_*`; an error result adds a `status` |
+| `system` `init`, `rate_limit_event` | `SessionInfo`: model, session id, slash commands, `unifiedWindows` limits |
+
+Interrupt is the stream-json `control_request` `interrupt`; the process stays up. Other control
+requests (hook callbacks, SDK MCP) are refused with an error response so Claude never waits on
+one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from a real turn.
+
 ## The chat view
 
 `src/domains/agentChat/`, shared by ticket agents and sessions:

@@ -189,6 +189,13 @@ pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
         let state = app.state::<crate::state::AppState>();
         super::transcript::live::note(&state, ws, path);
     }
+    // A chat agent's prompts are journal rows answered over stream-json; the
+    // dialog events below are for a TUI, which an Inbox answers with keystrokes.
+    let state = app.state::<crate::state::AppState>();
+    if state.chat_agents.is_running(ws) && matches!(name, "permission" | "answered" | "needs-input")
+    {
+        return;
+    }
     if name == "permission" {
         super::permission_ask::on_request(app, ws, payload);
         return;

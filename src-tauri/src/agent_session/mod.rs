@@ -6,8 +6,18 @@
 //!
 //! This is the contract the runtime and the UI are built against; the runtime
 //! (process handling, persistence, commands) and the adapters live beside it.
+//!
+//! - `registry`: the chat agents, starting, running or stopping.
+//! - `runtime`: starting and driving them, and the sink that persists and emits rows.
+//! - `store`: the journal file; `settle`: rows a vanished process left open.
+//! - `claude`: the Claude adapter.
 
+pub mod claude;
 pub mod journal;
+pub mod registry;
+pub mod runtime;
+pub mod settle;
+pub mod store;
 
 use std::path::PathBuf;
 
@@ -27,6 +37,9 @@ pub struct LaunchSpec {
     pub extra_args: Vec<String>,
     /// Extra environment (trace's render bridge, a provider's endpoint, …).
     pub env: Vec<(String, String)>,
+    /// The `seq` the adapter's first new row takes, continuing the journal: only
+    /// the runtime has read it, and rows must keep their order across restarts.
+    pub next_seq: u64,
 }
 
 /// A user turn.
@@ -58,6 +71,7 @@ pub struct SessionInfo {
     pub limits: Vec<LimitWindow>,
 }
 
+/// One usage-limit window, so the header can warn before the agent is cut off.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LimitWindow {
