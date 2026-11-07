@@ -20,14 +20,24 @@ export interface CheatGroup {
 }
 
 export function cheatSheetGroups(keymap: Record<string, string[]>, os: Os): CheatGroup[] {
-  return groupedShortcuts().map((g) => ({
+  const groups = groupedShortcuts();
+  // A shortcut that's another way to do the same thing (`sameAs`) adds its keys to
+  // that shortcut's row rather than repeating the label on a row of its own.
+  const extra = new Map<string, string[]>();
+  for (const def of groups.flatMap((g) => g.shortcuts)) {
+    if (def.sameAs) extra.set(def.sameAs, [...(extra.get(def.sameAs) ?? []), def.id]);
+  }
+  const keysOf = (id: string) => (keymap[id] ?? []).map((c) => formatChord(c, os));
+  return groups.map((g) => ({
     id: g.id,
     label: g.label,
     desc: g.desc,
-    rows: g.shortcuts.map((def) => ({
-      id: def.id,
-      label: def.label,
-      keys: (keymap[def.id] ?? []).map((c) => formatChord(c, os)),
-    })),
+    rows: g.shortcuts
+      .filter((def) => !def.sameAs)
+      .map((def) => ({
+        id: def.id,
+        label: def.label,
+        keys: [...keysOf(def.id), ...(extra.get(def.id) ?? []).flatMap(keysOf)],
+      })),
   }));
 }

@@ -27,7 +27,9 @@ describe("cheatSheetGroups", () => {
   it("lists every shortcut exactly once, under its own group", () => {
     const groups = cheatSheetGroups(effectiveKeymap({}, "macos"), "macos");
     const ids = groups.flatMap((g) => g.rows.map((r) => r.id));
-    assert.deepEqual([...ids].sort(), SHORTCUTS.map((s) => s.id).sort());
+    // A `sameAs` shortcut is shown on its twin's row, not its own.
+    const own = SHORTCUTS.filter((s) => !s.sameAs).map((s) => s.id);
+    assert.deepEqual([...ids].sort(), own.sort());
     for (const g of groups) {
       for (const r of g.rows) assert.equal(SHORTCUTS.find((s) => s.id === r.id)?.group, g.id);
     }
@@ -43,4 +45,12 @@ describe("cheatSheetGroups", () => {
       .find((r) => r.id === "search");
     assert.deepEqual(mac?.keys, ["⌘/", "⌘K"]);
   });
+});
+
+it("a shortcut that's another way to do the same thing shares its row", () => {
+  const groups = cheatSheetGroups(effectiveKeymap({}, "windows"), "windows");
+  const rows = groups.flatMap((g) => g.rows);
+  assert.equal(rows.filter((r) => r.label.startsWith("Show keyboard shortcuts")).length, 1);
+  const row = rows.find((r) => r.id === "cheatSheet");
+  assert.ok(row?.keys.includes("?"));
 });

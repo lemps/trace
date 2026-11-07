@@ -47,6 +47,7 @@ export const SHORTCUTS: ShortcutDef[] = [
     scope: "page",
     ...both(["?"]),
     isFixed: true,
+    sameAs: "cheatSheet",
   },
   {
     id: "agentView",

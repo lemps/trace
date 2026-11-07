@@ -68,6 +68,9 @@ export interface ShortcutDef {
   pc: string[];
   /** Built in (system, terminal or text-box keys): shown, never rebound. */
   isFixed?: boolean;
+  /** Another way to do the same thing as shortcut `sameAs`: the cheat sheet shows
+   *  its keys on that shortcut's row instead of a row of its own. */
+  sameAs?: string;
 }
 
 export { SHORTCUTS };
