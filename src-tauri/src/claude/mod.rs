@@ -6,6 +6,7 @@ pub mod conversation_log;
 pub mod conversations;
 pub mod discovery;
 pub mod env;
+pub mod folder_trust;
 pub mod hooks;
 pub mod permission_ask;
 pub mod pty;

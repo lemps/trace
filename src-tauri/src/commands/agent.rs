@@ -103,6 +103,8 @@ pub(crate) fn spawn_in(
     let mut model = model;
     let mut extra_args = extra_args;
     if cli == "claude" {
+        // A worktree of a repo the user added needs no "trust this folder?" stop.
+        crate::claude::folder_trust::trust_worktree(&cwd);
         // Turn hooks (`claude::hooks`) report through the bridge, so they need it.
         // Appended last: `--settings <json>` also ends any variadic user flag
         // (e.g. `--allowedTools Bash Edit`) that would otherwise swallow a prompt.
