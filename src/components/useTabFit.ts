@@ -69,7 +69,8 @@ export function useTabFit(
 
 /** The class a tab, or something that belongs to one, takes for its mode. */
 export function fitClass(mode: TabFitMode): string {
-  return mode === "label" ? "" : mode === "icon" ? " fit-icon" : " fit-out";
+  // An out tab is measured as an icon too, so it can come back as one.
+  return mode === "label" ? "" : mode === "icon" ? " fit-icon" : " fit-icon fit-out";
 }
 
 /** Spare room (px) needed to step back to a roomier fit. */
@@ -113,7 +114,7 @@ function measure(
     const labelW = label?.scrollWidth ?? 0;
     const inner = label ? px(s.columnGap) : 0;
     const max = px(s.maxWidth) || Number.POSITIVE_INFINITY;
-    if (child.classList.contains("fit-icon") || child.classList.contains("fit-out")) {
+    if (child.classList.contains("fit-icon")) {
       items.push({ tab, icon: w, full: Math.min(w + inner + labelW, max + margins) });
     } else {
       items.push({ tab, full: w, icon: w - (label?.offsetWidth ?? 0) - inner });

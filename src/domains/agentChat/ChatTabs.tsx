@@ -19,6 +19,7 @@ interface ChatTabsProps {
 }
 
 const WORDS = { running: "running", done: "done", failed: "failed", stopped: "stopped" };
+const calls = (n: number) => `${n} ${n === 1 ? "call" : "calls"}`;
 
 // Main, then one tab per subagent this conversation started, in the order they
 // started (a tab never moves; its mark changes). When they don't all fit, the
@@ -39,7 +40,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
     setMenu({ callId, x: keyboard ? r.left : e.clientX, y: keyboard ? r.bottom : e.clientY });
   };
   const describe = (s: SubagentSummary) =>
-    `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls`;
+    `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${calls(s.toolCount)}`;
   return (
     <div className="ac-tabs" role="tablist" aria-label="Main chat and subagents">
       <div className="tab-fit" ref={fitRef}>
@@ -83,7 +84,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
       {rest.length > 0 && (
         <div className="tab-fit-more" ref={moreRef}>
           <PopMenu
-            align="right"
+            align="left"
             trigger={({ open, toggle }) => (
               <button
                 type="button"
@@ -100,7 +101,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
                 title: "More subagents",
                 items: rest.map((s) => ({
                   id: s.callId,
-                  label: `${s.label} · ${WORDS[s.status]} · ${s.toolCount} calls`,
+                  label: `${s.label} · ${WORDS[s.status]} · ${calls(s.toolCount)}`,
                   checked: s.callId === active,
                   onSelect: () => onPick(s.callId),
                 })),
