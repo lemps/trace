@@ -1,146 +1,170 @@
-//! Who the user is on GitHub, according to their `gh` CLI. trace holds no GitHub
-//! token: signing in and out is `gh auth login` / `gh auth logout`, and every
-//! call runs as `gh`'s active account.
+//! Who trace is signed in to GitHub as, with its own token (`token`): checking
+//! a token against `GET /user`, and the ways to get one (paste, a one-off
+//! import from `gh`, the OAuth device flow in `device`).
 
 use serde::Serialize;
-use serde_json::Value;
 
-/// The GitHub integration's state, for the Integrations card.
+use super::api;
+use super::token::{self, Credential, Source, Token};
+
+/// The GitHub integration's state, for its card and dialog. Never holds the token.
 #[derive(Serialize, Clone, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct GhStatus {
-    /// `gh` was found (`claude::discovery`).
-    pub installed: bool,
-    /// The active, working github.com account.
+pub struct GitHubStatus {
+    /// The account trace's token belongs to.
     pub login: Option<String>,
-    /// Every signed-in github.com login, active first.
-    pub accounts: Vec<String>,
-    /// Why there's no working account when `gh` has one listed (e.g. an expired token).
+    pub source: Option<Source>,
+    /// A classic or OAuth token's scopes (`X-OAuth-Scopes`). None for a
+    /// fine-grained token, whose permissions GitHub doesn't report.
+    pub scopes: Option<Vec<String>>,
+    /// When the token expires, as GitHub reports it.
+    pub expires_at: Option<String>,
+    /// `gh` is installed, so "Use my gh login" can import its token.
+    pub gh_available: bool,
+    /// The OAuth device flow is configured (`device::CLIENT_ID`).
+    pub device_flow: bool,
+    /// Why the saved token isn't working right now.
     pub problem: Option<String>,
 }
 
-/// One github.com account from `gh auth status --json hosts`.
+/// What `GET /user` says about a token.
 #[derive(Debug, PartialEq)]
-pub struct Account {
+pub struct TokenInfo {
     pub login: String,
-    pub active: bool,
-    pub ok: bool,
+    pub scopes: Option<Vec<String>>,
+    pub expires_at: Option<String>,
 }
 
-/// The github.com accounts in `gh auth status --json hosts` output.
-pub fn parse_auth_status(json: &str) -> Result<Vec<Account>, String> {
-    let v: Value = serde_json::from_str(json).map_err(|e| format!("Unexpected gh output: {e}"))?;
-    Ok(v.pointer("/hosts/github.com")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(|a| {
-            Some(Account {
-                login: a.get("login").and_then(Value::as_str)?.to_string(),
-                active: a.get("active").and_then(Value::as_bool).unwrap_or(false),
-                ok: a.get("state").and_then(Value::as_str) == Some("success"),
-            })
-        })
-        .collect())
+/// `X-OAuth-Scopes: repo, read:org` → its scopes. A header that's absent
+/// (fine-grained tokens) is None; present but empty is no scopes.
+pub fn parse_scopes(header: Option<&str>) -> Option<Vec<String>> {
+    header.map(|h| {
+        h.split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect()
+    })
 }
 
-/// The status those accounts amount to.
-pub fn summarize(accounts: &[Account]) -> GhStatus {
-    let mut ordered: Vec<&Account> = accounts.iter().collect();
-    ordered.sort_by_key(|a| !a.active);
-    let login = ordered
-        .iter()
-        .find(|a| a.active && a.ok)
-        .map(|a| a.login.clone());
-    let problem = match (&login, ordered.first()) {
-        (None, Some(a)) => Some(format!(
-            "gh's sign-in for {} no longer works. Run `gh auth login` in a terminal.",
-            a.login
-        )),
-        _ => None,
-    };
-    GhStatus {
-        installed: true,
+/// Check `token` with `GET /user`.
+pub async fn validate(token: &Token) -> Result<TokenInfo, String> {
+    let resp = api::get(token, "/user").await?;
+    let login = resp
+        .body
+        .get("login")
+        .and_then(|v| v.as_str())
+        .filter(|l| !l.is_empty())
+        .ok_or("GitHub didn't say whose token this is.")?
+        .to_string();
+    Ok(TokenInfo {
         login,
-        accounts: ordered.iter().map(|a| a.login.clone()).collect(),
-        problem,
+        scopes: parse_scopes(resp.header("x-oauth-scopes").as_deref()),
+        expires_at: resp
+            .header("github-authentication-token-expiration")
+            .filter(|s| !s.trim().is_empty()),
+    })
+}
+
+fn base() -> GitHubStatus {
+    GitHubStatus {
+        gh_available: crate::claude::discovery::find_cli_with_env("gh", None).is_some(),
+        device_flow: super::device::enabled(),
+        ..GitHubStatus::default()
     }
 }
 
-/// Ask `gh`. Never errors: a missing or signed-out `gh` is a state to show.
-pub fn status() -> GhStatus {
+/// The saved token's state. Never errors: signed out, or a token GitHub
+/// refuses, is a state to show.
+pub async fn status() -> GitHubStatus {
+    let Some(cred) = token::load() else {
+        return base();
+    };
+    let mut s = GitHubStatus {
+        login: Some(cred.login.clone()),
+        source: Some(cred.source),
+        ..base()
+    };
+    match validate(&cred.token).await {
+        Ok(info) => {
+            s.login = Some(info.login);
+            s.scopes = info.scopes;
+            s.expires_at = info.expires_at;
+        }
+        Err(e) => s.problem = Some(e),
+    }
+    s
+}
+
+/// Check `token`, then save it as trace's GitHub credential.
+pub async fn sign_in(token: Token, source: Source) -> Result<GitHubStatus, String> {
+    let info = validate(&token).await?;
+    token::save(&Credential {
+        token,
+        source,
+        login: info.login.clone(),
+    })?;
+    Ok(GitHubStatus {
+        login: Some(info.login),
+        source: Some(source),
+        scopes: info.scopes,
+        expires_at: info.expires_at,
+        ..base()
+    })
+}
+
+/// The token `gh` is signed in with on github.com, copied once. After this
+/// trace doesn't need `gh` for the integration.
+pub fn gh_token() -> Result<Token, String> {
     if crate::claude::discovery::find_cli_with_env("gh", None).is_none() {
-        return GhStatus::default();
+        return Err("The GitHub CLI (gh) isn't installed.".into());
     }
     let out = crate::claude::discovery::command("gh")
-        .args(["auth", "status", "--json", "hosts"])
-        .output();
-    match out {
-        // `gh auth status` exits non-zero when an account is broken but still
-        // prints the JSON, so parse whatever came out.
-        Ok(o) => match parse_auth_status(&String::from_utf8_lossy(&o.stdout)) {
-            Ok(accounts) => summarize(&accounts),
-            Err(_) => legacy_status(),
-        },
-        Err(e) => GhStatus {
-            installed: true,
-            problem: Some(format!("Couldn't run gh: {e}")),
-            ..GhStatus::default()
-        },
+        .args(["auth", "token", "--hostname", "github.com"])
+        .stdin(std::process::Stdio::null())
+        .output()
+        .map_err(|e| format!("Couldn't run gh: {e}"))?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    match (out.status.success(), Token::new(&text)) {
+        (true, Some(t)) => Ok(t),
+        // stderr only: stdout could hold a token even on failure.
+        _ => Err(format!(
+            "gh isn't signed in to github.com ({}). Run `gh auth login`, or paste a token instead.",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )),
     }
 }
 
-/// For a `gh` older than `auth status --json`: the active login from the API.
-fn legacy_status() -> GhStatus {
-    let login = crate::claude::discovery::command("gh")
-        .args(["api", "user", "--jq", ".login"])
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
-        .filter(|l| !l.is_empty());
-    GhStatus {
-        installed: true,
-        accounts: login.iter().cloned().collect(),
-        login,
-        problem: None,
-    }
+/// The signed-in credential's token, or why there isn't one.
+pub fn require_token() -> Result<Token, String> {
+    token::load()
+        .map(|c| c.token)
+        .ok_or_else(|| "Sign in to GitHub first (Integrations → GitHub).".to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const TWO: &str = r#"{"hosts":{"github.com":[
-        {"state":"success","active":false,"host":"github.com","login":"work","tokenSource":"keyring"},
-        {"state":"success","active":true,"host":"github.com","login":"me","gitProtocol":"ssh"}
-    ],"ghe.corp":[{"state":"success","active":true,"login":"corp"}]}}"#;
-
     #[test]
-    fn active_account_first_and_other_hosts_ignored() {
-        let s = summarize(&parse_auth_status(TWO).unwrap());
-        assert_eq!(s.login.as_deref(), Some("me"));
-        assert_eq!(s.accounts, vec!["me", "work"]);
-        assert!(s.installed && s.problem.is_none());
+    fn scopes_header() {
+        assert_eq!(
+            parse_scopes(Some("repo, read:org,  workflow")),
+            Some(vec!["repo".into(), "read:org".into(), "workflow".into()])
+        );
+        assert_eq!(parse_scopes(Some("")), Some(vec![]));
+        assert_eq!(parse_scopes(None), None, "fine-grained tokens report none");
     }
 
     #[test]
-    fn signed_out_is_empty_not_an_error() {
-        let s = summarize(&parse_auth_status(r#"{"hosts":{}}"#).unwrap());
-        assert_eq!(s.login, None);
-        assert!(s.accounts.is_empty() && s.problem.is_none());
-    }
-
-    #[test]
-    fn a_broken_active_token_is_a_problem() {
-        let json = r#"{"hosts":{"github.com":[{"state":"error","active":true,"login":"me"}]}}"#;
-        let s = summarize(&parse_auth_status(json).unwrap());
-        assert_eq!(s.login, None);
-        assert!(s.problem.unwrap().contains("gh auth login"));
-    }
-
-    #[test]
-    fn non_json_output_is_an_error() {
-        assert!(parse_auth_status("unknown flag: --json").is_err());
+    fn status_serializes_without_a_token_field() {
+        let s = GitHubStatus {
+            login: Some("me".into()),
+            source: Some(Source::Gh),
+            ..GitHubStatus::default()
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        assert!(json.contains(r#""source":"gh""#), "{json}");
+        assert!(!json.to_lowercase().contains("token"), "{json}");
     }
 }

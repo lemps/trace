@@ -66,7 +66,8 @@ export function RepoBrowser({ onClose, onCloned }: RepoBrowserProps) {
   };
 
   const body = () => {
-    if (!login) return status ? <GitHubSignIn /> : <div className="gh-empty">Checking gh…</div>;
+    if (!login || status?.problem)
+      return status ? <GitHubSignIn /> : <div className="gh-empty">Checking GitHub…</div>;
     if (cloned) return <CloneSetup cloned={cloned} onDone={onClose} />;
     return (
       <>

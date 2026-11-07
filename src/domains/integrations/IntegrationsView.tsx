@@ -29,7 +29,7 @@ function IntegrationCard({ name, logo, description, connected, onOpen }: CardPro
 
 // Connect and disconnect the services trace works with, one card each. Connecting a
 // tracker adds its board to the rail; disconnecting takes it away. GitHub is about
-// code rather than a board: signed in through `gh`, it opens the repo browser.
+// code rather than a board: signed in with trace's own token, it opens the repo browser.
 export function IntegrationsView() {
   const sessions = useIssuesStore((s) => s.sessions);
   const githubLogin = useGitHubStore((s) => s.status?.login);

@@ -13,6 +13,8 @@ use std::collections::HashMap;
 use std::process::Output;
 use std::sync::Mutex;
 
+use serde_json::Value;
+
 /// Repo owner → login that last succeeded for it.
 static ACCOUNT_FOR_OWNER: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
 
@@ -36,6 +38,31 @@ fn remember(owner: &str, login: &str) {
         .insert(owner.to_string(), login.to_string());
 }
 
+/// One github.com account from `gh auth status --json hosts`.
+#[derive(Debug, PartialEq)]
+struct Account {
+    login: String,
+    active: bool,
+    ok: bool,
+}
+
+/// The github.com accounts in `gh auth status --json hosts` output.
+fn parse_auth_status(json: &str) -> Result<Vec<Account>, String> {
+    let v: Value = serde_json::from_str(json).map_err(|e| format!("Unexpected gh output: {e}"))?;
+    Ok(v.pointer("/hosts/github.com")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|a| {
+            Some(Account {
+                login: a.get("login").and_then(Value::as_str)?.to_string(),
+                active: a.get("active").and_then(Value::as_bool).unwrap_or(false),
+                ok: a.get("state").and_then(Value::as_str) == Some("success"),
+            })
+        })
+        .collect())
+}
+
 /// Signed-in github.com logins, the active one first.
 fn logins() -> Vec<String> {
     let Ok(out) = crate::claude::discovery::command("gh")
@@ -44,8 +71,7 @@ fn logins() -> Vec<String> {
     else {
         return Vec::new();
     };
-    let Ok(mut accounts) = super::account::parse_auth_status(&String::from_utf8_lossy(&out.stdout))
-    else {
+    let Ok(mut accounts) = parse_auth_status(&String::from_utf8_lossy(&out.stdout)) else {
         return Vec::new();
     };
     accounts.retain(|a| a.ok);
@@ -116,7 +142,19 @@ pub fn run(cwd: &str, owner: &str, args: &[String]) -> Result<Vec<u8>, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_not_visible;
+    use super::{is_not_visible, parse_auth_status};
+
+    #[test]
+    fn parses_gh_auth_status() {
+        let json = r#"{"hosts":{"github.com":[
+            {"state":"success","active":false,"login":"work"},
+            {"state":"error","active":true,"login":"me"}
+        ],"ghe.corp":[{"state":"success","active":true,"login":"corp"}]}}"#;
+        let accounts = parse_auth_status(json).unwrap();
+        assert_eq!(accounts.len(), 2, "other hosts ignored");
+        assert!(accounts[0].ok && !accounts[1].ok && accounts[1].active);
+        assert!(parse_auth_status("unknown flag: --json").is_err());
+    }
 
     #[test]
     fn tells_a_hidden_repo_from_a_real_failure() {

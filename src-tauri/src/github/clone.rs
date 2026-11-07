@@ -1,13 +1,16 @@
-//! Checking a GitHub repo out for agents: `gh repo clone` into the clone folder,
-//! then everything trace needs to know about it (default branch, a suggested
-//! worktree setup). Adding it to `repos.json` is the caller's job.
+//! Checking a GitHub repo out for agents: clone it into the clone folder with
+//! trace's token (the portable `checkout` step), then everything trace needs to
+//! know about it (default branch, a suggested worktree setup). Adding it to
+//! `repos.json` is the caller's job.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
 
 use serde::Serialize;
 
+use super::checkout::RepoCheckout;
 use super::repo_list::is_login;
+use super::token::Token;
 use crate::repo_catalog::model::{RemoteRepo, SetupConfig};
 use crate::repo_catalog::{origin_of, suggest};
 
@@ -51,12 +54,13 @@ pub fn destination(root: &str, repo: &RemoteRepo) -> PathBuf {
     Path::new(root).join(&repo.name)
 }
 
-/// Clone `full_name` into `root`. A folder that is already a checkout of the
-/// same repo is adopted as is; any other existing folder is an error, never
-/// overwritten.
+/// Clone `full_name` into `root` as `token` (anonymously when None). A folder
+/// that is already a checkout of the same repo is adopted as is; any other
+/// existing folder is an error, never overwritten.
 pub fn clone_into(
     remote: RemoteRepo,
     root: &str,
+    token: Option<Token>,
     saved: Option<SetupConfig>,
 ) -> Result<Cloned, String> {
     let full_name = &remote.full_name();
@@ -75,8 +79,10 @@ pub fn clone_into(
             ));
         }
     } else {
-        std::fs::create_dir_all(root).map_err(|e| format!("Couldn't create {root}: {e}"))?;
-        run_clone(full_name, &dest)?;
+        let mut checkout = RepoCheckout::new(remote.clone(), dest.clone());
+        checkout.token = token;
+        // Setup runs in each worktree later (`repo_catalog::setup`), not here.
+        checkout.run(|| crate::claude::discovery::command("git"), &HashMap::new())?;
     }
     Ok(Cloned {
         default_branch: crate::git::get_default_branch(&path),
@@ -86,27 +92,6 @@ pub fn clone_into(
         path,
         remote,
         already_present,
-    })
-}
-
-/// `gh repo clone`, which uses the protocol (ssh/https) the user chose in `gh`.
-/// Nothing can answer a prompt, so git is told not to ask.
-fn run_clone(full_name: &str, dest: &Path) -> Result<(), String> {
-    let out = crate::claude::discovery::command("gh")
-        .args(["repo", "clone", full_name])
-        .arg(dest)
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .stdin(Stdio::null())
-        .output()
-        .map_err(|e| format!("Couldn't run gh: {e}"))?;
-    if out.status.success() {
-        return Ok(());
-    }
-    let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
-    Err(if err.is_empty() {
-        format!("Cloning {full_name} failed.")
-    } else {
-        format!("Cloning {full_name} failed: {err}")
     })
 }
 
@@ -145,7 +130,7 @@ mod tests {
         );
     }
 
-    /// Network + a signed-in `gh`: `cargo test -- --ignored clones_a_real_repo`.
+    /// Network: `cargo test -- --ignored clones_a_real_repo`.
     #[test]
     #[ignore]
     fn clones_a_real_repo_then_adopts_it_the_second_time() {
@@ -155,6 +140,7 @@ mod tests {
             parse_full_name("octocat/Hello-World").unwrap(),
             &root_s,
             None,
+            None,
         )
         .unwrap();
         assert!(!first.already_present);
@@ -163,6 +149,7 @@ mod tests {
         let again = clone_into(
             parse_full_name("octocat/hello-world").unwrap(),
             &root_s,
+            None,
             None,
         )
         .unwrap();
@@ -178,6 +165,7 @@ mod tests {
         let err = clone_into(
             parse_full_name("o/trace").unwrap(),
             &root.to_string_lossy(),
+            None,
             None,
         )
         .unwrap_err();
