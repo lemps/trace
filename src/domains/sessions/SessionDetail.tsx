@@ -308,19 +308,20 @@ function useFollowAgent(
   const seen = useRef<string | null>(null);
   const focusedTab = focusedGroup(panes.layout).active;
   const show = panes.select;
-  const has = (id: string) => roster.some((r) => r.workspaceId === id);
-  const hasRef = useRef(has);
-  hasRef.current = has;
+  // An agent picked before its tab exists (a companion just added) waits for it.
+  const rosterKey = roster.map((r) => r.workspaceId).join(" ");
   useEffect(() => {
+    const has = (id: string) => rosterKey.split(" ").includes(id);
     if (selected !== seen.current) {
+      if (selected && !has(selected)) return;
       seen.current = selected;
-      if (selected && hasRef.current(selected)) show(agentTab(selected));
+      if (selected) show(agentTab(selected));
       return;
     }
     const agent = agentOfTab(focusedTab);
-    if (agent && agent !== selected && hasRef.current(agent)) {
+    if (agent && agent !== selected && has(agent)) {
       seen.current = agent;
       select(agent);
     }
-  }, [selected, focusedTab, show, select]);
+  }, [selected, focusedTab, rosterKey, show, select]);
 }

@@ -287,3 +287,13 @@ export function openBeside(
     ? splitTab(joined, tab, home.id, edge)
     : selectTab(joined, tab);
 }
+
+/**
+ * Whether a layout is the user's arrangement rather than the default one row: split,
+ * holding an optional panel, or with its tabs out of their natural order.
+ */
+export function isArranged(layout: PaneLayout, natural: string[]): boolean {
+  if (layout.root.kind === "split") return true;
+  const tabs = layout.root.tabs;
+  return tabs.length !== natural.length || tabs.some((t, i) => t !== natural[i]);
+}

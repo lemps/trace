@@ -7,13 +7,33 @@ import { useLayoutEffect, useRef } from "react";
 // composer draft, Files its selection.
 //
 // Taking an element out of the document loses its scroll offsets, so they're noted
-// on the way out and put back on the way in.
+// on the way out and put back on the way in. Only what has scrolled is noted: a
+// capturing listener collects the scrollers as they move.
 
+const scrollers = new WeakMap<HTMLElement, Set<Element>>();
 const scrolls = new WeakMap<HTMLElement, [Element, number, number][]>();
+
+/** Start collecting the scrollers inside a panel element. */
+export function trackScroll(el: HTMLElement): void {
+  const seen = new Set<Element>();
+  scrollers.set(el, seen);
+  el.addEventListener(
+    "scroll",
+    (e) => {
+      if (e.target instanceof Element) seen.add(e.target);
+    },
+    { capture: true, passive: true }
+  );
+}
 
 function noteScroll(el: HTMLElement): void {
   const scrolled: [Element, number, number][] = [];
-  for (const node of [el, ...el.querySelectorAll("*")]) {
+  const seen = scrollers.get(el) ?? new Set<Element>();
+  for (const node of seen) {
+    if (!el.contains(node)) {
+      seen.delete(node);
+      continue;
+    }
     if (node.scrollTop !== 0 || node.scrollLeft !== 0) {
       scrolled.push([node, node.scrollTop, node.scrollLeft]);
     }

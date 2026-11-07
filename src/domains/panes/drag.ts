@@ -24,9 +24,14 @@ export const useTabDrag = create<DragStore>((set) => ({
 export function beginTabDrag(drag: TabDrag): void {
   setTimeout(() => {
     useTabDrag.getState().set(drag);
-    // A tab moved by its own drop is a new node, so its dragend can be lost. No
-    // mouse moves during a drag; the first one after it means it's over.
-    window.addEventListener("mousemove", () => useTabDrag.getState().set(null), { once: true });
+    // A tab moved by its own drop is a new node, so its dragend can be lost. A mouse
+    // move with no button held means the drag is over, however it ended.
+    const over = (e: MouseEvent) => {
+      if (e.buttons !== 0) return;
+      window.removeEventListener("mousemove", over);
+      if (useTabDrag.getState().drag === drag) useTabDrag.getState().set(null);
+    };
+    window.addEventListener("mousemove", over);
   }, 0);
 }
 

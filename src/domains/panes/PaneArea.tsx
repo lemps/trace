@@ -1,23 +1,12 @@
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { type PaneArea as AreaCtx, PaneAreaContext } from "./context";
 import { allTabs, focusedGroup, listGroups, minSize } from "./model";
-import { focusPane } from "./PanelSlot";
-import { MIN_PANE_H, MIN_PANE_W, PaneGroupView, PaneNodeView } from "./PaneSplit";
+import { focusPane, trackScroll } from "./PanelSlot";
+import { MIN_PANE_H, MIN_PANE_W, PaneGroupView, PaneNodeView, STRIP_H } from "./PaneSplit";
 import { usePaneKeys } from "./usePaneKeys";
 import type { Panes } from "./usePanes";
-
-/** A pane's tab strip; a pane's minimum height counts it. */
-const STRIP_H = 38;
 
 // A detail view's content area: its tabs, arranged in panes (see `model.ts`). Each
 // shown tab's content renders once, here, into an element of its own that the pane
@@ -45,6 +34,7 @@ export function PaneArea({ panes }: { panes: Panes }) {
     if (!el) {
       el = document.createElement("div");
       el.className = "pn-panel";
+      trackScroll(el);
       elements.current.set(tab, el);
     }
     return el;
@@ -68,10 +58,8 @@ export function PaneArea({ panes }: { panes: Panes }) {
   }, []);
   usePaneKeys(panes, narrow, focusLater);
 
-  const area = useMemo<AreaCtx>(
-    () => ({ panes, narrow, multi: groups.length > 1, elementFor, focusLater }),
-    [panes, narrow, groups.length, elementFor, focusLater]
-  );
+  // Not memoised: `panes` carries this render's panels, which every strip reads.
+  const area: AreaCtx = { panes, narrow, multi: groups.length > 1, elementFor, focusLater };
 
   return (
     <PaneAreaContext.Provider value={area}>

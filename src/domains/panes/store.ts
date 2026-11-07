@@ -2,9 +2,10 @@ import { create } from "zustand";
 import type { PaneLayout } from "./model";
 import { parseLayout } from "./validate";
 
-// Each workspace's pane layout (a session's, a ticket's), remembered across visits
-// and launches like the app's other UI prefs. Only what the user arranged is stored;
-// a workspace never touched has no entry and shows the single tab row. Old entries
+// Each workspace's pane layout (a session's, a ticket's). An arranged one — split, or
+// its tabs reordered — is remembered across launches like the app's other UI prefs,
+// with which tab each pane shows. One that's only had tabs picked keeps that for this
+// run and stores nothing, so it doesn't count as arranged or take a slot. Old entries
 // age out so the list can't grow without end.
 
 const KEY = "trace.paneLayouts";
@@ -47,26 +48,40 @@ function persist(saved: Record<string, Saved>): Record<string, Saved> {
 
 interface PaneLayoutStore {
   saved: Record<string, Saved>;
-  save: (scope: string, layout: PaneLayout) => void;
+  /** This run's layouts of workspaces that aren't arranged. */
+  picked: Record<string, PaneLayout>;
+  /** Remember a layout: stored if `arranged`, else for this run only. */
+  save: (scope: string, layout: PaneLayout, arranged: boolean) => void;
   /** Forget a workspace's arrangement: back to the single tab row. */
   reset: (scope: string) => void;
 }
 
 export const usePaneLayoutStore = create<PaneLayoutStore>((set) => ({
   saved: load(),
-  save(scope, layout) {
-    set((s) => ({ saved: persist({ ...s.saved, [scope]: { layout, at: Date.now() } }) }));
+  picked: {},
+  save(scope, layout, arranged) {
+    set((s) => {
+      const { [scope]: _was, ...picked } = s.picked;
+      if (arranged) {
+        return { picked, saved: persist({ ...s.saved, [scope]: { layout, at: Date.now() } }) };
+      }
+      const { [scope]: _stored, ...saved } = s.saved;
+      return {
+        picked: { ...picked, [scope]: layout },
+        saved: scope in s.saved ? persist(saved) : s.saved,
+      };
+    });
   },
   reset(scope) {
     set((s) => {
-      if (!(scope in s.saved)) return s;
-      const { [scope]: _gone, ...rest } = s.saved;
-      return { saved: persist(rest) };
+      const { [scope]: _gone, ...saved } = s.saved;
+      const { [scope]: _picked, ...picked } = s.picked;
+      return { picked, saved: scope in s.saved ? persist(saved) : s.saved };
     });
   },
 }));
 
-/** A workspace's stored layout, if it has one. */
-export function useSavedLayout(scope: string): PaneLayout | null {
-  return usePaneLayoutStore((s) => s.saved[scope]?.layout ?? null);
+/** A workspace's current layout, if it has one: arranged, or picked this run. */
+export function storedLayout(s: PaneLayoutStore, scope: string): PaneLayout | null {
+  return s.saved[scope]?.layout ?? s.picked[scope] ?? null;
 }

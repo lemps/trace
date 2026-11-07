@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { create } from "zustand";
 import { toast } from "@/app/toast";
 import { fitTerminal, resetTerminal, syncPtySize } from "@/domains/agent/terminalRegistry";
 import { syncChatActivity } from "@/domains/agentChat/liveBridge";
@@ -13,6 +14,11 @@ import { type AgentCli, resetAgentSession, stopAgent, type Transport } from "@/i
  * the header has a hook in each, and a start from one must hold off the other.
  */
 const starting = new Set<string>();
+
+/** Each agent's last start error, shared by its hooks: a pane's failed Start shows in the header. */
+const useRunErrors = create<Record<string, string | null>>(() => ({}));
+const setError = (workspaceId: string, error: string | null) =>
+  useRunErrors.setState({ [workspaceId]: error });
 
 /** Start/stop lifecycle for one agent, keyed by its workspace id. */
 export interface AgentRun {
@@ -43,7 +49,7 @@ export function useAgentRun(
   cli: AgentCli,
   spawn: (cols: number, rows: number, transport: Transport) => Promise<void>
 ): AgentRun {
-  const [error, setError] = useState<string | null>(null);
+  const error = useRunErrors((s) => s[workspaceId] ?? null);
   const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
   const setAgentRunning = useBoardStore((s) => s.setAgentRunning);
   const clearOutput = useBoardStore((s) => s.clearOutput);
@@ -88,11 +94,11 @@ export function useAgentRun(
     async (work: () => Promise<void>) => {
       if (starting.has(workspaceId)) return;
       starting.add(workspaceId);
-      setError(null);
+      setError(workspaceId, null);
       try {
         await work();
       } catch (err) {
-        setError(String(err));
+        setError(workspaceId, String(err));
         toast.error(String(err));
       } finally {
         starting.delete(workspaceId);

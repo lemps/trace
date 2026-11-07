@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { allTabs, openBeside, type PaneLayout, selectTab } from "./model";
+import { allTabs, isArranged, openBeside, type PaneLayout, selectTab } from "./model";
 import { resolvePanel, useOpenRequests } from "./registry";
-import { usePaneLayoutStore, useSavedLayout } from "./store";
+import { storedLayout, usePaneLayoutStore } from "./store";
 import type { PanelDescriptor } from "./types";
 import { normalizeLayout, type TabCatalog } from "./validate";
 
@@ -31,7 +31,8 @@ export function usePanes(
   fixed: PanelDescriptor[],
   owners: Record<string, string>
 ): Panes {
-  const saved = useSavedLayout(scope);
+  const saved = usePaneLayoutStore((s) => storedLayout(s, scope));
+  const arranged = usePaneLayoutStore((s) => scope in s.saved);
   const save = usePaneLayoutStore((s) => s.save);
   const resetScope = usePaneLayoutStore((s) => s.reset);
 
@@ -66,10 +67,9 @@ export function usePanes(
   const apply = useCallback(
     (op: (layout: PaneLayout) => PaneLayout) => {
       const { scope, catalog } = latest.current;
-      const stored = usePaneLayoutStore.getState().saved[scope]?.layout ?? null;
-      const current = normalizeLayout(stored, catalog);
+      const current = normalizeLayout(storedLayout(usePaneLayoutStore.getState(), scope), catalog);
       const next = op(current);
-      if (next !== current) save(scope, next);
+      if (next !== current) save(scope, next, isArranged(next, catalog.fixed));
     },
     [save]
   );
@@ -78,7 +78,7 @@ export function usePanes(
 
   useOpenRequestsFor(owners, catalog, apply);
 
-  return { scope, layout, panels, arranged: saved !== null, apply, select, reset };
+  return { scope, layout, panels, arranged, apply, select, reset };
 }
 
 /** Open the optional panels `openPanel` asked for that belong to an agent here. */

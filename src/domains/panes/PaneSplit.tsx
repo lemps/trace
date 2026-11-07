@@ -1,6 +1,14 @@
 import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from "react";
 import { usePaneArea } from "./context";
-import { minSize, type PaneGroup, type PaneNode, type PaneSplit, setRatio } from "./model";
+import {
+  MAX_RATIO,
+  MIN_RATIO,
+  minSize,
+  type PaneGroup,
+  type PaneNode,
+  type PaneSplit,
+  setRatio,
+} from "./model";
 import { PaneDropOverlay } from "./PaneDropOverlay";
 import { PanelSlot } from "./PanelSlot";
 import { PaneTabStrip } from "./PaneTabStrip";
@@ -8,6 +16,8 @@ import { PaneTabStrip } from "./PaneTabStrip";
 /** The least a pane may shrink to by dragging; below the layout's total, the area falls back to one row. */
 export const MIN_PANE_W = 360;
 export const MIN_PANE_H = 180;
+/** A pane's tab strip, which its minimum height counts. */
+export const STRIP_H = 38;
 const KEY_STEP = 0.02;
 
 /** A layout node: a pane, or two halves and the divider between them. */
@@ -95,11 +105,12 @@ function Divider({ split, row }: { split: PaneSplit; row: boolean }) {
     const total = row ? box.width : box.height;
     const start = row ? box.left : box.top;
     const need = (n: PaneNode) => {
-      const s = minSize(n, MIN_PANE_W, MIN_PANE_H);
+      const s = minSize(n, MIN_PANE_W, MIN_PANE_H + STRIP_H);
       return (row ? s.w : s.h) / total;
     };
-    const lo = Math.min(0.5, need(split.first));
-    const hi = Math.max(0.5, 1 - need(split.second));
+    // Within the model's own bounds too, or the drawn ratio and the saved one differ.
+    const lo = Math.max(MIN_RATIO, Math.min(0.5, need(split.first)));
+    const hi = Math.min(MAX_RATIO, Math.max(0.5, 1 - need(split.second)));
     let ratio = split.ratio;
     handle.setPointerCapture(e.pointerId);
     setDragging(true);

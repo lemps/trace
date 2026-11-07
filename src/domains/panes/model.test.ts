@@ -9,6 +9,7 @@ import {
   cycleFocus,
   focusedGroup,
   groupOf,
+  isArranged,
   listGroups,
   MAX_GROUPS,
   minSize,
@@ -219,5 +220,14 @@ describe("optional panels", () => {
     assert.ok(groupOf(full, "sub:a:1")?.tabs.includes("chat"));
     const opened = openBeside(base(), "sub:a:1", "chat", "right");
     assert.equal(removeTab(opened, "sub:a:1").root.kind, "group");
+  });
+});
+
+describe("arranged", () => {
+  it("counts splits, reorders and optional panels, not picking a tab", () => {
+    assert.equal(isArranged(selectTab(base(), "files"), TABS), false);
+    assert.equal(isArranged(moveTab(base(), "chat", "g1"), TABS), true);
+    assert.equal(isArranged(splitTab(base(), "files", "g1", "right"), TABS), true);
+    assert.equal(isArranged(singleGroup([...TABS, "sub:a:1"]), TABS), true);
   });
 });
