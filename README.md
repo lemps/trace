@@ -72,13 +72,13 @@ are still working.
 
 - macOS 11 or later on Apple silicon, Windows 10 or 11 (x64), or Linux (x86_64, glibc 2.35 or
   later, as on Ubuntu 22.04)
-- [Claude Code](https://code.claude.com/docs) (`claude`), signed in, or
-  [Codex](https://github.com/openai/codex) (`codex`), or both
+- [Claude Code](https://code.claude.com/docs) (`claude`), signed in
 - `git`, plus the [GitHub CLI](https://cli.github.com) (`gh`) for pull request features
 - On Windows, [Git for Windows](https://git-scm.com/download/win): Claude Code and trace's hooks run
   through its Git Bash
 - Optional: a [Jira Cloud](https://www.atlassian.com/software/jira) or
   [Pylon](https://usepylon.com) account for the boards
+- Optional: [Codex](https://github.com/openai/codex) (`codex`) to run Codex agents
 
 ### Install
 
@@ -86,13 +86,13 @@ Download the file for your OS from the
 [latest release](https://github.com/noble1911/trace/releases/latest). Then, to use the boards,
 connect Jira or Pylon from **Integrations** in the sidebar.
 
-**macOS** (`trace-<version>-macos.dmg`, or the `-macos-app.zip`)
+**macOS** (`trace-v<version>-macos.dmg`, or the `-macos-app.zip`)
 
 1. Open the `.dmg` and drag `trace.app` into Applications.
 2. Open trace. Releases aren't notarized yet, so macOS may block the first launch. If it does,
    allow the app in **System Settings → Privacy & Security**.
 
-**Windows** (`trace-<version>-windows-x86_64-setup.exe`)
+**Windows** (`trace-v<version>-windows-x86_64-setup.exe`)
 
 1. Run the installer. It installs for your user only, without admin rights.
 2. The installer isn't signed yet, so SmartScreen may warn that it's from an unknown publisher.
@@ -100,19 +100,20 @@ connect Jira or Pylon from **Integrations** in the sidebar.
 
 **Linux**
 
-- AppImage (`trace-<version>-linux-x86_64.AppImage`): make it executable with
+- AppImage (`trace-v<version>-linux-x86_64.AppImage`): make it executable with
   `chmod +x trace-*.AppImage`, then run it. Some distributions need `libfuse2` installed first.
-- Debian or Ubuntu (`trace-<version>-linux-amd64.deb`): `sudo apt install ./trace-*.deb`.
+- Debian or Ubuntu (`trace-v<version>-linux-amd64.deb`): install it with
+  `sudo apt install ./trace-v<version>-linux-amd64.deb`.
 
 ### Updates
 
 On macOS, Windows and the AppImage, check for and install updates from **Settings → Updates**.
-trace restarts into the new version and offers back any agents the restart stopped. The `.deb` can't
-update itself: download the new one and install it the same way.
+The `.deb` can't update itself, so don't install updates from Settings there: download the new
+`.deb` and install it the same way.
 
 ### Where trace keeps its data
 
-Settings, sessions, schedules, the activity log and saved credentials live in one folder:
+Sessions, schedules, repositories, the activity log and saved credentials live in one folder:
 
 | OS      | Folder                                          |
 | ------- | ----------------------------------------------- |
@@ -120,8 +121,9 @@ Settings, sessions, schedules, the activity log and saved credentials live in on
 | Windows | `%APPDATA%\trace`                               |
 | Linux   | `~/.config/trace` (or `$XDG_CONFIG_HOME/trace`) |
 
-Worktrees are created inside each repository, under `.worktrees/`, and Claude Code keeps its
-conversations in its own folder, as usual.
+Display and agent preferences are kept in the app's web view storage instead. Worktrees are created
+inside each repository, under `.worktrees/`, and Claude Code keeps its conversations in its own
+folder, as usual.
 
 ## Security
 
@@ -157,8 +159,9 @@ cargo test --manifest-path src-tauri/Cargo.toml  # backend tests
 
 ## Roadmap
 
-Windows and Linux builds are new in v0.10.0, and still being tested on real machines. Cloud VMs and iPhone and
-Android apps are planned. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full list.
+Windows and Linux builds are new in v0.10.0, and still being tested on real machines.
+Cloud VMs and iPhone and Android apps are planned. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the
+full list.
 
 ## License
 
