@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { fitTerminal, resetTerminal, syncPtySize } from "@/domains/agent/terminalRegistry";
 import { syncChatActivity } from "@/domains/agentChat/liveBridge";
@@ -7,6 +7,12 @@ import { noteTransport, resolveTransport } from "@/domains/agentChat/transport";
 import { adoptIfAlive } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
 import { type AgentCli, resetAgentSession, stopAgent, type Transport } from "@/ipc/agent";
+
+/**
+ * Agents mid-start. Module-wide, not per hook: an agent shown in a pane and named in
+ * the header has a hook in each, and a start from one must hold off the other.
+ */
+const starting = new Set<string>();
 
 /** Start/stop lifecycle for one agent, keyed by its workspace id. */
 export interface AgentRun {
@@ -41,7 +47,6 @@ export function useAgentRun(
   const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
   const setAgentRunning = useBoardStore((s) => s.setAgentRunning);
   const clearOutput = useBoardStore((s) => s.clearOutput);
-  const startingRef = useRef(false);
 
   // Reconcile run-state with the backend when the id changes. Startup adoption has
   // usually done this, but this view can mount first — and a live agent would wrongly
@@ -79,19 +84,22 @@ export function useAgentRun(
 
   // A re-entrant start would spawn a second agent into the same workspace and
   // duplicate the terminal output.
-  const guarded = useCallback(async (work: () => Promise<void>) => {
-    if (startingRef.current) return;
-    startingRef.current = true;
-    setError(null);
-    try {
-      await work();
-    } catch (err) {
-      setError(String(err));
-      toast.error(String(err));
-    } finally {
-      startingRef.current = false;
-    }
-  }, []);
+  const guarded = useCallback(
+    async (work: () => Promise<void>) => {
+      if (starting.has(workspaceId)) return;
+      starting.add(workspaceId);
+      setError(null);
+      try {
+        await work();
+      } catch (err) {
+        setError(String(err));
+        toast.error(String(err));
+      } finally {
+        starting.delete(workspaceId);
+      }
+    },
+    [workspaceId]
+  );
 
   const start = useCallback(
     async (transport?: Transport) => {

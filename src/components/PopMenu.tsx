@@ -11,6 +11,10 @@ export interface MenuItem {
   checked?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  /** A shortcut's current binding (`useHint`), shown at the item's end. */
+  hint?: string;
+  /** Why it's disabled, or more about what it does. */
+  title?: string;
 }
 
 export interface MenuSection {
@@ -51,13 +55,13 @@ export function PopMenu({ trigger, sections, align = "right" }: PopMenuProps) {
                   role="menuitem"
                   className={`pop-menu-item${item.danger ? " danger" : ""}`}
                   disabled={item.disabled}
+                  title={item.title}
                   onClick={() => {
                     setOpen(false);
                     item.onSelect();
                   }}
                 >
-                  <span className="check">{item.checked && <I.Check size={12} />}</span>
-                  {item.label}
+                  <MenuItemBody item={item} />
                 </button>
               ))}
             </div>
@@ -74,5 +78,16 @@ export function MoreTrigger({ toggle, label }: { toggle: () => void; label: stri
     <button type="button" className="btn icon" onClick={toggle} title={label} aria-label={label}>
       <I.More size={15} />
     </button>
+  );
+}
+
+/** An item's check mark, label and shortcut hint — shared with `ContextMenu`. */
+export function MenuItemBody({ item }: { item: MenuItem }) {
+  return (
+    <>
+      <span className="check">{item.checked && <I.Check size={12} />}</span>
+      {item.hint ? <span className="pop-menu-label">{item.label}</span> : item.label}
+      {item.hint && <span className="kbd">{item.hint}</span>}
+    </>
   );
 }

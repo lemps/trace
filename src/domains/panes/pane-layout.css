@@ -1,0 +1,213 @@
+/* ---- Pane layout in a detail view ----------------------------------------
+   The detail's tab row, split into panes: each pane is the same `.detail-tabs`
+   strip over its tab's content, divided by a 1px rule like the strip's own. The
+   focused pane's shown tab keeps the strong underline; the others' soften. */
+
+.pn-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pn-split {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.pn-split.row {
+  flex-direction: row;
+}
+.pn-split.column {
+  flex-direction: column;
+}
+.pn-half {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pn-group {
+  outline: none;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.pn-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* The slot and the element it adopts lay out like `.detail-left` did, so every
+   tab's content fills its pane the way it filled the detail. */
+.pn-slot,
+.pn-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ---- Tab strip ---- */
+
+.pn-strip {
+  position: relative;
+  flex-shrink: 0;
+  min-width: 0;
+}
+/* Tabs give up label width before the strip overflows; the icon stays. */
+.pn-strip .detail-tab {
+  min-width: 0;
+  flex-shrink: 1;
+  white-space: nowrap;
+}
+.pn-strip .detail-tab > svg {
+  flex-shrink: 0;
+}
+.pn-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pn-strip .detail-tab:focus-visible {
+  outline: 1px solid var(--c-accent);
+  outline-offset: -1px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.pn-strip .detail-tab.dragged {
+  opacity: 0.5;
+}
+.pn-split .pn-group:not(.focused) .detail-tab.active {
+  color: var(--fg-1);
+  border-bottom-color: var(--border-strong);
+}
+.pn-strip-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex-shrink: 0;
+}
+.pn-strip-end .tx-switch {
+  margin-left: 0;
+  margin-right: 4px;
+}
+.btn.icon.pn-act {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  justify-content: center;
+  color: var(--fg-3);
+}
+.btn.icon.pn-act:hover {
+  color: var(--fg-1);
+}
+/* An optional tab's close (a subagent's view), tucked against the tab. */
+.pn-tab-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0 4px 0 -6px;
+  border-radius: 4px;
+  color: var(--fg-3);
+}
+.pn-tab-close:hover {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+/* Where a dragged tab would land in the strip. */
+.pn-insert {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--c-accent);
+  pointer-events: none;
+}
+
+/* ---- Divider ---- */
+
+.pn-divider {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 1px;
+  background: var(--border-faint);
+  transition: background 120ms;
+}
+/* A wider grip than the 1px rule it draws. */
+.pn-divider::before {
+  content: "";
+  position: absolute;
+  inset: 0 -3px;
+}
+.pn-divider.column::before {
+  inset: -3px 0;
+}
+.pn-divider.row {
+  cursor: col-resize;
+}
+.pn-divider.column {
+  cursor: row-resize;
+}
+.pn-divider:hover,
+.pn-divider.dragging {
+  background: var(--border-strong);
+}
+.pn-divider:focus-visible {
+  outline: none;
+  background: var(--c-accent);
+}
+body.pn-resizing-row,
+body.pn-resizing-column {
+  user-select: none;
+}
+body.pn-resizing-row * {
+  cursor: col-resize !important;
+}
+body.pn-resizing-column * {
+  cursor: row-resize !important;
+}
+
+/* ---- Drop targets while a tab is dragged ---- */
+
+.pn-drop {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+}
+.pn-drop-hint {
+  position: absolute;
+  border: 1px solid color-mix(in oklch, var(--c-accent) 55%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--c-accent) 12%, transparent);
+  pointer-events: none;
+}
+.pn-drop-hint.center {
+  inset: 6px;
+}
+.pn-drop-hint.left {
+  inset: 6px 50% 6px 6px;
+}
+.pn-drop-hint.right {
+  inset: 6px 6px 6px 50%;
+}
+.pn-drop-hint.top {
+  inset: 6px 6px 50% 6px;
+}
+.pn-drop-hint.bottom {
+  inset: 50% 6px 6px 6px;
+}

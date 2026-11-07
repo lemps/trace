@@ -42,6 +42,8 @@ interface DetailHeaderProps {
   onChooseTransport: (transport: Transport) => void;
   /** Restart, Open in terminal / as chat (`agentChat/agentMenu`). */
   agentItems: MenuItem[];
+  /** The pane layout's own (Reset layout). */
+  layoutItems: MenuItem[];
 }
 
 const isLive = (state: string) => state === "open" || state === "draft";
@@ -113,6 +115,7 @@ export function DetailHeader({
   transport,
   onChooseTransport,
   agentItems,
+  layoutItems,
 }: DetailHeaderProps) {
   const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
   return (
@@ -166,6 +169,7 @@ export function DetailHeader({
           sections={[
             { title: "Worktree", items: editorItems(issue.key) },
             { title: "Agent", items: agentItems },
+            { title: "Layout", items: layoutItems },
           ]}
         />
       </div>
