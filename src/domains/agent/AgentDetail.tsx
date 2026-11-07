@@ -298,7 +298,11 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
           </div>
 
           {tab === "chat" && isChat && (
-            <ChatAgentPane workspaceId={issue.key} onStart={() => void start()} />
+            <ChatAgentPane
+              workspaceId={issue.key}
+              onStart={() => void start()}
+              onStop={() => void stop()}
+            />
           )}
           {tab === "chat" && !isChat && (
             // The terminal mounts even before the session starts so it can be

@@ -5,6 +5,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+pub use super::subagent::{Subagent, SubagentState};
+
 /// One row of an agent's conversation. Rows are upserted by `id`: a later
 /// `revision` replaces an earlier one (text streaming in, a tool finishing, a
 /// prompt being answered).
@@ -58,6 +60,9 @@ pub struct Message {
     /// True while text is still arriving.
     #[serde(default)]
     pub streaming: bool,
+    /// Set when a subagent said it: the call that started that subagent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_call_id: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -83,6 +88,9 @@ pub struct ToolCall {
     /// Set when a subagent (Task) made this call.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent_call_id: Option<String>,
+    /// Set when this call started a subagent: how that agent is doing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subagent: Option<Box<Subagent>>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -320,6 +328,7 @@ mod tests {
                 state: ToolState::Completed,
                 output: Some("a.txt".into()),
                 parent_call_id: None,
+                subagent: None,
             }),
         };
         let v = serde_json::to_value(&row).unwrap();

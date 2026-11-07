@@ -1,16 +1,20 @@
+import { I } from "@/components/Icon";
 import { formatCost, limitLabel, resetsIn } from "./format";
 import type { ChatTurn } from "./projection";
 import type { LimitWindow, SessionInfo } from "./types";
 
-// The chat's fact strip: which agent and model, the session's cost so far, and
-// the usage-limit windows the agent reports (how full, and when each resets).
+// The chat's fact strip: which agent and model, the session's cost so far, the
+// usage-limit windows the agent reports (how full, and when each resets), and
+// Stop agent: ending the process, as opposed to interrupting a turn.
 
 interface ChatHeaderProps {
   info: SessionInfo | undefined;
   turns: ChatTurn[];
+  /** End the agent's process (shown while it runs). */
+  onStop?: () => void;
 }
 
-export function ChatHeader({ info, turns }: ChatHeaderProps) {
+export function ChatHeader({ info, turns, onStop }: ChatHeaderProps) {
   let cost = 0;
   let hasCost = false;
   for (const t of turns) {
@@ -34,6 +38,16 @@ export function ChatHeader({ info, turns }: ChatHeaderProps) {
           <Limit key={w.name} window={w} />
         ))}
       </span>
+      {onStop && (
+        <button
+          type="button"
+          className="btn ghost ac-head-stop"
+          onClick={onStop}
+          title="End the agent's process. The conversation is kept; Start carries it on."
+        >
+          <I.X size={13} /> Stop agent
+        </button>
+      )}
     </div>
   );
 }

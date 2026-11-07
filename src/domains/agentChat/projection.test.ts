@@ -91,14 +91,16 @@ describe("buildTurns", () => {
     assert.ok(isPending(item));
   });
 
-  it("nests subagent calls under their parent", () => {
+  it("keeps a subagent's calls out of the timeline, on the call that started it", () => {
     const turns = buildTurns([
       user("u", "x", "t1"),
       tool("p", "c1", "t1"),
       tool("k", "c2", "t1", "c1"),
     ]);
+    assert.deepEqual(ids(turns[0].items), ["p"]);
     const [parent] = turns[0].items;
-    assert.ok(parent.type === "tool" && parent.children.length === 1);
+    assert.ok(parent.type === "tool" && parent.subagent !== null);
+    assert.deepEqual(ids(parent.subagent.items), ["k"]);
   });
 
   it("re-renders a subagent's parent and its turn when the child's approval lands", () => {
@@ -158,11 +160,11 @@ describe("buildTurns", () => {
     const turns = buildTurns(FIXTURE_ROWS);
     assert.deepEqual(
       turns.map((t) => t.state),
-      ["completed", "completed", "completed", "interrupted", "failed", "open"]
+      ["completed", "completed", "completed", "interrupted", "failed", "completed", "open"]
     );
     assert.ok(turns[1].folded.length > 5);
     assert.ok(turns[4].shown.some((i) => i.type === "status"));
-    const live = turns[5];
+    const live = turns[6];
     assert.ok(live.items.some((i) => i.type === "question" && isPending(i)));
     assert.ok(live.items.some((i) => i.type === "tool" && i.approval !== null && isPending(i)));
     assert.match(workSentence(turns[1].folded), /edited/);
@@ -174,7 +176,7 @@ describe("workSentence", () => {
     const turns = buildTurns(FIXTURE_ROWS);
     assert.equal(
       workSentence(turns[1].folded),
-      "Updated the plan, ran 2 commands, started 1 agent and edited 3 files"
+      "Updated the plan, ran 2 commands and edited 3 files"
     );
   });
 });

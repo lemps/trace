@@ -32,7 +32,7 @@ export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
   { id: "app", label: "Anywhere", desc: "Work on every page, in terminals too." },
   { id: "detail", label: "Agent and ticket views", desc: "While a session or ticket is open." },
   { id: "terminal", label: "Terminal", desc: "In an agent's chat or a shell terminal." },
-  { id: "chat", label: "Agent chat", desc: "In a chat agent's message box." },
+  { id: "chat", label: "Agent chat", desc: "In a chat agent's view and its message box." },
   { id: "inbox", label: "Inbox", desc: "On the Inbox page, when you aren't typing." },
   { id: "search", label: "Search box", desc: "While the search box has focus." },
   { id: "board", label: "Board", desc: "On a tracker's board." },
@@ -187,12 +187,31 @@ export const SHORTCUTS: ShortcutDef[] = [
     isFixed: true,
   },
   {
+    // Heard anywhere in a chat view on screen, not only in its message box,
+    // except in another text box or with a menu open (`ChatAgentPane`). Fixed:
+    // it's the terminal's Esc, and it shares the key with the view's "back".
     id: "chatInterrupt",
-    label: "Interrupt the agent's turn",
+    label: "Interrupt the agent's turn and its subagents",
     group: "chat",
     scope: "chat",
     ...both(["Escape"]),
     isFixed: true,
+  },
+  {
+    id: "chatNextTab",
+    label: "Next tab: main chat, then each subagent",
+    group: "chat",
+    scope: "detail",
+    mac: ["Shift+Meta+]"],
+    pc: ["Ctrl+Shift+]"],
+  },
+  {
+    id: "chatPrevTab",
+    label: "Previous chat tab",
+    group: "chat",
+    scope: "detail",
+    mac: ["Shift+Meta+["],
+    pc: ["Ctrl+Shift+["],
   },
   {
     id: "inboxNext",

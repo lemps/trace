@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { I } from "@/components/Icon";
 import { useAppearance } from "@/domains/appearance/store";
 import { runSentence, type ToolStep } from "./blocks";
@@ -14,17 +14,22 @@ interface ToolRunProps {
 
 // Consecutive tool calls between two pieces of prose, as one block. A run of
 // several folds to a sentence ("Read 4 files and ran 2 commands"); the run the
-// agent is in right now stays open so you can watch it, until you fold it.
+// agent is in right now opens so you can watch it, and stays open (until you
+// fold it) once the agent moves on: a run never closes by itself, or it would
+// flicker shut each time the agent stops being "in" it between calls.
 export function ToolRun({ steps, workspaceId, root, isCurrent }: ToolRunProps) {
   const [choice, setChoice] = useState<boolean | null>(null);
   const tools = useAppearance((s) => s.prefs.chat.tools);
+  // Latched: once it's been the current run, it stays open.
+  const watched = useRef(false);
+  if (isCurrent) watched.current = true;
   const rows = (live: boolean) =>
     steps.map((step) => (
       <ToolRow key={step.call.id} step={step} workspaceId={workspaceId} root={root} isLive={live} />
     ));
   if (steps.length === 1) return <div className="tx-run">{rows(isCurrent)}</div>;
 
-  const open = choice ?? (isCurrent || tools !== "folded");
+  const open = choice ?? (watched.current || tools !== "folded");
   const failed = steps.filter((s) => s.result?.isError).length;
   return (
     <div className={`tx-run multi${open ? " open" : ""}`}>

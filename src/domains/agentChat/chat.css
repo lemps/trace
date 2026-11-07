@@ -116,8 +116,7 @@
 
 /* Reasoning: one quiet line, unfolding to the text. */
 .ac-thought-head,
-.ac-fold-head,
-.ac-sub-head {
+.ac-fold-head {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -129,8 +128,7 @@
   text-align: left;
 }
 .ac-thought-head:hover,
-.ac-fold-head:hover,
-.ac-sub-head:hover {
+.ac-fold-head:hover {
   color: var(--fg-1);
 }
 .ac-thought-label {
@@ -155,7 +153,6 @@
 }
 .ac-thought.open > .ac-thought-head .tx-chev,
 .ac-fold.open > .ac-fold-head .tx-chev,
-.ac-sub:has(> .ac-sub-rows) > .ac-sub-head .tx-chev,
 .ac-diff.open .ac-diff-toggle .tx-chev {
   transform: rotate(90deg);
 }
@@ -181,13 +178,6 @@
 .ac-fold-time {
   font-family: var(--font-mono);
   font-size: var(--text-label);
-}
-.ac-fold-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  border-top: 1px solid var(--border-faint);
 }
 
 /* Notices and the turn's footer. */

@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use super::{message, OpenTurn, Out, Translator};
 use crate::agent_session::claude::prompts::{self, str_at};
 use crate::agent_session::journal::{
-    Answer, JournalBody, Resolution, Role, Tone, ToolState, Turn, TurnState, Usage,
+    Answer, JournalBody, Resolution, Role, SubagentState, Tone, ToolState, Turn, TurnState, Usage,
 };
 
 impl Translator {
@@ -70,12 +70,21 @@ impl Translator {
     }
 
     /// The stream-json request that stops the running turn. `None` with no turn.
+    /// Claude's interrupt also stops every subagent, background ones too, so it's
+    /// sent with no turn running while a subagent still works.
     pub fn interrupt(&mut self) -> Option<Value> {
-        let turn = self.turn.as_mut()?;
-        turn.interrupting = true;
+        let subagents = self.running_subagents();
+        let id = match self.turn.as_mut() {
+            Some(turn) => {
+                turn.interrupting = true;
+                turn.id.clone()
+            }
+            None if subagents > 0 => format!("subagents-{}", self.book.next_seq()),
+            None => return None,
+        };
         Some(json!({
             "type": "control_request",
-            "request_id": format!("interrupt-{}", turn.id),
+            "request_id": format!("interrupt-{id}"),
             "request": {"subtype": "interrupt"},
         }))
     }
@@ -90,6 +99,8 @@ impl Translator {
             };
             self.end_turn(state, None, None, &mut out);
         }
+        // Background subagents went with the process.
+        self.end_subagents(SubagentState::Stopped, &mut out);
         if let Some(reason) = reason {
             self.status(reason, Tone::Error, &mut out);
         }
@@ -163,7 +174,9 @@ impl Translator {
             self.cancel_prompt(&request_id, out);
         }
         // A finished turn can leave a background tool running; one cut short can't.
+        // Claude's interrupt stops every subagent, background ones too.
         if state != TurnState::Completed {
+            self.end_subagents(SubagentState::Stopped, out);
             let running = self
                 .book
                 .open_ids(|b| matches!(b, JournalBody::Tool(t) if t.state == ToolState::Running));

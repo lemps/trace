@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use super::{str_at, Out, Stream, Translator};
 use crate::agent_session::journal::{
-    cap, ChangeKind, FileDiff, JournalBody, Role, Tone, ToolCall, ToolState,
+    cap, ChangeKind, FileDiff, JournalBody, Role, Subagent, Tone, ToolCall, ToolState,
 };
 
 /// Command output kept from deltas, for a command that ends without its own copy.
@@ -20,8 +20,9 @@ impl Translator {
             // Its approval request names only the item: the patch comes from here.
             self.started.insert(id.clone(), item.clone());
         }
-        if let Some((name, input)) = tool_of(item) {
-            self.tool_row(&id, name, input, ToolState::Running, None, out);
+        if let Some(tool) = tool_of(item) {
+            let subagent = self.collab_subagent(&id, item, out);
+            self.tool_row(&id, tool, ToolState::Running, None, subagent, out);
         }
     }
 
@@ -52,11 +53,15 @@ impl Translator {
             }
             Some("contextCompaction") => self.status("Conversation compacted.", Tone::Info, out),
             _ => {
-                if let Some((name, input)) = tool_of(item) {
+                if let Some(tool) = tool_of(item) {
                     let (state, output) = self.tool_result(&id, item);
-                    self.tool_row(&id, name, input, state, output, out);
+                    let subagent = self.collab_subagent(&id, item, out);
+                    self.tool_row(&id, tool, state, output, subagent, out);
                     if state == ToolState::Completed {
                         self.diffs(&id, item, out);
+                    }
+                    if str_at(item, "type") == Some("collabAgentToolCall") {
+                        self.collab_done(&id, item, out);
                     }
                 }
             }
@@ -70,12 +75,14 @@ impl Translator {
             return;
         };
         let item = str_at(p, "itemId").unwrap_or_default().to_string();
-        let turn = self.turn_id(out);
+        let turn = self.row_turn(out);
+        let parent = self.parent.clone();
         let s = self.streams.entry(item.clone()).or_insert_with(|| Stream {
             row_id: row_id(role, &item),
             role,
             text: String::new(),
             part,
+            parent,
         });
         if part.is_some() && s.part != part {
             if !s.text.is_empty() {
@@ -88,6 +95,7 @@ impl Translator {
             role: s.role,
             text: s.text.clone(),
             streaming: true,
+            parent_call_id: s.parent.clone(),
         });
         let row_id = s.row_id.clone();
         out.push(Out::Row(self.book.put(&row_id, Some(&turn), body)));
@@ -112,6 +120,7 @@ impl Translator {
             role,
             text: String::new(),
             part: None,
+            parent: self.parent.clone(),
         });
         if !text.is_empty() {
             s.text = text.to_string();
@@ -119,7 +128,10 @@ impl Translator {
         if s.text.is_empty() {
             return;
         }
-        let turn = self.turn_id(out);
+        if role == Role::Assistant {
+            self.note_child_text(&s.text);
+        }
+        let turn = self.row_turn(out);
         let row = self
             .book
             .put(&s.row_id, Some(&turn), super::turn::message(&s));
@@ -130,20 +142,21 @@ impl Translator {
     fn tool_row(
         &mut self,
         id: &str,
-        name: String,
-        input: Value,
+        (name, input): (String, Value),
         state: ToolState,
         output: Option<String>,
+        subagent: Option<Subagent>,
         out: &mut Vec<Out>,
     ) {
-        let turn = self.turn_id(out);
+        let turn = self.row_turn(out);
         let body = JournalBody::Tool(ToolCall {
             call_id: id.to_string(),
             name,
             input,
             state,
             output,
-            parent_call_id: None,
+            parent_call_id: self.parent.clone(),
+            subagent: subagent.map(Box::new),
         });
         out.push(Out::Row(self.book.put(
             &format!("tool:{id}"),
@@ -190,7 +203,7 @@ impl Translator {
         let Some(changes) = item["changes"].as_array() else {
             return;
         };
-        let turn = self.turn_id(out);
+        let turn = self.row_turn(out);
         for (i, c) in changes.iter().enumerate() {
             let text = str_at(c, "diff").map(cap);
             let kind = &c["kind"];
@@ -255,6 +268,7 @@ fn tool_of(item: &Value) -> Option<(String, Value)> {
         }
         "webSearch" => tool("web_search", json!({"query": str_at(item, "query")})),
         "imageView" => tool("view_image", json!({"path": str_at(item, "path")})),
+        "collabAgentToolCall" => Some(super::agents::collab_tool(item)),
         _ => None,
     }
 }

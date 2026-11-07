@@ -5,6 +5,7 @@ import { MessageRow } from "./MessageRow";
 import { PlanCard } from "./PlanCard";
 import type { ChatItem } from "./projection";
 import { QuestionCard } from "./QuestionCard";
+import { SubagentCard } from "./SubagentCard";
 import { ToolCard } from "./ToolCard";
 import { StatusRow } from "./TurnBits";
 
@@ -13,7 +14,7 @@ function ItemSwitch({ item }: { item: ChatItem }) {
     case "message":
       return <MessageRow message={item.message} />;
     case "tool":
-      return <ToolCard item={item} />;
+      return item.subagent ? <SubagentCard item={item} /> : <ToolCard item={item} />;
     case "diff":
       return <DiffCard diff={item.diff} />;
     case "plan":

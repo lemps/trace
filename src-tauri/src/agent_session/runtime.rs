@@ -245,6 +245,13 @@ pub fn interrupt(state: &AppState, workspace_id: &str) -> Result<(), String> {
     state.chat_agents.with(workspace_id, |a| a.interrupt())
 }
 
+/// Stop one of a running agent's subagents, named by the call that started it.
+pub fn stop_subagent(state: &AppState, workspace_id: &str, call_id: &str) -> Result<(), String> {
+    state
+        .chat_agents
+        .with(workspace_id, |a| a.stop_subagent(call_id))
+}
+
 /// End a workspace's chat agent, or the one starting. Its exit settles what it
 /// left open.
 pub fn stop(state: &AppState, workspace_id: &str) {

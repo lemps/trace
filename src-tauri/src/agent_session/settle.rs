@@ -3,7 +3,7 @@
 //! tool any more, so a journal read back while no agent runs shows them ended,
 //! as the adapter would have had the process exited normally.
 
-use super::journal::{JournalBody, JournalRow, Resolution, ToolState, TurnState};
+use super::journal::{JournalBody, JournalRow, Resolution, SubagentState, ToolState, TurnState};
 
 /// The next revision of each row in `rows` that's still open.
 pub fn settle(rows: &[JournalRow]) -> Vec<JournalRow> {
@@ -15,9 +15,18 @@ pub fn settle(rows: &[JournalRow]) -> Vec<JournalRow> {
                     m.streaming = false;
                     true
                 }
-                JournalBody::Tool(t) if t.state == ToolState::Running => {
-                    t.state = ToolState::Failed;
-                    t.output.get_or_insert_with(|| "Interrupted.".to_string());
+                JournalBody::Tool(t)
+                    if t.state == ToolState::Running
+                        || t.subagent.as_ref().is_some_and(|s| s.is_running()) =>
+                {
+                    if t.state == ToolState::Running {
+                        t.state = ToolState::Failed;
+                        t.output.get_or_insert_with(|| "Interrupted.".to_string());
+                    }
+                    // A background subagent outlives its call, not its agent.
+                    if let Some(s) = t.subagent.as_mut().filter(|s| s.is_running()) {
+                        s.state = SubagentState::Stopped;
+                    }
                     true
                 }
                 JournalBody::Approval(a) if a.resolution.is_none() => {
@@ -80,6 +89,7 @@ mod tests {
                 state: ToolState::Running,
                 output: None,
                 parent_call_id: None,
+                subagent: None,
             }),
         );
         let done = row(
@@ -99,5 +109,28 @@ mod tests {
             other => panic!("unexpected {other:?}"),
         }
         assert_eq!(settled(vec![done.clone()]), vec![done]);
+    }
+
+    #[test]
+    fn a_background_subagent_stops_with_its_agent() {
+        use crate::agent_session::journal::Subagent;
+        let launched = row(
+            "tool:2",
+            JournalBody::Tool(ToolCall {
+                call_id: "2".into(),
+                name: "Agent".into(),
+                input: serde_json::Value::Null,
+                state: ToolState::Completed,
+                output: Some("Async agent launched".into()),
+                parent_call_id: None,
+                subagent: Some(Box::new(Subagent::running(None, None, true))),
+            }),
+        );
+        let next = settle(&[launched]);
+        let JournalBody::Tool(t) = &next[0].body else {
+            panic!("not a tool")
+        };
+        assert_eq!(t.state, ToolState::Completed);
+        assert_eq!(t.subagent.as_ref().unwrap().state, SubagentState::Stopped);
     }
 }
