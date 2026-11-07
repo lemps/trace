@@ -126,21 +126,13 @@
 .orch-input::placeholder {
   color: var(--fg-4);
 }
+/* The composer's Send (`.btn.primary`), not a colour of its own: amber is agent state. */
 .orch-send {
-  width: 36px;
-  height: 36px;
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  background: var(--c-prog);
-  color: var(--bg-1);
 }
 .orch-send:disabled {
   opacity: 0.4;
-}
-.orch-send:not(:disabled):hover {
-  filter: brightness(1.08);
+  cursor: default;
 }
 
 /* Confirm-card — the human gate before any mutating action runs */

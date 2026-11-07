@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { allTabs, isArranged, openBeside, type PaneLayout, selectTab } from "./model";
 import { resolvePanel, useOpenRequests, usePanelKindsVersion } from "./registry";
+import { useShownPanels } from "./shown";
 import { storedLayout, usePaneLayoutStore } from "./store";
 import type { PanelDescriptor } from "./types";
 import { normalizeLayout, type TabCatalog } from "./validate";
@@ -80,6 +81,7 @@ export function usePanes(
   const reset = useCallback(() => resetScope(latest.current.scope), [resetScope]);
 
   useOpenRequestsFor(owners, catalog, apply);
+  usePublishShown(scope, allTabs(layout).join("\n"));
 
   return { scope, layout, panels, arranged, apply, select, reset };
 }
@@ -111,4 +113,13 @@ function useOpenRequestsFor(
     drain();
     return useOpenRequests.subscribe(drain);
   }, []);
+}
+
+/** Say which tabs this detail's layout holds while it's on screen (`shown.ts`). */
+function usePublishShown(scope: string, tabs: string): void {
+  useEffect(() => {
+    const { publish } = useShownPanels.getState();
+    publish(scope, tabs.split("\n"));
+    return () => publish(scope, null);
+  }, [scope, tabs]);
 }

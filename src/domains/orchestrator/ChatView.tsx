@@ -116,12 +116,12 @@ export function ChatView() {
         />
         <button
           type="button"
-          className="orch-send"
+          className="btn primary orch-send"
           onClick={() => submit(draft)}
           disabled={busy || !draft.trim()}
           aria-label="Send"
         >
-          <I.Send size={14} />
+          <I.Send size={13} /> Send
         </button>
       </div>
     </div>

@@ -66,10 +66,8 @@
   flex-shrink: 0;
   min-width: 0;
 }
-/* Tabs give up label width before the strip overflows; the icon stays. */
+/* Tabs keep their width: `useTabFit` turns them to icons, then a menu, instead. */
 .pn-strip .detail-tab {
-  min-width: 0;
-  flex-shrink: 1;
   white-space: nowrap;
 }
 .pn-strip .detail-tab > svg {

@@ -8,7 +8,18 @@
 }
 .session-row {
   display: grid;
-  grid-template-columns: 84px minmax(180px, 2fr) minmax(0, 1.4fr) 128px 104px 64px 44px;
+  /* Name first: it grows to the widest title on the page (measured, see
+     useSessionColumns) before repo · branch takes what's left (none, if
+     narrow); PR, diff and age are as wide as their widest content. Fallbacks
+     until the first measure. */
+  grid-template-columns:
+    84px
+    minmax(min(120px, var(--sr-name-w, 180px)), var(--sr-name-w, 2fr))
+    minmax(0, 1fr)
+    var(--sr-pr-w, 128px)
+    var(--sr-diff-w, 104px)
+    var(--sr-time-w, 64px)
+    44px;
   align-items: center;
   gap: 12px;
   height: 36px;
@@ -28,7 +39,11 @@
   gap: 8px;
   min-width: 0;
 }
-.sr-title {
+/* Scoped: the search palette has an `.sr-title` too (app/shell.css), capped at
+   55% of its row, which squeezed these titles beside an empty column. */
+.sr-name .sr-title {
+  flex-shrink: 1;
+  max-width: none;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

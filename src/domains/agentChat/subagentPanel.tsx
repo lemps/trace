@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { I } from "@/components/Icon";
 import { openPanel, registerPanelKind } from "@/domains/panes/registry";
+import { useShownOf } from "@/domains/panes/shown";
 import { chatOf, useSubagents } from "./hooks/useChat";
 import { SubagentMark } from "./SubagentBits";
 import { SubagentView } from "./SubagentView";
@@ -16,9 +18,26 @@ const PREFIX = "sub";
 export const subagentPanelId = (workspaceId: string, callId: string) =>
   `${PREFIX}:${workspaceId}:${callId}`;
 
-/** Open a subagent in a pane to the right of its agent's tab (or show it, if open). */
+/**
+ * Open a subagent in a pane to the right of its agent's tab (or show and focus that
+ * pane, if open). The chat goes back to Main: one subagent isn't shown twice.
+ */
 export function openSubagentBeside(workspaceId: string, callId: string): void {
   openPanel(subagentPanelId(workspaceId, callId), "right");
+  const store = useAgentChatStore.getState();
+  if (store.tab[workspaceId] === callId) store.setTab(workspaceId, "main");
+}
+
+/** Which of an agent's subagents are open in a pane of their own, by call id. */
+export function useSubagentsInPanes(
+  workspaceId: string,
+  subagents: readonly { callId: string }[]
+): ReadonlySet<string> {
+  const shown = useShownOf(subagents.map((s) => subagentPanelId(workspaceId, s.callId)));
+  return useMemo(
+    () => new Set(shown ? shown.split("\n").map((id) => id.slice(id.lastIndexOf(":") + 1)) : []),
+    [shown]
+  );
 }
 
 /** The tab's status mark, live without re-resolving the panel. */

@@ -14,6 +14,7 @@
 use serde_json::{json, Value};
 
 use super::{Out, Translator};
+use crate::agent_session::claude::handback;
 use crate::agent_session::claude::prompts::str_at;
 use crate::agent_session::journal::{cap, JournalBody, Subagent, SubagentState, ToolState};
 
@@ -114,8 +115,10 @@ impl Translator {
                 };
                 // A stopped task's "summary" is only its description again.
                 let report = (state != SubagentState::Stopped)
-                    .then(|| str_at(m, "summary").filter(|s| !s.is_empty()).map(cap))
-                    .flatten();
+                    .then(|| str_at(m, "summary").map(handback::unwrap))
+                    .flatten()
+                    .filter(|s| !s.is_empty())
+                    .map(|s| cap(&s));
                 self.update_subagent(&call, out, |s| {
                     s.state = state;
                     s.result = report.or(s.result.take());

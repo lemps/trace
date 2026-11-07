@@ -1,17 +1,25 @@
 /* A stopped chat agent's conversation: one line above the composer to start it again. */
 .ac-stopped {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  border-top: 1px solid var(--border-faint);
+}
+.ac-stopped-in {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 820px;
-  width: 100%;
-  margin: 0 auto 8px;
-  padding: 0 20px;
+  max-width: var(--chat-col, 820px);
+  margin: 0 auto;
+  padding: 10px 20px 0;
   color: var(--fg-2);
   font-size: var(--text-ui);
 }
-.ac-stopped span {
+.ac-stopped-in span {
   flex: 1;
+  min-width: 0;
+}
+.ac-stopped-in .btn {
+  flex-shrink: 0;
 }
 
 /* The New session dialog's and Settings' "Shows as" note when a brand has no chat. */

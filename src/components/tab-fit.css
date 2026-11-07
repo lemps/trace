@@ -1,0 +1,27 @@
+/* A tab row fitted to its width by measuring (`useTabFit`): tabs keep their
+   natural width; one that doesn't fit is an icon with its name in the tooltip,
+   or, past that, in the row's "more" menu. Not clipped: a tab's own menu (the
+   session's "+ agent") opens below it. */
+.tab-fit {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+}
+.tab-fit > * {
+  flex-shrink: 0;
+}
+/* Measured but not shown: an icon tab's label, a tab in the "more" menu. */
+.tab-fit .fit-icon [data-fit-label],
+.tab-fit > .fit-out {
+  top: 0;
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+.tab-fit-more {
+  flex-shrink: 0;
+  height: 100%;
+}
