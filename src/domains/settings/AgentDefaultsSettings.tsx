@@ -5,6 +5,7 @@ import {
   agentCli,
   agentModelRaw,
   agentProvider,
+  agentTransport,
   autoStartOnMove,
   DEFAULT_KICKOFF_PROMPT,
   kickoffPromptRaw,
@@ -12,10 +13,12 @@ import {
   setAgentCli,
   setAgentModel,
   setAgentProvider,
+  setAgentTransport,
   setAutoStartOnMove,
   setKickoffPrompt,
 } from "@/domains/agent/defaults";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import { useHasChat } from "@/domains/agentChat/transport";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { ProviderKeyField } from "./ProviderKeyField";
 import { SettingRow } from "./SettingRow";
 
@@ -27,6 +30,8 @@ export function AgentDefaultsSettings() {
   const [args, setArgs] = useState(agentArgsRaw);
   const [kickoff, setKickoff] = useState(kickoffPromptRaw);
   const [autoStart, setAutoStart] = useState(autoStartOnMove);
+  const [transport, setTransport] = useState<Transport>(agentTransport);
+  const codexChat = useHasChat("codex");
 
   const chooseCli = (next: AgentCli) => {
     setCli(next);
@@ -47,6 +52,10 @@ export function AgentDefaultsSettings() {
   const chooseKickoff = (next: string) => {
     setKickoff(next);
     setKickoffPrompt(next);
+  };
+  const chooseTransport = (next: Transport) => {
+    setTransport(next);
+    setAgentTransport(next);
   };
   const chooseAutoStart = (next: boolean) => {
     setAutoStart(next);
@@ -87,6 +96,19 @@ export function AgentDefaultsSettings() {
         </SettingRow>
       )}
       {cli === "claude" && provider !== "anthropic" && <ProviderKeyField provider={provider} />}
+      <SettingRow
+        label="Shows as"
+        hint={`Chat shows the agent as a formatted conversation, Terminal as its own TUI. A ticket or session can pick the other when it starts, and keeps its choice.${codexChat ? "" : " Codex has no chat view yet, so it always runs in a terminal."}`}
+      >
+        <select
+          aria-label="Show agents as"
+          value={transport}
+          onChange={(e) => chooseTransport(e.target.value as Transport)}
+        >
+          <option value="chat">Chat</option>
+          <option value="terminal">Terminal</option>
+        </select>
+      </SettingRow>
       <SettingRow label="Default model" hint="Passed as --model. Blank uses the CLI default.">
         <input
           type="text"

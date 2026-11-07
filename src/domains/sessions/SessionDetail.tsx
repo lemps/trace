@@ -13,12 +13,14 @@ import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { TerminalPane } from "@/domains/agent/TerminalPane";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
+import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
+import { useIsChatAgent } from "@/domains/agentChat/transport";
 import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { startSession, startSessionAgent } from "@/ipc/session";
 import { basename } from "@/platform/paths";
 import { AddAgentMenu } from "./AddAgentMenu";
@@ -82,13 +84,22 @@ export function SessionDetail({
 
   // The only difference between agents: how the backend spawns them.
   const spawn = useCallback(
-    (cols: number, rows: number) =>
+    (cols: number, rows: number, transport: Transport) =>
       active.companion
-        ? startSessionAgent(session.id, active.workspaceId, cols, rows, agentArgs())
-        : startSession(session.id, cols, rows, agentArgs()),
+        ? startSessionAgent(session.id, active.workspaceId, cols, rows, agentArgs(), transport)
+        : startSession(session.id, cols, rows, agentArgs(), undefined, transport),
     [session.id, active.companion, active.workspaceId]
   );
-  const run = useAgentRun(active.workspaceId, spawn);
+  const run = useAgentRun(active.workspaceId, active.cli, spawn);
+  // A chat agent has no terminal/transcript switch: the chat is its only view.
+  const activeIsChat = useIsChatAgent(active.workspaceId);
+  const agentItems = useAgentMenuItems({
+    workspaceId: active.workspaceId,
+    cli: active.cli,
+    running: run.running,
+    restart: run.restart,
+    start: run.start,
+  });
   // Repo + live branch for the header (the tab bar already names the agent).
   const info = useWorkspaceInfo(session.id, turnIds, run.running);
   const waiting = agentActivity[active.workspaceId] === "waiting";
@@ -234,6 +245,7 @@ export function SessionDetail({
             trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
             sections={[
               { title: session.folder ? "Folder" : "Worktree", items: editorItems(session.id) },
+              { title: active.label, items: agentItems },
               {
                 title: "Session",
                 items: [
@@ -315,7 +327,9 @@ export function SessionDetail({
             >
               <I.Terminal size={13} /> Terminal
             </button>
-            {pane === "agent" && <ViewSwitch workspaceId={active.workspaceId} cli={active.cli} />}
+            {pane === "agent" && !activeIsChat && (
+              <ViewSwitch workspaceId={active.workspaceId} cli={active.cli} />
+            )}
           </div>
 
           {pane === "agent" && (

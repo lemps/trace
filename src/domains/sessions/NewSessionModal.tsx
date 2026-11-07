@@ -2,7 +2,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { Modal } from "@/components/Modal";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import { defaultTransport, useHasChat } from "@/domains/agentChat/transport";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
 
@@ -15,7 +16,8 @@ interface NewSessionModalProps {
     cli: AgentCli,
     repo: string | null,
     provider: AgentProvider,
-    folder: string | null
+    folder: string | null,
+    transport: Transport
   ) => void;
 }
 
@@ -37,6 +39,9 @@ export function NewSessionModal({
   const [title, setTitle] = useState("");
   const [cli, setCli] = useState<AgentCli>(defaultCli);
   const [provider, setProvider] = useState<AgentProvider>(defaultProvider);
+  const [transport, setTransport] = useState<Transport>(() => defaultTransport(defaultCli));
+  const canChat = useHasChat(cli);
+  const shownAs: Transport = canChat ? transport : "terminal";
   const [repos, setRepos] = useState<string[]>([]);
   const [place, setPlace] = useState(SCRATCH);
   const [folder, setFolder] = useState<string | null>(null);
@@ -81,7 +86,8 @@ export function NewSessionModal({
       cli,
       isRepo ? place : null,
       provider,
-      place === FOLDER ? folder : null
+      place === FOLDER ? folder : null,
+      shownAs
     );
   };
 
@@ -148,6 +154,23 @@ export function NewSessionModal({
             <option value="deepseek-pro">DeepSeek Pro</option>
           </select>
         </label>
+      )}
+      <label className="field">
+        <span className="field-label">Shows as</span>
+        <select
+          className="field-input"
+          value={shownAs}
+          disabled={!canChat}
+          onChange={(e) => setTransport(e.target.value as Transport)}
+        >
+          <option value="chat">Chat</option>
+          <option value="terminal">Terminal</option>
+        </select>
+      </label>
+      {!canChat && (
+        <div className="field-note">
+          {cli === "codex" ? "Codex" : cli} has no chat view yet, so it runs in a terminal.
+        </div>
       )}
       <label className="field">
         <span className="field-label">Runs in</span>

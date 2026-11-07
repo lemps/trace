@@ -10,14 +10,18 @@
 //! - `registry`: the chat agents, starting, running or stopping.
 //! - `runtime`: starting and driving them, and the sink that persists and emits rows.
 //! - `store`: the journal file; `settle`: rows a vanished process left open.
+//! - `adapters`: which brands have a chat adapter, and starting one.
+//! - `transport`: whether each workspace runs as a chat or in the terminal.
 //! - `claude`: the Claude adapter.
 
+pub mod adapters;
 pub mod claude;
 pub mod journal;
 pub mod registry;
 pub mod runtime;
 pub mod settle;
 pub mod store;
+pub mod transport;
 
 use std::path::PathBuf;
 
@@ -103,4 +107,8 @@ pub trait AgentAdapter: Send {
     fn interrupt(&mut self) -> Result<(), String>;
     /// End the agent.
     fn stop(&mut self);
+    /// The agent's process id, for the interrupted-agents ledger.
+    fn pid(&self) -> Option<u32> {
+        None
+    }
 }

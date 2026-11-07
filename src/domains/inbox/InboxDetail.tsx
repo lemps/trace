@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { ChatPrompts } from "@/domains/agentChat/PendingPrompts";
+import { useIsChatAgent } from "@/domains/agentChat/transport";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useSessionsOverview } from "@/domains/sessions/hooks/useSessionsOverview";
@@ -42,6 +44,8 @@ interface InboxDetailProps {
 export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: InboxDetailProps) {
   const { info } = entry;
   const ask = shownAsk(info);
+  // A chat agent's prompts are its own cards, answered over the chat protocol.
+  const isChat = useIsChatAgent(entry.id);
   const overview = useSessionsOverview(entry.worktreeId ? [entry.worktreeId] : [])[
     entry.worktreeId ?? ""
   ];
@@ -82,7 +86,10 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
         </button>
       </div>
 
-      {ask && <AskCard workspaceId={entry.id} ask={ask} age={ageLabel(info.since, now)} />}
+      {ask && (!isChat || ask.kind === "turn") && (
+        <AskCard workspaceId={entry.id} ask={ask} age={ageLabel(info.since, now)} />
+      )}
+      {isChat && <ChatPrompts workspaceId={entry.id} />}
 
       {info.lastMessage && (
         <section className="ib-card">
@@ -126,6 +133,7 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
           key={entry.id}
           workspaceId={entry.id}
           pendingKind={info.ask?.kind ?? null}
+          chat={isChat}
           onSentNext={onSentNext}
         />
       )}

@@ -79,6 +79,12 @@ pub(crate) fn conversation_path(cwd: &str, session_id: &str) -> Option<PathBuf> 
     )
 }
 
+/// The saved conversation a start in `cwd` would `--resume`, without pinning a
+/// fresh one: what `claude_session_ids` returns as its resume id.
+pub(crate) fn resumable(workspace_id: &str, cwd: &str) -> Option<String> {
+    session_id_for(workspace_id).filter(|id| claude_conversation_exists(cwd, id))
+}
+
 /// Resolve the Claude `--resume`/`--session-id` args for a workspace: resume a
 /// saved conversation, or pin (and persist) a fresh id. Codex manages its own
 /// session state, so it gets neither. Shared by issue agents (`start_agent`) and

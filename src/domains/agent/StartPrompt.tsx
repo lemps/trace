@@ -11,6 +11,8 @@ interface StartPromptProps {
   agentName: string;
   /** The harness CLI ("claude" | "codex") — names the TUI the user will get. */
   cliName: string;
+  /** It will start as a chat rather than its TUI. */
+  asChat: boolean;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -25,6 +27,7 @@ export function StartPrompt({
   onRepoChange,
   agentName,
   cliName,
+  asChat,
 }: StartPromptProps) {
   const noRepos = repos.length === 0;
   return (
@@ -33,10 +36,14 @@ export function StartPrompt({
         <span className="ic">
           <I.Bolt size={28} />
         </span>
-        <div className="title">Start an interactive {capitalize(agentName)} session</div>
+        <div className="title">
+          Start {asChat ? "a" : "an interactive"} {capitalize(agentName)} session
+        </div>
         <div className="hint">
-          The agent runs in an isolated git worktree under the repo you pick. You'll get the full{" "}
-          {cliName} TUI right here.
+          The agent runs in an isolated git worktree under the repo you pick.{" "}
+          {asChat
+            ? "Its work shows here as a chat: messages, tool runs, diffs and approvals."
+            : `You'll get the full ${cliName} TUI right here.`}
         </div>
         {noRepos ? (
           <div className="hint" style={{ color: "var(--c-warn)" }}>

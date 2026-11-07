@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useState } from "react";
 import { toast } from "@/app/toast";
+import { replyToChat } from "@/domains/agentChat/PendingPrompts";
 import { reply, TERMINAL_ONLY } from "@/domains/live/answer";
 import type { AskKind } from "@/domains/live/types";
 import { isSendAndNext, useHint } from "@/platform/shortcuts";
@@ -8,19 +9,21 @@ interface ReplyBoxProps {
   workspaceId: string;
   /** What's pending — a permission/plan menu is dismissed before the message goes. */
   pendingKind: AskKind | null;
+  /** A chat agent: the reply is a chat message (or the reason for denying its open approval). */
+  chat: boolean;
   /** ⌘⏎: send, then move to the next agent that needs you. */
   onSentNext: () => void;
 }
 
 // Talk to the agent without opening its terminal. ⏎ sends; ⌘⏎ sends and moves on.
-export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps) {
+export function ReplyBox({ workspaceId, pendingKind, chat, onSentNext }: ReplyBoxProps) {
   const [text, setText] = useState("");
   const nextHint = useHint("sendAndNext");
   const send = (thenNext: boolean) => {
     if (!text.trim()) return;
     const message = text;
     setText("");
-    reply(workspaceId, message, pendingKind)
+    (chat ? replyToChat(workspaceId, message) : reply(workspaceId, message, pendingKind))
       .then(() => {
         if (thenNext) onSentNext();
       })
@@ -32,7 +35,8 @@ export function ReplyBox({ workspaceId, pendingKind, onSentNext }: ReplyBoxProps
   if (pendingKind && TERMINAL_ONLY.has(pendingKind)) {
     return (
       <div className="ib-reply ib-reply-off">
-        It's asking a question — pick an answer above, or open it to type your own.
+        It's asking a question — pick an answer above
+        {chat ? ", or type one in its box." : ", or open it to type your own."}
       </div>
     );
   }

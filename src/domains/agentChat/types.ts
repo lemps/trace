@@ -155,6 +155,19 @@ export interface SessionInfo {
   limits: LimitWindow[];
 }
 
+/** How an agent is hosted: this chat view, or its TUI in a terminal. */
+export type Transport = "chat" | "terminal";
+
+/** `chat_agent_state`: a workspace's chat agent as it is now (`runtime::ChatAgentState`). */
+export interface ChatAgentState {
+  /** What its agent runs on, once it has run or been chosen. */
+  transport: Transport | null;
+  /** A chat agent is starting, running or stopping. */
+  running: boolean;
+  /** What it last reported, if one ran since trace started. */
+  info: SessionInfo | null;
+}
+
 /** Events the backend emits, one per agent. */
 export interface JournalEvent {
   workspaceId: string;

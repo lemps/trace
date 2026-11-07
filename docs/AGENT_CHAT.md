@@ -14,6 +14,7 @@ brand. Modelled on Orca's structured mode (see "Prior art" below).
 A session or ticket agent is started as one or the other: Settings → Agents has the default and
 the New session dialog can override it. They can't share one process. "Open in terminal" forks a
 chat agent's conversation into a terminal agent (`--resume`), and the reverse works the same way.
+How that's wired is under "Choosing and switching the transport" below.
 
 **Billing:** a probe on 2026-11-07 (Claude Code 2.1.319) showed headless Claude on a claude.ai
 login reports `apiKeySource: "none"` and the subscription's `rate_limit_event` windows, so it
@@ -29,10 +30,10 @@ Every adapter turns its protocol into the same rows: `agent_session::journal` (R
 | --- | --- |
 | `message` | `role` (user, assistant, reasoning, system), Markdown `text`, `streaming` |
 | `tool` | `callId`, `name`, `input`, `state` (running, completed, failed), bounded `output`, `parentCallId` for subagents |
-| `diff` | a file change: `path`, `change` (add, edit, delete), `before`/`after` or a unified `patch` |
+| `diff` | a file change: `path`, `change` (add, edit, delete; not `kind`, which is the body's tag), `before`/`after` or a unified `patch` |
 | `plan` | a task list: items with `text` and `status` (pending, in progress, done) |
-| `approval` | a permission request: tool, title, detail, options (allow once, allow always, deny), `resolution` |
-| `question` | one or more questions with options, multi-select, free text, `resolution` |
+| `approval` | a permission request: tool, title, detail, options (allow once, allow always, deny), `resolution`. Answered with `{kind: "approval", optionId, note?}` |
+| `question` | one or more questions with options, multi-select, free text, `resolution`. Answered with `{kind: "questions", answers: {<question id>: [labels or text]}}` |
 | `status` | a notice with a tone (info, warning, error) |
 | `turn` | a turn's `state` (running, completed, interrupted, failed), duration, token usage and cost |
 
@@ -104,6 +105,51 @@ Interrupt is the stream-json `control_request` `interrupt`; the process stays up
 requests (hook callbacks, SDK MCP) are refused with an error response so Claude never waits on
 one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from a real turn.
 
+## Choosing and switching the transport
+
+**The choice.** Settings → Agents → *Shows as* is the default (Chat; stored in the renderer like
+the other agent defaults). The New session dialog and the ticket's Start ▾ menu can pick the
+other for one agent. Brands without a chat adapter (`agent_session::adapters::CHAT_BRANDS`, which
+`chat_agent_brands` returns) always get the terminal, and those controls say so. Sessions with
+Remote Control are terminals (it's a TUI feature).
+
+**Kept with the workspace.** `agent_session::transport` stores each workspace's transport in
+`transports.json` (config dir) when its agent starts, or when the New session dialog picks one
+(`set_agent_transport`). A start's transport is: what the caller asked for, else the stored one,
+else the terminal (the renderer passes Settings' default for a workspace that never ran). It moves
+with a session linked to a ticket, and goes with a deleted session or companion (its journal too).
+
+**Every start goes through `commands::agent::spawn_in`**, which routes by transport: a chat
+agent to `agent_session::runtime::start`, a terminal one to the PTY. So the ticket start and
+board kickoff (`start_agent`, which the orchestrator's `start_agent` tool reaches through the
+board's kickoff), `start_session` (the session view and the MCP `start_session` tool),
+`start_session_agent` (companions), the scheduled runs (always terminal) and resume-after-quit
+(`resume_interrupted_agents`, the ledger records the transport) all honour it. A chat agent gets
+the same model, provider and extra args as a terminal agent would, plus trace's MCP tools and
+hooks (`adapters::wiring` → `claude::launch`). The kickoff brief (or, resuming a conversation
+cut off by a quit, the "carry on" nudge) is sent as the first chat message once the agent is up.
+
+**Stop, restart, state.** `stop_agent` stops either kind; `agent_running` and `live_workspaces`
+include chat agents, so every Stop button, the command palette and reload adoption work
+unchanged. A chat agent's exit emits `agent-run-state` and updates the interrupted ledger like a
+PTY's. `chat_agent_state` returns a workspace's stored transport, whether a chat agent runs, and
+its last `SessionInfo` (kept after exit), so a view mounted after a reload, or after the agent
+started, shows the chat. In the renderer `agentChat/liveBridge` turns `SessionInfo.busy` and open
+approval/question rows into the board's activity, the live store's ask, and the same
+notifications a terminal agent's hooks and quiet timer give. The Inbox shows a chat agent's open
+prompts as their chat cards (answered over stream-json; 1–9 pick an approval option) and its reply
+box sends a chat message (or, with an approval open, denies it with the text as the reason). The
+orchestrator's `send_to_agent` / `broadcast_to_agents` and the session tools' `send_to_session`
+send chat messages to chat agents; `read_session` returns the end of the conversation.
+
+**Restart and "Open in terminal".** The `…` menu of a ticket or session has *Restart agent*, and
+*Open in terminal* (chat agent) or *Open as chat* (terminal agent, brand with a chat adapter).
+Each is: stop, wait until the process is gone (`agentChat/switch.ts`), start again on the chosen
+transport. Both transports key the conversation by workspace (`claude::conversations`), so the
+start `--resume`s it. Switching is only offered while the agent is idle (not mid-turn, nothing
+waiting on an answer). The chat journal covers only what ran as a chat; turns taken in the
+terminal aren't replayed into it.
+
 ## The chat view
 
 `src/domains/agentChat/`, shared by ticket agents and sessions:
@@ -120,7 +166,12 @@ one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from
 
 1. The contract (this doc and the journal types).
 2. In parallel: the runtime with the Claude adapter, and the chat UI against fixture journals.
-3. The Codex adapter. 4. The transport setting, "Open in terminal" and resume. 5. ACP.
+3. The Codex adapter. 4. The transport setting, "Open in terminal" and resume (done; see above).
+5. ACP.
+
+Adding a brand: its adapter, then one entry in `adapters::CHAT_BRANDS` and one arm each in
+`adapters::launch`, `adapters::wiring` and `adapters::resumable`. The renderer asks
+`chat_agent_brands`, so its menus and Settings follow.
 
 ## Prior art
 

@@ -81,6 +81,7 @@ pub fn remove_session_agent(
 ) -> Result<ScratchSession, String> {
     discard_agents(&state, std::slice::from_ref(&agent_id));
     let _ = forget_session_id(&agent_id);
+    crate::agent_session::runtime::forget(&agent_id);
     update(|list| {
         let Some(session) = list.iter_mut().find(|s| s.id == id) else {
             return Err("That session no longer exists.".to_string());
@@ -93,6 +94,7 @@ pub fn remove_session_agent(
 /// Start (or resume) a companion in its session's worktree — created on demand,
 /// exactly like `start_session`, so a companion can be the first thing you run in
 /// a session. Idempotent: a no-op if its PTY is already live.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn start_session_agent(
     app: AppHandle,
@@ -102,6 +104,8 @@ pub fn start_session_agent(
     cols: u16,
     rows: u16,
     extra_args: Option<Vec<String>>,
+    // "chat" | "terminal"; unset keeps what this agent ran on last.
+    transport: Option<String>,
 ) -> Result<(), String> {
     if state.pty_sessions.lock().contains_key(&agent_id) {
         return Ok(());
@@ -134,6 +138,9 @@ pub fn start_session_agent(
         None,
         None,
         provider,
+        transport
+            .as_deref()
+            .and_then(crate::agent_session::transport::Transport::parse),
         cols,
         rows,
     )
@@ -144,6 +151,7 @@ pub fn start_session_agent(
 /// archived — its companions go down with it, but nothing is discarded.
 pub(crate) fn stop_agents(state: &AppState, ids: &[String]) {
     for id in ids {
+        crate::agent_session::runtime::stop(state, id);
         // Take the session out of the map (dropping the guard) before killing it,
         // so we never hold a lock across the wait.
         let live = state.pty_sessions.lock().remove(id);

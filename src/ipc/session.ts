@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ScratchSession, SessionGroups } from "@/domains/sessions/types";
-import type { AgentCli, AgentProvider } from "./agent";
+import type { AgentCli, AgentProvider, Transport } from "./agent";
 
 // Typed wrappers around the exploratory-session commands. Start/stop/input/resize
 // reuse the agent commands (ipc/agent.ts) keyed by the session id.
@@ -68,13 +68,17 @@ export function setSessionGroup(
   return invoke("set_session_group", { id, tab, section });
 }
 
-/** Start (or resume) a session's agent; `prompt` is submitted as its first message. */
+/**
+ * Start (or resume) a session's agent; `prompt` is submitted as its first message.
+ * `transport` unset keeps what the session ran on last.
+ */
 export function startSession(
   id: string,
   cols: number,
   rows: number,
   extraArgs?: string[],
-  prompt?: string
+  prompt?: string,
+  transport?: Transport
 ): Promise<void> {
   return invoke("start_session", {
     id,
@@ -82,6 +86,7 @@ export function startSession(
     rows,
     extraArgs: extraArgs ?? null,
     initialPrompt: prompt ?? null,
+    transport: transport ?? null,
   });
 }
 
@@ -108,7 +113,15 @@ export function startSessionAgent(
   agentId: string,
   cols: number,
   rows: number,
-  extraArgs?: string[]
+  extraArgs?: string[],
+  transport?: Transport
 ): Promise<void> {
-  return invoke("start_session_agent", { id, agentId, cols, rows, extraArgs: extraArgs ?? null });
+  return invoke("start_session_agent", {
+    id,
+    agentId,
+    cols,
+    rows,
+    extraArgs: extraArgs ?? null,
+    transport: transport ?? null,
+  });
 }

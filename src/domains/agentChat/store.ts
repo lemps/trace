@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { EMPTY_JOURNAL, type Journal, upsertRows } from "./journal";
-import type { JournalRow, SessionInfo } from "./types";
+import type { JournalRow, SessionInfo, Transport } from "./types";
 
 // Chat agents' state in the renderer, per workspace: the journal (rows upserted
-// by id at their highest revision), the agent's SessionInfo, messages queued
-// while a turn runs, and prompts being answered (so their buttons disable).
+// by id at their highest revision), the agent's SessionInfo, which transport it
+// runs on, messages queued while a turn runs, and prompts being answered (so
+// their buttons disable).
 
 /** A message typed while the agent was busy, sent once its turn ends. */
 export interface QueuedMessage {
@@ -15,6 +16,10 @@ export interface QueuedMessage {
 interface AgentChatState {
   journals: Record<string, Journal>;
   info: Record<string, SessionInfo>;
+  /** What each workspace's agent runs on, once known (`transport.ts`). */
+  transport: Record<string, Transport>;
+  /** The CLIs with a chat adapter (`chat_agent_brands`). */
+  brands: string[];
   /** Workspaces whose saved journal has been read. */
   loaded: Record<string, boolean>;
   queues: Record<string, QueuedMessage[]>;
@@ -26,6 +31,8 @@ interface AgentChatState {
   paused: Record<string, boolean>;
   applyRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
   setInfo: (workspaceId: string, info: SessionInfo) => void;
+  setTransport: (workspaceId: string, transport: Transport) => void;
+  setBrands: (brands: string[]) => void;
   markLoaded: (workspaceId: string) => void;
   enqueue: (workspaceId: string, text: string) => void;
   editQueued: (workspaceId: string, id: string, text: string) => void;
@@ -41,6 +48,8 @@ let nextQueued = 0;
 export const useAgentChatStore = create<AgentChatState>((set) => ({
   journals: {},
   info: {},
+  transport: {},
+  brands: ["claude"],
   loaded: {},
   queues: {},
   answering: {},
@@ -62,9 +71,18 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
   setInfo: (workspaceId, info) =>
     set((s) => ({
       info: { ...s.info, [workspaceId]: info },
+      // Only a chat agent reports this.
+      transport: { ...s.transport, [workspaceId]: "chat" },
       paused: { ...s.paused, [workspaceId]: false },
       sending: info.busy ? { ...s.sending, [workspaceId]: false } : s.sending,
     })),
+  setTransport: (workspaceId, transport) =>
+    set((s) =>
+      s.transport[workspaceId] === transport
+        ? s
+        : { transport: { ...s.transport, [workspaceId]: transport } }
+    ),
+  setBrands: (brands) => set({ brands }),
   markLoaded: (workspaceId) => set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } })),
   enqueue: (workspaceId, text) =>
     set((s) => {

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
+import { pickChatOption } from "@/domains/agentChat/PendingPrompts";
+import { isChatAgent } from "@/domains/agentChat/transport";
 import { dismissAsk } from "@/domains/board/waitingNotify";
 import { choicesFor, choose } from "@/domains/live/answer";
 import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
@@ -70,6 +72,11 @@ export function InboxView({ onOpen }: InboxViewProps) {
       // Only for a row the user picked: the fallback selection can shift to a
       // different agent when a row leaves the tab, and an answer must not.
       if (!selected || selectedId !== selected.id) return;
+      // A chat agent's approval is answered over the chat, not with keystrokes.
+      if (isChatAgent(selected.id)) {
+        void pickChatOption(selected.id, i).catch((err) => toast.error(`Couldn't answer: ${err}`));
+        return;
+      }
       const choice = choicesFor(selected.info.ask)[i];
       if (choice) {
         void choose(selected.id, choice).catch((err) => toast.error(`Couldn't answer: ${err}`));

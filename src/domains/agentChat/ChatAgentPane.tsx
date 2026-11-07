@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { useBoardStore } from "@/domains/board/store";
 import { workspaceInfo } from "@/ipc/workspace";
 import { isShortcut } from "@/platform/shortcuts";
 import { useChatActions } from "./actions";
@@ -17,15 +18,23 @@ interface ChatAgentPaneProps {
   workspaceId: string;
   /** Open every collapsible card (the dev fixture page's screenshot mode). */
   expandAll?: boolean;
+  /**
+   * Start the stopped agent, the way the view's own Start does (same model,
+   * provider, flags and transport). Without it (the fixture page) the agent
+   * counts as always running.
+   */
+  onStart?: () => void;
 }
 
 // A chat agent's conversation, the same for every brand: the header's facts,
 // the turns (messages, tool calls, diffs, plans, prompts answered in place) and
 // the composer. This is the one seam the session and ticket views mount; it
 // needs only the workspace id.
-export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneProps) {
+export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatAgentPaneProps) {
   useJournalFeed(workspaceId);
   const actions = useChatActions();
+  const live = useBoardStore((s) => s.runningAgents.has(workspaceId));
+  const stopped = onStart !== undefined && !live;
   const journal = useJournal(workspaceId);
   const info = useAgentChatStore((s) => s.info[workspaceId]);
   const loaded = useAgentChatStore((s) => s.loaded[workspaceId] ?? false);
@@ -57,11 +66,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneP
       <div className="ac-pane" onKeyDown={onKeyDown}>
         <ChatHeader info={info} turns={turns} />
         {turns.length === 0 ? (
-          <Empty
-            loaded={loaded}
-            hasAgent={info !== undefined}
-            onStart={() => void actions.start(workspaceId).catch((e) => toast.error(String(e)))}
-          />
+          <Empty loaded={loaded} stopped={stopped} onStart={onStart} />
         ) : (
           <ChatList
             turns={turns}
@@ -71,6 +76,14 @@ export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneP
             }
           />
         )}
+        {stopped && turns.length > 0 && (
+          <div className="ac-stopped">
+            <span>The agent isn't running. Start it to carry on this conversation.</span>
+            <button type="button" className="btn primary" onClick={onStart}>
+              <I.Bolt size={13} /> Start
+            </button>
+          </div>
+        )}
         <Composer workspaceId={workspaceId} busy={busy} slashCommands={info?.slashCommands ?? []} />
       </div>
     </ChatViewContext.Provider>
@@ -79,12 +92,12 @@ export function ChatAgentPane({ workspaceId, expandAll = false }: ChatAgentPaneP
 
 function Empty({
   loaded,
-  hasAgent,
+  stopped,
   onStart,
 }: {
   loaded: boolean;
-  hasAgent: boolean;
-  onStart: () => void;
+  stopped: boolean;
+  onStart?: () => void;
 }) {
   if (!loaded) {
     return (
@@ -96,10 +109,10 @@ function Empty({
   return (
     <div className="tx-empty">
       <div className="ib-empty ac-empty">
-        {hasAgent
-          ? "Nothing here yet. Your messages and the agent's work will show up here."
-          : "The agent isn't running. Start it, then send it a message."}
-        {!hasAgent && (
+        {stopped
+          ? "The agent isn't running. Start it, then send it a message."
+          : "Nothing here yet. Your messages and the agent's work will show up here."}
+        {stopped && onStart && (
           <button type="button" className="btn primary" onClick={onStart}>
             <I.Bolt size={13} /> Start
           </button>

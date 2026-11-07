@@ -48,7 +48,11 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
-- [ ] **Default view setting:** choose chat or CLI globally or per agent.
+- [x] **Default view setting:** choose chat or CLI globally or per agent. Settings → Agents →
+      Shows as (Chat by default; Codex stays Terminal until its adapter lands), overridden per
+      agent from the New session dialog or the ticket's Start menu, and kept with the workspace so
+      restarts, resumes and resume-after-quit use the same one. "Open in terminal" / "Open as
+      chat" moves an idle agent across, resuming its conversation (docs/AGENT_CHAT.md).
 
 ### Reviewing agent work
 
