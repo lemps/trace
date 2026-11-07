@@ -15,6 +15,13 @@ pub fn trace_dir() -> PathBuf {
         .join("trace")
 }
 
+/// The last `max` chars of `text`, on a char boundary: where a command's
+/// output says why it failed.
+pub fn tail_chars(text: &str, max: usize) -> String {
+    let count = text.chars().count();
+    text.chars().skip(count.saturating_sub(max)).collect()
+}
+
 /// Dir prepended to every agent's PATH; holds trace-generated CLIs like the
 /// `trace-render` producer (see `claude::render_bridge`).
 pub fn trace_bin_dir() -> PathBuf {

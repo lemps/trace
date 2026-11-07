@@ -30,12 +30,34 @@ pub trait ProcessHost {
     /// open until it's closed, so on Windows trace has to watch the process itself.
     fn pty_reports_exit() -> bool;
 
-    /// Make `command` lead a process group of its own, so [`Self::stop_group`] reaches
-    /// everything it starts: stopping `sh -c` alone would leave its `curl` running.
+    /// Set `command` up so [`Self::track_group`] can reach everything it starts:
+    /// stopping `sh -c` alone would leave its `curl` running.
     fn own_group(command: &mut Command);
 
-    /// Stop a process started with [`Self::own_group`], and what it started.
-    fn stop_group(pid: u32);
+    /// Right after spawning a command set up with [`Self::own_group`]: a handle
+    /// that stops the child and everything it started — even once the child has
+    /// exited and left a background process behind.
+    fn track_group(child: &Child) -> ProcessGroup;
+}
+
+/// A spawned process's whole tree, stoppable at once ([`ProcessHost::track_group`]).
+/// Dropping it doesn't stop anything.
+pub struct ProcessGroup {
+    stop: Box<dyn FnMut() + Send>,
+}
+
+impl ProcessGroup {
+    /// A group stopped by `stop` (which owns whatever it needs to release).
+    pub fn new(stop: impl FnMut() + Send + 'static) -> Self {
+        Self {
+            stop: Box::new(stop),
+        }
+    }
+
+    /// Kill every process in the group. Safe to call more than once.
+    pub fn stop(&mut self) {
+        (self.stop)();
+    }
 }
 
 /// Finding the CLIs trace runs (`claude`, `codex`, `git`, `gh`, …).

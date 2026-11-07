@@ -155,6 +155,30 @@ fn old_runs_without_a_precheck_still_parse() {
 
 #[test]
 fn output_keeps_the_tail() {
-    assert_eq!(tail("abcdef", 3), "def");
     assert_eq!(describe(TIMEOUT), "2 minutes");
+    let long = "x".repeat(OUTPUT_TAIL * 10) + "the end";
+    let kept = read_tail(&mut long.as_bytes());
+    assert!(kept.len() <= OUTPUT_TAIL * 4);
+    assert!(kept.ends_with(b"the end"));
+}
+
+#[test]
+fn a_background_child_is_stopped_when_the_line_exits() {
+    let dir = scratch("background");
+    // The child inherits the output pipes; left running, it would hold them
+    // open and the reason would be lost.
+    let line = if cfg!(windows) {
+        "start /b ping -n 30 127.0.0.1 & echo nothing new & exit 1".to_string()
+    } else {
+        "sleep 30 & echo nothing new; exit 1".to_string()
+    };
+    let started = Instant::now();
+    let result = check(&line, &dir, &env());
+    assert_eq!(result.exit_code, Some(1));
+    assert!(
+        result.output.contains("nothing new"),
+        "output: {:?}",
+        result.output
+    );
+    assert!(started.elapsed() < DRAIN, "took {:?}", started.elapsed());
 }

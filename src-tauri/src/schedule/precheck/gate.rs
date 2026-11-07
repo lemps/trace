@@ -7,7 +7,7 @@ use std::path::Path;
 
 use tauri::{AppHandle, Manager};
 
-use super::{run, Verdict, TIMEOUT};
+use super::{run, PrecheckResult, Verdict, TIMEOUT};
 use crate::schedule::model::{RunStatus, ScheduleRun, ScheduledPrompt};
 use crate::schedule::{run as sched_run, run_workspace_id, store};
 use crate::state::AppState;
@@ -23,19 +23,23 @@ pub fn passes(app: &AppHandle, prompt: &ScheduledPrompt, run_rec: &ScheduleRun, 
     // A stop (or the run's own timeout) removes the live entry.
     let stopped = || !state.live_runs.lock().contains_key(&ws);
     let env = crate::claude::env::build_effective_cli_env(&vars(prompt, run_rec));
-    let result = match run(line, Path::new(cwd), &env, TIMEOUT, stopped) {
-        Ok(result) => result,
-        Err(err) => {
-            sched_run::finish(app, &ws, RunStatus::Failed, Some(err));
-            return false;
+    let (result, verdict) = match run(line, Path::new(cwd), &env, TIMEOUT, stopped) {
+        Ok(result) => {
+            let verdict = result.verdict();
+            (result, verdict)
         }
+        // Kept on the run all the same, so its history shows the line that failed.
+        Err(err) => (unstarted(line), Verdict::Fail(err)),
     };
-    let verdict = result.verdict();
     let updated = store::update_run(&run_rec.id, |r| r.precheck = Some(result));
+    // Announced even when the run was stopped meanwhile: `finish` told the
+    // renderer before this result existed.
+    if let Ok(Some(run)) = &updated {
+        sched_run::emit(app, run);
+    }
     match verdict {
         Verdict::Run if !stopped() => {
             if let Ok(Some(run)) = updated {
-                sched_run::emit(app, &run);
                 // Deferred from `run::start`: a skip isn't worth a log line.
                 crate::schedule::activity::log_run(app, &run);
             }
@@ -50,6 +54,17 @@ pub fn passes(app: &AppHandle, prompt: &ScheduledPrompt, run_rec: &ScheduleRun, 
             sched_run::finish(app, &ws, RunStatus::Failed, Some(err));
             false
         }
+    }
+}
+
+/// The record of a precheck that couldn't be started.
+fn unstarted(line: &str) -> PrecheckResult {
+    PrecheckResult {
+        command: line.to_string(),
+        exit_code: None,
+        output: String::new(),
+        timed_out: false,
+        millis: 0,
     }
 }
 

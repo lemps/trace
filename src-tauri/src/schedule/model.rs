@@ -46,7 +46,8 @@ pub struct ScheduledPrompt {
     /// Next firing (epoch secs); `None` while paused.
     #[serde(default)]
     pub next_run_at: Option<i64>,
-    /// When the latest run started — feeds the `{lastRunAt}` variable.
+    /// When the latest firing started, skipped ones included. `{lastRunAt}` is
+    /// the last run that got past its precheck instead (`store::last_run_at`).
     #[serde(default)]
     pub last_run_at: Option<i64>,
 }

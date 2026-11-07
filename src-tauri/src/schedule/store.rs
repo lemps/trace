@@ -71,16 +71,26 @@ pub fn update_run(
     })
 }
 
-/// When `prompt_id` last really ran (a skipped run doesn't count), leaving out
-/// `except` (the run asking). Feeds `{lastRunAt}` and the precheck's
+/// When `prompt_id` last really ran, leaving out `except` (the run asking): a run
+/// that ended at its precheck (skipped, timed out, stopped) had no agent look at
+/// anything, so it doesn't count. Feeds `{lastRunAt}` and the precheck's
 /// `TRACE_LAST_RUN_AT`.
 pub fn last_run_at(prompt_id: &str, except: &str) -> Option<i64> {
     runs()
         .into_iter()
         .filter(|r| r.prompt_id == prompt_id && r.id != except)
-        .filter(|r| r.status != RunStatus::Skipped)
+        .filter(|r| !ended_at_precheck(r))
         .map(|r| r.started_at)
         .max()
+}
+
+/// The run never got past its precheck.
+fn ended_at_precheck(run: &ScheduleRun) -> bool {
+    run.status == RunStatus::Skipped
+        || run
+            .precheck
+            .as_ref()
+            .is_some_and(|p| p.exit_code != Some(0))
 }
 
 /// Record a new run, pruning its prompt's oldest finished runs past the cap.
@@ -100,25 +110,24 @@ pub fn push_run(run: ScheduleRun) -> Result<(), String> {
     Ok(())
 }
 
-/// Ids of `prompt_id`'s runs past the caps, oldest first (`runs` is oldest-first).
+/// Ids of `prompt_id`'s finished runs past the caps, oldest first (`runs` is
+/// oldest-first). A run still going isn't counted: it may yet be skipped, and
+/// counting it as a real one would push a real run out for a skip.
 fn prunable(runs: &[ScheduleRun], prompt_id: &str) -> Vec<String> {
-    let mine: Vec<&ScheduleRun> = runs.iter().filter(|r| r.prompt_id == prompt_id).collect();
-    let (skipped, kept): (Vec<&ScheduleRun>, Vec<&ScheduleRun>) = mine
-        .into_iter()
-        .partition(|r| r.status == RunStatus::Skipped);
-    let mut doomed = oldest_finished(&kept, RUNS_PER_PROMPT);
-    doomed.extend(oldest_finished(&skipped, SKIPPED_PER_PROMPT));
+    let mine = runs
+        .iter()
+        .filter(|r| r.prompt_id == prompt_id && r.status != RunStatus::Running);
+    let (skipped, kept): (Vec<&ScheduleRun>, Vec<&ScheduleRun>) =
+        mine.partition(|r| r.status == RunStatus::Skipped);
+    let mut doomed = oldest(&kept, RUNS_PER_PROMPT);
+    doomed.extend(oldest(&skipped, SKIPPED_PER_PROMPT));
     doomed
 }
 
-/// The oldest finished runs that take `runs` past `cap`.
-fn oldest_finished(runs: &[&ScheduleRun], cap: usize) -> Vec<String> {
+/// The oldest runs that take `runs` past `cap`.
+fn oldest(runs: &[&ScheduleRun], cap: usize) -> Vec<String> {
     let excess = runs.len().saturating_sub(cap);
-    runs.iter()
-        .filter(|r| r.status != RunStatus::Running)
-        .take(excess)
-        .map(|r| r.id.clone())
-        .collect()
+    runs.iter().take(excess).map(|r| r.id.clone()).collect()
 }
 
 #[cfg(test)]
@@ -164,9 +173,26 @@ mod tests {
     }
 
     #[test]
-    fn a_running_run_is_never_pruned() {
+    fn a_running_run_neither_goes_nor_pushes_a_real_one_out() {
         let mut runs = vec![run(0, RunStatus::Running)];
         runs.extend((1..=RUNS_PER_PROMPT).map(|i| run(i, RunStatus::Succeeded)));
+        assert!(prunable(&runs, "p").is_empty());
+        runs.push(run(99, RunStatus::Succeeded));
         assert_eq!(prunable(&runs, "p"), vec!["1".to_string()]);
+    }
+
+    #[test]
+    fn runs_that_ended_at_their_precheck_are_not_the_last_run() {
+        let mut timed_out = run(5, RunStatus::Failed);
+        timed_out.precheck = Some(crate::schedule::precheck::PrecheckResult {
+            command: "x".into(),
+            exit_code: None,
+            output: String::new(),
+            timed_out: true,
+            millis: 0,
+        });
+        assert!(ended_at_precheck(&timed_out));
+        assert!(ended_at_precheck(&run(6, RunStatus::Skipped)));
+        assert!(!ended_at_precheck(&run(7, RunStatus::Failed)));
     }
 }

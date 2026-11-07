@@ -21,3 +21,5 @@ mod macos;
 mod unix;
 #[cfg(windows)]
 mod windows;
+#[cfg(windows)]
+mod windows_job;

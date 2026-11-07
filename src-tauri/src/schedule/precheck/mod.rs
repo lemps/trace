@@ -99,7 +99,7 @@ pub fn normalize(line: Option<String>) -> Result<Option<String>, String> {
 }
 
 /// Run `line` in `cwd` with `env` laid over trace's own (as worktree setup
-/// does), for at most `timeout`. Stops early when `cancelled` turns true (the
+/// does, minus the Claude session markers agents never get), for at most `timeout`. Stops early when `cancelled` turns true (the
 /// run was stopped). Errs only when the shell couldn't be started.
 pub fn run(
     line: &str,
@@ -115,13 +115,22 @@ pub fn run(
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    for key in crate::claude::env::INHERITED_SESSION_ENV {
+        command.env_remove(key);
+    }
     Os::own_group(&mut command);
     let started = Instant::now();
     let mut child = command
         .spawn()
         .map_err(|e| format!("Couldn't start the precheck: {e}"))?;
+    let mut group = Os::track_group(&child);
     let output = collect_output(&mut child);
     let (status, timed_out) = wait(&mut child, started, timeout, cancelled);
+    // Whatever it left running in the background would outlive it, holding the
+    // output pipes open — stop the whole group however it ended.
+    group.stop();
+    let _ = child.kill();
+    let _ = child.wait();
     let millis = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
     Ok(PrecheckResult {
         command: line.to_string(),
@@ -152,9 +161,7 @@ fn collect_output(child: &mut Child) -> impl FnOnce() -> String {
         readers += 1;
         let tx = tx.clone();
         std::thread::spawn(move || {
-            let mut bytes = Vec::new();
-            let _ = pipe.read_to_end(&mut bytes);
-            let _ = tx.send((index, bytes));
+            let _ = tx.send((index, read_tail(&mut pipe)));
         });
     }
     move || {
@@ -173,12 +180,32 @@ fn collect_output(child: &mut Child) -> impl FnOnce() -> String {
             text.push('\n');
         }
         text.push_str(&err);
-        tail(text.trim(), OUTPUT_TAIL)
+        crate::helpers::tail_chars(text.trim(), OUTPUT_TAIL)
     }
 }
 
-/// Wait for exit, killing the group on timeout or cancellation. Returns the
-/// status (`None` if it was killed) and whether it timed out.
+/// Read `pipe` to its end keeping only the last bytes that can hold
+/// [`OUTPUT_TAIL`] chars, so a chatty precheck can't fill memory.
+fn read_tail(pipe: &mut impl Read) -> Vec<u8> {
+    let keep = OUTPUT_TAIL * 4;
+    let mut kept = Vec::new();
+    let mut chunk = [0u8; 8192];
+    while let Ok(n) = pipe.read(&mut chunk) {
+        if n == 0 {
+            break;
+        }
+        kept.extend_from_slice(&chunk[..n]);
+        if kept.len() > keep * 2 {
+            kept.drain(..kept.len() - keep);
+        }
+    }
+    let excess = kept.len().saturating_sub(keep);
+    kept.drain(..excess);
+    kept
+}
+
+/// Wait for exit, giving up on timeout or cancellation (the caller then kills
+/// it). Returns the status (`None` if it gave up) and whether it timed out.
 fn wait(
     child: &mut Child,
     started: Instant,
@@ -189,23 +216,14 @@ fn wait(
         match child.try_wait() {
             Ok(Some(status)) => return (Some(status), false),
             Ok(None) => {}
-            Err(_) => break,
+            Err(_) => return (None, false),
         }
         let timed_out = started.elapsed() >= timeout;
         if timed_out || cancelled() {
-            kill(child);
             return (None, timed_out);
         }
         std::thread::sleep(POLL);
     }
-    kill(child);
-    (None, false)
-}
-
-fn kill(child: &mut Child) {
-    Os::stop_group(child.id());
-    let _ = child.kill();
-    let _ = child.wait();
 }
 
 /// "2 minutes", "45 seconds".
@@ -217,12 +235,6 @@ fn describe(d: Duration) -> String {
     } else {
         format!("{secs} seconds")
     }
-}
-
-/// The last `max` chars of `text`, on a char boundary.
-fn tail(text: &str, max: usize) -> String {
-    let count = text.chars().count();
-    text.chars().skip(count.saturating_sub(max)).collect()
 }
 
 #[cfg(test)]
