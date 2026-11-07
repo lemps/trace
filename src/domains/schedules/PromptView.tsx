@@ -23,6 +23,7 @@ export function PromptView({ prompt, sent }: PromptViewProps) {
       <div className="sched-prompt-meta">
         {sent ? "As sent in this run" : "Saved prompt"} · {settings.join(" · ")}
       </div>
+      {prompt.precheck && <div className="sched-prompt-meta">Precheck · {prompt.precheck}</div>}
       <div className="sched-prompt-text">{text}</div>
     </div>
   );

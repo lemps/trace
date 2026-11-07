@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 
 use super::ports::{
-    AgentEnvironment, Editor, EditorLauncher, Launcher, ProcessHost, SoundFolder, SoundPlayer,
-    ToolLocator,
+    AgentEnvironment, Editor, EditorLauncher, Launcher, ProcessGroup, ProcessHost, SoundFolder,
+    SoundPlayer, ToolLocator,
 };
 use super::{unix, Os};
 
@@ -64,6 +64,14 @@ impl ProcessHost for Os {
 
     fn pty_reports_exit() -> bool {
         true
+    }
+
+    fn own_group(command: &mut Command) {
+        unix::own_group(command);
+    }
+
+    fn track_group(child: &Child) -> ProcessGroup {
+        unix::track_group(child)
     }
 }
 

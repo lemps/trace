@@ -46,6 +46,15 @@ const EDITABLE = {
   },
 };
 
+// Only on create (always paused, so the user reads it before it runs): an
+// update keeps an enabled prompt on, and a precheck is a shell line run outside
+// Claude's permission prompts — so agents can't change an existing one.
+const PRECHECK = {
+  type: "string",
+  description:
+    "One shell line run in the prompt's worktree before each scheduled run (sh; cmd on Windows): exit 0 runs it, any other exit skips it. Max 2 minutes. Only the user can change it later, in trace.",
+};
+
 export const SCHEDULE_TOOLS: Anthropic.Tool[] = [
   {
     name: "list_scheduled_prompts",
@@ -66,7 +75,7 @@ export const SCHEDULE_TOOLS: Anthropic.Tool[] = [
   {
     name: "update_scheduled_prompt",
     description:
-      "Change an existing scheduled prompt, e.g. to fix one that isn't working as intended. Only the fields given change; whether the prompt is switched on stays as it is.",
+      "Change an existing scheduled prompt, e.g. to fix one that isn't working as intended. Only the fields given change; whether the prompt is switched on stays as it is. Its precheck can't be changed here — ask the user to edit it in trace.",
     input_schema: {
       type: "object",
       properties: { id: { type: "string", description: "The prompt id." }, ...EDITABLE },
@@ -81,6 +90,7 @@ export const SCHEDULE_TOOLS: Anthropic.Tool[] = [
       type: "object",
       properties: {
         ...EDITABLE,
+        precheck: PRECHECK,
         repo: {
           type: "string",
           description: "Path of a repo configured in trace; omit for the default repo.",
@@ -109,6 +119,7 @@ function asInput(p: ScheduledPrompt): PromptInput {
     model: p.model ?? null,
     extraArgs: p.extraArgs,
     schedule: p.schedule,
+    precheck: p.precheck ?? null,
     timeoutMins: p.timeoutMins,
     notify: p.notify,
   };
@@ -153,6 +164,7 @@ async function getPrompt(id: string): Promise<string> {
     `${p.title} (${p.id}) — ${p.enabled ? "on" : "paused"}`,
     `Schedule: ${describeSchedule(p.schedule)} · timeout ${p.timeoutMins ? `${p.timeoutMins}m` : "none"} · notify ${p.notify ? "on" : "off"}`,
     `Model: ${p.model ?? "default"} · provider ${p.provider ?? "anthropic"} · args ${p.extraArgs.join(" ") || "none"}`,
+    `Precheck: ${p.precheck ?? "none"}`,
     "",
     "PROMPT:",
     p.prompt,
@@ -164,6 +176,10 @@ async function getPrompt(id: string): Promise<string> {
     lines.push(
       `- ${formatWhen(r.startedAt)} · ${r.status} · ${took}${r.error ? ` · error: ${r.error}` : ""}`
     );
+    if (r.precheck) {
+      const out = r.precheck.output.slice(-300).replace(/\s+/g, " ");
+      lines.push(`  precheck: exit ${r.precheck.exitCode ?? "none"}${out ? ` · ${out}` : ""}`);
+    }
     if (r.summary) lines.push(`  summary: ${r.summary.slice(0, 600).replace(/\s+/g, " ")}`);
   }
   return lines.join("\n");
@@ -189,7 +205,10 @@ async function createPrompt(a: Args): Promise<string> {
     timeoutMins: 0,
     notify: true,
   };
-  const saved = await saveScheduledPrompt(withEdits(base, a));
+  const saved = await saveScheduledPrompt({
+    ...withEdits(base, a),
+    precheck: str(a.precheck) ?? null,
+  });
   await setScheduledPromptEnabled(saved.id, false);
   return `Created "${saved.title}" (${saved.id}), paused — switch it on in trace's Scheduled view.`;
 }

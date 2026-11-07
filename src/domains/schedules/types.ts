@@ -29,6 +29,8 @@ export interface ScheduledPrompt {
   model?: string | null;
   extraArgs: string[];
   schedule: Schedule;
+  /** Shell line run before each scheduled run: exit 0 runs it, anything else skips it. */
+  precheck?: string | null;
   enabled: boolean;
   /** Kill a run still going after this long; 0 = no limit. */
   timeoutMins: number;
@@ -41,7 +43,18 @@ export interface ScheduledPrompt {
   lastRunAt?: number | null;
 }
 
-export type RunStatus = "running" | "succeeded" | "failed" | "timedOut" | "stopped";
+export type RunStatus = "running" | "succeeded" | "failed" | "timedOut" | "stopped" | "skipped";
+
+/** What a prompt's precheck did before a run (`schedule::precheck`). */
+export interface PrecheckResult {
+  command: string;
+  /** Null when it timed out, was stopped, or died by a signal. */
+  exitCode?: number | null;
+  /** The end of its stdout then stderr. */
+  output: string;
+  timedOut: boolean;
+  millis: number;
+}
 
 export interface ScheduleRun {
   id: string;
@@ -73,6 +86,8 @@ export interface ScheduleRun {
   error?: string | null;
   /** Output was saved to disk and can be replayed. */
   hasTranscript: boolean;
+  /** The precheck's result, when the prompt has one and this was a scheduled run. */
+  precheck?: PrecheckResult | null;
 }
 
 /** What the create/edit form saves. No `id` = create. */
@@ -85,6 +100,7 @@ export interface PromptInput {
   model: string | null;
   extraArgs: string[];
   schedule: Schedule;
+  precheck?: string | null;
   timeoutMins: number;
   notify: boolean;
 }
@@ -103,6 +119,7 @@ export interface SharedPrompt {
   provider?: AgentProvider | null;
   model?: string | null;
   extraArgs: string[];
+  precheck?: string | null;
   timeoutMins: number;
   notify: boolean;
 }

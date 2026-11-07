@@ -5,7 +5,10 @@ import type { SharedPrompt } from "./types";
 
 interface ShareRowProps {
   /** A saved prompt (export) or one read from a file (import) — both fit. */
-  prompt: Pick<SharedPrompt, "title" | "schedule" | "provider" | "model" | "extraArgs">;
+  prompt: Pick<
+    SharedPrompt,
+    "title" | "schedule" | "provider" | "model" | "extraArgs" | "precheck"
+  >;
   checked: boolean;
   onToggle: (checked: boolean) => void;
   /** A short warning after the title, e.g. a name clash. */
@@ -15,7 +18,8 @@ interface ShareRowProps {
 }
 
 // One prompt in the export/import checklist; the whole left side toggles it.
-// Flags are shown in full: they're what a run may do with nobody watching.
+// Flags and the precheck are shown in full: they're what a run may do with
+// nobody watching.
 export function ShareRow({ prompt, checked, onToggle, tag, children }: ShareRowProps) {
   const sub = [
     describeSchedule(prompt.schedule),
@@ -36,6 +40,7 @@ export function ShareRow({ prompt, checked, onToggle, tag, children }: ShareRowP
           {prompt.extraArgs.length > 0 && (
             <code className="share-row-flags">{prompt.extraArgs.join(" ")}</code>
           )}
+          {prompt.precheck && <code className="share-row-flags">precheck: {prompt.precheck}</code>}
         </span>
       </label>
       {children}

@@ -78,4 +78,5 @@ export const STATUS_LABEL: Record<RunStatus, string> = {
   failed: "Failed",
   timedOut: "Timed out",
   stopped: "Stopped",
+  skipped: "Skipped",
 };

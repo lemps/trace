@@ -14,10 +14,10 @@ use windows_sys::Win32::System::Threading::{
 };
 
 use super::ports::{
-    AgentBridge, AgentEnvironment, Editor, EditorLauncher, Launcher, PrivateFiles, ProcessHost,
-    SoundFolder, SoundPlayer, ToolLocator,
+    AgentBridge, AgentEnvironment, Editor, EditorLauncher, Launcher, PrivateFiles, ProcessGroup,
+    ProcessHost, SoundFolder, SoundPlayer, ToolLocator,
 };
-use super::{process, Os};
+use super::{process, windows_job, Os};
 
 /// Stops a GUI app's child from opening a console window for each command.
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -57,6 +57,25 @@ impl ProcessHost for Os {
 
     fn pty_reports_exit() -> bool {
         false
+    }
+
+    /// Nothing to set up: [`Self::track_group`] puts the child in a job object.
+    fn own_group(_command: &mut Command) {}
+
+    /// A job object holding the child: everything it starts joins the job, and
+    /// terminating the job reaches them even after the child has exited (when
+    /// `taskkill /T`, which walks parent ids, no longer can). A child could start
+    /// something in the instant before it's assigned; `taskkill` covers that one
+    /// while the child lives, and is the fallback if the job can't be made.
+    fn track_group(child: &Child) -> ProcessGroup {
+        let pid = child.id();
+        match windows_job::assign(child) {
+            Some(job) => ProcessGroup::new(move || {
+                job.terminate();
+                Self::stop_tree(pid);
+            }),
+            None => ProcessGroup::new(move || Self::stop_tree(pid)),
+        }
     }
 }
 

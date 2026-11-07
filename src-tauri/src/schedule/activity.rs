@@ -9,14 +9,15 @@ use super::{run_workspace_id, store};
 use crate::activity::{clip, record, ActivityInput, ActivityKind, Actor};
 
 /// Log a run that just started or reached a final status. A user stop isn't
-/// logged — they know.
+/// logged — they know — and nor is a skip.
 pub fn log_run(app: &AppHandle, run: &ScheduleRun) {
     let (kind, title) = match run.status {
         RunStatus::Running => (ActivityKind::ScheduleRunStarted, "run started"),
         RunStatus::Succeeded => (ActivityKind::ScheduleRunSucceeded, "run finished"),
         RunStatus::Failed => (ActivityKind::ScheduleRunFailed, "run failed"),
         RunStatus::TimedOut => (ActivityKind::ScheduleRunFailed, "run timed out"),
-        RunStatus::Stopped => return,
+        // A skip is the precheck doing its job; logging each would bury the rest.
+        RunStatus::Stopped | RunStatus::Skipped => return,
     };
     let actor = match (run.trigger, run.status) {
         (Trigger::Schedule, RunStatus::Running) => Actor::Schedule,

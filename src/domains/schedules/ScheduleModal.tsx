@@ -6,6 +6,7 @@ import { agentArgsRaw, agentModelRaw, agentProvider } from "@/domains/agent/defa
 import type { AgentProvider } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import { PrecheckField } from "./PrecheckField";
 import { ScheduleFields } from "./ScheduleFields";
 import { useSchedulesStore } from "./store";
 import type { Schedule, ScheduledPrompt } from "./types";
@@ -28,6 +29,7 @@ interface Draft {
   provider: AgentProvider;
   model: string;
   args: string;
+  precheck: string;
   timeoutMins: number;
   notify: boolean;
 }
@@ -42,6 +44,7 @@ function initialDraft(prompt?: ScheduledPrompt): Draft {
       provider: prompt.provider ?? "anthropic",
       model: prompt.model ?? "",
       args: prompt.extraArgs.join(" "),
+      precheck: prompt.precheck ?? "",
       timeoutMins: prompt.timeoutMins,
       notify: prompt.notify,
     };
@@ -54,6 +57,7 @@ function initialDraft(prompt?: ScheduledPrompt): Draft {
     provider: agentProvider(),
     model: agentModelRaw(),
     args: agentArgsRaw(),
+    precheck: "",
     timeoutMins: 30,
     notify: true,
   };
@@ -108,6 +112,7 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
       model: draft.model.trim() || null,
       extraArgs: draft.args.trim() ? draft.args.trim().split(/\s+/) : [],
       schedule: draft.schedule,
+      precheck: draft.precheck.trim() || null,
       timeoutMins: draft.timeoutMins,
       notify: draft.notify,
     })
@@ -247,6 +252,7 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
           or <code>--permission-mode acceptEdits</code>).
         </span>
       </label>
+      <PrecheckField value={draft.precheck} onChange={(precheck) => patch({ precheck })} />
       <div className="sched-form-switch">
         <div>
           <div className="field-label">Notify me</div>

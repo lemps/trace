@@ -4,10 +4,11 @@ use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
 
-use super::ports::{AgentBridge, PrivateFiles};
+use super::ports::{AgentBridge, PrivateFiles, ProcessGroup};
 use super::Os;
 
 impl PrivateFiles for Os {
@@ -43,6 +44,24 @@ pub fn is_alive(pid: u32) -> bool {
         return false;
     };
     unsafe { libc::kill(pid, 0) == 0 }
+}
+
+/// Start `command` as the leader of a new process group (its pgid = its pid).
+pub fn own_group(command: &mut Command) {
+    command.process_group(0);
+}
+
+/// SIGKILLs the process group `child` leads (see [`own_group`]). The group id
+/// stays reserved while any member lives, so it can't reach a stranger.
+pub fn track_group(child: &Child) -> ProcessGroup {
+    let pgid = libc::pid_t::try_from(child.id()).ok();
+    ProcessGroup::new(move || {
+        if let Some(pgid) = pgid {
+            unsafe {
+                libc::kill(-pgid, libc::SIGKILL);
+            }
+        }
+    })
 }
 
 /// The user's login-shell environment, so an agent sees the same PATH, API keys and

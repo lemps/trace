@@ -164,17 +164,11 @@ pub fn run_steps(
             text.push_str(&String::from_utf8_lossy(&out.stderr));
             return Err(StepFailure {
                 step: line.clone(),
-                output: tail(text.trim(), OUTPUT_TAIL),
+                output: crate::helpers::tail_chars(text.trim(), OUTPUT_TAIL),
             });
         }
     }
     Ok(())
-}
-
-/// The last `max` chars of `text`, on a char boundary.
-fn tail(text: &str, max: usize) -> String {
-    let count = text.chars().count();
-    text.chars().skip(count.saturating_sub(max)).collect()
 }
 
 #[cfg(test)]
@@ -289,8 +283,8 @@ mod tests {
 
     #[test]
     fn tail_keeps_the_end() {
-        assert_eq!(tail("abcdef", 3), "def");
-        assert_eq!(tail("ab", 3), "ab");
-        assert_eq!(tail("ééé", 2), "éé");
+        assert_eq!(crate::helpers::tail_chars("abcdef", 3), "def");
+        assert_eq!(crate::helpers::tail_chars("ab", 3), "ab");
+        assert_eq!(crate::helpers::tail_chars("ééé", 2), "éé");
     }
 }

@@ -82,7 +82,7 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [x] **Worktree setup hooks:** run commands like `npm install` or restoring `.env` after a worktree
       is created. Per repo, in Settings → Repositories; suggested from lockfiles after a clone.
       ([#11](https://github.com/noble1911/trace/pull/11))
-- [ ] **Scheduled run prechecks:** a shell command decides whether a scheduled run goes ahead.
+- [x] **Scheduled run prechecks:** a shell command decides whether a scheduled run goes ahead.
 - [x] **Quick Open:** fuzzy file search within a worktree (⌘P / Ctrl+Shift+P); results open in
       the Files tab or your editor.
 - [ ] **File previews:** images, PDFs and Markdown next to the agent.

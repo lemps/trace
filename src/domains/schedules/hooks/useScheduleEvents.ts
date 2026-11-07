@@ -58,8 +58,9 @@ function announce(e: ScheduleRunEvent) {
     return;
   }
   announcedNeedsInput.delete(e.runId);
-  // Stopping is the user's own doing — nothing to announce.
-  if (e.status === "stopped") return;
+  // Stopping is the user's own doing, and a skip is the precheck saying there was
+  // nothing to do — neither is news.
+  if (e.status === "stopped" || e.status === "skipped") return;
   playAlertSound();
   void notify(prompt.title, summaryLine(e.runId) ?? FINISHED_BODY[e.status], ws);
 }
