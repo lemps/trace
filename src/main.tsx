@@ -32,6 +32,7 @@ import "@/domains/transcript/transcript.css";
 import "@/domains/agentChat/chat.css";
 import "@/domains/agentChat/cards.css";
 import "@/domains/agentChat/composer.css";
+import "@/domains/agentChat/subagents.css";
 import "@/domains/agentChat/transport.css";
 import "@/domains/prs/prs.css";
 import "@/domains/prs/rail.css";

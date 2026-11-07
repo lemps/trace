@@ -116,6 +116,15 @@ export function restoreTurnMemory(workspaceId: string, memory: TurnMemory): void
   if (memory.askingForHuman) askingForHuman.add(workspaceId);
 }
 
+/**
+ * The agent says nothing runs in the background any more. A chat agent says so
+ * in its session info, which knows of background work ended without a turn (an
+ * interrupt, a stopped subagent) that no Stop hook will report.
+ */
+export function settleBackground(workspaceId: string): void {
+  backgroundPending.delete(workspaceId);
+}
+
 /** Forget a workspace entirely (agent stopped or exited): arming + timers. */
 export function cancelWaitingWatch(workspaceId: string): void {
   armed.delete(workspaceId);

@@ -29,6 +29,9 @@ impl Translator {
                     info.slash_commands = commands;
                 });
             }
+            Some(sub @ ("task_started" | "task_progress" | "task_notification")) => {
+                self.task_event(m, sub, out);
+            }
             Some("compact_boundary") => {
                 self.status("Conversation compacted.", Tone::Info, out);
             }

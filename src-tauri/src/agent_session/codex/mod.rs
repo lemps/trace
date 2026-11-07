@@ -43,6 +43,8 @@ enum Cmd {
     Send(UserMessage),
     Answer(String, Answer),
     Interrupt,
+    /// Interrupt the sub-agent spawned by this call.
+    StopSubagent(String),
     Stop,
 }
 
@@ -127,6 +129,10 @@ impl AgentAdapter for CodexAdapter {
         self.queue(Cmd::Interrupt)
     }
 
+    fn stop_subagent(&mut self, call_id: &str) -> Result<(), String> {
+        self.queue(Cmd::StopSubagent(call_id.to_string()))
+    }
+
     fn stop(&mut self) {
         let _ = self.tx.send(Cmd::Stop);
     }
@@ -203,6 +209,9 @@ fn run(rx: Receiver<Cmd>, mut agent: Agent, mut tr: Translator, first: Vec<Out>)
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
             Cmd::Interrupt => tr.interrupt(),
+            Cmd::StopSubagent(call_id) => tr
+                .stop_subagent(&call_id)
+                .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
             Cmd::Stop => {
                 if !stopping {
                     stopping = true;

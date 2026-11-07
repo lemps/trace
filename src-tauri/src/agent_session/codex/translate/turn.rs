@@ -8,8 +8,8 @@ use serde_json::{json, Value};
 
 use super::{str_at, Call, OpenTurn, Out, Translator};
 use crate::agent_session::journal::{
-    JournalBody, Message, Plan, PlanItem, PlanStatus, Resolution, Role, Tone, ToolState, Turn,
-    TurnState, Usage,
+    JournalBody, Message, Plan, PlanItem, PlanStatus, Resolution, Role, SubagentState, Tone,
+    ToolState, Turn, TurnState, Usage,
 };
 
 impl Translator {
@@ -46,6 +46,7 @@ impl Translator {
             role: Role::User,
             text: text.to_string(),
             streaming: false,
+            parent_call_id: None,
         });
         out.push(Out::Row(self.book.put(&id, Some(&turn), body)));
         self.book.retire(&id);
@@ -87,8 +88,10 @@ impl Translator {
     }
 
     /// Stop the running turn. Before Codex has it, it never starts.
+    /// Running sub-agents are interrupted too.
     pub fn interrupt(&mut self) -> Vec<Out> {
         let mut out = Vec::new();
+        self.interrupt_children(None, &mut out);
         let Some(turn) = self.turn.as_mut() else {
             return out;
         };
@@ -194,6 +197,7 @@ impl Translator {
             };
             self.end_turn(state, None, &mut out);
         }
+        self.end_spawns(SubagentState::Stopped, &mut out);
         if let Some(reason) = reason {
             self.status(reason, Tone::Error, &mut out);
         }
@@ -206,7 +210,14 @@ impl Translator {
         let Some(turn) = self.turn.take() else {
             return;
         };
-        for (_, s) in std::mem::take(&mut self.streams) {
+        let streams = std::mem::take(&mut self.streams);
+        for (item, s) in streams {
+            let child = s.parent.as_ref().and_then(|c| self.spawns.get(c));
+            if child.is_some_and(|x| x.running) {
+                // A sub-agent still at work keeps talking past the turn.
+                self.streams.insert(item, s);
+                continue;
+            }
             if self.book.get(&s.row_id).is_some() {
                 out.push(Out::Row(self.book.put(&s.row_id, None, message(&s))));
             }
@@ -216,9 +227,10 @@ impl Translator {
             self.cancel_prompt(&request_id, out);
         }
         if state != TurnState::Completed {
-            let running = self
-                .book
-                .open_ids(|b| matches!(b, JournalBody::Tool(t) if t.state == ToolState::Running));
+            let running = self.book.open_ids(|b| {
+                matches!(b, JournalBody::Tool(t) if t.state == ToolState::Running)
+                    && !self.outlives_turn(b)
+            });
             for id in running {
                 let row = self.book.update(&id, |body| {
                     if let JournalBody::Tool(t) = body {
@@ -229,9 +241,9 @@ impl Translator {
                 out.extend(row.map(Out::Row));
             }
         }
-        // Nothing of this turn changes any more.
+        // Nothing of this turn changes any more, but a sub-agent still running.
         let id = format!("turn:{}", turn.id);
-        for open in self.book.open_ids(|_| true) {
+        for open in self.book.open_ids(|b| !self.outlives_turn(b)) {
             if open != id {
                 self.book.retire(&open);
             }
@@ -295,6 +307,7 @@ pub(super) fn message(s: &super::Stream) -> JournalBody {
         role: s.role,
         text: s.text.clone(),
         streaming: false,
+        parent_call_id: s.parent.clone(),
     })
 }
 

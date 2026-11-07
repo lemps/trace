@@ -21,6 +21,7 @@ pub mod registry;
 pub mod runtime;
 pub mod settle;
 pub mod store;
+pub mod subagent;
 pub mod transport;
 
 use std::path::PathBuf;
@@ -70,6 +71,10 @@ pub struct SessionInfo {
     pub slash_commands: Vec<String>,
     /// Whether a turn is running.
     pub busy: bool,
+    /// Subagents still working, including background ones that outlived their
+    /// turn: the agent counts as working while there are any.
+    #[serde(default)]
+    pub running_subagents: u32,
     /// Usage-limit windows, as the agent reports them (e.g. "seven_day" → 0.31).
     #[serde(default)]
     pub limits: Vec<LimitWindow>,
@@ -103,8 +108,13 @@ pub trait AgentAdapter: Send {
     fn send(&mut self, message: UserMessage) -> Result<(), String>;
     /// Resolve an approval or question row by its `request_id`.
     fn answer(&mut self, request_id: &str, answer: Answer) -> Result<(), String>;
-    /// Stop the current turn and keep the agent.
+    /// Stop the current turn and keep the agent. Running subagents stop too,
+    /// background ones included.
     fn interrupt(&mut self) -> Result<(), String>;
+    /// Stop one subagent, named by the call that started it.
+    fn stop_subagent(&mut self, _call_id: &str) -> Result<(), String> {
+        Err("This agent can't stop one subagent on its own.".to_string())
+    }
     /// End the agent.
     fn stop(&mut self);
     /// The agent's process id, for the interrupted-agents ledger.

@@ -1,12 +1,13 @@
 import type { JournalRow, SessionInfo } from "../types.ts";
 
-// A made-up journal covering every row kind across five turns, for building and
+// A made-up journal covering every row kind across six turns, for building and
 // screenshotting the chat UI without a backend (dev/ChatFixturePage, dev only)
 // and for the projection tests. Never imported by shipped code.
 
 import { COLUMN_BEFORE, editTurn } from "./fixtureEdits.ts";
 import { markdownTurn } from "./fixtureMarkdown.ts";
 import { row, say, T0, user } from "./fixtureRows.ts";
+import { subagentTurn } from "./fixtureSubagents.ts";
 
 export const FIXTURE_ROWS: JournalRow[] = [
   // Turn 1: a question, some reading, an answer.
@@ -100,6 +101,9 @@ export const FIXTURE_ROWS: JournalRow[] = [
     tone: "error",
   }),
   row("turn4", "t4", { kind: "turn", turnId: "t4", state: "failed", durationMs: 900 }),
+
+  // Turn 6 (before 5 in the list, as it finished): two subagents and a background one.
+  ...subagentTurn(),
 
   // Turn 5: running, waiting on an approval and a question.
   user("u5", "t5", "Ship it: commit, push and open a PR against main."),

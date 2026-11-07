@@ -1,18 +1,21 @@
-import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { useBoardStore } from "@/domains/board/store";
-import { workspaceInfo } from "@/ipc/workspace";
-import { isShortcut } from "@/platform/shortcuts";
 import { useChatActions } from "./actions";
 import { ChatHeader } from "./ChatHeader";
 import { ChatList } from "./ChatList";
+import { ChatTabs } from "./ChatTabs";
 import { Composer } from "./Composer";
 import { type ChatView, ChatViewContext } from "./chatContext";
+import { useAgentWorking, useChat, useSubagents } from "./hooks/useChat";
+import { useChatKeys } from "./hooks/useChatKeys";
 import { useJournalFeed } from "./hooks/useJournalFeed";
 import { useQueueFlush } from "./hooks/useQueueFlush";
-import { buildTurns, isTurnLive } from "./projection";
-import { useAgentChatStore, useJournal } from "./store";
+import { useWorkspaceRoot } from "./hooks/useWorkspaceRoot";
+import { isTurnLive } from "./projection";
+import { SubagentView } from "./SubagentView";
+import { useAgentChatStore } from "./store";
 
 interface ChatAgentPaneProps {
   workspaceId: string;
@@ -24,23 +27,36 @@ interface ChatAgentPaneProps {
    * counts as always running.
    */
   onStart?: () => void;
+  /** End the agent's process, the way the view's own Stop does. */
+  onStop?: () => void;
 }
 
 // A chat agent's conversation, the same for every brand: the header's facts,
-// the turns (messages, tool calls, diffs, plans, prompts answered in place) and
-// the composer. This is the one seam the session and ticket views mount; it
-// needs only the workspace id.
-export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatAgentPaneProps) {
+// a tab per subagent beside the main chat, the turns (messages, tool calls,
+// diffs, plans, prompts answered in place) and the composer, which always
+// talks to the main agent. This is the one seam the session and ticket views
+// mount; it needs only the workspace id.
+export function ChatAgentPane({
+  workspaceId,
+  expandAll = false,
+  onStart,
+  onStop,
+}: ChatAgentPaneProps) {
   useJournalFeed(workspaceId);
   const actions = useChatActions();
   const live = useBoardStore((s) => s.runningAgents.has(workspaceId));
   const stopped = onStart !== undefined && !live;
-  const journal = useJournal(workspaceId);
   const info = useAgentChatStore((s) => s.info[workspaceId]);
   const loaded = useAgentChatStore((s) => s.loaded[workspaceId] ?? false);
-  const turns = useMemo(() => buildTurns(journal.rows), [journal.rows]);
+  const { turns } = useChat(workspaceId);
+  const subagents = useSubagents(workspaceId);
   const last = turns[turns.length - 1];
   const busy = info?.busy ?? isTurnLive(last);
+  const working = useAgentWorking(workspaceId) && !stopped;
+  const running = subagents.filter((s) => s.status === "running").length;
+  const stored = useAgentChatStore((s) => s.tab[workspaceId] ?? "main");
+  const tab = stored === "main" || subagents.some((s) => s.callId === stored) ? stored : "main";
+  const setTab = (t: string) => useAgentChatStore.getState().setTab(workspaceId, t);
   const root = useWorkspaceRoot(workspaceId);
   const view = useMemo<ChatView>(
     () => ({ workspaceId, root, expandAll }),
@@ -48,34 +64,37 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
   );
   useQueueFlush(workspaceId, busy);
 
-  // Esc in the pane interrupts a running turn, but not from a text box (a
-  // question's typed answer): Esc there means leave the box, not stop the agent.
-  // The composer handles its own Esc.
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (!busy || e.defaultPrevented || !isShortcut("chatInterrupt", e)) return;
-    const el = e.target as HTMLElement;
-    if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return;
-    e.preventDefault();
-    e.stopPropagation();
-    void actions.interrupt(workspaceId).catch((err) => toast.error(String(err)));
-  };
+  const interrupt = () =>
+    void actions
+      .interrupt(workspaceId)
+      .catch((e) => toast.error(`Couldn't interrupt: ${String(e)}`));
+  const paneRef = useRef<HTMLDivElement>(null);
+  useChatKeys(paneRef, { working, interrupt, subagents, tab, setTab });
 
   return (
     <ChatViewContext.Provider value={view}>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: catches Esc bubbling from the pane's controls */}
-      <div className="ac-pane" onKeyDown={onKeyDown}>
-        <ChatHeader info={info} turns={turns} />
-        {turns.length === 0 ? (
-          <Empty loaded={loaded} stopped={stopped} onStart={onStart} />
-        ) : (
-          <ChatList
-            turns={turns}
-            working={busy}
-            since={
-              busy && isTurnLive(last) && last ? (last.prompts[0]?.row.at ?? last.startedAt) : null
-            }
-          />
-        )}
+      <div className="ac-pane" ref={paneRef}>
+        <ChatHeader info={info} turns={turns} onStop={live ? onStop : undefined} />
+        {subagents.length > 0 && <ChatTabs subagents={subagents} active={tab} onPick={setTab} />}
+        {/* Main stays mounted under a subagent's tab, so it keeps its place. */}
+        <div className="ac-main" hidden={tab !== "main"}>
+          {turns.length === 0 ? (
+            <Empty loaded={loaded} stopped={stopped} onStart={onStart} />
+          ) : (
+            <ChatList
+              turns={turns}
+              working={working}
+              since={
+                busy && isTurnLive(last) && last
+                  ? (last.prompts[0]?.row.at ?? last.startedAt)
+                  : null
+              }
+              subagents={running}
+              onInterrupt={interrupt}
+            />
+          )}
+        </div>
+        {tab !== "main" && <SubagentView workspaceId={workspaceId} callId={tab} />}
         {stopped && turns.length > 0 && (
           <div className="ac-stopped">
             <span>The agent isn't running. Start it to carry on this conversation.</span>
@@ -84,7 +103,14 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
             </button>
           </div>
         )}
-        <Composer workspaceId={workspaceId} busy={busy} slashCommands={info?.slashCommands ?? []} />
+        <Composer
+          workspaceId={workspaceId}
+          busy={busy}
+          working={working}
+          onInterrupt={interrupt}
+          toMain={tab !== "main"}
+          slashCommands={info?.slashCommands ?? []}
+        />
       </div>
     </ChatViewContext.Provider>
   );
@@ -120,21 +146,4 @@ function Empty({
       </div>
     </div>
   );
-}
-
-/** The workspace's directory, so paths inside it read relative to it. */
-function useWorkspaceRoot(workspaceId: string): string | null {
-  const [root, setRoot] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void workspaceInfo(workspaceId)
-      .then((info) => {
-        if (!cancelled) setRoot(info?.cwd ?? null);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId]);
-  return root;
 }

@@ -228,7 +228,11 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   // The agent's own tab: its chat, or its terminal — mounted even before the session
   // starts so it can be measured and fitted to the real pane; StartPrompt covers it.
   const chat = isChat ? (
-    <ChatAgentPane workspaceId={issue.key} onStart={() => void start()} />
+    <ChatAgentPane
+      workspaceId={issue.key}
+      onStart={() => void start()}
+      onStop={() => void stop()}
+    />
   ) : (
     <ChatSurface workspaceId={issue.key} cli={cli}>
       {!running && (

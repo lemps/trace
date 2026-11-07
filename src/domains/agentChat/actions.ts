@@ -4,6 +4,7 @@ import {
   interruptChatAgent,
   loadJournal,
   sendChatMessage,
+  stopChatSubagent,
 } from "@/ipc/agentChat";
 import type { Answer, JournalRow, UserMessage } from "./types";
 
@@ -16,7 +17,10 @@ export interface ChatActions {
   load: (workspaceId: string) => Promise<JournalRow[]>;
   send: (workspaceId: string, message: UserMessage) => Promise<void>;
   answer: (workspaceId: string, requestId: string, answer: Answer) => Promise<void>;
+  /** Stop the turn and every subagent, background ones too. */
   interrupt: (workspaceId: string) => Promise<void>;
+  /** Stop one subagent, by the call that started it. */
+  stopSubagent: (workspaceId: string, callId: string) => Promise<void>;
 }
 
 export const ipcChatActions: ChatActions = {
@@ -24,6 +28,7 @@ export const ipcChatActions: ChatActions = {
   send: sendChatMessage,
   answer: answerChatPrompt,
   interrupt: interruptChatAgent,
+  stopSubagent: stopChatSubagent,
 };
 
 export const ChatActionsContext = createContext<ChatActions>(ipcChatActions);

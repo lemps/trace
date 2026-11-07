@@ -32,6 +32,8 @@ export interface Message {
   text: string;
   /** True while text is still arriving. */
   streaming: boolean;
+  /** Set when a subagent said it: the call that started that subagent. */
+  parentCallId?: string;
 }
 
 export type ToolState = "running" | "completed" | "failed";
@@ -46,6 +48,28 @@ export interface ToolCall {
   output?: string;
   /** Set when a subagent made this call. */
   parentCallId?: string;
+  /** Set when this call started a subagent: how that agent is doing. */
+  subagent?: Subagent;
+}
+
+/** Separate from its call's state: a background subagent's call returns at once. */
+export type SubagentState = "running" | "completed" | "failed" | "stopped";
+
+/** `agent_session::subagent::Subagent`. Its own rows name its call as `parentCallId`. */
+export interface Subagent {
+  /** "Explore", "general-purpose", when the agent names a kind. */
+  agentType?: string;
+  /** A few words on its job. */
+  description?: string;
+  /** It outlives the turn that started it. */
+  background: boolean;
+  state: SubagentState;
+  /** What it's doing now, in the agent's words. */
+  activity?: string;
+  toolUses?: number;
+  durationMs?: number;
+  /** Its final report, capped. */
+  result?: string;
 }
 
 export type ChangeKind = "add" | "edit" | "delete";
@@ -151,7 +175,10 @@ export interface SessionInfo {
   model?: string;
   conversationId?: string;
   slashCommands: string[];
+  /** A turn is running. */
   busy: boolean;
+  /** Subagents still working, background ones that outlived their turn included. */
+  runningSubagents?: number;
   limits: LimitWindow[];
 }
 

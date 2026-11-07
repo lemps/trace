@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
+import { useHint } from "@/platform/shortcuts";
 import { formatDuration, usageFacts } from "./format";
+import { useNow } from "./hooks/useNow";
 import type { ChatTurn } from "./projection";
 import type { Status } from "./types";
 
@@ -46,17 +47,37 @@ export function TurnFooter({ turn }: { turn: ChatTurn }) {
   );
 }
 
-/** The agent is mid-turn: the working light and how long it's been at it. */
-export function WorkingRow({ since }: { since: number | null }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
+/**
+ * The agent is at work: the working light, how long the turn has run, how many
+ * subagents are still going, and the way to stop it all (also Esc).
+ */
+export function WorkingRow({
+  since,
+  subagents,
+  onInterrupt,
+}: {
+  since: number | null;
+  subagents: number;
+  onInterrupt: () => void;
+}) {
+  const now = useNow(true);
+  const hint = useHint("chatInterrupt");
   const age = since && now > since ? formatDuration(now - since) : undefined;
+  const others = subagents > 0 ? `${subagents} ${subagents === 1 ? "subagent" : "subagents"}` : "";
+  // Between turns only subagents are left working.
+  const label = since === null && others ? `${others} working…` : "Working…";
   return (
     <div className="ac-working">
-      <StatusLight light="working" variant="word" label="Working…" age={age} />
+      <StatusLight light="working" variant="word" label={label} age={age} />
+      {since !== null && others && <span className="ac-working-subs">· {others}</span>}
+      <button
+        type="button"
+        className="btn ac-working-stop"
+        onClick={onInterrupt}
+        title="Stop the turn and every subagent; the agent stays up"
+      >
+        <I.X size={13} /> Interrupt <span className="kbd">{hint}</span>
+      </button>
     </div>
   );
 }
