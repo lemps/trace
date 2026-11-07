@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AgentDefaultsSettings } from "./AgentDefaultsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AssistantSettings } from "./AssistantSettings";
@@ -8,18 +8,10 @@ import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SidebarSettings } from "./SidebarSettings";
+import { type SettingsTab, useSettingsTabRequest } from "./tabStore";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
 
-type SettingsTab =
-  | "agents"
-  | "notifications"
-  | "assistant"
-  | "appearance"
-  | "sidebar"
-  | "shortcuts"
-  | "worktrees"
-  | "updates";
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "agents", label: "Agents" },
   { id: "notifications", label: "Notifications" },
@@ -33,7 +25,14 @@ const TABS: { id: SettingsTab; label: string }[] = [
 
 // Settings: one tab per concern, so each is a short page rather than one long scroll.
 export function SettingsView() {
-  const [tab, setTab] = useState<SettingsTab>("agents");
+  const [tab, setTab] = useState<SettingsTab>(
+    () => useSettingsTabRequest.getState().take() ?? "agents"
+  );
+  // Asked for a tab while already open (the cheat sheet's "Customize…").
+  const requested = useSettingsTabRequest((s) => s.requested);
+  useEffect(() => {
+    if (requested) setTab(useSettingsTabRequest.getState().take() ?? requested);
+  }, [requested]);
   // Bumped when auto-cleanup removes worktrees, so the list remounts and rescans.
   const [worktreeScan, setWorktreeScan] = useState(0);
 

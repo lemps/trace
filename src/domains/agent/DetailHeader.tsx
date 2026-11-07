@@ -1,4 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { BackButton } from "@/components/BackButton";
 import { I } from "@/components/Icon";
 import type { MenuItem } from "@/components/PopMenu";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
@@ -120,9 +121,7 @@ export function DetailHeader({
   const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
   return (
     <div className="detail-top">
-      <button type="button" className="back" onClick={onBack}>
-        <I.Back size={14} /> {backLabel} <span className="kbd">esc</span>
-      </button>
+      <BackButton label={backLabel} onBack={onBack} />
       <div>
         <div className="detail-meta">
           {issueUrl ? (

@@ -1,12 +1,15 @@
 import type { CSSProperties, ReactNode } from "react";
 import { AppLogo } from "@/components/AppLogo";
+import { I } from "@/components/Icon";
 import { Buddy } from "@/domains/buddy/Buddy";
 import { useBuddyStore } from "@/domains/buddy/store";
+import { useCheatSheet } from "@/domains/cheatSheet/store";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useScheduledNeedsYou } from "@/domains/schedules/hooks/useScheduledNeedsYou";
 import { RailRecents } from "@/domains/sessions/RailRecents";
 import { railItems } from "@/domains/sidebar/items";
 import { useSidebarStore } from "@/domains/sidebar/store";
+import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import type { NavId } from "./nav";
 import { RAIL_ICONS } from "./railIcons";
 
@@ -67,6 +70,9 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
   const entries = useSidebarStore((s) => s.entries);
   const scheduledNeedsYou = useScheduledNeedsYou();
   const buddyOn = useBuddyStore((s) => s.enabled);
+  const showCheatSheet = useCheatSheet((s) => s.show);
+  const cheatTitle = useTitleWithHint("Keyboard shortcuts", "cheatSheet");
+  const cheatKeys = useAriaKeys("cheatSheet");
 
   const button = (id: NavId) => {
     const active = nav === id;
@@ -104,12 +110,19 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
       </div>
       <nav className="nav">{railItems(entries, trackers).map(button)}</nav>
       {buddyOn && <Buddy />}
-      <RailButton
-        id="settings"
-        active={nav === "settings"}
-        onNav={onNav}
+      {/* The help: every shortcut (also ? and the palette's "Keyboard shortcuts"). */}
+      <button
+        type="button"
+        className="nav-btn"
+        onClick={showCheatSheet}
+        title={cheatTitle}
+        aria-label="Keyboard shortcuts"
+        aria-keyshortcuts={cheatKeys}
         style={{ marginTop: "auto" }}
-      />
+      >
+        <I.Keyboard size={16} />
+      </button>
+      <RailButton id="settings" active={nav === "settings"} onNav={onNav} />
       {/* The connected tracker account; opens Integrations (where the connection lives). */}
       <button
         type="button"
@@ -122,10 +135,11 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
         }
         onClick={() => onNav("integrations")}
       >
+        {/* No account: the Integrations plug, not a "?" that reads as help. */}
         {user?.avatarUrl ? (
           <img src={user.avatarUrl} alt={user.displayName} />
         ) : (
-          (user?.displayName?.trim()[0]?.toUpperCase() ?? "?")
+          (user?.displayName?.trim()[0]?.toUpperCase() ?? <I.Plug size={14} />)
         )}
       </button>
     </aside>

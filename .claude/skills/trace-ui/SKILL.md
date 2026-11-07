@@ -47,11 +47,19 @@ even they take the control's height and corner (`StatusLight size="lg"`).
   in a header row beside bordered buttons — that's what made headers look mixed.
 - **`.seg`** — mutually exclusive view options (card density).
 - **`.filter-chip`** — a toggleable filter.
-- **`.kbd`** — a keyboard hint inside a button or hint row. Users can rebind shortcuts, so
-  never type a key into a hint: take the label (`useHint(id)`) and the key check
-  (`isShortcut(id, e)`) from `src/platform/shortcuts.ts`. A new shortcut is an entry in
-  `src/platform/shortcuts/registry.ts` (it then shows in Settings → Shortcuts); `⌘`
-  chords are `Ctrl+Shift` off macOS.
+- **Shortcut hints go where people look for them, not on every button.** Menus
+  (`MenuItem.hint`), the search palette's and Quick Open's rows and footers, Settings →
+  Shortcuts, the top search box's one chip, and the cheat sheet (`domains/cheatSheet`,
+  `?` / Ctrl+/) show them as `.kbd`. A button, tab or header names its shortcut in its
+  tooltip — `title={useTitleWithHint("Back to Sessions", "detailBack")}` reads "Back to
+  Sessions (Esc)" — keeps a plain `aria-label`, and adds `aria-keyshortcuts={useAriaKeys(id)}`.
+  For learners, `<KeyHint id=… />` puts the chip back on the button only while Settings →
+  Shortcuts' "Show shortcut hints on buttons" is on. No always-visible hint lines
+  ("↵ sends · Esc interrupts"). Users can rebind shortcuts, so never type a key: take the
+  label (`useHint(id)`) and the key check (`isShortcut(id, e)`) from
+  `src/platform/shortcuts.ts`. A new shortcut is an entry in
+  `src/platform/shortcuts/definitions.ts` (it then shows in Settings → Shortcuts and the
+  cheat sheet); `⌘` chords are `Ctrl+Shift` off macOS.
 
 ## 2. Agent state is drawn one way: `StatusLight`
 
@@ -116,7 +124,7 @@ Diff `+`/`−` use `--state-ready` / `--c-danger`.
   go in the right panel.
 
 **Detail header** (`.detail-top`), left to right:
-`← <page it returns to> esc` · identity (mono key, title at `--text-detail-title`) ·
+`← <page it returns to>` (`BackButton`; Esc in its tooltip) · identity (mono key, title at `--text-detail-title`) ·
 *right group:* status (`StatusLight size="lg"`) → primary action → secondary
 actions → `…` (`MoreTrigger`). All `--control-h`, gap 8px. The side panel's toggle
 is its own strip, never a header button.

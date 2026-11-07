@@ -1,5 +1,7 @@
 import { currentOs } from "./os";
 import { chordFromEvent, formatChord, type KeyChord, matchIndex } from "./shortcuts/chord";
+import { useHintPrefs } from "./shortcuts/hintPrefs";
+import { ariaKeys, numberedHint, titleWithHint } from "./shortcuts/hintText";
 import { useKeymapStore } from "./shortcuts/keymap";
 import { SHORTCUTS } from "./shortcuts/registry";
 
@@ -87,4 +89,25 @@ export function hint(id: string): string {
 export function useHint(id: string): string {
   const chord = useKeymapStore((s) => s.keymap[id]?.[0]);
   return chord ? formatChord(chord, currentOs) : "";
+}
+
+/** A button's tooltip with its shortcut: "Back to Sessions (Esc)", following rebinds. */
+export function useTitleWithHint(label: string, id: string): string {
+  return titleWithHint(label, useHint(id));
+}
+
+/** A shortcut's main chord for `aria-keyshortcuts`, or undefined (clicks, numbers). */
+export function useAriaKeys(id: string): string | undefined {
+  return ariaKeys(useKeymapStore((s) => s.keymap[id]?.[0]));
+}
+
+/** A numbered shortcut (answers 1–9) as it reads for each number, for `count` numbers. */
+export function useNumberedHints(id: string, count: number): string[] {
+  const binding = useKeymapStore((s) => s.keymap[id]?.[0]);
+  return Array.from({ length: count }, (_, i) => numberedHint(binding, i + 1, currentOs));
+}
+
+/** Whether buttons show their shortcut as a chip too (Settings → Shortcuts; off by default). */
+export function useButtonHints(): boolean {
+  return useHintPrefs((s) => s.onButtons);
 }

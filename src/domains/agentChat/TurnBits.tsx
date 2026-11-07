@@ -1,6 +1,7 @@
 import { I } from "@/components/Icon";
+import { KeyHint } from "@/components/KeyHint";
 import { StatusLight } from "@/components/StatusLight";
-import { useHint } from "@/platform/shortcuts";
+import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { formatDuration, usageFacts } from "./format";
 import { useNow } from "./hooks/useNow";
 import type { ChatTurn } from "./projection";
@@ -61,7 +62,8 @@ export function WorkingRow({
   onInterrupt: () => void;
 }) {
   const now = useNow(true);
-  const hint = useHint("chatInterrupt");
+  const title = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and every subagent; the agent stays up`;
+  const keys = useAriaKeys("chatInterrupt");
   const age = since && now > since ? formatDuration(now - since) : undefined;
   const others = subagents > 0 ? `${subagents} ${subagents === 1 ? "subagent" : "subagents"}` : "";
   // Between turns only subagents are left working.
@@ -74,9 +76,10 @@ export function WorkingRow({
         type="button"
         className="btn ac-working-stop"
         onClick={onInterrupt}
-        title="Stop the turn and every subagent; the agent stays up"
+        title={title}
+        aria-keyshortcuts={keys}
       >
-        <I.X size={13} /> Interrupt <span className="kbd">{hint}</span>
+        <I.X size={13} /> Interrupt <KeyHint id="chatInterrupt" />
       </button>
     </div>
   );

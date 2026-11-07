@@ -116,6 +116,11 @@ export function scopesOverlap(a: Scope, b: Scope): boolean {
   // Clicks are each on their own element, and never a key press.
   if (a === "mouse" || b === "mouse") return false;
   if (a === b || a === "app" || b === "app") return true;
+  // `page` is heard everywhere but in a terminal (and its find bar).
+  if (a === "page" || b === "page") {
+    const other = a === "page" ? b : a;
+    return other !== "terminal" && other !== "find";
+  }
   // The terminal sits inside a detail view, and leaves tab numbers to it.
   return (a === "terminal" && b === "detail") || (a === "detail" && b === "terminal");
 }
@@ -142,6 +147,11 @@ function scopeProblem(def: ShortcutDef, chord: string, os: Os): string | null {
   } else if (def.scope === "reply" || def.scope === "chat") {
     if (!p.ctrl && !p.meta && !p.alt) return "Hold a modifier, or it types into the reply.";
     if (textNeeds(chord, os)) return `${formatChord(chord, os)} edits the reply.`;
+  } else if (def.scope === "page") {
+    // Heard in text boxes when held with a modifier, and on buttons when not.
+    if (textNeeds(chord, os)) return `${formatChord(chord, os)} edits text.`;
+    if (!p.ctrl && !p.meta && !p.alt && EDITING_KEYS.has(p.key))
+      return `${formatChord(chord, os)} is kept for moving focus and pressing buttons.`;
   } else if (def.scope === "inbox") {
     if (isClipboardKey(chord, os)) return `${formatChord(chord, os)} is the clipboard's.`;
     if (p.key === "Tab" || p.key === "Escape")

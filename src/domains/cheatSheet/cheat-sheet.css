@@ -1,0 +1,66 @@
+/* The keyboard cheat sheet (a Modal): Settings → Shortcuts' groups, read-only. */
+.modal.cs-modal {
+  width: 760px;
+}
+.cs-modal .modal-body {
+  max-height: min(620px, 70vh);
+  overflow-y: auto;
+  display: block;
+}
+.cs-groups {
+  columns: 2 300px;
+  column-gap: 24px;
+}
+.cs-group {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+.cs-head {
+  margin: 0 0 2px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.cs-desc {
+  margin-bottom: 4px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.cs-rows {
+  margin: 0;
+}
+.cs-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+.cs-row dt {
+  min-width: 0;
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.cs-row dd {
+  margin: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 50%;
+}
+.cs-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.cs-note {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}

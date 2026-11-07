@@ -13,11 +13,14 @@ import { SHORTCUTS } from "./definitions.ts";
 
 /**
  * Where a shortcut is listened for, which decides what it may collide with and what
- * keys it may take: `app` fires everywhere, terminals and text boxes included. `reply` is the Inbox's
- * reply box, `chat` a chat agent's composer, `settings` a list in Settings.
+ * keys it may take: `app` fires everywhere, terminals and text boxes included. `page` fires
+ * everywhere but a focused terminal, and a key without Ctrl, ⌘ or Alt only when you
+ * aren't typing. `reply` is the Inbox's reply box, `chat` a chat agent's composer,
+ * `settings` a list in Settings.
  */
 export type Scope =
   | "app"
+  | "page"
   | "detail"
   | "terminal"
   | "find"
@@ -30,6 +33,7 @@ export type Scope =
 
 export type GroupId =
   | "app"
+  | "help"
   | "detail"
   | "terminal"
   | "chat"
@@ -40,6 +44,11 @@ export type GroupId =
 
 export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
   { id: "app", label: "Anywhere", desc: "Work on every page, in terminals too." },
+  {
+    id: "help",
+    label: "Help",
+    desc: "Anywhere but a terminal; ? only when you aren't typing in a box.",
+  },
   { id: "detail", label: "Agent and ticket views", desc: "While a session or ticket is open." },
   { id: "terminal", label: "Terminal", desc: "In an agent's chat or a shell terminal." },
   { id: "chat", label: "Agent chat", desc: "In a chat agent's view and its message box." },
@@ -59,6 +68,9 @@ export interface ShortcutDef {
   pc: string[];
   /** Built in (system, terminal or text-box keys): shown, never rebound. */
   isFixed?: boolean;
+  /** Another way to do the same thing as shortcut `sameAs`: the cheat sheet shows
+   *  its keys on that shortcut's row instead of a row of its own. */
+  sameAs?: string;
 }
 
 export { SHORTCUTS };
@@ -67,6 +79,23 @@ const BY_ID = new Map(SHORTCUTS.map((s) => [s.id, s]));
 
 export function shortcutDef(id: string): ShortcutDef | undefined {
   return BY_ID.get(id);
+}
+
+export interface ShortcutGroup {
+  id: GroupId;
+  label: string;
+  desc: string;
+  shortcuts: ShortcutDef[];
+}
+
+/**
+ * Every shortcut by group, in the order Settings → Shortcuts and the cheat sheet both
+ * list them; a group with no shortcuts is left out.
+ */
+export function groupedShortcuts(): ShortcutGroup[] {
+  return GROUPS.map((g) => ({ ...g, shortcuts: SHORTCUTS.filter((s) => s.group === g.id) })).filter(
+    (g) => g.shortcuts.length > 0
+  );
 }
 
 /** Each shortcut's default chords on this OS. */

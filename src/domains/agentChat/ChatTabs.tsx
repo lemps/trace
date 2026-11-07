@@ -3,7 +3,7 @@ import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
 import { fitClass, type TabFitMode, useTabFit } from "@/components/useTabFit";
-import { useHint } from "@/platform/shortcuts";
+import { useTitleWithHint } from "@/platform/shortcuts";
 import { useChatView } from "./chatContext";
 import type { SubagentSummary } from "./hooks/useChat";
 import { SubagentMark } from "./SubagentBits";
@@ -26,7 +26,7 @@ const calls = (n: number) => `${n} ${n === 1 ? "call" : "calls"}`;
 // strip is measured (`useTabFit`): the tabs become their status marks, named in
 // their tooltips, and past that the last ones move to a "more" menu.
 export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) {
-  const next = useHint("chatNextTab");
+  const mainTitle = useTitleWithHint("Main chat · next tab", "chatNextTab");
   const fitRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const fit = useTabFit(fitRef, moreRef, active);
@@ -50,7 +50,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
           mode={fit.mode("main")}
           active={active}
           onPick={onPick}
-          title={`Main chat (${next} for the next tab)`}
+          title={mainTitle}
         >
           <I.Chat size={13} />
           <span className="ac-tab-label" data-fit-label>

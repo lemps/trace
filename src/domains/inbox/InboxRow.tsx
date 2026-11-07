@@ -3,6 +3,8 @@ import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
+import { useHint, useTitleWithHint } from "@/platform/shortcuts";
+import { titleWithHint } from "@/platform/shortcuts/hintText";
 
 interface InboxRowProps {
   entry: LiveEntry;
@@ -30,6 +32,9 @@ export function InboxRow(props: InboxRowProps) {
   const { entry, selected, now, dropAbove, isDragging, dragProps, onSelect, onOpen } = props;
   const { info } = entry;
   const ask = shownAsk(info);
+  const dismissTitle = `${useTitleWithHint("Dismiss", "inboxDismiss")}: takes it out of Needs you. This doesn't answer the agent.`;
+  const openTitle = useTitleWithHint("Open", "inboxOpen");
+  const reorder = `${useHint("inboxMoveUp")} / ${useHint("inboxMoveDown")}`;
   return (
     <>
       {dropAbove && <div className="ib-drop" aria-hidden="true" />}
@@ -48,7 +53,7 @@ export function InboxRow(props: InboxRowProps) {
         }}
         {...dragProps}
       >
-        <span className="ib-grip" title="Drag to reorder">
+        <span className="ib-grip" title={titleWithHint("Drag to reorder", reorder)}>
           <I.Grip size={14} />
         </span>
         <StatusLight light={info.light} />
@@ -76,7 +81,7 @@ export function InboxRow(props: InboxRowProps) {
                   e.stopPropagation();
                   props.onDismiss();
                 }}
-                title="Dismiss. This doesn't answer the agent."
+                title={dismissTitle}
                 aria-label={`Dismiss ${entry.title}`}
               >
                 <I.X size={13} />
@@ -89,7 +94,7 @@ export function InboxRow(props: InboxRowProps) {
                 e.stopPropagation();
                 onOpen();
               }}
-              title="Open"
+              title={openTitle}
               aria-label={`Open ${entry.title}`}
             >
               <I.Chevron size={13} />

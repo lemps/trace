@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { I } from "./Icon";
 
 /** One thing the panel can show — "Pull requests", "Orchestrator". */
@@ -22,6 +23,30 @@ interface SidePanelProps {
 
 const counted = (n?: number): n is number => n != null && n > 0;
 
+/** Views a shortcut shows or folds (⌘J), named in their strip item's tooltip. */
+const VIEW_SHORTCUTS: Record<string, string> = { orchestrator: "orchestrator" };
+
+function StripItem({ view, onShow }: { view: SideView; onShow: (id: string) => void }) {
+  const label = `Show ${view.label.toLowerCase()}`;
+  const shortcut = VIEW_SHORTCUTS[view.id] ?? "";
+  const title = useTitleWithHint(label, shortcut);
+  const keys = useAriaKeys(shortcut);
+  return (
+    <button
+      type="button"
+      className="sp-strip-item"
+      onClick={() => onShow(view.id)}
+      aria-label={label}
+      aria-keyshortcuts={keys}
+      title={title}
+    >
+      {/* Reads bottom-to-top like a book's spine. */}
+      <span className="sp-strip-label">{view.label}</span>
+      {counted(view.count) && <span className="sp-count">{view.count}</span>}
+    </button>
+  );
+}
+
 /**
  * The right-edge panel: context for what's on screen, one view at a time. It
  * slides in from the side; closed, it folds to a slim strip naming each view —
@@ -40,18 +65,7 @@ export function SidePanel({ views, active, open, onShow, onClose }: SidePanelPro
             <I.Sidebar size={14} />
           </span>
           {views.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              className="sp-strip-item"
-              onClick={() => onShow(v.id)}
-              aria-label={`Show ${v.label.toLowerCase()}`}
-              title={`Show ${v.label.toLowerCase()}`}
-            >
-              {/* Reads bottom-to-top like a book's spine. */}
-              <span className="sp-strip-label">{v.label}</span>
-              {counted(v.count) && <span className="sp-count">{v.count}</span>}
-            </button>
+            <StripItem key={v.id} view={v} onShow={onShow} />
           ))}
         </div>
       </aside>
