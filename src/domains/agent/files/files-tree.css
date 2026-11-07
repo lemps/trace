@@ -1,0 +1,382 @@
+/* Files tab: the pane's layout, the sidebar (mode, filter, tools), its tree, and the
+   divider that resizes it. The viewer is in ../files.css. */
+
+.fx-pane {
+  /* Both headers, either side of the divider, are this tall so their rules line up. */
+  --fx-head-h: calc(var(--control-h-sm) + 12px);
+  /* Tree rows follow density with the controls. FileTree measures this. */
+  --fx-row-h: calc(var(--control-h-xs) + 4px);
+  --fx-indent: 14px;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+.fx-viewer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Sidebar ---- */
+.fx-side-wrap {
+  flex: none;
+  display: flex;
+  min-width: 0;
+  /* However wide it was left, the viewer keeps room to read. */
+  max-width: calc(100% - 240px);
+}
+.fx-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+.fx-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--fx-head-h);
+  flex-shrink: 0;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--border-faint);
+}
+.fx-mode {
+  min-width: 0;
+  margin-right: 0;
+}
+.fx-mode button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.fx-seg-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-3);
+}
+.fx-mode button.on .fx-seg-count {
+  color: var(--fg-2);
+}
+.fx-spacer {
+  flex: 1;
+}
+.fx-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 8px 8px 6px 10px;
+}
+
+/* The filter box: the terminal find bar's field, at the toolbar's height. */
+.fx-filter {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h-sm);
+  padding: 0 3px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--fg-3);
+}
+.fx-filter:focus-within {
+  border-color: color-mix(in oklch, var(--c-accent) 60%, var(--border));
+}
+.fx-filter svg {
+  flex-shrink: 0;
+}
+.fx-filter input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-ui);
+  color: var(--fg-0);
+}
+.fx-filter input::placeholder {
+  color: var(--fg-3);
+}
+.fx-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  border-radius: var(--radius-sm);
+  color: var(--fg-3);
+}
+.fx-filter-clear:hover {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+
+/* A square tool button for in-content toolbars (sidebar and viewer headers). */
+.fx-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  border-radius: var(--radius-sm);
+  color: var(--fg-3);
+}
+.fx-tool:hover {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+.fx-tool.on {
+  color: var(--c-accent);
+  background: var(--c-accent-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--c-accent) 45%, transparent);
+}
+.fx-tool:focus-visible,
+.fx-filter-clear:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--c-accent);
+}
+.fx-tool.text {
+  width: auto;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}
+.fx-tool.text:hover,
+.fx-tool.text.on {
+  color: var(--fg-0);
+}
+.fx-caret {
+  display: inline-flex;
+  color: var(--fg-3);
+}
+.fx-caret svg {
+  transform: rotate(90deg);
+}
+
+.fx-notice {
+  padding: 0 4px;
+}
+.fx-foot {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-faint);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+
+/* Folded: a strip like the right-hand side panel's, naming what it holds. */
+.fx-strip.sp-strip {
+  flex: none;
+  width: var(--side-w-closed);
+  border-right: 1px solid var(--border-faint);
+}
+
+/* ---- The divider: a plain 1px rule at rest, with a wider grab area ---- */
+.fx-divider {
+  flex: none;
+  position: relative;
+  z-index: 2;
+  width: 1px;
+  background: var(--border-faint);
+  cursor: col-resize;
+  touch-action: none;
+  transition: background 0.12s ease;
+}
+.fx-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
+}
+.fx-divider:hover {
+  background: var(--border-strong);
+  transition-delay: 0.15s;
+}
+.fx-divider:focus-visible,
+.fx-resizing .fx-divider {
+  outline: none;
+  background: var(--c-accent);
+  transition-delay: 0s;
+}
+body.fx-resizing,
+body.fx-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* ---- The tree ---- */
+.fx-tree {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: none;
+}
+.fx-probe {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+.fx-row {
+  display: flex;
+  align-items: center;
+  height: var(--fx-row-h);
+  margin: 0 6px;
+  padding: 0 6px 0 4px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fx-row:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
+}
+.fx-row.selected {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+.fx-tree:focus-visible .fx-row.cursor,
+.fx-tree.by-keys:focus .fx-row.cursor {
+  outline: 1px solid var(--c-accent);
+  outline-offset: -1px;
+}
+/* One guide per level, down the middle of the parent's chevron. */
+.fx-guide {
+  flex: none;
+  align-self: stretch;
+  position: relative;
+  width: var(--fx-indent);
+}
+.fx-guide::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--fx-indent) / 2);
+  width: 1px;
+  background: var(--border);
+}
+.fx-twisty {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--fx-indent);
+  color: var(--fg-3);
+}
+.fx-twisty svg {
+  transition: transform 0.12s ease;
+}
+.fx-twisty.open svg {
+  transform: rotate(90deg);
+}
+.fx-icon {
+  flex: none;
+  display: inline-flex;
+  width: 20px;
+  padding-left: 2px;
+  color: var(--fg-3);
+}
+.fx-row.selected .fx-icon {
+  color: var(--fg-1);
+}
+.fx-name {
+  flex: 1 1 auto;
+  /* A deep row in a narrow list still shows the start of its name. */
+  min-width: 3ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A compact chain: one row, each folder its own target; the cursor's is brighter. */
+.fx-chain-sep {
+  color: var(--fg-4);
+}
+.fx-seg:hover {
+  color: var(--fg-0);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fx-tree:focus-visible .fx-seg.cur,
+.fx-tree.by-keys:focus .fx-seg.cur {
+  color: var(--fg-0);
+  text-decoration: underline;
+  text-decoration-color: var(--c-accent);
+  text-underline-offset: 2px;
+}
+/* Flat list: the name keeps its room; the folder after it gives way first. */
+.fx-row:has(.fx-dir) .fx-name {
+  flex: 0 1 auto;
+}
+.fx-dir {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.fx-row.gone .fx-name {
+  text-decoration: line-through;
+  color: var(--fg-3);
+}
+.fx-stat {
+  flex: none;
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+/* A narrow list drops the line counts first: the name and status matter more. */
+@container (max-width: 279px) {
+  .fx-stat {
+    display: none;
+  }
+}
+.fx-stat .add {
+  color: var(--state-ready-fg);
+}
+.fx-stat .del {
+  color: var(--c-danger);
+}
+
+/* Git status: a letter on a file (and the viewer's header), a count on a folder. */
+.fx-status {
+  flex: none;
+  min-width: 14px;
+  margin-left: 8px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.fx-status.st-added,
+.fx-status.st-untracked {
+  color: var(--state-ready-fg);
+}
+.fx-status.st-modified,
+.fx-status.st-renamed {
+  color: var(--c-prog);
+}
+.fx-status.st-deleted {
+  color: var(--c-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-twisty svg,
+  .fx-divider {
+    transition: none;
+  }
+}

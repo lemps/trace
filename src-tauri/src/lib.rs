@@ -10,6 +10,7 @@ pub mod claude;
 pub mod cleanup;
 pub mod commands;
 pub mod diff_parse;
+pub mod diff_summary;
 pub mod git;
 pub mod github;
 pub mod helpers;
@@ -22,6 +23,7 @@ pub mod repo_catalog;
 pub mod schedule;
 pub mod state;
 pub mod workspace_dir;
+pub mod worktree_diff;
 pub mod worktree_files;
 
 use std::sync::atomic::Ordering;

@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
+
 interface SegmentedProps<T extends string | number> {
   label: string;
   value: T;
-  options: readonly { value: T; label: string }[];
+  options: readonly { value: T; label: ReactNode }[];
   onChange: (value: T) => void;
   /** Extra class for placement (the `.seg` look is always applied). */
   className?: string;

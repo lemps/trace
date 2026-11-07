@@ -24,6 +24,7 @@ import "@/domains/agent/detail.css";
 import "@/domains/agent/answer.css";
 import "@/domains/agent/rail.css";
 import "@/domains/agent/files.css";
+import "@/domains/agent/files/files-tree.css";
 import "@/domains/quickOpen/quick-open.css";
 import "@/domains/agent/panes.css";
 import "@/domains/agent/terminal/terminal-extras.css";

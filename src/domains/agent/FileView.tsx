@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Markdown } from "@/components/Markdown";
+import { Segmented } from "@/components/Segmented";
 import { type FileDiff, readWorkspaceFile } from "@/ipc/diff";
+import type { Change } from "./files/tree";
+import { ViewerHeader } from "./files/ViewerHeader";
 
 // Files we can render visually in the Preview pane (vs. the raw text diff).
 type PreviewKind = "md" | "svg";
@@ -16,19 +19,23 @@ const previewKind = (path: string): PreviewKind | null => {
 const svgDataUri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
 // One file's right pane: the unified diff, plus a Diff/Preview toggle that
-// renders markdown or SVG files. A file with no changes (one Quick Open picked)
-// shows its source instead of an empty diff. Remounted per file (keyed by path),
-// so state starts fresh — preview defaults to the diff.
+// renders markdown or SVG files. A file with no changes (one picked in All files
+// or Quick Open) shows its source instead of an empty diff. Remounted per file
+// (keyed by path), so state starts fresh — preview defaults to the diff.
 interface FileViewProps {
   fd: FileDiff;
   workspaceId: string;
-  /** In the workspace's changed files; false for one opened from Quick Open. */
-  isChanged: boolean;
+  /** What changed, from the summary; none for an unchanged file. */
+  change: Change | undefined;
+  /** Show a folder (`isDir`) or this file in the tree. */
+  onReveal: (path: string, isDir: boolean) => void;
 }
 
-export function FileView({ fd, workspaceId, isChanged }: FileViewProps) {
-  const kind = previewKind(fd.path);
-  const isUnchanged = !isChanged && fd.hunks.length === 0;
+export function FileView({ fd, workspaceId, change, onReveal }: FileViewProps) {
+  const isGone = change?.status === "deleted";
+  // A deleted file has nothing on disk to preview.
+  const kind = isGone ? null : previewKind(fd.path);
+  const isUnchanged = !change && fd.hunks.length === 0;
   const [preview, setPreview] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
@@ -53,7 +60,7 @@ export function FileView({ fd, workspaceId, isChanged }: FileViewProps) {
   }, [needsContent, workspaceId, fd.path]);
 
   const body = () => {
-    if (!needsContent) return <DiffBody fd={fd} />;
+    if (!needsContent) return <DiffBody fd={fd} change={change} />;
     if (contentError) return <div className="diff-note">{contentError}</div>;
     if (content === null) return <div className="diff-note">Loading…</div>;
     if (!preview) return <SourceBody text={content} />;
@@ -75,45 +82,39 @@ export function FileView({ fd, workspaceId, isChanged }: FileViewProps) {
 
   return (
     <>
-      <div className="diff-head">
-        <span className="path">{fd.path}</span>
-        <span className="stat">
-          {isUnchanged ? (
-            <span className="unchanged">unchanged</span>
-          ) : (
-            <>
-              <span style={{ color: "var(--c-done)" }}>+{fd.add}</span>{" "}
-              <span style={{ color: "var(--c-danger)" }}>−{fd.del}</span>
-            </>
-          )}
-        </span>
-        {kind && (
-          <span className="view-toggle">
-            <button
-              type="button"
-              className={preview ? "" : "active"}
-              onClick={() => setPreview(false)}
-            >
-              {isUnchanged ? "Source" : "Diff"}
-            </button>
-            <button
-              type="button"
-              className={preview ? "active" : ""}
-              onClick={() => setPreview(true)}
-            >
-              Preview
-            </button>
+      <ViewerHeader workspaceId={workspaceId} path={fd.path} change={change} onReveal={onReveal}>
+        {isUnchanged ? (
+          <span className="fx-vstat unchanged">unchanged</span>
+        ) : (
+          <span className="fx-vstat">
+            <span className="add">+{fd.add}</span>
+            <span className="del">−{fd.del}</span>
           </span>
         )}
-      </div>
+        {kind && (
+          <Segmented
+            label="Show"
+            value={preview ? "preview" : "text"}
+            options={[
+              { value: "text", label: isUnchanged ? "Source" : "Diff" },
+              { value: "preview", label: "Preview" },
+            ]}
+            onChange={(v) => setPreview(v === "preview")}
+          />
+        )}
+      </ViewerHeader>
       {body()}
     </>
   );
 }
 
-function DiffBody({ fd }: { fd: FileDiff }) {
+function DiffBody({ fd, change }: { fd: FileDiff; change: Change | undefined }) {
   if (fd.hunks.length === 0) {
-    return <div className="diff-note">No text diff — binary or empty file.</div>;
+    const note =
+      change?.status === "renamed"
+        ? `Renamed from ${change.oldPath ?? "elsewhere"}, with no changes to its content.`
+        : "No text diff — binary or empty file.";
+    return <div className="diff-note">{note}</div>;
   }
   return (
     <>

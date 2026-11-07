@@ -12,6 +12,7 @@ import { toast } from "@/app/toast";
 import type { MenuItem } from "@/components/PopMenu";
 import { useDismiss } from "@/hooks/useDismiss";
 import { useHint } from "@/platform/shortcuts";
+import { copyText } from "../copyText";
 import { editorItems } from "../editorItems";
 import { copyContext, copySelection } from "./copyContext";
 import { isWebUrl, openWebUrl } from "./links";
@@ -26,13 +27,6 @@ interface TerminalMenuProps {
   onFind: () => void;
   onClose: () => void;
 }
-
-const copyText = (text: string, what: string) => {
-  void navigator.clipboard
-    .writeText(text)
-    .then(() => toast.success(`Copied the ${what}.`))
-    .catch((e) => toast.error(`Couldn't copy: ${String(e)}`));
-};
 
 /** Show a file from the terminal in the system file manager. */
 async function revealFile(termKey: string, path: string): Promise<void> {
