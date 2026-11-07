@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/noble1911/trace/releases/latest"><img src="https://img.shields.io/github/v/release/noble1911/trace" alt="Latest release" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS%2011%2B-lightgrey" alt="Platform: macOS 11 or later" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platform: macOS, Windows and Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/github/license/noble1911/trace" alt="License: Apache 2.0" /></a>
 </p>
 
@@ -70,28 +70,65 @@ are still working.
 
 ### Requirements
 
-- macOS 11 or later
-- [Claude Code](https://code.claude.com/docs) (`claude`), signed in
+- macOS 11 or later on Apple silicon, Windows 10 or 11 (x64), or Linux (x86_64, glibc 2.35 or
+  later, as on Ubuntu 22.04)
+- [Claude Code](https://code.claude.com/docs) (`claude`), signed in, or
+  [Codex](https://github.com/openai/codex) (`codex`), or both
 - `git`, plus the [GitHub CLI](https://cli.github.com) (`gh`) for pull request features
+- On Windows, [Git for Windows](https://git-scm.com/download/win): Claude Code and trace's hooks run
+  through its Git Bash
 - Optional: a [Jira Cloud](https://www.atlassian.com/software/jira) or
   [Pylon](https://usepylon.com) account for the boards
-- Optional: [Codex](https://github.com/openai/codex) (`codex`) to run Codex agents
 
 ### Install
 
-1. Download the `.dmg` from the [latest release](https://github.com/noble1911/trace/releases/latest).
-2. Drag `trace.app` into Applications.
-3. Open trace. To use the boards, connect Jira or Pylon from **Integrations** in the sidebar.
+Download the file for your OS from the
+[latest release](https://github.com/noble1911/trace/releases/latest). Then, to use the boards,
+connect Jira or Pylon from **Integrations** in the sidebar.
 
-Releases aren't notarized yet, so macOS may block the first launch. If it does, allow the app in
-**System Settings → Privacy & Security**. After that, you can install updates from
-**Settings → Updates**.
+**macOS** (`trace-<version>-macos.dmg`, or the `-macos-app.zip`)
+
+1. Open the `.dmg` and drag `trace.app` into Applications.
+2. Open trace. Releases aren't notarized yet, so macOS may block the first launch. If it does,
+   allow the app in **System Settings → Privacy & Security**.
+
+**Windows** (`trace-<version>-windows-x86_64-setup.exe`)
+
+1. Run the installer. It installs for your user only, without admin rights.
+2. The installer isn't signed yet, so SmartScreen may warn that it's from an unknown publisher.
+   Choose **More info → Run anyway**.
+
+**Linux**
+
+- AppImage (`trace-<version>-linux-x86_64.AppImage`): make it executable with
+  `chmod +x trace-*.AppImage`, then run it. Some distributions need `libfuse2` installed first.
+- Debian or Ubuntu (`trace-<version>-linux-amd64.deb`): `sudo apt install ./trace-*.deb`.
+
+### Updates
+
+On macOS, Windows and the AppImage, check for and install updates from **Settings → Updates**.
+trace restarts into the new version and offers back any agents the restart stopped. The `.deb` can't
+update itself: download the new one and install it the same way.
+
+### Where trace keeps its data
+
+Settings, sessions, schedules, the activity log and saved credentials live in one folder:
+
+| OS      | Folder                                          |
+| ------- | ----------------------------------------------- |
+| macOS   | `~/Library/Application Support/trace`           |
+| Windows | `%APPDATA%\trace`                               |
+| Linux   | `~/.config/trace` (or `$XDG_CONFIG_HOME/trace`) |
+
+Worktrees are created inside each repository, under `.worktrees/`, and Claude Code keeps its
+conversations in its own folder, as usual.
 
 ## Security
 
 - **No telemetry:** trace talks only to the services you connect and to GitHub to check for updates.
-- **Credentials:** tracker tokens and provider API keys stay in the Rust backend, in user-only
-  (`0600`) files in `~/Library/Application Support/trace/`. They aren't sent to the UI.
+- **Credentials:** tracker tokens and provider API keys stay in the Rust backend, in user-only files
+  in trace's data folder (above). They aren't sent to the UI. On macOS and Linux the files are
+  `0600`; on Windows the folder's access list lets in only you, `SYSTEM` and Administrators.
 - **Agent tools:** agents can use trace's tools without a confirmation prompt, including moving
   issues and starting other agents. Only run agents on repositories you trust.
 
@@ -120,7 +157,7 @@ cargo test --manifest-path src-tauri/Cargo.toml  # backend tests
 
 ## Roadmap
 
-Windows and Linux builds are in testing and haven't been released yet. Cloud VMs and iPhone and
+Windows and Linux builds are new in v0.10.0, and still being tested on real machines. Cloud VMs and iPhone and
 Android apps are planned. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full list.
 
 ## License

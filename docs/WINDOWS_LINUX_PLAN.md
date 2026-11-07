@@ -159,7 +159,7 @@ src-tauri/src/platform/
 - [ ] Run `release.yml` for real. It can't be tried without a tag, so it's unproven until the first
       release, which is on hold.
 - [ ] Test an update from one release to the next on each OS, which also needs a release.
-- [ ] Add install steps to the README, and update its requirements, badge and security section, once
+- [x] Add install steps to the README, and update its requirements, badge and security section, once
       there's a release to install.
 
 **Done when:** publishing a tag ships all three platforms, and in-app updates work on each.
