@@ -6,8 +6,16 @@
 //!
 //! This is the contract the runtime and the UI are built against; the runtime
 //! (process handling, persistence, commands) and the adapters live beside it.
+//!
+//! - `runtime`: the running agents, and the sink that persists and emits rows.
+//! - `store`: the journal file; `settle`: rows a vanished process left open.
+//! - `claude`: the Claude adapter.
 
+pub mod claude;
 pub mod journal;
+pub mod runtime;
+pub mod settle;
+pub mod store;
 
 use std::path::PathBuf;
 
@@ -27,6 +35,9 @@ pub struct LaunchSpec {
     pub extra_args: Vec<String>,
     /// Extra environment (trace's render bridge, a provider's endpoint, …).
     pub env: Vec<(String, String)>,
+    /// The `seq` the adapter's first new row takes, continuing the journal: only
+    /// the runtime has read it, and rows must keep their order across restarts.
+    pub next_seq: u64,
 }
 
 /// A user turn.

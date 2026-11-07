@@ -1,14 +1,13 @@
 //! Agent commands — start/stop interactive Claude sessions in per-issue
 //! worktrees, and pipe keystrokes/resize to the PTY.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 
 use crate::claude::conversations::{claude_session_ids, forget_session_id};
+use crate::claude::launch;
 use crate::claude::pty::{spawn_agent_pty, spawn_shell_pty};
-use crate::claude::{hooks, render_bridge};
 use crate::git;
 use crate::helpers::slugify;
 use crate::state::{AppState, StartGuard};
@@ -64,6 +63,10 @@ pub(crate) fn spawn_in(
     if state.pty_sessions.lock().contains_key(&workspace_id) {
         return Ok(());
     }
+    // One process per conversation: a chat agent on it would collide on its id.
+    if state.chat_agents.is_running(&workspace_id) {
+        return Err("This agent is running as a chat. Stop it first.".to_string());
+    }
     let (resume_id, new_id_arg) = claude_session_ids(&workspace_id, &cli, &cwd);
     // Until this spawn's hooks report, its conversation is the one just resolved.
     crate::claude::transcript::live::forget(state, &workspace_id);
@@ -88,63 +91,22 @@ pub(crate) fn spawn_in(
         // A prompt starts a turn; the hooks keep this current from here on.
         busy: prompt.is_some(),
     };
-    // Start the loopback HTML bridge once (lazily) and hand this agent the
-    // coordinates so its `trace-render` can post cards to the panel. Bind failure
-    // yields a disabled bridge (port 0) and we simply skip the injection.
-    let bridge = state
-        .render_bridge
-        .get_or_init(|| render_bridge::start(app.clone()).unwrap_or_default());
-    let mut env_overrides = HashMap::new();
-    if bridge.port != 0 {
-        env_overrides.insert("TRACE_ISSUE_KEY".to_string(), workspace_id.clone());
-        env_overrides.insert("TRACE_RENDER_PORT".to_string(), bridge.port.to_string());
-        env_overrides.insert("TRACE_RENDER_TOKEN".to_string(), bridge.token.clone());
-    }
-    let mut model = model;
-    let mut extra_args = extra_args;
-    if cli == "claude" {
-        // Turn hooks (`claude::hooks`) report through the bridge, so they need it.
-        // Appended last: `--settings <json>` also ends any variadic user flag
-        // (e.g. `--allowedTools Bash Edit`) that would otherwise swallow a prompt.
-        // Best-effort — without them the renderer falls back to its quiet timer.
-        // trace's own tools (`agent_tools`), before `--settings` for the same
-        // reason: `--mcp-config` is variadic too. Bind failure = no tools.
-        let tools = state
-            .tool_server
-            .get_or_init(|| crate::agent_tools::server::start(app.clone()).unwrap_or_default());
-        let mut allow = Vec::new();
-        if tools.port != 0 {
-            extra_args.push("--mcp-config".to_string());
-            extra_args.push(crate::agent_tools::mcp_config_arg(tools, &workspace_id));
-            allow.push(crate::agent_tools::ALLOW_RULE);
-        }
-        if bridge.port != 0 {
-            if let Ok(settings) = hooks::settings_arg(&allow) {
-                extra_args.push("--settings".to_string());
-                extra_args.push(settings);
-            }
-        }
-        if let Some(spec) = provider
-            .as_deref()
-            .and_then(crate::commands::providers::spec)
-        {
-            // The Settings default model targets Anthropic (e.g. "fable") and
-            // doesn't resolve on a third-party endpoint — keep only models that
-            // clearly belong to this provider, else use its default. Resolved
-            // before env injection so the DEFAULT_*/SUBAGENT aliases pin to the
-            // same id that `--model` receives.
-            match model.as_deref() {
-                // Prefix match is case-insensitive so Wafer's `Kimi-K3` and a
-                // typed `kimi-k3-fast` both count as belonging to the provider.
-                Some(m)
-                    if m.to_ascii_lowercase()
-                        .starts_with(&spec.model_prefix.to_ascii_lowercase()) => {}
-                _ => model = Some(spec.default_model.to_string()),
-            }
-            let provider_model = model.as_deref().unwrap_or(spec.default_model);
-            env_overrides.extend(crate::commands::providers::env(spec, provider_model)?);
-        }
-    }
+    // trace's wiring (`claude::launch`): the render bridge for every CLI, and for
+    // Claude its tools, turn hooks and the provider's endpoint + model.
+    let (model, extra_args, env_overrides) = if cli == "claude" {
+        let wiring = launch::claude_wiring(
+            &app,
+            state,
+            &workspace_id,
+            model,
+            provider.as_deref(),
+            extra_args,
+        )?;
+        (wiring.model, wiring.extra_args, wiring.env)
+    } else {
+        let env = launch::bridge_env(&app, state, &workspace_id);
+        (model, extra_args, env)
+    };
     let (session, pid) = spawn_agent_pty(
         app,
         workspace_id.clone(),
@@ -218,24 +180,7 @@ pub fn start_agent(
         return Ok(());
     };
 
-    let repo =
-        crate::commands::repos::repo_for_matching(&issue_key, match_text.as_deref().unwrap_or(""))?;
-    // Pin it so diff/PR/tests (which only know the key) resolve the same repo.
-    crate::commands::repos::assign_repo(&issue_key, &repo)?;
-
-    let busy = git::git_busy_check(&repo);
-    if busy.starts_with("busy") {
-        return Err(format!(
-            "Repository is {busy} — finish that git operation first."
-        ));
-    }
-
-    // Path through the dirname helper: a linked issue adopted its session's
-    // worktree, in which case it already exists and create_worktree no-ops.
-    let worktree = crate::commands::repos::workspace_dir(&repo, &issue_key);
-    let branch = format!("workspace/{}", slugify(&issue_key));
-    let default_branch = git::get_default_branch(&repo);
-    git::create_worktree(&repo, &worktree, &branch, &default_branch)?;
+    let worktree = issue_worktree(&issue_key, match_text.as_deref().unwrap_or(""))?;
 
     let cli = cli.unwrap_or_else(|| "claude".to_string());
     spawn_in(
@@ -252,6 +197,30 @@ pub fn start_agent(
         cols,
         rows,
     )
+}
+
+/// The worktree an issue's agent runs in, created if needed: the repo its
+/// mappings pick (pinned, so diff/PR/tests resolve the same one), on branch
+/// `workspace/<slug>`. Shared by terminal and chat agents.
+pub(crate) fn issue_worktree(issue_key: &str, match_text: &str) -> Result<String, String> {
+    let repo = crate::commands::repos::repo_for_matching(issue_key, match_text)?;
+    // Pin it so diff/PR/tests (which only know the key) resolve the same repo.
+    crate::commands::repos::assign_repo(issue_key, &repo)?;
+
+    let busy = git::git_busy_check(&repo);
+    if busy.starts_with("busy") {
+        return Err(format!(
+            "Repository is {busy} — finish that git operation first."
+        ));
+    }
+
+    // Path through the dirname helper: a linked issue adopted its session's
+    // worktree, in which case it already exists and create_worktree no-ops.
+    let worktree = crate::commands::repos::workspace_dir(&repo, issue_key);
+    let branch = format!("workspace/{}", slugify(issue_key));
+    let default_branch = git::get_default_branch(&repo);
+    git::create_worktree(&repo, &worktree, &branch, &default_branch)?;
+    Ok(worktree)
 }
 
 /// Start a plain shell in the issue's worktree — the "Terminal" tab, separate

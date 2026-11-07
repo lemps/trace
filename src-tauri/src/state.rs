@@ -70,6 +70,8 @@ pub struct AppState {
     /// The conversation file each running Claude agent's hooks last named —
     /// it moves on `/clear` (`claude::transcript::live`).
     pub live_transcripts: Mutex<HashMap<String, String>>,
+    /// Running chat agents (`agent_session::runtime`).
+    pub chat_agents: crate::agent_session::runtime::ChatAgents,
 }
 
 impl AppState {
