@@ -51,7 +51,8 @@ interface BuddyStore {
 }
 
 export const useBuddyStore = create<BuddyStore>((set, get) => ({
-  enabled: read(ENABLED_KEY) !== "false",
+  // Off until switched on in Settings.
+  enabled: read(ENABLED_KEY) === "true",
   character: read(CHARACTER_KEY) ?? DEFAULT_SPRITE,
   mutedUntil: 0,
   bubble: null,
