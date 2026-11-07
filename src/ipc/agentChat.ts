@@ -47,9 +47,14 @@ export function answerChatPrompt(
   return invoke("answer_chat_prompt", { workspaceId, requestId, answer });
 }
 
-/** Stop the running turn; the agent stays up. */
+/** Stop the running turn and every subagent (background ones too); the agent stays up. */
 export function interruptChatAgent(workspaceId: string): Promise<void> {
   return invoke("interrupt_chat_agent", { workspaceId });
+}
+
+/** Stop one subagent, named by the call that started it; the turn goes on. */
+export function stopChatSubagent(workspaceId: string, callId: string): Promise<void> {
+  return invoke("stop_chat_subagent", { workspaceId, callId });
 }
 
 /**

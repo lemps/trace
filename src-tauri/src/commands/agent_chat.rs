@@ -67,6 +67,16 @@ pub fn interrupt_chat_agent(
     runtime::interrupt(&state, &workspace_id)
 }
 
+/// Stop one subagent (by the call that started it); the agent and its turn go on.
+#[tauri::command]
+pub fn stop_chat_subagent(
+    state: State<'_, AppState>,
+    workspace_id: String,
+    call_id: String,
+) -> Result<(), String> {
+    runtime::stop_subagent(&state, &workspace_id, &call_id)
+}
+
 /// The workspace's journal, each row at its latest revision, in order.
 #[tauri::command]
 pub fn load_journal(

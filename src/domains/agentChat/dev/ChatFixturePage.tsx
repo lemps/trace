@@ -4,12 +4,14 @@ import { useAppearance } from "@/domains/appearance/store";
 import { ChatActionsContext } from "../actions";
 import { ChatAgentPane } from "../ChatAgentPane";
 import { FIXTURE_WS, fixtureActions, seedFixture } from "./fixtureActions";
+import { playSubagents } from "./fixturePlay";
 import "./dev.css";
 
 // Dev only (`npm run dev`, then /#/dev/chat): the chat view over the fixture
 // journal, with a pretend agent, so the UI can be built and screenshot without
 // a backend. `?theme=light` and `?expand=1` in the hash set the toolbar's
-// choices for scripted screenshots. The Chat & transcript settings apply as in
+// choices for scripted screenshots; `?play=1` plays a two-subagent turn live
+// (also the toolbar's "Play subagents"), `?step=<ms>` paces it. The Chat & transcript settings apply as in
 // the app (from this webview's storage, as Settings left them). main.tsx only
 // imports this behind `import.meta.env.DEV`, so production builds leave it
 // (and the fixture) out.
@@ -37,6 +39,9 @@ export function ChatFixturePage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-seed on Reset
   useEffect(() => {
     seedFixture();
+    if (params.get("play") === "1" && generation === 0) {
+      void playSubagents(Number(params.get("step") ?? 700));
+    }
   }, [generation]);
 
   return (
@@ -59,6 +64,9 @@ export function ChatFixturePage() {
           </fieldset>
           <button type="button" className="btn" onClick={() => setExpandAll((v) => !v)}>
             {expandAll ? "Fold cards" : "Expand all"}
+          </button>
+          <button type="button" className="btn" onClick={() => void playSubagents()}>
+            Play subagents
           </button>
           <button type="button" className="btn" onClick={() => setGeneration((g) => g + 1)}>
             Reset

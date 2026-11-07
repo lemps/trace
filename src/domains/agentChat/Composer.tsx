@@ -9,17 +9,31 @@ import { useAgentChatStore } from "./store";
 
 interface ComposerProps {
   workspaceId: string;
+  /** A turn is running: Enter queues. */
   busy: boolean;
+  /** Anything runs (a turn, or subagents after it): there's something to interrupt. */
+  working: boolean;
+  onInterrupt: () => void;
+  /** A subagent's tab is showing; messages still go to the main agent. */
+  toMain: boolean;
   slashCommands: readonly string[];
 }
 
 /** The textarea grows with its text up to this many lines, then scrolls. */
 const MAX_ROWS = 10;
 
-// Where you talk to the agent. Enter sends (Shift+Enter is a new line); while
-// the agent works, Enter queues the message instead and Esc interrupts the
-// turn. Typing `/` lists the agent's slash commands.
-export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
+// Where you talk to the agent (the main one; subagents are read-only). Enter
+// sends (Shift+Enter is a new line); while a turn runs, Enter queues the message
+// instead. Esc interrupts (the pane hears it, wherever focus is). Typing `/`
+// lists the agent's slash commands.
+export function Composer({
+  workspaceId,
+  busy,
+  working,
+  onInterrupt,
+  toMain,
+  slashCommands,
+}: ComposerProps) {
   const actions = useChatActions();
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
@@ -44,11 +58,6 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
       setText(message);
       toast.error(`Couldn't send: ${String(e)}`);
     });
-  };
-  const interrupt = () => {
-    void actions
-      .interrupt(workspaceId)
-      .catch((e) => toast.error(`Couldn't interrupt: ${String(e)}`));
   };
   const pick = (command: string) => {
     setText(`/${command} `);
@@ -80,10 +89,6 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
     if (isShortcut("chatSend", e)) {
       e.preventDefault();
       submit();
-    } else if (isShortcut("chatInterrupt", e) && busy) {
-      e.preventDefault();
-      e.stopPropagation();
-      interrupt();
     }
   };
 
@@ -96,7 +101,13 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
         <textarea
           className="ac-input"
           aria-label="Message the agent"
-          placeholder={busy ? "Queue a message for when this turn ends" : "Message the agent"}
+          placeholder={
+            busy
+              ? "Queue a message for when this turn ends"
+              : toMain
+                ? "Message the main agent"
+                : "Message the agent"
+          }
           rows={rows}
           value={text}
           onChange={(e) => {
@@ -110,7 +121,7 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
           <span className="ac-composer-hints">
             <span className="kbd">{sendHint}</span> {busy ? "queues" : "sends"} ·{" "}
             <span className="kbd">{newlineHint}</span> new line
-            {busy && (
+            {working && (
               <>
                 {" "}
                 · <span className="kbd">{interruptHint}</span> interrupts
@@ -118,8 +129,8 @@ export function Composer({ workspaceId, busy, slashCommands }: ComposerProps) {
             )}
             {slashCommands.length > 0 && " · / for commands"}
           </span>
-          {busy && (
-            <button type="button" className="btn" onClick={interrupt}>
+          {working && (
+            <button type="button" className="btn" onClick={onInterrupt}>
               <I.X size={13} /> Interrupt
             </button>
           )}

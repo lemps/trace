@@ -1,18 +1,21 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { I } from "@/components/Icon";
+import { useFollowScroll } from "./hooks/useFollowScroll";
 import type { ChatTurn } from "./projection";
 import { WorkingRow } from "./TurnBits";
 import { TurnView } from "./TurnView";
 
 interface ChatListProps {
   turns: ChatTurn[];
+  /** A turn runs, or subagents still work after theirs. */
   working: boolean;
-  /** When the running turn started (unix ms), for the working timer. */
+  /** When the running turn started (unix ms), for the working timer; null between turns. */
   since: number | null;
+  /** Subagents still running. */
+  subagents: number;
+  onInterrupt: () => void;
 }
 
-/** Within this many px of the bottom counts as "following along". */
-const STICK_PX = 48;
 /** Turns drawn at first, and added per "Show earlier". */
 const PAGE = 30;
 
@@ -20,27 +23,12 @@ const PAGE = 30;
 // bottom and stays put while you read further up. Long conversations stay
 // cheap: only the latest turns mount (older ones a click away), finished turns
 // are folded and memoised, and off-screen turns skip layout (content-visibility).
-export function ChatList({ turns, working, since }: ChatListProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const followingRef = useRef(true);
-  const [following, setFollowing] = useState(true);
+export function ChatList({ turns, working, since, subagents, onInterrupt }: ChatListProps) {
+  const { scrollRef, following, onScroll, jumpToLatest } = useFollowScroll(turns, working);
   const [limit, setLimit] = useState(PAGE);
   const hidden = Math.max(0, turns.length - limit);
   const shown = hidden > 0 ? turns.slice(hidden) : turns;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run whenever the turns change
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (el && followingRef.current) el.scrollTop = el.scrollHeight;
-  }, [turns, working]);
-
-  const onScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const near = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_PX;
-    followingRef.current = near;
-    setFollowing(near);
-  };
   const showEarlier = () => {
     const el = scrollRef.current;
     const fromBottom = el ? el.scrollHeight - el.scrollTop : 0;
@@ -49,10 +37,6 @@ export function ChatList({ turns, working, since }: ChatListProps) {
     requestAnimationFrame(() => {
       if (el) el.scrollTop = el.scrollHeight - fromBottom;
     });
-  };
-  const jumpToLatest = () => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
   return (
@@ -67,7 +51,7 @@ export function ChatList({ turns, working, since }: ChatListProps) {
           {shown.map((turn) => (
             <TurnView key={turn.id} turn={turn} />
           ))}
-          {working && <WorkingRow since={since} />}
+          {working && <WorkingRow since={since} subagents={subagents} onInterrupt={onInterrupt} />}
         </div>
       </div>
       {!following && (

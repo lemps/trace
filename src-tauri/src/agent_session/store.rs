@@ -128,6 +128,7 @@ mod tests {
                 role: Role::Assistant,
                 text: text.into(),
                 streaming: false,
+                parent_call_id: None,
             }),
         }
     }

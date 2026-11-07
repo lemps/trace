@@ -4,6 +4,7 @@
 
 mod lifecycle;
 mod replay;
+mod subagents;
 
 use crate::agent_session::journal::*;
 use replay::{replay, settings};

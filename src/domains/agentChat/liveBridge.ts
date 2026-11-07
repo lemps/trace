@@ -1,8 +1,14 @@
 import { useBoardStore } from "@/domains/board/store";
-import { askIsOver, noteAgentTurn, noteTurnOver } from "@/domains/board/waitingNotify";
+import {
+  askIsOver,
+  noteAgentTurn,
+  noteTurnOver,
+  settleBackground,
+} from "@/domains/board/waitingNotify";
 import { noteLiveAsk } from "@/domains/live/sync";
 import { useAgentChatStore } from "./store";
 import type { JournalRow, SessionInfo } from "./types";
+import { isWorkingInfo } from "./working";
 
 // A chat agent's state, told to the board and live stores the way a terminal
 // agent's PTY output and hooks tell them: busy is "working", the end of a turn
@@ -14,15 +20,19 @@ import type { JournalRow, SessionInfo } from "./types";
 /** Open approval / question request ids per workspace. */
 const open = new Map<string, Set<string>>();
 
-/** Call before storing `info`: acts on how `busy` changed. */
+/** Call before storing `info`: acts on how working changed. */
 export function noteChatInfo(workspaceId: string, info: SessionInfo): void {
   const prev = useAgentChatStore.getState().info[workspaceId];
   const board = useBoardStore.getState();
-  if (info.busy && prev?.busy !== true) {
+  const was = prev === undefined ? undefined : isWorkingInfo(prev);
+  const now = isWorkingInfo(info);
+  if (now && was !== true) {
     // A new turn is new work (a message, the kickoff brief): its end is news.
     if (prev) board.noteUserTurn(workspaceId);
     board.setActivity(workspaceId, "working");
-  } else if (!info.busy && prev?.busy === true) {
+  } else if (!now && was === true) {
+    // Its own count is the truth: a hook's "background tasks" may be stale.
+    settleBackground(workspaceId);
     // The turn's end cancels what it still asked, whichever arrives first.
     if (open.delete(workspaceId)) askIsOver(workspaceId);
     noteTurnOver(workspaceId);
@@ -41,7 +51,8 @@ export function noteChatRows(workspaceId: string, rows: readonly JournalRow[]): 
         open.delete(workspaceId);
         askIsOver(workspaceId);
         // Answered: the turn carries on.
-        if (useAgentChatStore.getState().info[workspaceId]?.busy !== false) {
+        const latest = useAgentChatStore.getState().info[workspaceId];
+        if (latest === undefined || isWorkingInfo(latest)) {
           useBoardStore.getState().setActivity(workspaceId, "working");
         }
       }
@@ -83,7 +94,7 @@ export function noteChatRows(workspaceId: string, rows: readonly JournalRow[]): 
  */
 export function syncChatActivity(workspaceId: string): void {
   const info = useAgentChatStore.getState().info[workspaceId];
-  if (!info || info.busy) return;
+  if (!info || isWorkingInfo(info)) return;
   const board = useBoardStore.getState();
   board.setActivity(workspaceId, "waiting");
   board.ackWaiting(workspaceId);

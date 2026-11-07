@@ -13,6 +13,7 @@
 //!   `account/rateLimits/updated`, `warning`, `error` → `SessionInfo` and
 //!   status rows (`session`).
 
+mod agents;
 mod items;
 mod requests;
 mod session;
@@ -72,6 +73,11 @@ pub struct Translator {
     pending: HashMap<String, Pending>,
     /// Warnings already shown: Codex repeats some every turn.
     warned: HashSet<String>,
+    /// Sub-agents by their spawn call's item id, and their threads → that id.
+    spawns: HashMap<String, agents::Spawn>,
+    threads: HashMap<String, String>,
+    /// The spawn call whose sub-agent the frame being read comes from.
+    parent: Option<String>,
 }
 
 struct OpenTurn {
@@ -95,6 +101,8 @@ struct Stream {
     text: String,
     /// The reasoning summary part the text is on: a new part is a new paragraph.
     part: Option<u64>,
+    /// The sub-agent's spawn call, for a sub-agent's text.
+    parent: Option<String>,
 }
 
 impl Translator {
@@ -123,6 +131,9 @@ impl Translator {
             started: HashMap::new(),
             pending: HashMap::new(),
             warned: HashSet::new(),
+            spawns: HashMap::new(),
+            threads: HashMap::new(),
+            parent: None,
         }
     }
 
@@ -152,11 +163,18 @@ impl Translator {
         out
     }
 
-    fn notification(&mut self, method: &str, p: &Value, out: &mut Vec<Out>) {
-        // A subagent's thread reports on the same connection: its work shows
-        // through its own prompts (requests aren't filtered), not as our rows.
+    pub(super) fn notification(&mut self, method: &str, p: &Value, out: &mut Vec<Out>) {
+        // A sub-agent's thread reports on the same connection: its rows go under
+        // the call that spawned it (`agents`). Other threads' aren't ours.
         let theirs = str_at(p, "threadId");
-        if theirs.is_some() && self.thread.is_some() && theirs != self.thread.as_deref() {
+        if self.parent.is_none()
+            && theirs.is_some()
+            && self.thread.is_some()
+            && theirs != self.thread.as_deref()
+        {
+            if let Some(call) = theirs.and_then(|t| self.threads.get(t)).cloned() {
+                self.child_notification(call, method, p, out);
+            }
             return;
         }
         match method {

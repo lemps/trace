@@ -3,6 +3,7 @@ import { useLiveStore } from "@/domains/live/store";
 import { agentRunning, stopAgent } from "@/ipc/agent";
 import { useAgentChatStore } from "./store";
 import type { Transport } from "./types";
+import { isWorkingInfo } from "./working";
 
 // Restarting an agent, and moving one between the chat and the terminal ("Open
 // in terminal" / "Open as chat"). Both are a stop, a wait for the process to be
@@ -35,7 +36,7 @@ export function switchBlocker(workspaceId: string, to: Transport): string | null
   if (live?.ask && live.ask.kind !== "turn") return "it's waiting for an answer";
   if (to === "terminal") {
     const info = useAgentChatStore.getState().info[workspaceId];
-    if (info?.busy) return "it's working";
+    if (isWorkingInfo(info)) return "it's working";
     return null;
   }
   if (useBoardStore.getState().agentActivity[workspaceId] !== "waiting") return "it's working";
@@ -47,6 +48,6 @@ export function useSwitchBlocker(workspaceId: string, to: Transport): string | n
   useBoardStore((s) => s.agentActivity[workspaceId]);
   useBoardStore((s) => s.runningAgents.has(workspaceId));
   useLiveStore((s) => s.info[workspaceId]?.ask);
-  useAgentChatStore((s) => s.info[workspaceId]?.busy);
+  useAgentChatStore((s) => isWorkingInfo(s.info[workspaceId]));
   return switchBlocker(workspaceId, to);
 }

@@ -11,8 +11,11 @@
 //! - `control_request` `can_use_tool` → an approval or question row (`prompts`).
 //! - `result` → the turn row, with usage and cost; `system`/`rate_limit_event` →
 //!   `SessionInfo`. See `turn` for the turn's lifecycle.
+//! - Task/Agent calls and `system` `task_*` lines → a subagent on the call's
+//!   row, its own rows carrying `parentCallId` (`subagents`).
 
 mod session;
+mod subagents;
 mod turn;
 
 use std::collections::{HashMap, HashSet};
@@ -46,12 +49,24 @@ pub struct Translator {
     blocks: HashMap<(String, u64), Block>,
     /// API messages whose text came as stream events this turn.
     streamed: HashSet<String>,
-    /// Tool calls awaiting their result, by call id: (name, input).
-    tools: HashMap<String, (String, Value)>,
+    /// Tool calls awaiting their result, by call id.
+    tools: HashMap<String, PendingCall>,
+    /// Subagents by the call that started them.
+    subagents: HashMap<String, subagents::SubRun>,
+    /// Claude's task ids → the call that started each.
+    tasks: HashMap<String, String>,
     /// Prompts awaiting the user, by request id.
     pending: HashMap<String, Pending>,
     /// `total_cost_usd` so far: it's cumulative, a turn's cost is the difference.
     cost_so_far: f64,
+}
+
+struct PendingCall {
+    name: String,
+    /// The full input (the row's is capped).
+    input: Value,
+    /// The subagent that made it.
+    parent: Option<String>,
 }
 
 struct OpenTurn {
@@ -79,6 +94,8 @@ impl Translator {
             blocks: HashMap::new(),
             streamed: HashSet::new(),
             tools: HashMap::new(),
+            subagents: HashMap::new(),
+            tasks: HashMap::new(),
             pending: HashMap::new(),
             cost_so_far: 0.0,
         }
@@ -173,12 +190,13 @@ impl Translator {
         let mid = str_at(msg, "id").unwrap_or_default();
         let parent = str_at(m, "parent_tool_use_id").map(str::to_string);
         let uuid = str_at(m, "uuid").unwrap_or(mid).to_string();
+        // A subagent's text never streams: its `assistant` lines are the only copy.
         let streamed = self.streamed.contains(mid);
         let blocks = msg["content"].as_array().cloned().unwrap_or_default();
         for (i, block) in blocks.iter().enumerate() {
-            let turn = self.turn_id(out);
+            let turn = self.row_turn(parent.as_deref(), out);
             match str_at(block, "type") {
-                Some(kind @ ("text" | "thinking")) if !streamed && parent.is_none() => {
+                Some(kind @ ("text" | "thinking")) if !streamed => {
                     let text = str_at(block, kind).unwrap_or_default();
                     if text.is_empty() {
                         continue;
@@ -189,11 +207,11 @@ impl Translator {
                         Role::Reasoning
                     };
                     let id = format!("msg:{uuid}:{i}");
-                    out.push(Out::Row(self.book.put(
-                        &id,
-                        Some(&turn),
-                        message(role, text, false),
-                    )));
+                    let mut body = message(role, text, false);
+                    if let JournalBody::Message(m) = &mut body {
+                        m.parent_call_id = parent.clone();
+                    }
+                    out.push(Out::Row(self.book.put(&id, Some(&turn), body)));
                     self.book.retire(&id);
                 }
                 Some("tool_use") => {
@@ -207,6 +225,10 @@ impl Translator {
                             out.push(Out::Row(self.book.put(&id, Some(&turn), body)));
                         }
                     } else if !tools::is_quiet(&name) {
+                        let subagent = subagents::subagent_of(&name, &input).map(Box::new);
+                        if subagent.is_some() {
+                            self.started_subagent(&call_id, &turn, out);
+                        }
                         let body = JournalBody::Tool(ToolCall {
                             call_id: call_id.clone(),
                             name: name.clone(),
@@ -214,11 +236,20 @@ impl Translator {
                             state: ToolState::Running,
                             output: None,
                             parent_call_id: parent.clone(),
+                            subagent,
                         });
                         let id = format!("tool:{call_id}");
                         out.push(Out::Row(self.book.put(&id, Some(&turn), body)));
                     }
-                    self.tools.insert(call_id, (name, input));
+                    let parent = parent.clone();
+                    self.tools.insert(
+                        call_id,
+                        PendingCall {
+                            name,
+                            input,
+                            parent,
+                        },
+                    );
                 }
                 _ => {}
             }
@@ -240,7 +271,7 @@ impl Translator {
             .flatten();
         for block in results {
             let call_id = str_at(block, "tool_use_id").unwrap_or_default();
-            let Some((name, input)) = self.tools.remove(call_id) else {
+            let Some(PendingCall { name, input, .. }) = self.tools.remove(call_id) else {
                 continue;
             };
             if tools::is_quiet(&name) {
@@ -261,6 +292,11 @@ impl Translator {
             });
             let turn = row.as_ref().and_then(|r| r.turn_id.clone());
             out.extend(row.map(Out::Row));
+            if self.subagents.contains_key(call_id) {
+                // Its row stays open until the subagent itself is done.
+                self.subagent_call_done(call_id, failed, detail, out);
+                continue;
+            }
             self.book.retire(&id);
             if failed {
                 continue;
@@ -286,7 +322,11 @@ impl Translator {
             })));
             return;
         }
-        let turn = self.turn_id(out);
+        // A subagent's prompt belongs to its turn, which may have ended.
+        let parent = str_at(req, "tool_use_id")
+            .and_then(|c| self.tools.get(c))
+            .and_then(|c| c.parent.clone());
+        let turn = self.row_turn(parent.as_deref(), out);
         let (body, pending) = if str_at(req, "tool_name") == Some("AskUserQuestion") {
             let (set, pending) = prompts::questions(&request_id, req);
             (JournalBody::Question(set), pending)
@@ -322,5 +362,6 @@ fn message(role: Role, text: &str, streaming: bool) -> JournalBody {
         role,
         text: text.to_string(),
         streaming,
+        parent_call_id: None,
     })
 }

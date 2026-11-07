@@ -93,4 +93,7 @@ export const fixtureActions: ChatActions = {
     put(`int${++seq}`, { kind: "status", text: "Interrupted by you.", tone: "info" });
     setBusy(false);
   },
+  stopSubagent: async (_ws, callId) => {
+    put(`stop${++seq}`, { kind: "status", text: `Asked ${callId} to stop.`, tone: "info" });
+  },
 };

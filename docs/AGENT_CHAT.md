@@ -28,8 +28,8 @@ Every adapter turns its protocol into the same rows: `agent_session::journal` (R
 
 | Body | Carries |
 | --- | --- |
-| `message` | `role` (user, assistant, reasoning, system), Markdown `text`, `streaming` |
-| `tool` | `callId`, `name`, `input`, `state` (running, completed, failed), bounded `output`, `parentCallId` for subagents |
+| `message` | `role` (user, assistant, reasoning, system), Markdown `text`, `streaming`, `parentCallId` when a subagent said it |
+| `tool` | `callId`, `name`, `input`, `state` (running, completed, failed), bounded `output`, `parentCallId` when a subagent made it, `subagent` when it started one |
 | `diff` | a file change: `path`, `change` (add, edit, delete; not `kind`, which is the body's tag), `before`/`after` or a unified `patch` |
 | `plan` | a task list: items with `text` and `status` (pending, in progress, done) |
 | `approval` | a permission request: tool, title, detail, options (allow once, allow always, deny), `resolution`. Answered with `{kind: "approval", optionId, note?}` |
@@ -37,11 +37,22 @@ Every adapter turns its protocol into the same rows: `agent_session::journal` (R
 | `status` | a notice with a tone (info, warning, error) |
 | `turn` | a turn's `state` (running, completed, interrupted, failed), duration, token usage and cost |
 
+**Subagents.** The call that starts one (Claude's Task/Agent, Codex's `spawnAgent`) carries a
+`subagent` (`agent_session::subagent`): `agentType`, `description`, `background`, `state`
+(running, completed, failed, stopped), `activity`, `toolUses`, `durationMs` and its `result`. Its
+`state` is separate from the call's: a background subagent's call returns at once while it works
+on. Everything the subagent does is a row of its own (its messages and thinking, its calls, their
+diffs and approvals) whose `parentCallId` names that call; its brief is the call's `input.prompt`.
+A background subagent's rows can land after its turn ended: they keep the `turnId` of the turn
+that started it, and never open a turn.
+
 Plans and diffs are adapter output, not UI guesses: Claude's `TodoWrite` and Codex's plan updates
 both become `plan`; Claude's `Edit`/`Write` and Codex's file changes both become `diff`.
 
-Session-wide facts (model, session id, slash commands, rate-limit windows) travel separately as
-`SessionInfo`, not as rows.
+Session-wide facts (model, session id, slash commands, rate-limit windows, `busy` while a turn
+runs, `runningSubagents`) travel separately as `SessionInfo`, not as rows. An agent is working
+while `busy` or `runningSubagents > 0` (`agentChat/working.ts`): background subagents keep it
+working, and stoppable, after their turn ends.
 
 ## Adapters
 
@@ -51,7 +62,8 @@ Session-wide facts (model, session id, slash commands, rate-limit windows) trave
   rows into the `JournalSink`.
 - `send(message)`: a user turn. While a turn runs, the UI queues it.
 - `answer(request_id, answer)`: resolve an approval or question.
-- `interrupt()`: stop the current turn, keep the agent. `stop()`: end it.
+- `interrupt()`: stop the current turn and every running subagent, background ones included; keep
+  the agent. `stop_subagent(callId)`: stop one subagent. `stop()`: end the agent.
 
 | Brand | Protocol | Notes |
 | --- | --- | --- |
@@ -92,6 +104,9 @@ The translator (`translate`) is pure and replayed in tests against recorded stre
 | --- | --- |
 | `stream_event` text / thinking deltas | `message` (assistant / reasoning), `streaming` until its block stops; the final `assistant` copy is skipped |
 | `assistant` `tool_use` | `tool`, running; `parentCallId` from `parent_tool_use_id` |
+| … Task / Agent | plus `subagent` (kind, description, background from the input); its row stays open until the subagent ends |
+| `assistant` text / thinking with `parent_tool_use_id` | `message` with `parentCallId` (a subagent's words never stream: these lines are the only copy) |
+| `system` `task_started` / `task_progress` / `task_notification` | that call's `subagent`: Claude's task id (for `stop_task`) and `is_backgrounded`; `activity`, tool count, time; the end (completed with `summary` as `result`, failed, stopped) |
 | `user` `tool_result` | that `tool` completed or failed, output capped |
 | … for Edit, MultiEdit, Write | plus `diff`: `before`/`after` from the input, `patch` from `structuredPatch`, Write's add vs edit from `tool_use_result.type` |
 | `tool_use` TodoWrite | `plan`, one per turn (no tool row) |
@@ -101,7 +116,16 @@ The translator (`translate`) is pure and replayed in tests against recorded stre
 | `result` | `turn` with `usage`; `costUsd` is the turn's share of the cumulative `total_cost_usd`; interrupted if trace asked or `terminal_reason` is `aborted_*`; an error result adds a `status` |
 | `system` `init`, `rate_limit_event` | `SessionInfo`: model, session id, slash commands, `unifiedWindows` limits |
 
-Interrupt is the stream-json `control_request` `interrupt`; the process stays up. Other control
+Interrupt is the stream-json `control_request` `interrupt`; the process stays up. It also stops
+every subagent, background ones too (recorded in `subagent_interrupt.jsonl`), so trace sends it
+with no turn running while a subagent works. One subagent stops with `control_request`
+`stop_task` (`task_id` from `task_started`). Claude 2.1.319 with `--verbose`: a subagent's brief
+comes as a `user` text message with `parent_tool_use_id` (trace takes it from the call's input
+instead), its calls and text as `assistant` lines with it (no `stream_event`s), its report in the
+call's `tool_result` (`tool_use_result.content`, after Claude's hand-back frame) and in
+`task_notification.summary`. A background subagent's call returns "Async agent launched" at once
+(`tool_use_result.status` `async_launched`), its rows come after the turn's `result`, and when it
+ends Claude takes a turn of its own (`background_subagent.jsonl`). Other control
 requests (hook callbacks, SDK MCP) are refused with an error response so Claude never waits on
 one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from a real turn.
 
@@ -192,20 +216,42 @@ agent, JSON-RPC over stdio (no `jsonrpc` field on the wire), threaded like the C
 
 Other server requests are answered at once (MCP elicitation declined, extra permissions not
 granted, dynamic tool calls failed, the rest a JSON-RPC error) so Codex never waits on one.
-Notifications from another thread (a subagent's) are dropped. Not mapped yet: subagent
-(`collabAgentToolCall`) activity, a denial's note (Codex's decline carries none), hooks,
+Sub-agents (`multi_agent`, `codex/translate/agents.rs`): a `collabAgentToolCall` `spawnAgent`
+item is a `tool` "spawn_agent" with a `subagent` (its description from the prompt's first line);
+its `receiverThreadIds` name the sub-agent's thread, whose notifications (on the same connection)
+become rows with `parentCallId` = the spawn's item id; that thread's `turn/completed` (or a
+`wait`'s `agentsStates`) ends it, its last message the `result`. `wait`, `sendInput`,
+`resumeAgent`, `closeAgent` are tools `wait_agent`, `send_input`, `resume_agent`, `close_agent`.
+Interrupt also sends `turn/interrupt` to each running sub-agent's thread, and stopping one sends
+it to that one's (`subagents.jsonl`). Other threads' notifications are dropped. Not mapped yet: a denial's note (Codex's decline carries none), hooks,
 context-window size, Codex's own slash commands.
 
 ## The chat view
 
 `src/domains/agentChat/`, shared by ticket agents and sessions:
 
-- Rows group into turns; a finished turn folds its tool activity behind its answer.
+- Rows group into turns; a finished turn folds its tool activity behind its answer. Folding
+  only hides items: every item keeps its key from its first row on, so nothing remounts when a
+  turn ends, and no disclosure's default depends on live state (a box that opened while a call
+  ran and closed between calls was the subagent flicker), so nothing opens or closes by itself.
+- Subagents (`subagents.ts`, `SubagentCard`, `SubagentView`, `ChatTabs`): the main timeline
+  shows one card per subagent where its call was (type, description, status, time, calls, its
+  latest step, then its report) that changes in place and never folds; clicking it opens the
+  subagent's tab. The pane has a tab strip, Main plus one per subagent in start order (the newest
+  five, older ones in a menu), with a live mark and call count; Ctrl+Shift+] / [ (⇧⌘] / [,
+  rebindable) switch. A tab is the subagent's whole conversation, read-only: brief, thinking,
+  messages, calls with output and diffs, report; the composer stays the main agent's.
+  `SubagentView` takes only `(workspaceId, callId)` and `useSubagents(workspaceId)` lists them,
+  so a layout can put one in a pane of its own.
 - Tool calls pair with their output and show one summary line, expanding to the detail.
 - Diff cards, plan cards, and inline approval and question cards answered in place.
 - Assistant text streams in and renders as Markdown, with file links that open in an editor.
 - A composer: Enter sends, messages typed during a turn queue (editable, reorderable), `/`
-  lists the agent's slash commands, Esc interrupts.
+  lists the agent's slash commands.
+- Stopping: while anything runs (a turn, or subagents after it) the last row is "Working…" with
+  the subagent count and Interrupt, and Esc interrupts wherever focus is while the chat is on
+  screen (not from another text box or with a menu open; `hooks/useChatKeys`). A running
+  subagent's card and tab have Stop (that one only). The header's Stop agent ends the process.
 - The header shows model, context and cost from `turn` rows and `SessionInfo`.
 
 ## Build order

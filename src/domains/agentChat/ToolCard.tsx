@@ -29,12 +29,12 @@ function glyphFor(name: string, category: ToolCategory): Glyph {
 
 // One tool call as one line (what it did, to what) that unfolds to its input
 // and output. Its permission request sits under the line, its file changes as
-// diff cards below it, and a subagent's calls nest inside it.
+// diff cards below it. A call that starts a subagent is a `SubagentCard` instead.
 export function ToolCard({ item }: { item: ToolItem }) {
   const { workspaceId, root } = useChatView();
   const tools = useAppearance((s) => s.prefs.chat.tools);
   const [open, toggle] = useDisclosure(tools === "expanded");
-  const { call, approval, diffs, children } = item;
+  const { call, approval, diffs } = item;
   const summary = summarizeTool(call.name, call.input);
   const Glyph = glyphFor(call.name, summary.category);
   return (
@@ -70,7 +70,6 @@ export function ToolCard({ item }: { item: ToolItem }) {
           ))}
         </div>
       )}
-      {children.length > 0 && <SubagentCalls calls={children} />}
     </div>
   );
 }
@@ -83,28 +82,4 @@ function ToolState({ item }: { item: ToolItem }) {
     return <span className="tx-tool-state">{waiting ? "waiting for you" : "running…"}</span>;
   }
   return null;
-}
-
-/** A subagent's own calls: folded to a count, open while it's still working. */
-function SubagentCalls({ calls }: { calls: ToolItem[] }) {
-  const live = calls.some((c) => c.call.state === "running");
-  const tools = useAppearance((s) => s.prefs.chat.tools);
-  const [open, toggle] = useDisclosure(live || tools !== "folded");
-  return (
-    <div className="ac-sub">
-      <button type="button" className="ac-sub-head" aria-expanded={open} onClick={toggle}>
-        <span className="tx-chev">
-          <I.Chevron size={12} />
-        </span>
-        {calls.length} {calls.length === 1 ? "call" : "calls"} by the subagent
-      </button>
-      {open && (
-        <div className="ac-sub-rows">
-          {calls.map((c) => (
-            <ToolCard key={c.row.id} item={c} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }

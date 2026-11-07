@@ -5,32 +5,40 @@ import { formatDuration, workSentence } from "./format";
 import { useDisclosure } from "./hooks/useDisclosure";
 import { ItemView } from "./ItemView";
 import { MessageRow } from "./MessageRow";
-import type { ChatTurn } from "./projection";
+import type { ChatItem, ChatTurn } from "./projection";
 import { TurnFooter } from "./TurnBits";
 
 // One turn: your message, then what the agent did. Once it's finished, its
 // work (thinking, tool calls, diffs, notes along the way) folds into one line
 // above the answer, so a long conversation reads as questions and answers.
+//
+// Every item stays in one list, in order, under the same key from its first
+// row to the end: folding only hides items, so nothing remounts (and no card
+// forgets that you opened it) when a turn ends or its fold opens.
 
 function TurnBody({ turn }: { turn: ChatTurn }) {
+  // Settings → Appearance → Chat & transcript: "Folded" keeps a finished turn's work in one line.
+  const tools = useAppearance((s) => s.prefs.chat.tools);
+  const [open, toggle] = useDisclosure(tools !== "folded");
+  const folded = turn.folded.length > 0;
+  const hidden: ReadonlySet<ChatItem> = folded && !open ? new Set(turn.folded) : NONE;
   return (
     <section className="ac-turn">
       {turn.prompts.map((p) => (
         <MessageRow key={p.row.id} message={p.message} />
       ))}
-      {turn.folded.length > 0 && <Folded turn={turn} />}
-      {turn.shown.map((item) => (
-        <ItemView key={item.row.id} item={item} />
-      ))}
+      {folded && <FoldHead turn={turn} open={open} toggle={toggle} />}
+      {turn.items.map((item) =>
+        hidden.has(item) ? null : <ItemView key={item.row.id} item={item} />
+      )}
       <TurnFooter turn={turn} />
     </section>
   );
 }
 
-function Folded({ turn }: { turn: ChatTurn }) {
-  // Settings → Appearance → Chat & transcript: "Folded" keeps a finished turn's work in one line.
-  const tools = useAppearance((s) => s.prefs.chat.tools);
-  const [open, toggle] = useDisclosure(tools !== "folded");
+const NONE: ReadonlySet<ChatItem> = new Set();
+
+function FoldHead({ turn, open, toggle }: { turn: ChatTurn; open: boolean; toggle: () => void }) {
   const ms = turn.summary?.durationMs;
   return (
     <div className={`ac-fold${open ? " open" : ""}`}>
@@ -42,13 +50,6 @@ function Folded({ turn }: { turn: ChatTurn }) {
         {ms !== undefined && <span className="ac-fold-time">{formatDuration(ms)}</span>}
         <span className="tx-run-count">{turn.folded.length}</span>
       </button>
-      {open && (
-        <div className="ac-fold-rows">
-          {turn.folded.map((item) => (
-            <ItemView key={item.row.id} item={item} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,3 +1,10 @@
+import {
+  finishThread,
+  isLauncher,
+  newThread,
+  parentIds,
+  type SubagentThread,
+} from "./subagents.ts";
 import type {
   Approval,
   FileDiff,
@@ -12,10 +19,11 @@ import type {
 } from "./types.ts";
 
 // The journal arranged for reading: rows grouped into turns, each tool call
-// carrying its approval, its file changes and its subagent's calls, and a
+// carrying its approval and its file changes, each subagent's rows gathered on
+// the call that started it (`subagents.ts`) instead of in the timeline, and a
 // finished turn's work folded behind its final answer. Pure, so it re-runs on
-// every new revision; each item and turn carries a `version` that only grows,
-// so components can skip re-rendering what didn't change.
+// every new revision; each item, subagent and turn carries a `version` that
+// only grows, so components can skip re-rendering what didn't change.
 
 interface Base {
   row: JournalRow;
@@ -30,8 +38,8 @@ export interface ToolItem extends Base {
   approval: { row: JournalRow; approval: Approval } | null;
   /** File changes this call made. */
   diffs: { row: JournalRow; diff: FileDiff }[];
-  /** Calls a subagent made on this call's behalf. */
-  children: ToolItem[];
+  /** Set when this call started a subagent: that agent's conversation. */
+  subagent: SubagentThread | null;
 }
 
 export type ChatItem =
@@ -58,29 +66,41 @@ export interface ChatTurn {
   startedAt: number;
   /** A finished turn's work, folded behind its answer; empty when nothing folds. */
   folded: ChatItem[];
-  /** What's shown: everything not folded, in order. */
+  /** What's shown while folded: everything else, in order. */
   shown: ChatItem[];
   version: number;
 }
 
+export interface Chat {
+  turns: ChatTurn[];
+  /** Every subagent, in the order they started (nested ones too). */
+  subagents: SubagentThread[];
+}
+
+type Owner = { turn: ChatTurn } | { thread: SubagentThread };
+
 const rev = (row: JournalRow) => row.revision + 1;
 
-/** Arrange rows (sorted by `seq`) into turns. */
-export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
+/** Arrange rows (sorted by `seq`) into turns and subagents. */
+export function buildChat(rows: readonly JournalRow[]): Chat {
+  const parents = parentIds(rows);
   const tools = new Map<string, ToolItem>();
-  /** A nested call's parent, and the turn each top-level call is drawn in. */
-  const parentOf = new Map<ToolItem, ToolItem>();
-  const turnOf = new Map<ToolItem, ChatTurn>();
-  /** A change under `tool` re-renders it, every call it's nested in, and their turn. */
-  const bump = (tool: ToolItem, by: number) => {
-    let at: ToolItem = tool;
-    at.version += by;
-    for (let up = parentOf.get(at); up; up = parentOf.get(at)) {
-      up.version += by;
-      at = up;
+  const threads = new Map<string, SubagentThread>();
+  const subagents: SubagentThread[] = [];
+  /** Where each item is drawn: a turn, or a subagent's thread (and so its card). */
+  const ownerOf = new Map<ChatItem, Owner>();
+  /** A change to `item` re-renders it, the cards it's inside, and their turn. */
+  const bumpItem = (item: ChatItem, by: number) => {
+    item.version += by;
+    bumpOwner(ownerOf.get(item), by);
+  };
+  const bumpOwner = (owner: Owner | undefined, by: number) => {
+    if (!owner) return;
+    if ("turn" in owner) owner.turn.version += by;
+    else {
+      owner.thread.version += by;
+      bumpItem(owner.thread.call, by);
     }
-    const owner = turnOf.get(at);
-    if (owner) owner.version += by;
   };
   const turns: ChatTurn[] = [];
   const byId = new Map<string, ChatTurn>();
@@ -140,6 +160,26 @@ export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
       attached.push(row);
       continue;
     }
+    const item = toItem(row);
+    if (item.type === "tool") {
+      tools.set(item.call.callId, item);
+      if (isLauncher(row, parents)) {
+        const thread = newThread(item);
+        item.subagent = thread;
+        threads.set(item.call.callId, thread);
+        subagents.push(thread);
+      }
+    }
+    // A subagent's own row is drawn in its thread, wherever its card is (an
+    // earlier turn, for a background agent), never in the timeline.
+    const parent = body.kind === "tool" || body.kind === "message" ? body.parentCallId : undefined;
+    const thread = parent ? threads.get(parent) : undefined;
+    if (thread) {
+      thread.items.push(item);
+      ownerOf.set(item, { thread });
+      bumpOwner({ thread }, item.version);
+      continue;
+    }
     const isPrompt = body.kind === "message" && body.role === "user";
     let turn: ChatTurn;
     if (row.turnId) turn = named(row.turnId, row.at);
@@ -153,19 +193,7 @@ export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
           : create(`row:${row.id}`, row.at)
         : (current ?? create(`row:${row.id}`, row.at));
     }
-    const item = toItem(row);
-    if (item.type === "tool") {
-      tools.set(item.call.callId, item);
-      const parent = item.call.parentCallId ? tools.get(item.call.parentCallId) : undefined;
-      if (parent) {
-        // Drawn inside its parent, wherever that is (an earlier turn, for a background agent).
-        parent.children.push(item);
-        parentOf.set(item, parent);
-        bump(parent, item.version);
-        continue;
-      }
-      turnOf.set(item, turn);
-    }
+    ownerOf.set(item, { turn });
     turn.version += rev(row);
     if (item.type === "message" && isPrompt && turn.items.length === 0) turn.prompts.push(item);
     else turn.items.push(item);
@@ -178,10 +206,17 @@ export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
     if (!tool) continue;
     if (body.kind === "approval") tool.approval = { row, approval: body };
     else if (body.kind === "diff") tool.diffs.push({ row, diff: body });
-    bump(tool, rev(row));
+    bumpItem(tool, rev(row));
   }
+  // Nested subagents start after their parent: finish them first.
+  for (let i = subagents.length - 1; i >= 0; i--) finishThread(subagents[i], isPending);
   for (const turn of turns) fold(turn);
-  return turns;
+  return { turns, subagents };
+}
+
+/** Just the turns (the main timeline). */
+export function buildTurns(rows: readonly JournalRow[]): ChatTurn[] {
+  return buildChat(rows).turns;
 }
 
 function toItem(row: JournalRow): ChatItem {
@@ -191,7 +226,7 @@ function toItem(row: JournalRow): ChatItem {
     case "message":
       return { type: "message", row, version, message: body };
     case "tool":
-      return { type: "tool", row, version, call: body, approval: null, diffs: [], children: [] };
+      return { type: "tool", row, version, call: body, approval: null, diffs: [], subagent: null };
     case "diff":
       return { type: "diff", row, version, diff: body };
     case "plan":
@@ -214,16 +249,18 @@ export function isPending(item: ChatItem): boolean {
   if (item.type === "tool") {
     return (
       (item.approval !== null && !item.approval.approval.resolution) ||
-      item.children.some(isPending)
+      (item.subagent?.pending ?? false)
     );
   }
   return false;
 }
 
-/** Work that can fold: not your own words, not an error, not an open prompt. */
+/** Work that can fold: not your own words, not an error, not an open prompt, not a subagent. */
 function isFoldable(item: ChatItem): boolean {
   if (isPending(item)) return false;
   if (item.type === "status") return item.status.tone !== "error";
+  // A subagent's card is its one stable summary: it stays put, folded or not.
+  if (item.type === "tool") return item.subagent === null;
   // Your words and system notes stay; the agent's interim words and thinking fold.
   if (item.type === "message")
     return item.message.role === "assistant" || item.message.role === "reasoning";
@@ -248,7 +285,8 @@ function fold(turn: ChatTurn): void {
   const folded = before.filter(isFoldable);
   if (folded.length === 0) return;
   turn.folded = folded;
-  turn.shown = [...before.filter((i) => !isFoldable(i)), ...turn.items.slice(answer)];
+  const set = new Set<ChatItem>(folded);
+  turn.shown = turn.items.filter((i) => !set.has(i));
 }
 
 /** Whether the newest turn is still going. */
@@ -257,4 +295,9 @@ export function isTurnLive(turn: ChatTurn | undefined): boolean {
     turn !== undefined &&
     (turn.state === "running" || (turn.state === "open" && turn.prompts.length > 0))
   );
+}
+
+/** Subagents still at work, background ones that outlived their turn included. */
+export function runningSubagents(chat: Chat): number {
+  return chat.subagents.filter((s) => s.status === "running").length;
 }

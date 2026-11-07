@@ -61,6 +61,8 @@ enum Cmd {
     Send(UserMessage),
     Answer(String, Answer),
     Interrupt,
+    /// `stop_task` for the subagent started by this call.
+    StopSubagent(String),
     Stop,
 }
 
@@ -124,6 +126,10 @@ impl AgentAdapter for ClaudeAdapter {
 
     fn interrupt(&mut self) -> Result<(), String> {
         self.queue(Cmd::Interrupt)
+    }
+
+    fn stop_subagent(&mut self, call_id: &str) -> Result<(), String> {
+        self.queue(Cmd::StopSubagent(call_id.to_string()))
     }
 
     fn stop(&mut self) {
@@ -224,6 +230,10 @@ fn run(
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
             Cmd::Interrupt => tr.interrupt().map(Out::Reply).into_iter().collect(),
+            Cmd::StopSubagent(call_id) => match tr.stop_subagent(&call_id) {
+                Ok(reply) => vec![Out::Reply(reply)],
+                Err(e) => tr.notice(&e, Tone::Warning),
+            },
             Cmd::Stop => {
                 if !stopping {
                     stopping = true;
