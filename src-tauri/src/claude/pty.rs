@@ -77,6 +77,9 @@ struct PtyOutput {
 struct RunState {
     workspace_id: String,
     running: bool,
+    /// The process ended on its own (it quit, or crashed) rather than being
+    /// stopped: the renderer offers to restart it.
+    exited: bool,
 }
 
 /// Spawn the interactive `claude` TUI inside a PTY rooted at `cwd`.
@@ -325,8 +328,11 @@ fn run_in_pty(
         }
         // Process exited — drop session bookkeeping and tell the UI.
         crate::interrupted::record_exit(&reader_app, &reader_ws);
+        // A stop takes the session out of state before killing it, so finding it
+        // still here means nobody asked the process to end.
+        let mut exited = false;
         if let Some(state) = reader_app.try_state::<AppState>() {
-            state.pty_sessions.lock().remove(&reader_ws);
+            exited = state.pty_sessions.lock().remove(&reader_ws).is_some();
             state.child_pids.lock().remove(&reader_ws);
         }
         let _ = reader_app.emit(
@@ -334,6 +340,7 @@ fn run_in_pty(
             RunState {
                 workspace_id: reader_ws.clone(),
                 running: false,
+                exited,
             },
         );
         crate::activity::record_agent(

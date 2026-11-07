@@ -15,6 +15,8 @@ export interface PtyOutput {
 export interface AgentRunState {
   workspaceId: string;
   running: boolean;
+  /** On a stop: the process ended by itself (quit or crashed), not by a Stop. */
+  exited?: boolean;
 }
 
 export interface RichHtml {

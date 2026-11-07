@@ -62,7 +62,8 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **Hibernation:** stop idle finished agents to save memory, and resume them when reopened.
 - [ ] **Session history browser:** search past conversations from the CLI's own files, and resume
       them or copy the resume command.
-- [ ] **Restart chip:** one click restarts an agent that has exited.
+- [x] **Restart chip:** one click restarts an agent that has exited, from its detail header or
+      its pane, resuming the conversation.
 
 ### Visibility
 
@@ -82,7 +83,8 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       is created. Per repo, in Settings → Repositories; suggested from lockfiles after a clone.
       ([#11](https://github.com/noble1911/trace/pull/11))
 - [ ] **Scheduled run prechecks:** a shell command decides whether a scheduled run goes ahead.
-- [ ] **Quick Open:** fuzzy file search within a worktree.
+- [x] **Quick Open:** fuzzy file search within a worktree (⌘P / Ctrl+Shift+P); results open in
+      the Files tab or your editor.
 - [ ] **File previews:** images, PDFs and Markdown next to the agent.
 - [ ] **Dictation:** speak into the prompt or terminal.
 - [ ] **Terminal extras:** find-in-scrollback, link action popovers, Copy Context and theme import.

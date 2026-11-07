@@ -1,36 +1,25 @@
-import { type KeyboardEvent, useCallback, useEffect, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { I } from "@/components/Icon";
-import { Markdown } from "@/components/Markdown";
-import {
-  type DiffSummary,
-  type FileDiff,
-  gitDiffFile,
-  gitDiffSummary,
-  readWorkspaceFile,
-} from "@/ipc/diff";
-
-// Files we can render visually in the Preview pane (vs. the raw text diff).
-type PreviewKind = "md" | "svg";
-const previewKind = (path: string): PreviewKind | null => {
-  if (/\.(md|markdown|mdx)$/i.test(path)) return "md";
-  if (/\.svg$/i.test(path)) return "svg";
-  return null;
-};
-
-// SVG via an <img> data URI, NOT inline HTML: loading an SVG through <img>
-// makes the browser disable scripts and external fetches inside it, so a
-// stray agent-authored <script>/href can't run or exfiltrate.
-const svgDataUri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+import { useQuickOpenStore } from "@/domains/quickOpen/store";
+import { type DiffSummary, type FileDiff, gitDiffFile, gitDiffSummary } from "@/ipc/diff";
+import { useHint } from "@/platform/shortcuts";
+import { FileView, LoadingDiff } from "./FileView";
 
 // "Files" tab — git diff for a workspace (a board agent's worktree, or an
 // exploratory session's repo root) vs origin/<default-branch>. Summary loads
-// once; per-file hunks load on selection.
+// once; per-file hunks load on selection. A file picked in Quick Open shows here
+// too, under "Opened", even when it has no changes.
 export function FilesPane({ workspaceId }: { workspaceId: string }) {
   const [summary, setSummary] = useState<DiffSummary | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [fileDiff, setFileDiff] = useState<FileDiff | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(false);
+  const reveal = useQuickOpenStore((s) => s.reveals[workspaceId]);
+  // The Quick Open pick, which a summary reload must not deselect.
+  const opened = reveal?.path ?? null;
+  const openedRef = useRef(opened);
+  openedRef.current = opened;
 
   // Fetch (or re-fetch) the summary. Keeps the open file selected when it
   // still exists; returns a cancel fn so the mount effect can abort on unmount.
@@ -42,7 +31,9 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
         if (cancelled) return;
         setSummary(s);
         setSelected((prev) =>
-          prev && s.files.some((f) => f.path === prev) ? prev : (s.files[0]?.path ?? null)
+          prev && (prev === openedRef.current || s.files.some((f) => f.path === prev))
+            ? prev
+            : (openedRef.current ?? s.files[0]?.path ?? null)
         );
       })
       .catch((e) => {
@@ -60,6 +51,11 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
     setFileDiff(null);
     return load();
   }, [load]);
+
+  // Each Quick Open pick (even of the same file again) selects it.
+  useEffect(() => {
+    if (reveal) setSelected(reveal.path);
+  }, [reveal]);
 
   useEffect(() => {
     if (!selected) {
@@ -89,14 +85,18 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
   if (error) return <Centered title="Couldn't load diff" hint={error} />;
   if (!summary)
     return <Centered title="Loading…" hint="Computing changes against the base branch." />;
-  if (summary.files.length === 0)
+  const isChanged = (path: string) => summary.files.some((f) => f.path === path);
+  const extra = opened && !isChanged(opened) ? opened : null;
+  if (summary.files.length === 0 && !extra)
     return <Centered title="No changes" hint={`Worktree matches ${summary.base}.`} />;
 
   return (
     <div className="tab-pane no-pad">
       <div className="files-pane">
         <FileTree
+          workspaceId={workspaceId}
           files={summary.files}
+          opened={extra}
           selected={selected}
           onSelect={setSelected}
           onRefresh={() => void load()}
@@ -105,7 +105,12 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
           {fileDiff ? (
             // Key by path so switching files remounts FileView — its preview
             // toggle resets to the diff without a reset effect.
-            <FileView key={fileDiff.path} fd={fileDiff} workspaceId={workspaceId} />
+            <FileView
+              key={fileDiff.path}
+              fd={fileDiff}
+              workspaceId={workspaceId}
+              isChanged={isChanged(fileDiff.path)}
+            />
           ) : loadingFile ? (
             <LoadingDiff />
           ) : null}
@@ -116,50 +121,75 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
 }
 
 interface FileTreeProps {
+  workspaceId: string;
   files: { path: string; add: number; del: number }[];
+  /** A file Quick Open picked that isn't among the changes. */
+  opened: string | null;
   selected: string | null;
   onSelect: (path: string) => void;
   onRefresh: () => void;
 }
 
-function FileTree({ files, selected, onSelect, onRefresh }: FileTreeProps) {
+function FileTree({ workspaceId, files, opened, selected, onSelect, onRefresh }: FileTreeProps) {
+  const quickOpenHint = useHint("quickOpen");
+  const showQuickOpen = useQuickOpenStore((s) => s.show);
   return (
     <div className="file-tree">
       <div className="group">
         Changed ({files.length})
-        <button
-          type="button"
-          className="tree-refresh"
-          onClick={onRefresh}
-          title="Refresh changes"
-          aria-label="Refresh changes"
-        >
-          <I.Activity size={12} />
-        </button>
+        <span className="tree-actions">
+          <button
+            type="button"
+            className="tree-refresh"
+            onClick={() => showQuickOpen(workspaceId)}
+            title={`Quick Open a file (${quickOpenHint})`}
+            aria-label="Quick Open a file"
+          >
+            <I.Search size={12} />
+          </button>
+          <button
+            type="button"
+            className="tree-refresh"
+            onClick={onRefresh}
+            title="Refresh changes"
+            aria-label="Refresh changes"
+          >
+            <I.Activity size={12} />
+          </button>
+        </span>
       </div>
       {files.map((f) => (
         <FileNode
           key={f.path}
-          file={f}
+          path={f.path}
+          stat={f}
           active={selected === f.path}
           onSelect={() => onSelect(f.path)}
         />
       ))}
+      {opened && (
+        <>
+          <div className="group">Opened</div>
+          <FileNode path={opened} active={selected === opened} onSelect={() => onSelect(opened)} />
+        </>
+      )}
     </div>
   );
 }
 
 interface FileNodeProps {
-  file: { path: string; add: number; del: number };
+  path: string;
+  /** Lines added and removed; none for an unchanged file. */
+  stat?: { add: number; del: number };
   active: boolean;
   onSelect: () => void;
 }
 
-function FileNode({ file, active, onSelect }: FileNodeProps) {
+function FileNode({ path, stat, active, onSelect }: FileNodeProps) {
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") onSelect();
   };
-  const name = file.path.split("/").pop() ?? file.path;
+  const name = path.split("/").pop() ?? path;
   return (
     // biome-ignore lint/a11y/useSemanticElements: in a scroll list of many nodes; div+role keeps the file-tree CSS layout intact, keyboard activation provided
     <div
@@ -168,138 +198,16 @@ function FileNode({ file, active, onSelect }: FileNodeProps) {
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={onKey}
-      title={file.path}
+      title={path}
     >
       <I.File size={12} />
-      <span
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {name}
-      </span>
-      <span className="stat">
-        <span className="add">+{file.add}</span>
-        <span className="del">−{file.del}</span>
-      </span>
-    </div>
-  );
-}
-
-// One file's right pane: the unified diff, plus a Diff/Preview toggle that
-// renders markdown or SVG files. Remounted per file (keyed by path), so state
-// starts fresh — preview defaults to the diff.
-function FileView({ fd, workspaceId }: { fd: FileDiff; workspaceId: string }) {
-  const kind = previewKind(fd.path);
-  const [preview, setPreview] = useState(false);
-  const [content, setContent] = useState<string | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-
-  // Load the file's content only when previewing it.
-  useEffect(() => {
-    if (!preview) return;
-    let cancelled = false;
-    setContent(null);
-    setPreviewError(null);
-    readWorkspaceFile(workspaceId, fd.path)
-      .then((c) => {
-        if (!cancelled) setContent(c);
-      })
-      .catch((e) => {
-        if (!cancelled) setPreviewError(String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [preview, workspaceId, fd.path]);
-
-  return (
-    <>
-      <div className="diff-head">
-        <span className="path">{fd.path}</span>
+      <span className="node-name">{name}</span>
+      {stat && (
         <span className="stat">
-          <span style={{ color: "var(--c-done)" }}>+{fd.add}</span>{" "}
-          <span style={{ color: "var(--c-danger)" }}>−{fd.del}</span>
+          <span className="add">+{stat.add}</span>
+          <span className="del">−{stat.del}</span>
         </span>
-        {kind && (
-          <span className="view-toggle">
-            <button
-              type="button"
-              className={preview ? "" : "active"}
-              onClick={() => setPreview(false)}
-            >
-              Diff
-            </button>
-            <button
-              type="button"
-              className={preview ? "active" : ""}
-              onClick={() => setPreview(true)}
-            >
-              Preview
-            </button>
-          </span>
-        )}
-      </div>
-      {preview ? (
-        previewError ? (
-          <div className="diff-note">{previewError}</div>
-        ) : content !== null ? (
-          kind === "svg" ? (
-            <div className="svg-preview">
-              <div className="svg-canvas">
-                <img src={svgDataUri(content)} alt={fd.path} />
-              </div>
-            </div>
-          ) : (
-            <div className="md-doc">
-              <Markdown text={content} />
-            </div>
-          )
-        ) : (
-          <div className="diff-note">Loading…</div>
-        )
-      ) : (
-        <DiffBody fd={fd} />
       )}
-    </>
-  );
-}
-
-function DiffBody({ fd }: { fd: FileDiff }) {
-  if (fd.hunks.length === 0) {
-    return <div className="diff-note">No text diff — binary or empty file.</div>;
-  }
-  return (
-    <>
-      {fd.hunks.map((h) => (
-        <div key={h.header}>
-          <div className="diff-hunk">{h.header}</div>
-          {h.lines.map((l) => (
-            <div
-              key={`${l.kind}:${l.oldNo ?? "_"}:${l.newNo ?? "_"}`}
-              className={`diff-line ${l.kind}`}
-            >
-              <div className="ln">{l.oldNo ?? ""}</div>
-              <div className="ln">{l.newNo ?? ""}</div>
-              <div className="content">{l.text}</div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </>
-  );
-}
-
-function LoadingDiff() {
-  return (
-    <div
-      style={{ padding: 20, color: "var(--fg-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}
-    >
-      Loading file diff…
     </div>
   );
 }

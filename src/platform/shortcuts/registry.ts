@@ -84,6 +84,14 @@ export const SHORTCUTS: ShortcutDef[] = [
     pc: ["Ctrl+#"],
   },
   {
+    id: "quickOpen",
+    label: "Quick Open a file in the worktree",
+    group: "detail",
+    scope: "detail",
+    mac: ["Meta+p"],
+    pc: ["Ctrl+Shift+p"],
+  },
+  {
     id: "detailBack",
     label: "Go back (not from inside a terminal)",
     group: "detail",
@@ -193,6 +201,14 @@ export const SHORTCUTS: ShortcutDef[] = [
     group: "search",
     scope: "search",
     ...both(["Enter"]),
+    isFixed: true,
+  },
+  {
+    id: "searchEditor",
+    label: "Open the file in your editor (Quick Open)",
+    group: "search",
+    scope: "search",
+    ...both(["Shift+Enter"]),
     isFixed: true,
   },
   {

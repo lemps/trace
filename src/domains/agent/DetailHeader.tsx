@@ -8,6 +8,8 @@ import { jiraBrowseUrl } from "@/domains/issues/url";
 import type { AgentLight } from "@/domains/live/types";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { editorItems } from "./editorItems";
+import { agentLabel } from "./providerLabel";
+import { RestartChip } from "./RestartChip";
 import { StartSplitButton } from "./StartSplitButton";
 
 interface DetailHeaderProps {
@@ -18,6 +20,8 @@ interface DetailHeaderProps {
   light: AgentLight;
   askLabel?: string;
   running: boolean;
+  /** The agent ended by itself: offer a restart in place of Start. */
+  exited: boolean;
   cli: AgentCli;
   /** Model provider behind the Claude harness (third-party Anthropic-compatible endpoint). */
   provider: AgentProvider;
@@ -87,6 +91,7 @@ export function DetailHeader({
   light,
   askLabel,
   running,
+  exited,
   cli,
   provider,
   openPr,
@@ -132,6 +137,8 @@ export function DetailHeader({
           <button type="button" className="btn" onClick={onStop}>
             <I.X size={13} /> Stop session
           </button>
+        ) : exited ? (
+          <RestartChip agentName={agentLabel(cli, provider)} onRestart={onStart} />
         ) : (
           <StartSplitButton
             cli={cli}

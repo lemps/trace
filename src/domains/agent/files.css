@@ -194,3 +194,33 @@
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+.file-tree .node .node-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+.diff-head .stat .unchanged {
+  color: var(--fg-3);
+}
+/* A whole file (no diff): one line-number column, then the text. */
+.src-line {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+}
+.src-line .ln {
+  text-align: right;
+  padding: 0 8px;
+  color: var(--fg-4);
+  user-select: none;
+}
+.src-line .content {
+  padding: 0 12px;
+  white-space: pre;
+}

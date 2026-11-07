@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "@/app/toast";
+import { noteRunState } from "@/domains/agent/exitedStore";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
 import { adoptLiveAgents } from "@/domains/board/adopt";
@@ -44,7 +45,10 @@ export function useAppEvents(): void {
         if (cancelled) fn();
         else unlisteners.push(fn);
       });
-    const runState = onAgentRunState((p) => setAgentRunning(p.workspaceId, p.running));
+    const runState = onAgentRunState((p) => {
+      setAgentRunning(p.workspaceId, p.running);
+      noteRunState(p);
+    });
     keep(runState);
     // A reload empties the run-state while the backend's PTYs survive it. Only once
     // exits can reach us: one that landed before this was listening is already off

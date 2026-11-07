@@ -5,9 +5,11 @@ import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
 import { agentArgs } from "@/domains/agent/defaults";
 import { editorItems } from "@/domains/agent/editorItems";
+import { useHasExited } from "@/domains/agent/exitedStore";
 import { FilesPane } from "@/domains/agent/FilesPane";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
+import { RestartChip } from "@/domains/agent/RestartChip";
 import { RichOutputPanel } from "@/domains/agent/RichOutputPanel";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { TerminalPane } from "@/domains/agent/TerminalPane";
@@ -17,6 +19,7 @@ import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
+import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { startSession, startSessionAgent } from "@/ipc/session";
@@ -107,6 +110,8 @@ export function SessionDetail({
   // ⌘1… = each agent tab, then HTML, Files and Terminal; Esc goes back.
   // A plain folder has no git, so nothing for Files to show.
   const hasFiles = !session.folder;
+  const exited = useHasExited(active.workspaceId);
+  const quickOpen = useQuickOpen(session.id, hasFiles, () => setPane("files"));
   const keyTabs = [...turnIds, "html", ...(hasFiles ? ["files"] : []), "terminal"];
   useDetailKeys(onBack, keyTabs, (t) => {
     if (t === "html" || t === "files" || t === "terminal") setPane(t);
@@ -225,6 +230,8 @@ export function SessionDetail({
             <button type="button" className="btn" onClick={() => void run.stop()}>
               <I.X size={13} /> Stop {active.label}
             </button>
+          ) : exited ? (
+            <RestartChip agentName={active.label} onRestart={() => void run.start()} />
           ) : (
             <button type="button" className="btn primary" onClick={() => void run.start()}>
               <I.Bolt size={13} /> Start {active.label}
@@ -340,6 +347,7 @@ export function SessionDetail({
         prUrls={prUrls}
         running={run.running}
       />
+      {quickOpen}
     </div>
   );
 }

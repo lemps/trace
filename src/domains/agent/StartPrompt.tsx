@@ -11,6 +11,8 @@ interface StartPromptProps {
   agentName: string;
   /** The harness CLI ("claude" | "codex") — names the TUI the user will get. */
   cliName: string;
+  /** The agent exited by itself: word this as a restart of the same conversation. */
+  exited?: boolean;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -25,20 +27,30 @@ export function StartPrompt({
   onRepoChange,
   agentName,
   cliName,
+  exited = false,
 }: StartPromptProps) {
   const noRepos = repos.length === 0;
   return (
     <div className="empty-state">
       <div className="inner">
-        <span className="ic">
-          <I.Bolt size={28} />
-        </span>
-        <div className="title">Start an interactive {capitalize(agentName)} session</div>
-        <div className="hint">
-          The agent runs in an isolated git worktree under the repo you pick. You'll get the full{" "}
-          {cliName} TUI right here.
-        </div>
-        {noRepos ? (
+        <span className="ic">{exited ? <I.Refresh size={28} /> : <I.Bolt size={28} />}</span>
+        {exited ? (
+          <>
+            <div className="title">{capitalize(agentName)} exited</div>
+            <div className="hint">
+              Its conversation is saved. Restart to pick up where it left off.
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="title">Start an interactive {capitalize(agentName)} session</div>
+            <div className="hint">
+              The agent runs in an isolated git worktree under the repo you pick. You'll get the
+              full {cliName} TUI right here.
+            </div>
+          </>
+        )}
+        {exited ? null : noRepos ? (
           <div className="hint" style={{ color: "var(--c-warn)" }}>
             Add a repository in Settings first.
           </div>
@@ -61,7 +73,8 @@ export function StartPrompt({
           onClick={onStart}
           disabled={noRepos}
         >
-          <I.Bolt size={13} /> Start {agentName}
+          {exited ? <I.Refresh size={13} /> : <I.Bolt size={13} />} {exited ? "Restart" : "Start"}{" "}
+          {agentName}
         </button>
         <button
           type="button"

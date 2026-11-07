@@ -52,7 +52,7 @@ pub struct FileDiff {
 /// isolated worktree at `.worktrees/<slug>`; exploratory sessions run in the
 /// repo root and have none, so we fall back to the repo itself. Returns
 /// `(repo, work_dir)` where the diff is computed in `work_dir`.
-fn work_dir_for(workspace_id: &str) -> Result<(String, String), String> {
+pub(crate) fn work_dir_for(workspace_id: &str) -> Result<(String, String), String> {
     // A session in a plain folder has no repo. The fallback below would show the
     // diff of an unrelated default repo as if it were this session's.
     if crate::commands::session::owning_session(workspace_id).is_some_and(|s| s.folder.is_some()) {
