@@ -13,7 +13,7 @@ import { runUpdateUser, UPDATE_USER } from "./updateTool";
 // orchestrator's — same definitions, same store, same effects as the in-app
 // assistant — so an agent on an epic can move its tickets and start agents on
 // them without spawning sub-agents. Unlike the assistant, there's no confirm
-// card: agents act on their own.
+// card: agents act on their own (except add_repo / clone_repo, `moreTools`).
 
 const GET_BOARD: Anthropic.Tool = {
   name: "get_board",

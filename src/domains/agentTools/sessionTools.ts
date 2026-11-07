@@ -13,6 +13,7 @@ import type { AgentCli } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
+import { flag, str } from "./args";
 import { creatorFromCaller } from "./callerOrigin";
 import { cachedPrLine } from "./prCache";
 
@@ -113,18 +114,6 @@ export function isSessionTool(name: string): boolean {
   return SESSION_TOOL_NAMES.has(name);
 }
 
-function str(input: unknown, key: string): string {
-  if (input && typeof input === "object" && key in input) {
-    const v = (input as Record<string, unknown>)[key];
-    if (typeof v === "string") return v.trim();
-  }
-  return "";
-}
-
-function bool(input: unknown, key: string): boolean {
-  return !!input && typeof input === "object" && (input as Record<string, unknown>)[key] === true;
-}
-
 /** Match a repo by path or folder name; an unknown or ambiguous one names the choices. */
 async function resolveRepo(wanted: string): Promise<string | null> {
   const repos = await listRepos();
@@ -211,7 +200,7 @@ async function launch(session: ScratchSession, prompt: string) {
 
 async function start(input: unknown, caller: string): Promise<string> {
   const title = str(input, "title") || "Exploration";
-  const remote = bool(input, "remote_control");
+  const remote = flag(input, "remote_control");
   const cli: AgentCli = remote ? "claude" : str(input, "cli") === "codex" ? "codex" : agentCli();
   const repo = await resolveRepo(str(input, "repo"));
   const createdBy = await creatorFromCaller(caller);

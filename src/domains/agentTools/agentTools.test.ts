@@ -186,6 +186,9 @@ describe("activity filtering", () => {
     assert.equal(parseSince("90m", NOW), NOW - 5_400_000);
     assert.equal(parseSince("3 days", NOW), NOW - 3 * 86_400_000);
     assert.equal(parseSince("2026-11-07T09:00:00Z", NOW), Date.parse("2026-11-07T09:00:00Z"));
+    // No zone: UTC, like the times read_activity prints.
+    assert.equal(parseSince("2026-11-07T09:00", NOW), Date.parse("2026-11-07T09:00:00Z"));
+    assert.equal(parseSince("2026-11-07T09:00+01:00", NOW), Date.parse("2026-11-07T08:00:00Z"));
     for (const bad of ["yesterday", "12345", "last 2 fortnights", ""]) {
       assert.throws(() => parseSince(bad, NOW), /isn't a time/, bad);
     }

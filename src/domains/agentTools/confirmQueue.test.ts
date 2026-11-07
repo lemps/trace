@@ -1,7 +1,7 @@
 // Run: `npm test` (node's own runner; Node strips the types).
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ConfirmQueue, MAX_OPEN_PER_CALLER, type Timers } from "./confirmQueue.ts";
+import { ConfirmQueue, KEEP_MS, MAX_OPEN_PER_CALLER, type Timers } from "./confirmQueue.ts";
 import { outcomeText } from "./repoRules.ts";
 
 /** Timers fired by hand. */
@@ -94,6 +94,19 @@ describe("repo confirm flow", () => {
     await q.answer(q.open()[0].id, true);
     assert.deepEqual(await a, { kind: "done", text: "ok" });
     assert.deepEqual(await b, { kind: "done", text: "ok" });
+  });
+
+  it("an answer nobody collects expires, and the next ask shows a new card", async () => {
+    const { timers, fireAll } = fakeTimers();
+    let now = 0;
+    const q = new ConfirmQueue(timers, () => now);
+    const first = q.request(ask(), async () => "added", 1000);
+    fireAll();
+    assert.equal(await first, "timeout");
+    await q.answer(q.open()[0].id, false);
+    now = KEEP_MS + 1;
+    void q.request(ask(), async () => "added", 1000);
+    assert.equal(q.open().length, 1, "asked afresh, not the old denial");
   });
 
   it("a failed action is an error for the agent, and one agent can't flood the user", async () => {

@@ -29,6 +29,8 @@ interface Entry {
   run: () => Promise<string>;
   running: boolean;
   outcome?: Outcome;
+  /** When the outcome came with no call waiting for it. */
+  keptAt?: number;
   waiters: Set<(o: Outcome) => void>;
 }
 
@@ -41,6 +43,9 @@ const REAL_TIMERS: Timers = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
 };
+
+/** How long an answer nobody was waiting for is kept for the agent's next ask. */
+export const KEEP_MS = 10 * 60_000;
 
 /** One agent can't stack up more open asks than this. */
 export const MAX_OPEN_PER_CALLER = 3;
@@ -91,6 +96,7 @@ export class ConfirmQueue {
     waitMs: number
   ): Promise<Outcome | "timeout"> {
     const key = `${ask.caller}\n${ask.kind}\n${ask.target}`;
+    this.dropExpired();
     let entry = this.entries.get(key);
     if (entry?.outcome) {
       this.entries.delete(key);
@@ -131,6 +137,14 @@ export class ConfirmQueue {
     });
   }
 
+  /** Forget answers kept longer than `KEEP_MS`: a later ask is asked afresh. */
+  private dropExpired() {
+    const now = this.now();
+    for (const [key, e] of this.entries) {
+      if (e.keptAt !== undefined && now - e.keptAt > KEEP_MS) this.entries.delete(key);
+    }
+  }
+
   /** The user's answer to ask `id`. Approving runs its action. */
   async answer(id: string, approve: boolean): Promise<void> {
     const found = [...this.entries.entries()].find(([, e]) => e.ask.id === id);
@@ -154,6 +168,8 @@ export class ConfirmQueue {
       for (const w of entry.waiters) w(outcome);
       entry.waiters.clear();
       this.entries.delete(key);
+    } else {
+      entry.keptAt = this.now();
     }
     this.changed();
   }

@@ -6,15 +6,14 @@ import { need } from "./args";
 import { cachedPrs, prLine } from "./prCache";
 import { findSession } from "./sessionTools";
 
-// A session's pull request, from the PR watcher (`usePrWatch`, the Sessions
-// page's PR pane): what it has cached is used as is, and a session it hasn't
-// looked at yet is looked up through the same calls (`workspace_prs`,
-// `pr_thread`, both `gh`).
+// A session's pull request, through the PR watcher's own calls
+// (`workspace_prs`, `pr_thread`, both `gh`), refreshing its cache as the
+// Sessions page's PR pane does. list_sessions shows the cache only.
 
 export const GET_SESSION_PR: Anthropic.Tool = {
   name: "get_session_pr",
   description:
-    "Get the pull request a session raised: number, title, state (open, draft, merged, closed), its checks (passing, failing, running, with counts) and URL, plus any other PRs it raised. Uses what trace's PR pane already knows, and asks GitHub (through gh) only when trace hasn't looked yet. Says so when the session has no PR.",
+    "Get the pull request a session raised: number, title, state (open, draft, merged, closed), its checks (passing, failing, running, with counts) and URL, plus any other PRs it raised. Looks the session's PRs up fresh through the same gh calls trace's PR pane makes. Says so when the session has no PR.",
   input_schema: {
     type: "object",
     properties: {
@@ -27,15 +26,21 @@ export const GET_SESSION_PR: Anthropic.Tool = {
   },
 };
 
+/**
+ * Bring the watcher's copy up to date, as its pane does when it's open: look
+ * for PRs (it may have raised one since), then re-read each one's state and
+ * checks. The cache alone goes stale while no view of the session is open.
+ */
 async function fetchPrs(workspaceId: string): Promise<void> {
-  // None known yet (or none last time): look again, it may have raised one since.
-  if (!usePrWatchStore.getState().links[workspaceId]?.length) await discoverPrs(workspaceId);
-  for (const url of usePrWatchStore.getState().links[workspaceId] ?? []) {
-    if (usePrWatchStore.getState().threads[url]) continue;
-    await prThread(workspaceId, url)
-      .then((t) => usePrWatchStore.getState().setThread(url, t))
-      .catch((e) => usePrWatchStore.getState().setError(url, String(e)));
-  }
+  await discoverPrs(workspaceId);
+  const urls = usePrWatchStore.getState().links[workspaceId] ?? [];
+  await Promise.all(
+    urls.map((url) =>
+      prThread(workspaceId, url)
+        .then((t) => usePrWatchStore.getState().setThread(url, t))
+        .catch((e) => usePrWatchStore.getState().setError(url, String(e)))
+    )
+  );
 }
 
 /** Run get_session_pr. */

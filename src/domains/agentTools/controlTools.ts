@@ -5,7 +5,7 @@ import { stopAndWait } from "@/domains/agentChat/switch";
 import { useBoardStore } from "@/domains/board/store";
 import { useSessionsStore } from "@/domains/sessions/store";
 import type { ScratchSession } from "@/domains/sessions/types";
-import { sendAgentInput, stopAgent } from "@/ipc/agent";
+import { agentRunning, sendAgentInput, stopAgent } from "@/ipc/agent";
 import { interruptChatAgent } from "@/ipc/agentChat";
 import { need } from "./args";
 import { notYours, startedByCaller } from "./ownership";
@@ -63,8 +63,12 @@ async function interrupt(id: string): Promise<void> {
 }
 
 async function stop(id: string): Promise<void> {
-  // What the session's Stop does (`useAgentRun`).
-  await stopAndWait(id).catch(() => stopAgent(id).catch(() => {}));
+  // What the session's Stop does (`useAgentRun`), except that a stop that fails
+  // is reported rather than shown as stopped.
+  await stopAndWait(id).catch(async () => {
+    await stopAgent(id);
+    if (await agentRunning(id)) throw new Error("it didn't stop");
+  });
   const board = useBoardStore.getState();
   board.setAgentRunning(id, false);
   board.clearOutput(id);
@@ -82,17 +86,34 @@ export async function runControlTool(
   if (!startedByCaller(session, caller, all)) throw new Error(notYours(session.title, action));
   const ids = runningAgents(session);
   if (ids.length === 0) return `"${session.title}" isn't running; nothing to ${action}.`;
-  for (const id of ids) await (action === "stop" ? stop(id) : interrupt(id));
+  const failed: string[] = [];
+  let done = 0;
+  for (const id of ids) {
+    try {
+      await (action === "stop" ? stop(id) : interrupt(id));
+      done += 1;
+    } catch (e) {
+      failed.push(
+        `${id === session.id ? "its agent" : id}: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+  if (done === 0) throw new Error(`Couldn't ${action} "${session.title}": ${failed.join("; ")}`);
   activity.log({
     kind: action === "stop" ? "agent-stopped" : "agent-interrupted",
     actor: "agent",
     workspaceId: session.id,
     subject: session.title,
     title: action === "stop" ? `stopped “${session.title}”` : `interrupted “${session.title}”`,
-    data: { by: caller, agents: ids.length },
+    data: { by: caller, agents: done },
   });
-  const n = ids.length === 1 ? "its agent" : `its ${ids.length} agents`;
-  return action === "stop"
-    ? `Stopped "${session.title}" (${n}). send_to_session starts it again.`
-    : `Interrupted "${session.title}" (${n}). It's waiting at its prompt.`;
+  const n = done === 1 ? "its agent" : `${done} of its agents`;
+  const head =
+    action === "stop"
+      ? `Stopped "${session.title}" (${n}). send_to_session starts it again.`
+      : `Interrupted "${session.title}" (${n}). It's waiting at its prompt.`;
+  return failed.length
+    ? `${head}
+Not done for: ${failed.join("; ")}`
+    : head;
 }

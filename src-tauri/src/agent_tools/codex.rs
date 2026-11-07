@@ -75,11 +75,28 @@ pub fn user_has_instructions() -> bool {
         .unwrap_or(false)
 }
 
+/// Set at the top level or in a profile (which a user's `--profile` may pick):
+/// both would be replaced by trace's `-c`, so either keeps trace's out. A key
+/// in any other table is something else's.
 fn sets_instructions(config: &str) -> bool {
-    config.lines().any(|line| {
-        let key = line.trim_start().split('=').next().unwrap_or("").trim();
-        key == "developer_instructions"
-    })
+    let mut table = String::new();
+    for line in config.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            table = line
+                .trim_matches(|c| c == '[' || c == ']')
+                .trim()
+                .to_string();
+            continue;
+        }
+        let key = line.split('=').next().unwrap_or("").trim();
+        let key = key.trim_matches(|c| c == '"' || c == '\'');
+        let ours = table.is_empty() || table.starts_with("profiles.");
+        if ours && line.contains('=') && key == "developer_instructions" {
+            return true;
+        }
+    }
+    false
 }
 
 #[cfg(test)]
@@ -137,6 +154,17 @@ mod tests {
         let off = ToolServer::default();
         let (args, env) = wiring(&off, "w", Some("x"));
         assert!(args.is_empty() && env.is_empty());
+    }
+
+    #[test]
+    fn instructions_count_at_top_level_or_in_a_profile_only() {
+        let profile = "[profiles.review]
+developer_instructions = \"x\"";
+        assert!(sets_instructions(profile));
+        assert!(sets_instructions("\"developer_instructions\" = \"x\""));
+        let elsewhere = "[mcp_servers.x]
+developer_instructions = \"x\"";
+        assert!(!sets_instructions(elsewhere));
     }
 
     #[test]

@@ -5,7 +5,7 @@ import { githubClone, githubStatus } from "@/ipc/github";
 import { cloneRoot, setRepoSetup } from "@/ipc/repoSetup";
 import { addRepo, checkRepoPath, listRepos } from "@/ipc/repos";
 import { currentOs } from "@/platform/os";
-import { basename, joinNative } from "@/platform/paths";
+import { basename, forwardSlashes, joinNative } from "@/platform/paths";
 import { need } from "./args";
 import { creatorFromCaller } from "./callerOrigin";
 import { ConfirmQueue } from "./confirmQueue";
@@ -63,8 +63,10 @@ async function callerLabel(caller: string): Promise<string> {
   return by && "label" in by ? by.label : caller || "an agent";
 }
 
-const known = async (path: string) =>
-  (await listRepos()).some((r) => r.toLowerCase() === path.toLowerCase());
+/** A path in one form for comparing: `/` separators, no trailing one, lower case. */
+const norm = (p: string) => forwardSlashes(p).replace(/\/+$/, "").toLowerCase();
+
+const known = async (path: string) => (await listRepos()).some((r) => norm(r) === norm(path));
 
 async function add(input: unknown, caller: string): Promise<string> {
   const path = await checkRepoPath(need(input, "path"));

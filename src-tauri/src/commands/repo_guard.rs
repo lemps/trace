@@ -9,9 +9,16 @@ use crate::git;
 
 /// Inside trace's own config dir (its state, scratch folders, generated tools):
 /// never a repo to hand agents.
+/// Compared without case (a case-insensitive disk would let `…/library/…` past
+/// `…/Library/…`), and a path that can't be resolved counts as inside: this
+/// only ever refuses.
 fn inside(path: &Path, dir: &Path) -> bool {
-    let canon = |p: &Path| std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
-    canon(path).starts_with(canon(dir))
+    let Ok(path) = std::fs::canonicalize(path) else {
+        return true;
+    };
+    let dir = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf());
+    let lower = |p: &Path| PathBuf::from(p.to_string_lossy().to_lowercase());
+    lower(&path).starts_with(lower(&dir))
 }
 
 /// Refuse a path inside trace's config dir. Every `add_repo` goes through this.
@@ -159,6 +166,10 @@ mod tests {
         assert!(err.contains("config folder"), "{err}");
         assert!(outside(&repo.display().to_string(), &config).is_err());
         assert!(outside(&std::env::temp_dir().display().to_string(), &config).is_ok());
+        // Another case, or a path that can't be resolved, is still refused.
+        let upper = repo.display().to_string().to_uppercase();
+        assert!(outside(&upper, &config).is_err());
+        assert!(outside(&config.join("missing").display().to_string(), &config).is_err());
         let _ = std::fs::remove_dir_all(&config);
     }
 }

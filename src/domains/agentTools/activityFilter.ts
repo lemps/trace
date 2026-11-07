@@ -36,8 +36,11 @@ export function parseSince(since: string, now: number): number {
   const text = since.trim().toLowerCase();
   const span = /^(?:last\s+)?(\d+(?:\.\d+)?)\s*([a-z]+)$/.exec(text);
   if (span && UNIT_MS[span[2]]) return now - Number(span[1]) * UNIT_MS[span[2]];
-  // A bare date or a time with a zone; a plain number isn't a time.
-  const at = /\d{4}-\d{2}-\d{2}/.test(text) ? Date.parse(since.trim()) : Number.NaN;
+  // A date, or a date and time; a plain number isn't a time. A time with no zone
+  // is UTC, like every time read_activity prints.
+  const iso = since.trim();
+  const zoned = /t.*(?:z|[+-]\d{2}:?\d{2})$/.test(text) || !text.includes("t");
+  const at = /\d{4}-\d{2}-\d{2}/.test(text) ? Date.parse(zoned ? iso : `${iso}Z`) : Number.NaN;
   if (Number.isNaN(at)) {
     throw new Error(`since: "${since}" isn't a time. Use an ISO time or a span like "last 2h".`);
   }
