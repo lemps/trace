@@ -161,6 +161,8 @@ pub fn run() {
             commands::schedules::import_scheduled_prompts,
             commands::groups::list_session_groups,
             commands::groups::save_session_groups,
+            commands::session_order::list_session_order,
+            commands::session_order::set_session_list,
             commands::sound::list_notify_sounds,
             commands::sound::play_notify_sound,
             commands::tests::run_tests,

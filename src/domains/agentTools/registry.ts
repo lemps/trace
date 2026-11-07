@@ -47,6 +47,6 @@ export async function runAgentTool(name: string, input: unknown, caller: string)
   if (name === UPDATE_USER.name) return runUpdateUser(input, caller);
   if (WRITE_TOOL_NAMES.has(name)) return runWriteTool(name, input, "agent");
   if (SCHEDULE_TOOL_NAMES.has(name)) return runScheduleTool(name, input);
-  if (isSessionTool(name)) return runSessionTool(name, input);
+  if (isSessionTool(name)) return runSessionTool(name, input, caller);
   return runReadTool(name, input);
 }

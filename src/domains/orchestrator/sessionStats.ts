@@ -4,6 +4,7 @@ import type { AgentLight } from "@/domains/live/types";
 import type { ScratchSession } from "@/domains/sessions/types";
 import type { SessionOverview } from "@/ipc/workspace";
 import { basename } from "../../platform/paths.ts";
+import { creatorKind, creatorLabel, creatorOf } from "../sessions/createdBy.ts";
 
 // Deterministic metrics over standalone sessions and their agents — the
 // no-board counterpart of stats.ts (and shown beside it when a board is
@@ -42,6 +43,8 @@ export interface SessionRowStat {
   agents: SessionAgentStat[];
   /** Epoch ms of its newest activity event, or its creation. */
   lastActiveAt: number;
+  /** Who started it when that wasn't the user, e.g. `session "Parent"`. */
+  startedBy: string | null;
 }
 
 export interface LightCounts {
@@ -137,6 +140,13 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+function startedBy(s: ScratchSession): string | null {
+  const cb = creatorOf(s);
+  if (cb.kind === "user") return null;
+  if (cb.kind === "orchestrator") return creatorLabel(cb);
+  return `${creatorKind(cb).toLowerCase()} "${creatorLabel(cb)}"`;
+}
+
 export function computeSessionStats(input: SessionStatsInput): SessionStats {
   const active = input.sessions.filter((s) => !s.archivedAt);
   const archived = input.sessions.length - active.length;
@@ -180,6 +190,7 @@ export function computeSessionStats(input: SessionStatsInput): SessionStats {
       pr: ov?.pr ?? null,
       agents: roster,
       lastActiveAt: Math.max(lastEvent.get(s.id) ?? 0, s.createdAt * 1000),
+      startedBy: startedBy(s),
     };
   });
   rows.sort((a, b) => b.lastActiveAt - a.lastActiveAt || a.title.localeCompare(b.title));

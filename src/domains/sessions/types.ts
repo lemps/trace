@@ -13,6 +13,18 @@ export interface SessionAgent {
   provider?: AgentProvider | null;
 }
 
+/**
+ * Who started a session (`commands/session_origin.rs`). Absent = the user, which
+ * is also what every session saved before this was recorded reads as. An agent's
+ * `workspaceId` is the session that hosts it or the ticket's key; `label` is the
+ * parent's title or key at the time, so it reads well after the parent is gone.
+ */
+export type CreatedBy =
+  | { kind: "user" }
+  | { kind: "agent"; workspaceId: string; parent: "session" | "ticket"; label: string }
+  | { kind: "orchestrator" }
+  | { kind: "schedule"; promptId: string; runId?: string | null; label: string };
+
 /** An exploratory session — an interactive agent not tied to a Jira issue. */
 export interface ScratchSession {
   id: string;
@@ -38,6 +50,8 @@ export interface ScratchSession {
   agents?: SessionAgent[];
   /** Started with Remote Control — also drivable from claude.ai/code. */
   remoteControl?: boolean;
+  /** Who started it; null/undefined = the user. */
+  createdBy?: CreatedBy | null;
 }
 
 /** A top-level view on the Sessions page (e.g. one per repo). */

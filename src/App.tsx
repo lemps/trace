@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BoardActions } from "@/app/BoardActions";
 import { InterruptedAgents } from "@/app/InterruptedAgents";
 import { NAV_LABELS, type NavId, navTracker, resolveNav } from "@/app/nav";
-import { openWorkspace } from "@/app/openWorkspace";
+import { openWorkspace, useAppNavForOpeners } from "@/app/openWorkspace";
 import { PagePanel } from "@/app/PagePanel";
 import { Rail } from "@/app/Rail";
 import { Topbar } from "@/app/Topbar";
@@ -78,6 +78,7 @@ export function App() {
   useUpdateCheck();
   useBoardAutoRefresh();
   useFocusRefresh(setNav);
+  useAppNavForOpeners(setNav);
 
   // Agents that need you — the inbox's count, on the rail and the Dock.
   const waitingCount = Object.values(liveInfo).filter((i) => i.light === "attention").length;

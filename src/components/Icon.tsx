@@ -348,4 +348,17 @@ export const I = {
       <path d="M12 3v12" />
     </Base>
   ),
+  /** How a list is sorted (arrow-up-down). */
+  Sort: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16" />
+    </Base>
+  ),
+  /** Started by another agent (corner-down-right). */
+  StartedBy: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m15 10 5 5-5 5" />
+      <path d="M4 4v7a4 4 0 0 0 4 4h12" />
+    </Base>
+  ),
 };

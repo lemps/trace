@@ -1,9 +1,12 @@
+import { useEffect } from "react";
+import { toast } from "@/app/toast";
 import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useBoardStore } from "@/domains/board/store";
-import { runIdOf } from "@/domains/schedules/ids";
+import { runIdOf, runWorkspaceId } from "@/domains/schedules/ids";
 import { useSchedulesStore } from "@/domains/schedules/store";
 import { agentRoster } from "@/domains/sessions/agentRoster";
 import { useSessionsStore } from "@/domains/sessions/store";
+import type { CreatedBy } from "@/domains/sessions/types";
 import type { NavId } from "./nav";
 
 /**
@@ -31,4 +34,47 @@ export function openWorkspace(workspaceId: string, setNav: (nav: NavId) => void)
     return;
   }
   void openIssueAnywhere(workspaceId);
+}
+
+// The app's page setter, for openers in code that isn't handed one (a session
+// row's "by …" chip opening a scheduled prompt, which lives on its own page).
+let appNav: ((nav: NavId) => void) | null = null;
+
+/** App registers its page setter here once. */
+export function useAppNavForOpeners(setNav: (nav: NavId) => void): void {
+  useEffect(() => {
+    appNav = setNav;
+    return () => {
+      if (appNav === setNav) appNav = null;
+    };
+  }, [setNav]);
+}
+
+/**
+ * Open what started a session: the session or ticket whose agent did, or the
+ * scheduled prompt (on the run, when it's still kept). Says so when it's gone.
+ */
+export function openCreator(cb: CreatedBy): void {
+  const setNav = appNav ?? (() => {});
+  if (cb.kind === "agent") {
+    if (cb.parent === "ticket") {
+      void openIssueAnywhere(cb.workspaceId);
+      return;
+    }
+    const parent = useSessionsStore.getState().sessions.find((s) => s.id === cb.workspaceId);
+    if (parent && !parent.archivedAt) openWorkspace(parent.id, setNav);
+    else toast.info(`“${cb.label}” ${parent ? "is in the recycle bin" : "has been deleted"}.`);
+    return;
+  }
+  if (cb.kind === "schedule") {
+    const schedules = useSchedulesStore.getState();
+    if (cb.runId && schedules.runs.some((r) => r.id === cb.runId)) {
+      openWorkspace(runWorkspaceId(cb.runId), setNav);
+    } else if (schedules.prompts.some((p) => p.id === cb.promptId)) {
+      useBoardStore.getState().closeIssue();
+      useSessionsStore.getState().close();
+      setNav("scheduled");
+      schedules.open(cb.promptId);
+    } else toast.info(`The scheduled prompt “${cb.label}” has been deleted.`);
+  }
 }

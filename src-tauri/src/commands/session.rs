@@ -17,7 +17,7 @@ use crate::claude::conversations::forget_session_id;
 use crate::commands::agent::spawn_in;
 use crate::commands::session_agents::{discard_agents, stop_agents, SessionAgent};
 use crate::commands::session_folder;
-use crate::git;
+use crate::commands::session_origin::{self, CreatedBy};
 use crate::helpers::new_id;
 use crate::helpers::persist::{self, Style};
 use crate::state::{AppState, StartGuard};
@@ -71,6 +71,14 @@ pub struct ScratchSession {
     /// just the first — Claude only enables it for the run it's passed to.
     #[serde(default)]
     pub remote_control: bool,
+    /// Who started it (`session_origin`); `None` = the user, as for every
+    /// session saved before this was recorded.
+    #[serde(
+        default,
+        deserialize_with = "session_origin::lenient",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub created_by: Option<CreatedBy>,
 }
 
 impl ScratchSession {
@@ -146,7 +154,8 @@ pub fn list_sessions() -> Result<Vec<ScratchSession>, String> {
 
 /// Create (persist) a new exploratory session. Does not start its agent. With a
 /// `repo` it gets a worktree of that repo. Without one it runs in `folder`, or in a
-/// new scratch folder if that's absent too, so no session needs git.
+/// new scratch folder if that's absent too, so no session needs git. `created_by`
+/// unset = the user.
 #[tauri::command]
 pub fn create_session(
     title: String,
@@ -155,6 +164,7 @@ pub fn create_session(
     repo: Option<String>,
     folder: Option<String>,
     remote_control: Option<bool>,
+    created_by: Option<CreatedBy>,
 ) -> Result<ScratchSession, String> {
     let title = title.trim();
     let title = if title.is_empty() {
@@ -201,6 +211,7 @@ pub fn create_session(
         folder,
         agents: Vec::new(),
         remote_control,
+        created_by: created_by.and_then(CreatedBy::sanitize),
     };
     update(|list| list.push(session.clone()))?;
     Ok(session)
@@ -239,60 +250,7 @@ pub(crate) fn is_session(id: &str) -> bool {
     owning_session(id).is_some()
 }
 
-/// Resolve the working directory for a scratch session, honoring the session's
-/// own `repo` (not the global default) so sessions created against a non-default
-/// repo land in the right place.
-///
-/// A worktree-backed session runs in `<repo>/.worktrees/<slug>`. `create`
-/// controls what happens when that worktree isn't on disk yet:
-/// - `true` (agent start, shell terminal): create it on demand — mirrors
-///   `start_session`, so the shell always opens in the session's worktree
-///   rather than falling back to the repo root.
-/// - `false` ("open in editor"): fall back to the repo root — opening an editor
-///   shouldn't materialize a git worktree as a side effect.
-///
-/// Legacy sessions without a worktree always resolve to the repo root, where
-/// their Claude conversation is keyed. Sessions with a plain `folder` run there.
-///
-/// `id` may be a companion agent's id: the worktree belongs to the *session*, so
-/// every agent on it resolves to the same directory — that shared cwd is the
-/// whole point of companions.
-pub(crate) fn session_cwd(id: &str, create: bool) -> Result<String, String> {
-    let session = owning_session(id).ok_or("That session no longer exists.")?;
-    cwd_of(&session, create)
-}
-
-/// `session_cwd` for a session already loaded (skips reading the sessions file again).
-pub(crate) fn cwd_of(session: &ScratchSession, create: bool) -> Result<String, String> {
-    if let Some(folder) = &session.folder {
-        return session_folder::folder_cwd(&session_folder::scratch_root(), folder, create);
-    }
-    let repo = session
-        .repo
-        .clone()
-        .or_else(crate::commands::repos::default_repo)
-        .ok_or("Add a repository in Settings first.")?;
-    if !session.worktree {
-        return Ok(repo);
-    }
-    let worktree = crate::commands::repos::workspace_dir(&repo, &session.id);
-    if std::path::Path::new(&worktree).exists() {
-        return Ok(worktree);
-    }
-    if !create {
-        return Ok(repo);
-    }
-    let busy = git::git_busy_check(&repo);
-    if busy.starts_with("busy") {
-        return Err(format!(
-            "Repository is {busy} — finish that git operation first."
-        ));
-    }
-    let branch = format!("workspace/{}", crate::helpers::slugify(&session.id));
-    let default_branch = git::get_default_branch(&repo);
-    git::create_worktree(&repo, &worktree, &branch, &default_branch)?;
-    Ok(worktree)
-}
+pub(crate) use crate::commands::session_cwd::{cwd_of, session_cwd};
 
 /// Move a session to the recycle bin: stop its PTYs (its own agent, its shell and
 /// any companions) but keep the metadata and Claude ids so it can be restored and

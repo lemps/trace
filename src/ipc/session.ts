@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ScratchSession, SessionGroups } from "@/domains/sessions/types";
+import type { CreatedBy, ScratchSession, SessionGroups } from "@/domains/sessions/types";
 import type { AgentCli, AgentProvider, Transport } from "./agent";
 
 // Typed wrappers around the exploratory-session commands. Start/stop/input/resize
@@ -9,14 +9,18 @@ export function listSessions(): Promise<ScratchSession[]> {
   return invoke("list_sessions");
 }
 
-/** `remoteControl` starts it with Claude Code's Remote Control (Claude on Anthropic only). */
+/**
+ * `remoteControl` starts it with Claude Code's Remote Control (Claude on Anthropic
+ * only). `createdBy` unset = the user.
+ */
 export function createSession(
   title: string,
   cli: AgentCli,
   repo?: string | null,
   provider?: AgentProvider,
   remoteControl?: boolean,
-  folder?: string | null
+  folder?: string | null,
+  createdBy?: CreatedBy
 ): Promise<ScratchSession> {
   return invoke("create_session", {
     title,
@@ -25,6 +29,7 @@ export function createSession(
     folder: folder ?? null,
     provider: provider ?? null,
     remoteControl: remoteControl ?? null,
+    createdBy: createdBy ?? null,
   });
 }
 

@@ -24,6 +24,8 @@ import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { basename } from "@/platform/paths";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
+import { CreatorChip } from "./CreatorChip";
+import { creatorOf } from "./createdBy";
 import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
@@ -184,6 +186,7 @@ export function SessionDetail({
           <span className="id" title={info?.cwd}>
             {info ? [basename(info.repo), info.branch].filter(Boolean).join(" · ") : "\u00a0"}
           </span>
+          <CreatorChip createdBy={creatorOf(session)} variant="detail" />
           {renaming ? (
             <TitleEditor
               initial={session.title}

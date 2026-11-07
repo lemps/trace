@@ -12,6 +12,7 @@ use chrono::{Local, TimeZone};
 use super::model::RunStatus;
 use super::store;
 use crate::commands::session::{create_session, ScratchSession};
+use crate::commands::session_origin::CreatedBy;
 
 pub fn continue_as_session(run_id: &str) -> Result<ScratchSession, String> {
     let run = store::runs()
@@ -50,6 +51,11 @@ pub fn continue_as_session(run_id: &str) -> Result<ScratchSession, String> {
         Some(repo.clone()),
         None,
         None,
+        Some(CreatedBy::Schedule {
+            prompt_id: prompt.id.clone(),
+            run_id: Some(run.id.clone()),
+            label: prompt.title.clone(),
+        }),
     )?;
     crate::commands::repos::adopt_workspace_dir(&session.id, &dirname, &repo)?;
     crate::claude::conversations::upsert_session_id(&session.id, &claude_id)?;

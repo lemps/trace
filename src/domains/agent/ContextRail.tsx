@@ -5,6 +5,7 @@ import { I } from "@/components/Icon";
 import type { Issue } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import { PrRailSection } from "@/domains/prs/PrRailSection";
+import { StartedSessionsSection } from "@/domains/sessions/StartedSessions";
 import { TurnSection } from "./TurnSection";
 import { WorkspaceSection } from "./WorkspaceSection";
 
@@ -72,6 +73,7 @@ export function ContextRail({ issue, site, prUrls, running }: ContextRailProps) 
       <TurnSection workspaceId={issue.key} hasPr={prUrls.length > 0} />
       <PrRailSection urls={prUrls} />
       <WorkspaceSection workspaceId={issue.key} refreshKey={running} />
+      <StartedSessionsSection workspaceId={issue.key} />
 
       <div className="ctx-section">
         <div className="label">Ticket</div>
