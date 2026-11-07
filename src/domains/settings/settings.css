@@ -8,7 +8,8 @@
   max-width: 720px;
   margin: 0 auto;
 }
-.setting-group h2 {
+/* (Not a Markdown heading inside a preview.) */
+.setting-group h2:not(.md h2) {
   margin: 0 0 4px;
   font-size: 14px;
   font-weight: 600;

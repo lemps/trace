@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { I } from "@/components/Icon";
+import { useAppearance } from "@/domains/appearance/store";
 import type { ToolStep } from "./blocks";
 import { FileLink } from "./FileLink";
 import { ToolDetail } from "./ToolDetail";
@@ -26,9 +27,12 @@ interface ToolRowProps {
 }
 
 // One tool call as one line — what it did, to what — that unfolds to the
-// command, the edit or the output. Folded by default: the line is the point.
+// command, the edit or the output. Folded unless Appearance says to open
+// tool activity: the line is the point.
 export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
-  const [open, setOpen] = useState(false);
+  const tools = useAppearance((s) => s.prefs.chat.tools);
+  const [choice, setChoice] = useState<boolean | null>(null);
+  const open = choice ?? tools === "expanded";
   const { call, result } = step;
   const summary = summarize(call.name, call.input);
   const Glyph = glyphFor(call.name);
@@ -41,7 +45,7 @@ export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
           type="button"
           className="tx-tool-toggle"
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setChoice(!open)}
         >
           <span className="tx-chev">
             <I.Chevron size={12} />

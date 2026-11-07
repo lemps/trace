@@ -7,14 +7,20 @@ import {
   setTermFont,
   setTermFontSize,
   setTermLineHeight,
+  termFontFamily,
   termFontRaw,
+  termFontSize,
   termFontSizeRaw,
+  termLineHeight,
   termLineHeightRaw,
 } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
+import { MONO_FONT_SUGGESTIONS } from "@/domains/appearance/fontStack";
 import type { CursorStyle } from "@/domains/appearance/prefs";
+import { TerminalPreview } from "@/domains/appearance/previews/TerminalPreview";
 import { isMotionReduced, useAppearance } from "@/domains/appearance/store";
-import { isTermSchemeChoice, TERM_SCHEMES } from "@/domains/appearance/terminalSchemes";
+import { TermSchemePicker } from "@/domains/appearance/TermSchemePicker";
+import { AppearanceGroup } from "./AppearanceGroup";
 import { SettingRow } from "./SettingRow";
 
 const CURSORS: { value: CursorStyle; label: string }[] = [
@@ -51,40 +57,42 @@ export function TerminalAppearance() {
     applyTerminalPrefs();
   };
 
+  // The inputs above have just written these, so they're current for the preview.
+  const preview = (
+    <TerminalPreview
+      fontFamily={termFontFamily()}
+      fontSize={termFontSize()}
+      lineHeight={termLineHeight()}
+    />
+  );
+
   return (
-    <section className="setting-group">
-      <h2>Terminal</h2>
-      <div className="desc">
-        The agent chat and shell terminals. Changes apply to open terminals immediately.
+    <AppearanceGroup
+      title="Terminal"
+      desc="The agent chat and shell terminals. Changes apply to open terminals immediately."
+      preview={preview}
+    >
+      <div className="ap-sub">
+        <div className="label">Colour scheme</div>
+        <div className="hint">
+          Claude Code chooses its own colours too: run /theme in a session to match a light scheme.
+        </div>
       </div>
-      <SettingRow
-        label="Colour scheme"
-        hint="Claude Code chooses its own colours too: run /theme in a session to match a light scheme."
-      >
-        <select
-          aria-label="Terminal colour scheme"
-          value={prefs.termScheme}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (isTermSchemeChoice(v)) update({ termScheme: v });
-          }}
-        >
-          <option value="match">Match theme</option>
-          {TERM_SCHEMES.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </SettingRow>
+      <TermSchemePicker />
       <SettingRow label="Font" hint="Any installed monospace font; missing glyphs fall back.">
         <input
           type="text"
           aria-label="Terminal font"
           placeholder="Geist Mono"
+          list="ap-mono-fonts"
           value={font}
           onChange={(e) => changeFont(e.target.value)}
         />
+        <datalist id="ap-mono-fonts">
+          {MONO_FONT_SUGGESTIONS.map((f) => (
+            <option key={f} value={f} />
+          ))}
+        </datalist>
       </SettingRow>
       <SettingRow
         label="Font size"
@@ -132,6 +140,6 @@ export function TerminalAppearance() {
           label="Blinking cursor"
         />
       </SettingRow>
-    </section>
+    </AppearanceGroup>
   );
 }

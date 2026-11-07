@@ -23,7 +23,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       ([#13](https://github.com/noble1911/trace/pull/13))
 - [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
       plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
-      ([#14](https://github.com/noble1911/trace/pull/14))
+      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview, and
+      Chat & transcript styles agent Markdown (fonts, sizes, spacing, width, code theme, tool
+      activity); fenced code is highlighted.
 
 ## Candidates
 

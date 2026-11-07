@@ -1,11 +1,12 @@
-import { isTermSchemeChoice, type TermSchemeChoice } from "./terminalSchemes";
+import { type ChatStyle, DEFAULT_CHAT_STYLE, parseChatStyle } from "./chatStyle.ts";
+import { isTermSchemeChoice, type TermSchemeChoice } from "./terminalSchemes.ts";
 import {
   type AccentId,
   DEFAULT_ACCENT,
   isAccentId,
   isThemeChoice,
   type ThemeChoice,
-} from "./themes";
+} from "./themes.ts";
 
 // The persisted Appearance settings: their shape, defaults, and a validating
 // load (localStorage is user-editable, so nothing is trusted by cast).
@@ -29,6 +30,8 @@ export interface AppearancePrefs {
   cursorStyle: CursorStyle;
   cursorBlink: boolean;
   motion: MotionPref;
+  /** How agent Markdown reads in the chat and transcript (chatStyle.ts). */
+  chat: ChatStyle;
 }
 
 export const UI_SCALES = [90, 100, 110, 125] as const;
@@ -43,6 +46,7 @@ export const DEFAULT_PREFS: AppearancePrefs = {
   cursorStyle: "block",
   cursorBlink: true,
   motion: "system",
+  chat: DEFAULT_CHAT_STYLE,
 };
 
 const KEY = "trace.appearance";
@@ -74,6 +78,7 @@ export function parsePrefs(raw: unknown): AppearancePrefs {
     cursorStyle: pick(o.cursorStyle, isCursor, d.cursorStyle),
     cursorBlink: pick(o.cursorBlink, isBool, d.cursorBlink),
     motion: pick(o.motion, isMotion, d.motion),
+    chat: parseChatStyle(o.chat),
   };
 }
 

@@ -87,13 +87,10 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
 }
-.ac-reply .md,
-.ac-thought-body .md {
-  font-size: var(--text-body);
-  color: var(--fg-1);
-}
+/* Replies, thinking and bubbles are `.md.prose` (styles/markdown.css), so
+   type and spacing come from Appearance → Chat & transcript. */
 .ac-md .ac-p {
-  margin: 0 0 8px;
+  margin: 0 0 var(--md-gap);
 }
 .ac-md > :first-child {
   margin-top: 0;
@@ -104,7 +101,8 @@
 .ac-md .tx-file {
   vertical-align: baseline;
 }
-.ac-reply.streaming .md > :last-child::after {
+/* (Not after a code block: it would sit on a line of its own inside the box.) */
+.ac-reply.streaming .md > :last-child:not(.md-code)::after {
   content: "▍";
   margin-left: 2px;
   color: var(--fg-3);

@@ -28,7 +28,8 @@
   outline: none;
 }
 .tx-col {
-  max-width: 820px;
+  /* Appearance → Chat & transcript → Column width. */
+  max-width: var(--chat-col, 820px);
   margin: 0 auto;
   padding: 16px 20px 20px;
   display: flex;
@@ -71,9 +72,15 @@
   font-size: var(--text-ui);
   color: var(--fg-1);
 }
-.tx-reply .md {
-  font-size: var(--text-body);
-  color: var(--fg-1);
+/* A bubble's Markdown keeps the line breaks you typed, but not the newlines
+   between its blocks. */
+.tx-bubble .md {
+  color: inherit;
+  white-space: normal;
+}
+.tx-bubble .md p,
+.tx-bubble .md .ac-p {
+  white-space: pre-wrap;
 }
 .tx-notice,
 .tx-working {
@@ -254,9 +261,11 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* A subagent's brief or report: Markdown in the output box. */
 .tx-code.tx-prose {
   font-family: inherit;
   font-size: var(--text-ui);
+  white-space: normal;
 }
 .tx-code.tx-result.error {
   color: var(--c-danger);

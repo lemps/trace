@@ -4,15 +4,17 @@ import { useDisclosure } from "./hooks/useDisclosure";
 import type { Message } from "./types";
 
 // Words in the conversation: yours as a bubble on the right, the agent's as
-// Markdown prose, a system note as a quiet centred line, and its reasoning as a
-// folded "Thinking" row.
+// prose (both Markdown), a system note as a quiet centred line, and its
+// reasoning as a folded "Thinking" row.
 
 export function MessageRow({ message }: { message: Message }) {
   switch (message.role) {
     case "user":
       return (
         <div className="tx-prompt">
-          <div className="tx-bubble">{message.text}</div>
+          <div className="tx-bubble">
+            <ChatMarkdown text={message.text} />
+          </div>
         </div>
       );
     case "assistant":
@@ -32,7 +34,8 @@ export function MessageRow({ message }: { message: Message }) {
 function ReasoningRow({ message }: { message: Message }) {
   const [open, toggle] = useDisclosure(false);
   const lines = message.text.trim().split("\n");
-  const preview = lines[lines.length - 1] ?? "";
+  // The one-line preview is plain text, so drop the Markdown marks it would show raw.
+  const preview = (lines[lines.length - 1] ?? "").replace(/`+|\*\*|__/g, "");
   return (
     <div className={`ac-thought${open ? " open" : ""}`}>
       <button type="button" className="ac-thought-head" aria-expanded={open} onClick={toggle}>

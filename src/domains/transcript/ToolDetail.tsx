@@ -1,8 +1,12 @@
+import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
 import type { ToolStep } from "./blocks";
 import { str, todosOf } from "./toolSummary";
 
 // What an expanded tool row shows: the part of the call worth reading (the
 // command, the edit as a diff, the todo list) and what came back.
+
+/** Calls that answer in the agent's own Markdown: a subagent's report. */
+const PROSE_RESULT = new Set(["Task", "Agent"]);
 
 /** Result text longer than this many lines is cut to its head and tail. */
 const RESULT_LINES = 40;
@@ -60,7 +64,7 @@ function CallBody({ name, input }: { name: string; input: unknown }) {
       <ul className="tx-todos">
         {todosOf(input).map((t) => (
           <li key={t.content} className={t.status}>
-            {t.content}
+            <ChatMarkdown text={t.content} inline />
           </li>
         ))}
       </ul>
@@ -68,7 +72,14 @@ function CallBody({ name, input }: { name: string; input: unknown }) {
   }
   if (name === "Read") return null;
   const prompt = str(input, "prompt");
-  if (prompt) return <pre className="tx-code tx-prose">{prompt}</pre>;
+  // A subagent's brief is the agent's own Markdown.
+  if (prompt) {
+    return (
+      <div className="tx-code tx-prose">
+        <ChatMarkdown text={prompt} />
+      </div>
+    );
+  }
   return <pre className="tx-code">{JSON.stringify(input, null, 2)}</pre>;
 }
 
@@ -88,10 +99,17 @@ export function ToolDetail({ step }: { step: ToolStep }) {
   return (
     <div className="tx-tool-detail">
       <CallBody name={call.name} input={call.input} />
-      {result?.text && (!quietResult || result.isError) && (
-        <pre className={`tx-code tx-result${result.isError ? " error" : ""}`}>
-          {trimLines(result.text)}
-        </pre>
+      {result?.text && !result.isError && PROSE_RESULT.has(call.name) ? (
+        <div className="tx-code tx-prose tx-result">
+          <ChatMarkdown text={result.text} />
+        </div>
+      ) : (
+        result?.text &&
+        (!quietResult || result.isError) && (
+          <pre className={`tx-code tx-result${result.isError ? " error" : ""}`}>
+            {trimLines(result.text)}
+          </pre>
+        )
       )}
     </div>
   );

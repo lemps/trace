@@ -1,14 +1,32 @@
 import { setInterfaceZoom, setWindowTheme } from "@/ipc/window";
+import { chatStyleVars } from "./chatStyle";
 import { fontStack } from "./fontStack";
 import { activeTheme, isMotionReduced, useAppearance } from "./store";
 import { terminalBackground } from "./terminalTheme";
 import { accentOf, DEFAULT_ACCENT, schemeOf } from "./themes";
 
 // Pushes Appearance into the document: data-theme / data-density / data-motion
-// on <html> (themes.css keys off them), the accent, UI font and terminal
-// background as root custom properties, and the native window's theme + zoom.
+// on <html> (themes.css keys off them) and data-code-theme (code-themes.css);
+// the accent, UI font, terminal background and chat style as root custom
+// properties; and the native window's theme + zoom.
 // Painted surfaces that can't read CSS (xterm, Vega, mermaid) subscribe to the
 // store themselves.
+
+function setVar(name: string, value: string): void {
+  const root = document.documentElement;
+  if (value) root.style.setProperty(name, value);
+  else root.style.removeProperty(name);
+}
+
+/**
+ * The Chat & transcript settings, as custom properties and data-code-theme on
+ * <html>. Exported for the dev chat fixture, which skips the rest.
+ */
+export function applyChatStyle(): void {
+  const { chat } = useAppearance.getState().prefs;
+  for (const [name, value] of Object.entries(chatStyleVars(chat))) setVar(name, value);
+  document.documentElement.dataset.codeTheme = chat.codeTheme;
+}
 
 function applyDocument(): void {
   const s = useAppearance.getState();
@@ -18,16 +36,13 @@ function applyDocument(): void {
   root.dataset.density = prefs.density;
   root.dataset.motion = isMotionReduced(s) ? "reduce" : "full";
 
-  const setVar = (name: string, value: string) => {
-    if (value) root.style.setProperty(name, value);
-    else root.style.removeProperty(name);
-  };
   const accent = accentOf(prefs.accent);
   const isDefault = prefs.accent === DEFAULT_ACCENT;
   setVar("--accent-h", isDefault ? "" : String(accent.hue));
   setVar("--accent-sat", isDefault ? "" : String(accent.sat));
   setVar("--font-ui", fontStack(prefs.uiFont, "var(--font-sans-default)"));
   setVar("--term-bg", terminalBackground());
+  applyChatStyle();
 }
 
 // Native calls are made only when their value changes, not on every pref edit.

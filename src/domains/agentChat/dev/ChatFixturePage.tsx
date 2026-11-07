@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { applyChatStyle } from "@/domains/appearance/apply";
+import { useAppearance } from "@/domains/appearance/store";
 import { ChatActionsContext } from "../actions";
 import { ChatAgentPane } from "../ChatAgentPane";
 import { FIXTURE_WS, fixtureActions, seedFixture } from "./fixtureActions";
@@ -7,8 +9,10 @@ import "./dev.css";
 // Dev only (`npm run dev`, then /#/dev/chat): the chat view over the fixture
 // journal, with a pretend agent, so the UI can be built and screenshot without
 // a backend. `?theme=light` and `?expand=1` in the hash set the toolbar's
-// choices for scripted screenshots. main.tsx only imports this behind
-// `import.meta.env.DEV`, so production builds leave it (and the fixture) out.
+// choices for scripted screenshots. The Chat & transcript settings apply as in
+// the app (from this webview's storage, as Settings left them). main.tsx only
+// imports this behind `import.meta.env.DEV`, so production builds leave it
+// (and the fixture) out.
 
 type Theme = "dark" | "light" | "midnight" | "paper";
 
@@ -26,6 +30,10 @@ export function ChatFixturePage() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
+  useEffect(() => {
+    applyChatStyle();
+    return useAppearance.subscribe(applyChatStyle);
+  }, []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-seed on Reset
   useEffect(() => {
     seedFixture();

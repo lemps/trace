@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { ChatMarkdown } from "./ChatMarkdown";
 import { useAnswer } from "./hooks/useAnswer";
 import type { Approval, ApprovalKind, ApprovalOption } from "./types";
 
@@ -32,7 +33,9 @@ export function ApprovalCard({ approval, attached = false }: ApprovalCardProps) 
     <div className={`ac-card ac-ask${attached ? " attached" : ""}`}>
       <div className="ac-card-head">
         <I.Bolt size={13} />
-        <span className="ac-card-title">{approval.title}</span>
+        <span className="ac-card-title">
+          <ChatMarkdown text={approval.title} inline />
+        </span>
         {!attached && <span className="ac-card-meta">{approval.tool}</span>}
       </div>
       {approval.detail && <pre className="tx-code ac-cmd">{approval.detail}</pre>}
@@ -70,7 +73,9 @@ function Receipt({ approval }: { approval: Approval }) {
     <div className={`ac-receipt${kind === "deny" ? " denied" : ""}`}>
       {kind === "deny" ? <I.X size={12} /> : <I.Check size={12} />}
       <span className="ac-receipt-what">{text}</span>
-      <span className="ac-receipt-of">{approval.title}</span>
+      <span className="ac-receipt-of">
+        <ChatMarkdown text={approval.title} inline />
+      </span>
       {note && <span className="ac-receipt-note">“{note}”</span>}
     </div>
   );

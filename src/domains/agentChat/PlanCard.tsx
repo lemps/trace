@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { ChatMarkdown } from "./ChatMarkdown";
 import type { Plan, PlanStatus } from "./types";
 
 // The agent's task list (Claude's TodoWrite, Codex's plan updates): progress in
@@ -28,7 +29,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
             <span className="ac-plan-mark" role="img" aria-label={WORD[item.status]}>
               {item.status === "done" && <I.Check size={11} />}
             </span>
-            <span className="ac-plan-text">{item.text}</span>
+            <span className="ac-plan-text">
+              <ChatMarkdown text={item.text} inline />
+            </span>
           </li>
         ))}
       </ol>

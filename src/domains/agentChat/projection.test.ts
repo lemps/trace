@@ -158,11 +158,11 @@ describe("buildTurns", () => {
     const turns = buildTurns(FIXTURE_ROWS);
     assert.deepEqual(
       turns.map((t) => t.state),
-      ["completed", "completed", "interrupted", "failed", "open"]
+      ["completed", "completed", "completed", "interrupted", "failed", "open"]
     );
     assert.ok(turns[1].folded.length > 5);
-    assert.ok(turns[3].shown.some((i) => i.type === "status"));
-    const live = turns[4];
+    assert.ok(turns[4].shown.some((i) => i.type === "status"));
+    const live = turns[5];
     assert.ok(live.items.some((i) => i.type === "question" && isPending(i)));
     assert.ok(live.items.some((i) => i.type === "tool" && i.approval !== null && isPending(i)));
     assert.match(workSentence(turns[1].folded), /edited/);
