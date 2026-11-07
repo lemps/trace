@@ -116,17 +116,18 @@
   font-family: var(--font-sans);
 }
 .fx-crumbs {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  overflow: hidden;
   white-space: nowrap;
   font-family: var(--font-mono);
   font-size: var(--text-ui);
 }
-/* Folders give way first (a far larger shrink weight), each down to its first
-   letter; only then does the file's name shrink, from its end. */
+/* Breadcrumbs.tsx folds the middle folders into "…" when they don't fit. Past
+   that, the kept folders give way first (a far larger shrink weight), down to a
+   letter each; the file's name is the last to shrink, from its end. */
 .fx-crumb {
   flex: 0 1000 auto;
   min-width: calc(2ch + 8px);
@@ -148,6 +149,31 @@
 .fx-crumb:focus-visible {
   outline: 1px solid var(--c-accent);
   outline-offset: -1px;
+}
+.fx-crumb.more {
+  flex-shrink: 0;
+  min-width: 0;
+}
+.fx-crumb.more.on {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+.fx-crumbs .pop-menu {
+  flex-shrink: 0;
+}
+/* A hidden copy at natural size: what Breadcrumbs measures to decide what fits. */
+.fx-crumbs-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
+}
+.fx-crumbs-measure .fx-crumb {
+  flex-shrink: 0;
+  min-width: 0;
 }
 .fx-crumb-sep {
   display: inline-flex;

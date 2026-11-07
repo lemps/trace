@@ -2,8 +2,18 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ChangeKind } from "../../../ipc/diff.ts";
 import { joinNative, worktreeRelative } from "../../../platform/paths.ts";
-import { ancestorsOf, crumbsOf, parentOf, toTreePath } from "./filePaths.ts";
-import { filterTree, flatFiles, jumpTo, matchIn, toQuery, treeKey, visibleRows } from "./rows.ts";
+import { ancestorsOf, collapseCrumbs, crumbsOf, parentOf, toTreePath } from "./filePaths.ts";
+import {
+  filterTree,
+  flatFiles,
+  jumpTo,
+  matchIn,
+  type Row,
+  rowOpen,
+  toQuery,
+  treeKey,
+  visibleRows,
+} from "./rows.ts";
 import { buildTree, changeMap, type DirNode, findNode, type TreeNode } from "./tree.ts";
 
 const change = (path: string, status: ChangeKind, add = 1, del = 0) => ({ path, status, add, del });
@@ -15,6 +25,7 @@ const dirAt = (root: DirNode, path: string) => {
 };
 const allOpen = () => true;
 const paths = (rows: { node: TreeNode }[]) => rows.map((r) => r.node.path);
+const chainOf = (row: Row | undefined) => row?.chain?.map((d) => d.path);
 
 describe("buildTree", () => {
   it("nests paths into folders, folders first, in natural order", () => {
@@ -110,11 +121,10 @@ describe("filterTree", () => {
   it("narrows to matching names, keeping their folders open", () => {
     const f = filter("files");
     const rows = visibleRows(f.root, (d) => f.open.has(d.path));
+    // src holds only domains, domains only agent: one compact row.
     assert.deepEqual(paths(rows), [
       "docs",
       "docs/files.md",
-      "src",
-      "src/domains",
       "src/domains/agent",
       "src/domains/agent/FilesPane.tsx",
     ]);
@@ -123,8 +133,18 @@ describe("filterTree", () => {
 
   it("keeps a folder whose name matches whole, but closed", () => {
     const f = filter("COMPONENTS");
-    const rows = visibleRows(f.root, (d) => f.open.has(d.path));
-    assert.deepEqual(paths(rows), ["src", "src/components"]);
+    const rows = visibleRows(
+      f.root,
+      (d) => f.open.has(d.path),
+      (d) => f.matchedDirs.has(d.path)
+    );
+    // src then holds only components: one row, `src / components`, still closed.
+    assert.deepEqual(paths(rows), ["src/components"]);
+    assert.deepEqual(chainOf(rows[0]), ["src", "src/components"]);
+    assert.equal(
+      rowOpen(rows[0], (d) => f.open.has(d.path)),
+      false
+    );
     assert.equal(f.hits, 1);
     assert.equal(dirAt(f.root, "src/components").children.length, 1);
   });
@@ -141,6 +161,65 @@ describe("filterTree", () => {
   it("finds nothing for a miss, and ignores a blank query", () => {
     assert.equal(filter("zzz").root.children.length, 0);
     assert.equal(toQuery("   "), null);
+  });
+});
+
+describe("compact folder chains", () => {
+  const root = buildTree(
+    ["src/domains/agent/a.ts", "src/domains/agent/b.ts", "src/x/y/z.ts", "top.ts"],
+    new Map()
+  );
+
+  it("draws single-folder folders as one row, ending at a folder with several children", () => {
+    const rows = visibleRows(root, allOpen);
+    assert.deepEqual(paths(rows), [
+      "src",
+      "src/domains/agent",
+      "src/domains/agent/a.ts",
+      "src/domains/agent/b.ts",
+      "src/x/y",
+      "src/x/y/z.ts",
+      "top.ts",
+    ]);
+    assert.deepEqual(chainOf(rows[1]), ["src/domains", "src/domains/agent"]);
+    assert.equal(rows[0].chain, undefined);
+    assert.equal(rows[2].depth, 2);
+  });
+
+  it("opens and closes a chain as one", () => {
+    const open = new Set(["src", "src/domains"]);
+    const isOpen = (d: DirNode) => open.has(d.path);
+    const rows = visibleRows(root, isOpen);
+    const chain = rows.find((r) => r.node.path === "src/domains/agent");
+    assert.ok(chain);
+    assert.equal(rowOpen(chain, isOpen), false);
+    const i = rows.indexOf(chain);
+    const action = treeKey(rows, i, "ArrowRight", isOpen);
+    assert.ok(action?.kind === "toggle" && action.open);
+    assert.deepEqual(
+      action.dirs.map((d) => d.path),
+      ["src/domains", "src/domains/agent"]
+    );
+  });
+
+  it("is broken up by a filter match", () => {
+    const tree = buildTree(["a/b/c/d.ts", "a/b/c/e.ts"], new Map());
+    assert.deepEqual(chainOf(visibleRows(tree, allOpen)[0]), ["a", "a/b", "a/b/c"]);
+    const query = toQuery("b");
+    assert.ok(query);
+    const f = filterTree(tree, query);
+    const rows = visibleRows(f.root, allOpen, (d) => f.matchedDirs.has(d.path));
+    // The chain stops at the folder the filter matched; what's inside follows it.
+    assert.deepEqual(chainOf(rows[0]), ["a", "a/b"]);
+    assert.equal(rows[1].node.path, "a/b/c");
+  });
+
+  it("jumps by a chain's first folder", () => {
+    const rows = visibleRows(root, allOpen);
+    // "x / y" is found by x, not by y.
+    assert.equal(rows[jumpTo(rows, 0, "x")].node.path, "src/x/y");
+    assert.equal(jumpTo(rows, 0, "y"), -1);
+    assert.equal(rows[jumpTo(rows, 0, "src")].node.path, "src");
   });
 });
 
@@ -219,5 +298,24 @@ describe("paths", () => {
     const elapsed = performance.now() - t;
     assert.equal(rows.filter((r) => r.node.kind === "file").length, 100_000);
     assert.ok(elapsed < 2000, `took ${elapsed}ms`);
+  });
+});
+
+describe("collapseCrumbs", () => {
+  const w = (crumbs: number[]) => ({ crumbs, sep: 10 });
+
+  it("hides nothing when the crumbs fit", () => {
+    // 5 crumbs of 50 + 4 separators = 290.
+    assert.equal(collapseCrumbs(w([50, 50, 50, 50, 50]), 290), null);
+  });
+
+  it("keeps the first and last two folders, hiding the middle behind one …", () => {
+    // src / a / b / c / d / file: folders 0..4, file 5.
+    assert.deepEqual(collapseCrumbs(w([30, 40, 40, 40, 40, 200]), 300), [1, 3]);
+  });
+
+  it("has nothing to hide with three folders or fewer: the file name shrinks", () => {
+    assert.equal(collapseCrumbs(w([30, 40, 40, 500]), 100), null);
+    assert.equal(collapseCrumbs(w([800]), 100), null);
   });
 });

@@ -24,7 +24,8 @@ export interface TreeState {
   query: Query | null;
   rows: Row[];
   isOpen: (dir: DirNode) => boolean;
-  toggle: (dir: DirNode, open: boolean) => void;
+  /** Open or close folders together (a compact chain is one row). */
+  toggle: (dirs: DirNode[], open: boolean) => void;
   /**
    * Show `path` in the tree: switch to a mode that has it and open its folders (and
    * it, for a folder — `isDir` says which when the tree holding it hasn't loaded).
@@ -87,19 +88,25 @@ export function useTreeState(
   const root = filtered?.root ?? tree;
   const rows = useMemo(() => {
     if (!root) return [];
-    return mode === "changes" && flat ? flatFiles(root) : visibleRows(root, isOpen);
-  }, [root, mode, flat, isOpen]);
+    if (mode === "changes" && flat) return flatFiles(root);
+    const matched = filtered?.matchedDirs;
+    return visibleRows(root, isOpen, matched ? (d) => matched.has(d.path) : undefined);
+  }, [root, mode, flat, isOpen, filtered]);
 
   const toggle = useCallback(
-    (dir: DirNode, open: boolean) => {
+    (dirs: DirNode[], open: boolean) => {
       if (filtered) {
         const next = new Map(overrides ?? []);
-        next.set(dir.path, open);
+        for (const d of dirs) next.set(d.path, open);
         setOverride({ key: filterText, open: next });
       } else if (mode === "changes") {
-        patch({ changesClosed: withKey(changesClosed, dir.path, !open) });
+        let closed: ReadonlySet<string> = changesClosed;
+        for (const d of dirs) closed = withKey(closed, d.path, !open);
+        patch({ changesClosed: closed });
       } else {
-        patch({ allOpen: withKey(allOpen, dir.path, open) });
+        let opened: ReadonlySet<string> = allOpen;
+        for (const d of dirs) opened = withKey(opened, d.path, open);
+        patch({ allOpen: opened });
       }
     },
     [filtered, filterText, overrides, mode, changesClosed, allOpen, patch]

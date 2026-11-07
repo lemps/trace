@@ -28,7 +28,7 @@ interface FilesSidebarProps {
   query: Query | null;
   focus: TreeFocus | null;
   onFocusDone: () => void;
-  onToggle: (dir: DirNode, open: boolean) => void;
+  onToggle: (dirs: DirNode[], open: boolean) => void;
   onOpen: (file: FileNode) => void;
   onRefresh: () => void;
   onHide: () => void;

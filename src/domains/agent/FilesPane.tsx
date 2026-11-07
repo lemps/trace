@@ -54,9 +54,9 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
     clearPick(workspaceId);
   }, [pick, summaryKnown, workspaceId, clearPick, patch, reveal, sideOpen, toggleSide]);
 
-  const showInTree = (path: string) => {
+  const showInTree = (path: string, isDir: boolean) => {
     if (!sideOpen) toggleSide();
-    reveal(path, path !== selected);
+    reveal(path, isDir);
   };
 
   const count = summary ? summary.files.length : null;

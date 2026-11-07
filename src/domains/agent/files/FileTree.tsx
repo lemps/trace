@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { jumpTo, type Query, type Row, treeKey } from "./rows";
+import { jumpTo, type Query, type Row, rowDirs, rowHas, rowOpen, treeKey } from "./rows";
 import { TreeRow } from "./TreeRow";
 import type { DirNode, FileNode } from "./tree";
 
@@ -34,7 +34,7 @@ interface FileTreeProps {
   /** `focus` has been shown. */
   onFocusDone: () => void;
   label: string;
-  onToggle: (dir: DirNode, open: boolean) => void;
+  onToggle: (dirs: DirNode[], open: boolean) => void;
   onOpen: (file: FileNode) => void;
 }
 
@@ -72,7 +72,7 @@ export function FileTree(props: FileTreeProps) {
   const idBase = useId();
 
   const cursor = useMemo(
-    () => (cursorPath === null ? -1 : rows.findIndex((r) => r.node.path === cursorPath)),
+    () => (cursorPath === null ? -1 : rows.findIndex((r) => rowHas(r, cursorPath))),
     [rows, cursorPath]
   );
 
@@ -93,7 +93,7 @@ export function FileTree(props: FileTreeProps) {
   // once its folders are open, which is the render after the request.
   useLayoutEffect(() => {
     if (!focus) return;
-    const i = rows.findIndex((r) => r.node.path === focus.path);
+    const i = rows.findIndex((r) => rowHas(r, focus.path));
     if (i < 0) return;
     setCursorPath(focus.path);
     scrollToIndex(i, true);
@@ -115,7 +115,7 @@ export function FileTree(props: FileTreeProps) {
     if (action) {
       e.preventDefault();
       if (action.kind === "move") moveTo(action.to);
-      else if (action.kind === "toggle") onToggle(action.dir, action.open);
+      else if (action.kind === "toggle") onToggle(action.dirs, action.open);
       else onOpen(action.file);
       return;
     }
@@ -130,10 +130,12 @@ export function FileTree(props: FileTreeProps) {
     if (hit >= 0) moveTo(hit);
   };
 
-  const onRowClick = (r: Row) => {
+  // A click on one folder of a chain puts the cursor on that folder; the chain
+  // opens or closes as one.
+  const onRowClick = (r: Row, segment?: string) => {
     setByKeyboard(false);
-    setCursorPath(r.node.path);
-    if (r.node.kind === "dir") onToggle(r.node, !isOpen(r.node));
+    setCursorPath(segment ?? r.node.path);
+    if (r.node.kind === "dir") onToggle(rowDirs(r), !rowOpen(r, isOpen));
     else onOpen(r.node);
   };
 
@@ -168,8 +170,9 @@ export function FileTree(props: FileTreeProps) {
               key={r.node.path + r.node.kind}
               id={rowId(first + k)}
               row={r}
-              isOpen={r.node.kind === "dir" && isOpen(r.node)}
+              isOpen={rowOpen(r, isOpen)}
               isCursor={first + k === cursor}
+              cursorPath={cursorPath}
               isSelected={r.node.kind === "file" && r.node.path === selected}
               query={query}
               flat={flat}

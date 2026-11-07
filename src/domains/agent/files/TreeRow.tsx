@@ -67,7 +67,31 @@ interface TreeRowProps {
   flat: boolean;
   /** Show added/removed line counts (the Changes view). */
   showStats: boolean;
-  onClick: (row: Row) => void;
+  /** In a chain, the folder the cursor is on, drawn brighter. */
+  cursorPath: string | null;
+  /** `segment`: which folder of a chain was clicked. */
+  onClick: (row: Row, segment?: string) => void;
+}
+
+/** A compact chain's names, `src / domains / agent`, each one clickable on its own. */
+function ChainName(p: { row: Row; query: Query | null; cursorPath: string | null }) {
+  const chain = p.row.chain ?? [];
+  return (
+    <span className="fx-name">
+      {chain.map((d, i) => (
+        <span key={d.path}>
+          {i > 0 && <span className="fx-chain-sep"> / </span>}
+          <span
+            className={`fx-seg${d.path === p.cursorPath ? " cur" : ""}`}
+            data-seg={d.path}
+            title={d.path}
+          >
+            {marked(d.name, matchIn(d, p.query))}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
 }
 
 // One row of the Files tree. Fixed height (the tree is virtualised); indent guides
@@ -82,6 +106,7 @@ export function TreeRow({
   query,
   flat,
   showStats,
+  cursorPath,
   onClick,
 }: TreeRowProps) {
   const { node, depth } = row;
@@ -106,8 +131,11 @@ export function TreeRow({
       aria-expanded={isDir ? isOpen : undefined}
       aria-selected={isSelected}
       className={cls}
-      title={isDir ? node.path : fileTitle(node)}
-      onClick={() => onClick(row)}
+      title={row.chain ? undefined : isDir ? node.path : fileTitle(node)}
+      onClick={(e) => {
+        const seg = (e.target as HTMLElement).closest<HTMLElement>("[data-seg]");
+        onClick(row, seg?.dataset.seg);
+      }}
     >
       {Array.from({ length: depth }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: one guide per indent level
@@ -127,7 +155,11 @@ export function TreeRow({
           <FileIcon name={node.name} size={14} />
         )}
       </span>
-      <span className="fx-name">{marked(node.name, matchIn(node, query))}</span>
+      {row.chain ? (
+        <ChainName row={row} query={query} cursorPath={isCursor ? cursorPath : null} />
+      ) : (
+        <span className="fx-name">{marked(node.name, matchIn(node, query))}</span>
+      )}
       {flat && cut > 0 && <span className="fx-dir">{node.path.slice(0, cut)}</span>}
       {!isDir && node.change && showStats && <Stat add={node.change.add} del={node.change.del} />}
       {status && (

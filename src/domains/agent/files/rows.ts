@@ -4,18 +4,60 @@ import type { DirNode, FileNode, TreeNode } from "./tree.ts";
 // 100k files renders (and moves a cursor) as one array, a screenful at a time.
 
 export interface Row {
+  /** The file, or the folder whose contents follow (a chain's last folder). */
   node: TreeNode;
   /** 0 for the top level. */
   depth: number;
+  /**
+   * A compact folder chain, outermost first and ending at `node`: folders that each
+   * hold just one folder, drawn on one row as `src / domains / agent` (as VS Code does).
+   */
+  chain?: DirNode[];
 }
 
-/** The rows on screen: every node whose folders are all open, depth-first. */
-export function visibleRows(root: DirNode, isOpen: (dir: DirNode) => boolean): Row[] {
+/** The folders a row stands for: its chain, or its one folder. */
+export function rowDirs(row: Row): DirNode[] {
+  if (row.chain) return row.chain;
+  return row.node.kind === "dir" ? [row.node] : [];
+}
+
+/** A folder row is open when every folder in it is: a chain opens and closes as one. */
+export function rowOpen(row: Row, isOpen: (dir: DirNode) => boolean): boolean {
+  const dirs = rowDirs(row);
+  return dirs.length > 0 && dirs.every(isOpen);
+}
+
+/** Whether `row` stands for `path` (any folder of its chain counts). */
+export function rowHas(row: Row, path: string): boolean {
+  return row.node.path === path || (row.chain?.some((d) => d.path === path) ?? false);
+}
+
+/**
+ * The rows on screen: every node whose folders are all open, depth-first, with each
+ * run of single-folder folders compacted into one row. `endsChain` stops a chain at
+ * a folder (one the filter matched by name stays its own last segment).
+ */
+export function visibleRows(
+  root: DirNode,
+  isOpen: (dir: DirNode) => boolean,
+  endsChain: (dir: DirNode) => boolean = () => false
+): Row[] {
   const rows: Row[] = [];
   const walk = (dir: DirNode, depth: number) => {
     for (const node of dir.children) {
-      rows.push({ node, depth });
-      if (node.kind === "dir" && isOpen(node)) walk(node, depth + 1);
+      if (node.kind === "file") {
+        rows.push({ node, depth });
+        continue;
+      }
+      const chain = [node];
+      let last = node;
+      while (!endsChain(last) && last.children.length === 1 && last.children[0].kind === "dir") {
+        last = last.children[0];
+        chain.push(last);
+      }
+      const row: Row = chain.length > 1 ? { node: last, depth, chain } : { node: last, depth };
+      rows.push(row);
+      if (chain.every(isOpen)) walk(last, depth + 1);
     }
   };
   walk(root, 0);
@@ -56,6 +98,8 @@ export interface Filtered {
   open: Set<string>;
   /** Files and folders that matched. */
   hits: number;
+  /** Folders kept because their own name matched: each ends a compact chain. */
+  matchedDirs: Set<string>;
 }
 
 /**
@@ -65,6 +109,7 @@ export interface Filtered {
  */
 export function filterTree(root: DirNode, query: Query): Filtered {
   const open = new Set<string>();
+  const matchedDirs = new Set<string>();
   let hits = 0;
   const walk = (dir: DirNode): DirNode | null => {
     const kept: TreeNode[] = [];
@@ -76,6 +121,7 @@ export function filterTree(root: DirNode, query: Query): Filtered {
         }
       } else if (!query.byPath && matches(child, query)) {
         kept.push(child);
+        matchedDirs.add(child.path);
         hits += 1;
       } else {
         const sub = walk(child);
@@ -87,7 +133,7 @@ export function filterTree(root: DirNode, query: Query): Filtered {
     return { ...dir, children: kept };
   };
   const narrowed = walk(root) ?? { ...root, children: [] };
-  return { root: narrowed, open, hits };
+  return { root: narrowed, open, hits, matchedDirs };
 }
 
 /** Where the query sits in `node`'s name, to mark it; null when it doesn't. */
@@ -102,7 +148,7 @@ export function matchIn(node: TreeNode, query: Query | null): [number, number] |
 /** What a key does to the tree: move the cursor, open or close a folder, or open a file. */
 export type TreeAction =
   | { kind: "move"; to: number }
-  | { kind: "toggle"; dir: DirNode; open: boolean }
+  | { kind: "toggle"; dirs: DirNode[]; open: boolean }
   | { kind: "open"; file: FileNode };
 
 /**
@@ -138,11 +184,11 @@ export function treeKey(
       return move(at - page);
     case "ArrowRight":
       if (row.node.kind !== "dir") return null;
-      if (!isOpen(row.node)) return { kind: "toggle", dir: row.node, open: true };
+      if (!rowOpen(row, isOpen)) return { kind: "toggle", dirs: rowDirs(row), open: true };
       return rows[at + 1]?.depth === row.depth + 1 ? move(at + 1) : null;
     case "ArrowLeft": {
-      if (row.node.kind === "dir" && isOpen(row.node)) {
-        return { kind: "toggle", dir: row.node, open: false };
+      if (row.node.kind === "dir" && rowOpen(row, isOpen)) {
+        return { kind: "toggle", dirs: rowDirs(row), open: false };
       }
       for (let i = at - 1; i >= 0; i--) if (rows[i].depth < row.depth) return move(i);
       return null;
@@ -150,7 +196,7 @@ export function treeKey(
     case "Enter":
     case " ":
       return row.node.kind === "dir"
-        ? { kind: "toggle", dir: row.node, open: !isOpen(row.node) }
+        ? { kind: "toggle", dirs: rowDirs(row), open: !rowOpen(row, isOpen) }
         : { kind: "open", file: row.node };
     default:
       return null;
@@ -171,7 +217,8 @@ export function jumpTo(rows: readonly Row[], from: number, prefix: string): numb
   const start = want.length > 1 ? from : from + 1;
   for (let k = 0; k < rows.length; k++) {
     const i = (((start + k) % rows.length) + rows.length) % rows.length;
-    if (rows[i].node.lower.startsWith(want)) return i;
+    const first = rows[i].chain?.[0] ?? rows[i].node;
+    if (first.lower.startsWith(want)) return i;
   }
   return -1;
 }

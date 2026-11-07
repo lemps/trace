@@ -296,6 +296,22 @@ body.fx-resizing * {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A compact chain: one row, each folder its own target; the cursor's is brighter. */
+.fx-chain-sep {
+  color: var(--fg-4);
+}
+.fx-seg:hover {
+  color: var(--fg-0);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fx-tree:focus-visible .fx-seg.cur,
+.fx-tree.by-keys:focus .fx-seg.cur {
+  color: var(--fg-0);
+  text-decoration: underline;
+  text-decoration-color: var(--c-accent);
+  text-underline-offset: 2px;
+}
 /* Flat list: the name keeps its room; the folder after it gives way first. */
 .fx-row:has(.fx-dir) .fx-name {
   flex: 0 1 auto;

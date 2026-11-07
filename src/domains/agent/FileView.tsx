@@ -27,8 +27,8 @@ interface FileViewProps {
   workspaceId: string;
   /** What changed, from the summary; none for an unchanged file. */
   change: Change | undefined;
-  /** Show a folder (or this file) in the tree. */
-  onReveal: (path: string) => void;
+  /** Show a folder (`isDir`) or this file in the tree. */
+  onReveal: (path: string, isDir: boolean) => void;
 }
 
 export function FileView({ fd, workspaceId, change, onReveal }: FileViewProps) {

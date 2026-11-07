@@ -37,3 +37,27 @@ export function crumbsOf(path: string): Crumb[] {
   const parts = toTreePath(path).split("/").filter(Boolean);
   return parts.map((name, i) => ({ name, path: parts.slice(0, i + 1).join("/") }));
 }
+
+/** What the breadcrumbs can measure: each crumb's natural width (folders, then the file). */
+export interface CrumbWidths {
+  crumbs: readonly number[];
+  /** A separator between two crumbs. */
+  sep: number;
+}
+
+/**
+ * Which folders the breadcrumbs hide, as `[start, end)` indexes into the crumbs, or
+ * null when everything fits in `available`. Only when it doesn't: the first folder
+ * and the last two stay whole, and every folder between them goes behind one "…".
+ * A path with no folders between those has nothing to hide; its file name shrinks.
+ */
+export function collapseCrumbs(w: CrumbWidths, available: number): [number, number] | null {
+  const n = w.crumbs.length;
+  const total = w.crumbs.reduce((a, b) => a + b, 0) + w.sep * Math.max(0, n - 1);
+  if (total <= available) return null;
+  const folders = n - 1;
+  // Keep folder 0 and the last two folders (indexes folders-2 and folders-1).
+  const start = 1;
+  const end = folders - 2;
+  return end > start ? [start, end] : null;
+}
