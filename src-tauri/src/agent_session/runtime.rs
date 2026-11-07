@@ -8,10 +8,9 @@ use std::sync::Arc;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
-use super::claude::ClaudeAdapter;
 use super::journal::{Answer, JournalBody, JournalRow};
 use super::registry::Begin;
-use super::{settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
+use super::{brands, settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
 use crate::state::AppState;
 
 /// `agent-journal`'s payload (`JournalEvent` in types.ts).
@@ -72,12 +71,14 @@ impl JournalSink for Sink {
 /// What a chat agent is started with, before trace adds its own wiring.
 pub struct StartRequest {
     pub workspace_id: String,
+    /// Which agent: "claude" or "codex" (`brands::CHAT_BRANDS`).
+    pub cli: String,
     pub model: Option<String>,
     pub provider: Option<String>,
     pub extra_args: Vec<String>,
 }
 
-/// Start a Claude chat agent for `req.workspace_id`, in the folder `cwd`
+/// Start a chat agent (`req.cli`'s brand) for `req.workspace_id`, in the folder `cwd`
 /// resolves (it may make a worktree, so it runs with the workspace claimed). A
 /// no-op while one starts or runs.
 pub fn start(
@@ -93,9 +94,10 @@ pub fn start(
     let workspace_id = req.workspace_id.clone();
     let launched = (|| {
         let cwd = cwd()?;
-        let wiring = crate::claude::launch::claude_wiring(
+        let wiring = brands::wiring(
             app,
             state,
+            &req.cli,
             &req.workspace_id,
             req.model,
             req.provider.as_deref(),
@@ -122,11 +124,11 @@ pub fn start(
             path,
             instance,
         });
-        ClaudeAdapter::launch(spec, sink)
+        brands::launch(&req.cli, spec, sink)
     })();
     match launched {
         Ok(adapter) => {
-            agents.register(&workspace_id, instance, Box::new(adapter));
+            agents.register(&workspace_id, instance, adapter);
             Ok(())
         }
         Err(e) => {
