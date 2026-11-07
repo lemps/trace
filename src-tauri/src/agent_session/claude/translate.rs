@@ -23,6 +23,7 @@ use std::collections::{HashMap, HashSet};
 use serde_json::{json, Value};
 
 use super::book::RowBook;
+use super::handback;
 use super::prompts::{self, str_at, Pending};
 use super::tools;
 use crate::agent_session::journal::{
@@ -278,7 +279,10 @@ impl Translator {
                 continue;
             }
             let failed = block["is_error"].as_bool().unwrap_or(false);
-            let output = tools::result_text(block.get("content"));
+            let mut output = tools::result_text(block.get("content"));
+            if self.subagents.contains_key(call_id) {
+                output = handback::unwrap(&output);
+            }
             let id = format!("tool:{call_id}");
             let row = self.book.update(&id, |body| {
                 if let JournalBody::Tool(t) = body {

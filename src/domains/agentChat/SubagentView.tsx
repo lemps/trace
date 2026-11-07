@@ -9,6 +9,7 @@ import { useFollowScroll } from "./hooks/useFollowScroll";
 import { useJournalFeed } from "./hooks/useJournalFeed";
 import { useWorkspaceRoot } from "./hooks/useWorkspaceRoot";
 import { ItemView } from "./ItemView";
+import { LatestButton } from "./LatestButton";
 import { SubagentStatusWord, useElapsed } from "./SubagentBits";
 import { openSubagentBeside } from "./subagentPanel";
 import type { SubagentThread } from "./subagents";
@@ -126,11 +127,7 @@ function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean })
             )}
           </div>
         </div>
-        {!following && (
-          <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
-            <I.Download size={13} /> Latest
-          </button>
-        )}
+        <LatestButton scrollRef={scrollRef} show={!following} onJump={jumpToLatest} />
       </div>
     </>
   );

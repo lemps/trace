@@ -1,7 +1,8 @@
-import { type MouseEvent, type ReactNode, useState } from "react";
+import { type MouseEvent, type ReactNode, useRef, useState } from "react";
 import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
+import { fitClass, type TabFitMode, useTabFit } from "@/components/useTabFit";
 import { useHint } from "@/platform/shortcuts";
 import { useChatView } from "./chatContext";
 import type { SubagentSummary } from "./hooks/useChat";
@@ -10,25 +11,25 @@ import { openSubagentBeside } from "./subagentPanel";
 
 interface ChatTabsProps {
   subagents: SubagentSummary[];
+  /** Subagents open in a pane of their own: picking one goes to its pane. */
+  inPanes: ReadonlySet<string>;
   /** `"main"`, or the call id of the subagent shown. */
   active: string;
   onPick: (tab: string) => void;
 }
 
-/** Subagent tabs shown at once; the rest are in the "more" menu. */
-const SHOWN = 5;
-
 const WORDS = { running: "running", done: "done", failed: "failed", stopped: "stopped" };
 
 // Main, then one tab per subagent this conversation started, in the order they
-// started (a tab never moves; its mark changes). Past `SHOWN`, the newest are
-// tabs and older ones are a menu away, as is the one you picked from it.
-export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
+// started (a tab never moves; its mark changes). When they don't all fit, the
+// strip is measured (`useTabFit`): the tabs become their status marks, named in
+// their tooltips, and past that the last ones move to a "more" menu.
+export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) {
   const next = useHint("chatNextTab");
-  let shown = subagents.slice(-SHOWN);
-  const picked = subagents.find((s) => s.callId === active);
-  if (picked && !shown.includes(picked)) shown = [picked, ...shown.slice(1)];
-  const rest = subagents.filter((s) => !shown.includes(s));
+  const fitRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const fit = useTabFit(fitRef, moreRef, active);
+  const rest = subagents.filter((s) => fit.out.includes(s.callId));
   const { workspaceId } = useChatView();
   const [menu, setMenu] = useState<{ callId: string; x: number; y: number } | null>(null);
   const openMenu = (callId: string) => (e: MouseEvent<HTMLButtonElement>) => {
@@ -37,52 +38,76 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
     const keyboard = e.clientX === 0 && e.clientY === 0;
     setMenu({ callId, x: keyboard ? r.left : e.clientX, y: keyboard ? r.bottom : e.clientY });
   };
+  const describe = (s: SubagentSummary) =>
+    `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls`;
   return (
     <div className="ac-tabs" role="tablist" aria-label="Main chat and subagents">
-      <Tab id="main" active={active} onPick={onPick} title={`Main chat (${next} for the next tab)`}>
-        <I.Chat size={13} />
-        <span className="ac-tab-label">Main</span>
-      </Tab>
-      {shown.map((s) => (
+      <div className="tab-fit" ref={fitRef}>
         <Tab
-          key={s.callId}
-          id={s.callId}
+          id="main"
+          name="Main"
+          mode={fit.mode("main")}
           active={active}
           onPick={onPick}
-          onContextMenu={openMenu(s.callId)}
-          title={`${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls (right-click to open beside)`}
+          title={`Main chat (${next} for the next tab)`}
         >
-          <SubagentMark status={s.status} pending={s.pending} />
-          <span className="ac-tab-label">{s.label}</span>
-          <span className="tx-run-count">{s.toolCount}</span>
+          <I.Chat size={13} />
+          <span className="ac-tab-label" data-fit-label>
+            Main
+          </span>
         </Tab>
-      ))}
+        {subagents.map((s) => (
+          <Tab
+            key={s.callId}
+            id={s.callId}
+            name={s.label}
+            mode={fit.mode(s.callId)}
+            active={active}
+            onPick={onPick}
+            onContextMenu={openMenu(s.callId)}
+            title={
+              inPanes.has(s.callId)
+                ? `${describe(s)} (open in a pane beside: click to go to it)`
+                : `${describe(s)} (right-click to open beside)`
+            }
+          >
+            <SubagentMark status={s.status} pending={s.pending} />
+            <span className="ac-tab-text" data-fit-label>
+              <span className="ac-tab-label">{s.label}</span>
+              <span className="tx-run-count">{s.toolCount}</span>
+            </span>
+            {inPanes.has(s.callId) && <I.SplitRight size={12} />}
+          </Tab>
+        ))}
+      </div>
       {rest.length > 0 && (
-        <PopMenu
-          align="left"
-          trigger={({ open, toggle }) => (
-            <button
-              type="button"
-              className={`ac-tab more${open ? " on" : ""}`}
-              aria-haspopup="menu"
-              aria-expanded={open}
-              onClick={toggle}
-            >
-              {rest.length} more <I.Chevron size={11} />
-            </button>
-          )}
-          sections={[
-            {
-              title: "Earlier subagents",
-              items: rest.map((s) => ({
-                id: s.callId,
-                label: `${s.label} · ${WORDS[s.status]} · ${s.toolCount} calls`,
-                checked: s.callId === active,
-                onSelect: () => onPick(s.callId),
-              })),
-            },
-          ]}
-        />
+        <div className="tab-fit-more" ref={moreRef}>
+          <PopMenu
+            align="right"
+            trigger={({ open, toggle }) => (
+              <button
+                type="button"
+                className={`ac-tab more${open ? " on" : ""}`}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={toggle}
+              >
+                {rest.length} more <I.Chevron size={11} />
+              </button>
+            )}
+            sections={[
+              {
+                title: "More subagents",
+                items: rest.map((s) => ({
+                  id: s.callId,
+                  label: `${s.label} · ${WORDS[s.status]} · ${s.toolCount} calls`,
+                  checked: s.callId === active,
+                  onSelect: () => onPick(s.callId),
+                })),
+              },
+            ]}
+          />
+        </div>
       )}
       {menu && (
         <ContextMenu
@@ -93,7 +118,7 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
             {
               items: [
                 {
-                  label: "Open beside",
+                  label: inPanes.has(menu.callId) ? "Show its pane" : "Open beside",
                   onSelect: () => openSubagentBeside(workspaceId, menu.callId),
                 },
               ],
@@ -107,6 +132,8 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
 
 function Tab({
   id,
+  name,
+  mode,
   active,
   onPick,
   title,
@@ -114,6 +141,9 @@ function Tab({
   children,
 }: {
   id: string;
+  /** Its full name, for screen readers whether or not the label shows. */
+  name: string;
+  mode: TabFitMode;
   active: string;
   onPick: (tab: string) => void;
   title: string;
@@ -125,8 +155,12 @@ function Tab({
     <button
       type="button"
       role="tab"
+      data-fit-tab={id}
       aria-selected={on}
-      className={`ac-tab${on ? " on" : ""}`}
+      aria-label={name}
+      aria-hidden={mode === "out" || undefined}
+      tabIndex={mode === "out" ? -1 : undefined}
+      className={`ac-tab${on ? " on" : ""}${fitClass(mode)}`}
       onClick={() => onPick(id)}
       onContextMenu={onContextMenu}
       title={title}

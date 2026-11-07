@@ -26,6 +26,19 @@ export function useFollowScroll(content: unknown, extra?: unknown): FollowScroll
     if (el && followingRef.current) el.scrollTop = el.scrollHeight;
   }, [content, extra]);
 
+  // The view shrinking (a notice or a taller composer below it) or its content
+  // growing on its own (a diagram drawn, a card opened) keeps the bottom in view.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (followingRef.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => ro.disconnect();
+  }, []);
+
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;

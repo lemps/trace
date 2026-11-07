@@ -1,4 +1,4 @@
-import { type DragEvent, useEffect, useState } from "react";
+import { type DragEvent, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
@@ -20,6 +20,7 @@ import {
   withoutTab,
 } from "./groupOps";
 import { useLastTab } from "./hooks/useLastTab";
+import { useSessionColumns } from "./hooks/useSessionColumns";
 import { useSessionDiffs } from "./hooks/useSessionDiffs";
 import { useSessionsOverview } from "./hooks/useSessionsOverview";
 import { NewSessionModal } from "./NewSessionModal";
@@ -144,6 +145,9 @@ export function SessionsView() {
     </div>
   );
 
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useSessionColumns(bodyRef);
+
   const nothingAnywhere = active.length === 0 && archived.length === 0 && groups.tabs.length === 0;
 
   return (
@@ -172,7 +176,7 @@ export function SessionsView() {
         }
         onDropSession={(sessionId, tab) => void assign(sessionId, tab, null)}
       />
-      <div className="page-body">
+      <div className="page-body" ref={bodyRef}>
         {nothingAnywhere ? (
           <div className="empty-state">
             <div className="inner">

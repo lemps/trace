@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { I } from "@/components/Icon";
 import { useFollowScroll } from "./hooks/useFollowScroll";
+import { LatestButton } from "./LatestButton";
 import type { ChatTurn } from "./projection";
 import { WorkingRow } from "./TurnBits";
 import { TurnView } from "./TurnView";
@@ -54,11 +54,7 @@ export function ChatList({ turns, working, since, subagents, onInterrupt }: Chat
           {working && <WorkingRow since={since} subagents={subagents} onInterrupt={onInterrupt} />}
         </div>
       </div>
-      {!following && (
-        <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
-          <I.Download size={13} /> Latest
-        </button>
-      )}
+      <LatestButton scrollRef={scrollRef} show={!following} onJump={jumpToLatest} />
     </div>
   );
 }

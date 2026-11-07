@@ -16,6 +16,7 @@ import { useWorkspaceRoot } from "./hooks/useWorkspaceRoot";
 import { isTurnLive } from "./projection";
 import { SubagentView } from "./SubagentView";
 import { useAgentChatStore } from "./store";
+import { openSubagentBeside, useSubagentsInPanes } from "./subagentPanel";
 
 interface ChatAgentPaneProps {
   workspaceId: string;
@@ -55,8 +56,15 @@ export function ChatAgentPane({
   const working = useAgentWorking(workspaceId) && !stopped;
   const running = subagents.filter((s) => s.status === "running").length;
   const stored = useAgentChatStore((s) => s.tab[workspaceId] ?? "main");
-  const tab = stored === "main" || subagents.some((s) => s.callId === stored) ? stored : "main";
-  const setTab = (t: string) => useAgentChatStore.getState().setTab(workspaceId, t);
+  // A subagent open in a pane of its own isn't also a tab here: picking it goes there.
+  const inPanes = useSubagentsInPanes(workspaceId, subagents);
+  const listed = subagents.some((s) => s.callId === stored) && !inPanes.has(stored);
+  const tab = listed ? stored : "main";
+  const setTab = (t: string) => {
+    if (t !== "main" && inPanes.has(t)) openSubagentBeside(workspaceId, t);
+    else useAgentChatStore.getState().setTab(workspaceId, t);
+  };
+  const steppable = subagents.filter((s) => !inPanes.has(s.callId));
   const root = useWorkspaceRoot(workspaceId);
   const view = useMemo<ChatView>(
     () => ({ workspaceId, root, expandAll }),
@@ -69,13 +77,15 @@ export function ChatAgentPane({
       .interrupt(workspaceId)
       .catch((e) => toast.error(`Couldn't interrupt: ${String(e)}`));
   const paneRef = useRef<HTMLDivElement>(null);
-  useChatKeys(paneRef, { working, interrupt, subagents, tab, setTab });
+  useChatKeys(paneRef, { working, interrupt, subagents: steppable, tab, setTab });
 
   return (
     <ChatViewContext.Provider value={view}>
       <div className="ac-pane" ref={paneRef}>
         <ChatHeader info={info} turns={turns} onStop={live ? onStop : undefined} />
-        {subagents.length > 0 && <ChatTabs subagents={subagents} active={tab} onPick={setTab} />}
+        {subagents.length > 0 && (
+          <ChatTabs subagents={subagents} inPanes={inPanes} active={tab} onPick={setTab} />
+        )}
         {/* Main stays mounted under a subagent's tab, so it keeps its place. */}
         <div className="ac-main" hidden={tab !== "main"}>
           {turns.length === 0 ? (
@@ -96,11 +106,14 @@ export function ChatAgentPane({
         </div>
         {tab !== "main" && <SubagentView workspaceId={workspaceId} callId={tab} />}
         {stopped && turns.length > 0 && (
+          // Its own band under the conversation, which scrolls above it.
           <div className="ac-stopped">
-            <span>The agent isn't running. Start it to carry on this conversation.</span>
-            <button type="button" className="btn primary" onClick={onStart}>
-              <I.Bolt size={13} /> Start
-            </button>
+            <div className="ac-stopped-in">
+              <span>The agent isn't running. Start it to carry on this conversation.</span>
+              <button type="button" className="btn primary" onClick={onStart}>
+                <I.Bolt size={13} /> Start
+              </button>
+            </div>
           </div>
         )}
         <Composer

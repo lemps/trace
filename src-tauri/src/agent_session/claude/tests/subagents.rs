@@ -58,6 +58,14 @@ fn parallel_subagents_carry_their_kind_job_and_report() {
         found[1].2.result.as_deref(),
         Some("b\\four.md\nb\\three.txt")
     );
+    // So is the call's own output, which the main agent was handed in the frame.
+    assert_eq!(
+        found[1].1.output.as_deref(),
+        Some("b\\four.md\nb\\three.txt")
+    );
+    assert!(found
+        .iter()
+        .all(|(_, c, _)| !c.output.as_deref().unwrap_or("").contains("hand-back")));
     assert_eq!(run.info.running_subagents, 0);
 }
 

@@ -10,7 +10,6 @@
   height: var(--control-h);
   padding: 0 12px;
   border-bottom: 1px solid var(--border-faint);
-  overflow: hidden;
 }
 .ac-tab {
   display: inline-flex;
@@ -24,10 +23,6 @@
   color: var(--fg-3);
   border-bottom: 1px solid transparent;
   margin-bottom: -1px;
-  flex-shrink: 1;
-}
-.ac-tab:first-child {
-  flex-shrink: 0;
 }
 .ac-tab:hover {
   color: var(--fg-1);
@@ -46,8 +41,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ac-tab.more {
+.ac-tab-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.ac-tab > svg {
   flex-shrink: 0;
+}
+.ac-tab.more {
   color: var(--fg-2);
 }
 .ac-mark {

@@ -14,6 +14,7 @@ import "@/components/error-boundary.css";
 import "@/components/menu.css";
 import "@/components/status-light.css";
 import "@/components/side-panel.css";
+import "@/components/tab-fit.css";
 import "@/app/shell.css";
 import "@/domains/board/board.css";
 import "@/domains/inbox/inbox.css";

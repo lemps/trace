@@ -1,4 +1,5 @@
 import { ChatMarkdown } from "./ChatMarkdown";
+import { unwrapHandBack } from "./handBack";
 import { commandOf, patchOf, str } from "./toolSummary";
 import type { ToolCall } from "./types";
 
@@ -53,7 +54,7 @@ export function ToolBody({ call, hasDiff }: { call: ToolCall; hasDiff: boolean }
       <InputView call={call} hasDiff={hasDiff} />
       {call.output && PROSE_OUTPUT.has(call.name) && !failed ? (
         <div className="tx-code tx-prose tx-result">
-          <ChatMarkdown text={call.output} />
+          <ChatMarkdown text={unwrapHandBack(call.output)} />
         </div>
       ) : call.output ? (
         <pre className={`tx-code tx-result${failed ? " error" : ""}`}>{trimLines(call.output)}</pre>

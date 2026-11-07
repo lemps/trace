@@ -8,7 +8,17 @@
 }
 .session-row {
   display: grid;
-  grid-template-columns: 84px minmax(180px, 2fr) minmax(0, 1.4fr) 128px 104px 64px 44px;
+  /* Name first: it grows to the widest title on the page (measured, see
+     useSessionColumns) before repo · branch takes what's left; PR, diff and age
+     are as wide as their widest content. Fallbacks until the first measure. */
+  grid-template-columns:
+    84px
+    minmax(min(140px, var(--sr-name-w, 180px)), var(--sr-name-w, 2fr))
+    minmax(72px, 1fr)
+    var(--sr-pr-w, 128px)
+    var(--sr-diff-w, 104px)
+    var(--sr-time-w, 64px)
+    44px;
   align-items: center;
   gap: 12px;
   height: 36px;

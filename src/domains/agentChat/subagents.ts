@@ -1,3 +1,4 @@
+import { unwrapHandBack } from "./handBack.ts";
 import type { ChatItem, ToolItem } from "./projection.ts";
 import { firstLine, str, summarizeTool } from "./toolSummary.ts";
 import type { JournalRow } from "./types.ts";
@@ -107,7 +108,9 @@ export function finishThread(t: SubagentThread, isPending: (i: ChatItem) => bool
   t.toolCount = Math.max(calls, s?.toolUses ?? 0);
   t.pending = t.items.some(isPending);
   const said = lastWords(t.items);
-  t.result = s?.result ?? (t.status === "done" ? (said ?? (call.output?.trim() || null)) : null);
+  const report = s?.result ?? (t.status === "done" ? (said ?? call.output) : null);
+  // Journals saved before the adapter unwrapped it carry Claude's hand-back frame.
+  t.result = report ? unwrapHandBack(report).trim() || null : null;
   t.activity = latestStep(t.items) ?? s?.activity ?? (t.status === "running" ? "Starting…" : "");
 }
 
