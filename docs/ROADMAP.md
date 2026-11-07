@@ -13,10 +13,13 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 
 - [~] **Windows and Linux builds:** the current priority. See
       [the plan](WINDOWS_LINUX_PLAN.md).
-- [x] **GitHub integration:** browse your repos through `gh`, and clone one into a folder you choose,
-      added to trace's repositories and set up for agents. ([#11](https://github.com/noble1911/trace/pull/11))
+- [x] **GitHub integration:** browse your repos and clone one into a folder you choose, added to
+      trace's repositories and set up for agents. ([#11](https://github.com/noble1911/trace/pull/11))
+      trace now holds its own GitHub token (paste, import from `gh`, or device flow), no `gh` needed.
 - [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
-      Vercel integration. This comes after the Windows and Linux builds.
+      Vercel integration. This comes after the Windows and Linux builds. A sandbox checks its repo out
+      with `github::checkout::RepoCheckout` (clone at a branch with trace's token, then run setup),
+      which has no desktop dependencies.
 - [ ] **iPhone and Android apps.**
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.

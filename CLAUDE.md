@@ -50,7 +50,7 @@ src/
 └── domains/
     ├── issues/             # provider-agnostic tracker connection (store, types)
     ├── integrations/       # the Integrations page: a card per service, connect/disconnect dialog
-    ├── github/             # GitHub repo browser: list via `gh`, clone, post-clone setup step
+    ├── github/             # GitHub sign-in (trace's own token), repo browser, clone, post-clone setup step
     ├── repos/              # the repo model (remote + checkouts) and its worktree setup editor
     ├── board/              # Board, Column, Card, filters; store also tracks agent run-state + PTY buffers
     ├── agent/              # AgentDetail + tabs (chat/ticket/files/terminal/tests/PR), xterm registry, defaults
@@ -157,8 +157,11 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
 - **Repositories:** `repos.json` lists the local folders agents run in; `repo_catalog/` adds what's known
   about each — its remote, its checkouts (local today; a tagged `Checkout` so remote execution can add a
   kind), default branch, and worktree setup (commands + files copied from the main checkout), run on its
-  own thread after `git::create_worktree` makes a worktree. The GitHub integration (`github/account.rs`,
-  `repo_list.rs`, `clone.rs`) lists and clones repos through `gh` only — trace holds no GitHub token.
+  own thread after `git::create_worktree` makes a worktree. The GitHub integration signs trace in with
+  its own token (`github/token.rs`: pasted PAT, a one-off copy of `gh auth token`, or OAuth device flow;
+  a user-only file like Jira's) and lists (`repo_list.rs`) and clones (`clone.rs`) over the REST API, no
+  `gh`. Cloning goes through `github/checkout.rs`, the portable clone-and-setup step (token only in the
+  clone's env, never in args, URL or `.git/config`). PR watching, checks and threads still use `gh`.
 - **Agent workspace tabs:** beyond the chat PTY, each agent has a ticket view, a diff/file viewer
   (`commands/diff.rs`), a plain shell terminal, a test runner (`commands/tests.rs`, auto-detects the toolchain),
   an open-in-editor action (`commands/editor.rs`), and a PR pane.

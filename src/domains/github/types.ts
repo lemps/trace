@@ -1,18 +1,34 @@
 import type { RemoteRepo, SetupConfig } from "@/domains/repos/types";
 
-// Shapes from `commands/github.rs`. trace holds no GitHub token: all of this comes
-// from the user's `gh` CLI.
+// Shapes from `commands/github.rs`. trace signs in with its own GitHub token,
+// which stays on the Rust side: none of these carry it.
+
+/** How trace got its token. */
+export type GitHubSource = "pasted" | "gh" | "device";
 
 /** The GitHub integration's state. */
-export interface GhStatus {
-  /** `gh` was found. */
-  installed: boolean;
-  /** The active, working github.com account. */
+export interface GitHubStatus {
+  /** Who trace's token belongs to; null when signed out. */
   login: string | null;
-  /** Every signed-in login, active first. */
-  accounts: string[];
-  /** Why there's no working account when gh lists one (e.g. an expired token). */
+  source: GitHubSource | null;
+  /** A classic or OAuth token's scopes; null for fine-grained tokens. */
+  scopes: string[] | null;
+  /** When the token expires, as GitHub reports it. */
+  expiresAt: string | null;
+  /** gh is installed, so its login can be imported once. */
+  ghAvailable: boolean;
+  /** Signing in through the browser (OAuth device flow) is set up. */
+  deviceFlow: boolean;
+  /** Why the saved token isn't working right now. */
   problem: string | null;
+}
+
+/** A device sign-in in progress: the code to enter on GitHub. */
+export interface DeviceStart {
+  userCode: string;
+  verificationUri: string;
+  /** Seconds until the code expires. */
+  expiresIn: number;
 }
 
 /** A repo in the browser. */

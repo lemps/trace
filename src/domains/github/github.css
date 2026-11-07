@@ -134,15 +134,22 @@
   gap: 16px;
   overflow-y: auto;
 }
-.gh-steps {
-  margin: 0;
-  padding-left: 20px;
+.gh-signin-options {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
-  font-size: var(--text-ui);
-  line-height: 1.5;
-  color: var(--fg-1);
+}
+.gh-device-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-title);
+  letter-spacing: 0.08em;
+  color: var(--fg-0);
+}
+.gh-token-facts {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
 }
 .gh-setup-head {
   display: flex;

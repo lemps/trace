@@ -1,9 +1,11 @@
-//! The repos an owner (the user, or one of their orgs) has on GitHub, from
-//! `gh repo list`, marked with where each is already checked out.
+//! The repos an owner (the user, or one of their orgs) has on GitHub, from the
+//! REST API with trace's token, marked with where each is already checked out.
 
 use serde::Serialize;
 use serde_json::Value;
 
+use super::api;
+use super::token::Token;
 use crate::repo_catalog::model::RemoteRepo;
 
 /// One repo, as the browser lists it.
@@ -27,45 +29,38 @@ pub struct GhRepo {
     pub local_path: Option<String>,
 }
 
-/// The `--json` fields [`parse_repo_list`] reads.
-const FIELDS: &str = "name,nameWithOwner,owner,description,isPrivate,isFork,isArchived,url,\
-defaultBranchRef,updatedAt,primaryLanguage";
-
-/// gh's own cap is 1000, more than anyone browses by scrolling; search narrows it.
-const LIMIT: &str = "1000";
-
-/// Parse `gh repo list --json <FIELDS>`.
-pub fn parse_repo_list(json: &str) -> Result<Vec<GhRepo>, String> {
-    let v: Value = serde_json::from_str(json).map_err(|e| format!("Unexpected gh output: {e}"))?;
-    let items = v.as_array().ok_or("Unexpected gh output: not a list")?;
-    let text = |item: &Value, path: &str| {
+/// One REST repository object → a [`GhRepo`]. None without a `full_name`.
+fn parse_repo(item: &Value) -> Option<GhRepo> {
+    let text = |path: &str| {
         item.pointer(path)
             .and_then(Value::as_str)
             .filter(|s| !s.is_empty())
             .map(str::to_string)
     };
-    let flag = |item: &Value, key: &str| item.get(key).and_then(Value::as_bool).unwrap_or(false);
-    Ok(items
-        .iter()
-        .filter_map(|item| {
-            let full_name = text(item, "/nameWithOwner")?;
-            let (owner, name) = full_name.split_once('/')?;
-            Some(GhRepo {
-                owner: text(item, "/owner/login").unwrap_or_else(|| owner.to_string()),
-                name: text(item, "/name").unwrap_or_else(|| name.to_string()),
-                description: text(item, "/description"),
-                is_private: flag(item, "isPrivate"),
-                is_fork: flag(item, "isFork"),
-                is_archived: flag(item, "isArchived"),
-                url: text(item, "/url").unwrap_or_default(),
-                default_branch: text(item, "/defaultBranchRef/name"),
-                updated_at: text(item, "/updatedAt").unwrap_or_default(),
-                language: text(item, "/primaryLanguage/name"),
-                local_path: None,
-                full_name,
-            })
-        })
-        .collect())
+    let flag = |key: &str| item.get(key).and_then(Value::as_bool).unwrap_or(false);
+    let full_name = text("/full_name")?;
+    let (owner, name) = full_name.split_once('/')?;
+    Some(GhRepo {
+        owner: text("/owner/login").unwrap_or_else(|| owner.to_string()),
+        name: text("/name").unwrap_or_else(|| name.to_string()),
+        description: text("/description"),
+        is_private: flag("private"),
+        is_fork: flag("fork"),
+        is_archived: flag("archived"),
+        url: text("/html_url").unwrap_or_default(),
+        default_branch: text("/default_branch"),
+        updated_at: text("/pushed_at")
+            .or_else(|| text("/updated_at"))
+            .unwrap_or_default(),
+        language: text("/language"),
+        local_path: None,
+        full_name,
+    })
+}
+
+/// Parse the items of a REST repo list (all pages joined).
+pub fn parse_repos(items: &[Value]) -> Vec<GhRepo> {
+    items.iter().filter_map(parse_repo).collect()
 }
 
 /// Set `local_path` on each repo that one of `known` (remote, checkout) is a clone of.
@@ -81,54 +76,57 @@ pub fn mark_local(repos: &mut [GhRepo], known: &[(RemoteRepo, String)]) {
     }
 }
 
-/// Org logins from `gh api user/orgs --jq '.[].login'`, one per line.
-pub fn parse_org_lines(text: &str) -> Vec<String> {
-    text.lines()
-        .map(str::trim)
-        .filter(|l| !l.is_empty())
+/// The `login`s in a REST list of orgs (or users).
+pub fn parse_logins(items: &[Value]) -> Vec<String> {
+    items
+        .iter()
+        .filter_map(|o| o.get("login").and_then(Value::as_str))
+        .filter(|l| is_login(l))
         .map(str::to_string)
         .collect()
 }
 
-fn gh(args: &[&str]) -> Result<String, String> {
-    let mut cmd = crate::claude::discovery::command("gh");
-    cmd.args(args);
-    if let Some(home) = dirs::home_dir() {
-        // Not inside some repo, where gh would infer one.
-        cmd.current_dir(home);
+/// The path of the first page of `owner`'s repos (the token's own user when None).
+pub fn first_page(owner: Option<&str>) -> Result<String, String> {
+    match owner {
+        None => Ok("/user/repos?affiliation=owner&sort=pushed&per_page=100".into()),
+        Some(o) if is_login(o) => Ok(format!("/orgs/{o}/repos?type=all&sort=pushed&per_page=100")),
+        Some(o) => Err(format!("{o} isn't a GitHub account name.")),
     }
-    let out = cmd.output().map_err(|e| format!("Couldn't run gh: {e}"))?;
-    if !out.status.success() {
-        return Err(String::from_utf8_lossy(&out.stderr).trim().to_string());
-    }
-    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
-/// `owner`'s repos (the active account's own when `None`), most recently updated first.
-pub fn list(owner: Option<&str>) -> Result<Vec<GhRepo>, String> {
-    let mut args = vec!["repo", "list"];
-    if let Some(owner) = owner {
-        if !is_login(owner) {
-            return Err(format!("{owner} isn't a GitHub account name."));
-        }
-        args.push(owner);
-    }
-    args.extend(["--limit", LIMIT, "--json", FIELDS]);
-    let mut repos = parse_repo_list(&gh(&args)?)?;
+/// `owner`'s repos (the token's own when `None`), most recently pushed first.
+pub async fn list(token: &Token, owner: Option<&str>) -> Result<Vec<GhRepo>, String> {
+    let items = api::get_all(token, &first_page(owner)?).await?;
+    let mut repos = parse_repos(&items);
     repos.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
     Ok(repos)
 }
 
-/// The orgs the active account belongs to. Empty if gh lacks `read:org`.
-pub fn orgs() -> Vec<String> {
-    gh(&["api", "user/orgs", "--paginate", "--jq", ".[].login"])
-        .map(|t| parse_org_lines(&t))
-        .unwrap_or_default()
+/// The orgs the token can see: `/user/orgs`, plus the owners of org repos it
+/// reaches as a member (a fine-grained token may list no orgs but still see
+/// their repos). Empty when it can see neither.
+pub async fn orgs(token: &Token, login: &str) -> Vec<String> {
+    let mut out = match api::get_all(token, "/user/orgs?per_page=100").await {
+        Ok(items) => parse_logins(&items),
+        Err(_) => Vec::new(),
+    };
+    let member = "/user/repos?affiliation=organization_member&per_page=100";
+    if let Ok(items) = api::get_all(token, member).await {
+        for repo in parse_repos(&items) {
+            if !repo.owner.eq_ignore_ascii_case(login)
+                && !out.iter().any(|o| o.eq_ignore_ascii_case(&repo.owner))
+            {
+                out.push(repo.owner);
+            }
+        }
+    }
+    out
 }
 
 /// A GitHub user/org login: letters, digits and inner hyphens, plus `_` for
-/// Enterprise Managed Users (`jdoe_acme`). Checked before it goes on a command
-/// line, so it can never read as a flag.
+/// Enterprise Managed Users (`jdoe_acme`). Checked before it goes in a URL or
+/// on a command line, so it can never read as a flag or a path.
 pub fn is_login(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= 100
@@ -142,46 +140,61 @@ pub fn is_login(s: &str) -> bool {
 mod tests {
     use super::*;
 
-    const LIST: &str = r#"[
-      {"defaultBranchRef":{"name":"main"},"description":"Kanban AI sessions","isArchived":false,
-       "isFork":false,"isPrivate":false,"name":"trace","nameWithOwner":"noble1911/trace",
-       "owner":{"id":"X","login":"noble1911"},"primaryLanguage":{"name":"TypeScript"},
-       "updatedAt":"2026-11-06T21:29:58Z","url":"https://github.com/noble1911/trace"},
-      {"defaultBranchRef":null,"description":"","isArchived":true,"isFork":true,"isPrivate":true,
-       "name":"empty","nameWithOwner":"noble1911/empty","owner":{"login":"noble1911"},
-       "primaryLanguage":null,"updatedAt":"2025-01-01T00:00:00Z","url":"https://github.com/noble1911/empty"},
+    fn page() -> Vec<Value> {
+        serde_json::from_str(
+            r#"[
+      {"name":"trace","full_name":"noble1911/trace","owner":{"login":"noble1911"},
+       "description":"Kanban AI sessions","private":false,"fork":false,"archived":false,
+       "html_url":"https://github.com/noble1911/trace","default_branch":"main","size":900,
+       "pushed_at":"2026-11-06T21:29:58Z","updated_at":"2026-11-01T00:00:00Z","language":"TypeScript"},
+      {"name":"empty","full_name":"noble1911/empty","owner":{"login":"noble1911"},
+       "description":"","private":true,"fork":true,"archived":true,"size":0,
+       "html_url":"https://github.com/noble1911/empty","default_branch":null,
+       "pushed_at":null,"updated_at":"2025-01-01T00:00:00Z","language":null},
       {"name":"broken"}
-    ]"#;
+    ]"#,
+        )
+        .unwrap()
+    }
 
     #[test]
-    fn parses_gh_repo_list_json() {
-        let repos = parse_repo_list(LIST).unwrap();
-        assert_eq!(repos.len(), 2, "an item without nameWithOwner is skipped");
+    fn parses_rest_repos() {
+        let repos = parse_repos(&page());
+        assert_eq!(repos.len(), 2, "an item without full_name is skipped");
         let t = &repos[0];
         assert_eq!(t.full_name, "noble1911/trace");
         assert_eq!((t.owner.as_str(), t.name.as_str()), ("noble1911", "trace"));
         assert_eq!(t.default_branch.as_deref(), Some("main"));
         assert_eq!(t.language.as_deref(), Some("TypeScript"));
-        assert_eq!(t.description.as_deref(), Some("Kanban AI sessions"));
+        assert_eq!(t.updated_at, "2026-11-06T21:29:58Z", "last push wins");
         assert!(!t.is_private && !t.is_fork && !t.is_archived);
-        // An empty repo has no default branch; an empty description is none.
         let e = &repos[1];
         assert_eq!(e.default_branch, None);
         assert_eq!(e.description, None);
-        assert_eq!(e.language, None);
+        assert_eq!(e.updated_at, "2025-01-01T00:00:00Z");
         assert!(e.is_private && e.is_fork && e.is_archived);
     }
 
     #[test]
-    fn rejects_non_list_output() {
-        assert!(parse_repo_list(r#"{"message":"nope"}"#).is_err());
-        assert!(parse_repo_list("could not connect").is_err());
-        assert_eq!(parse_repo_list("[]").unwrap(), vec![]);
+    fn pages_join_into_one_list() {
+        let mut both = page();
+        both.extend(page());
+        assert_eq!(parse_repos(&both).len(), 4);
+    }
+
+    #[test]
+    fn first_pages() {
+        assert!(first_page(None).unwrap().starts_with("/user/repos?"));
+        assert_eq!(
+            first_page(Some("acme")).unwrap(),
+            "/orgs/acme/repos?type=all&sort=pushed&per_page=100"
+        );
+        assert!(first_page(Some("../user")).is_err());
     }
 
     #[test]
     fn marks_repos_already_checked_out() {
-        let mut repos = parse_repo_list(LIST).unwrap();
+        let mut repos = parse_repos(&page());
         let remote = |host: &str, owner: &str, name: &str| RemoteRepo {
             host: host.into(),
             owner: owner.into(),
@@ -206,11 +219,11 @@ mod tests {
     }
 
     #[test]
-    fn org_lines_and_logins() {
-        assert_eq!(
-            parse_org_lines("acme\n\n  beta-co \n"),
-            vec!["acme", "beta-co"]
-        );
+    fn org_logins_and_login_rules() {
+        let orgs: Vec<Value> =
+            serde_json::from_str(r#"[{"login":"acme"},{"login":"beta-co"},{"login":"-bad"},{}]"#)
+                .unwrap();
+        assert_eq!(parse_logins(&orgs), vec!["acme", "beta-co"]);
         assert!(is_login("noble1911") && is_login("beta-co"));
         assert!(
             is_login("jdoe_acme"),
