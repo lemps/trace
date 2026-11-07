@@ -49,6 +49,7 @@ export function SessionRow(props: SessionRowProps) {
   const { depth, dropMark, onKeyDown } = props.ordering;
   const createdBy = creatorOf(session);
   const [renaming, setRenaming] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const companions = companionsOf(session);
   const branch = meaningfulBranch(session, overview?.branch ?? null);
   const where = [overview ? basename(overview.repo) : null, branch].filter(Boolean).join(" · ");
@@ -65,12 +66,13 @@ export function SessionRow(props: SessionRowProps) {
     // WKWebView won't start a drag session without data (see board/Board.tsx).
     e.dataTransfer.setData("text/plain", session.id);
     setRowDragging(true);
+    setDragging(true);
   };
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: hosts nested buttons; HTML forbids nested interactives
     <div
-      className={`session-row${dropMark ? ` drop-${dropMark}` : ""}`}
+      className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}`}
       data-sid={session.id}
       role="button"
       tabIndex={0}
@@ -79,6 +81,7 @@ export function SessionRow(props: SessionRowProps) {
       onDragEnd={() => {
         sessionsDrag.current = null;
         setRowDragging(false);
+        setDragging(false);
       }}
       onClick={renaming ? undefined : onOpen}
       onKeyDown={(e) => {

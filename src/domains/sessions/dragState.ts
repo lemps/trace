@@ -16,6 +16,17 @@ export function setRowDragging(on: boolean): void {
   if (rowDragging === on) return;
   rowDragging = on;
   for (const l of listeners) l();
+  // A row dropped into another list unmounts, and then never gets its dragend:
+  // any drop or drag end on the page ends it too (after the drop handlers run).
+  if (on) {
+    const end = () => {
+      window.removeEventListener("drop", end, true);
+      window.removeEventListener("dragend", end, true);
+      setTimeout(() => setRowDragging(false), 0);
+    };
+    window.addEventListener("drop", end, true);
+    window.addEventListener("dragend", end, true);
+  }
 }
 
 export function useRowDragging(): boolean {

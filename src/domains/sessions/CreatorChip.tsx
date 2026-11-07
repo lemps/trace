@@ -18,7 +18,7 @@ export function CreatorChip({ createdBy, variant = "row" }: CreatorChipProps) {
   if (createdBy.kind === "user") return null;
   const label = creatorLabel(createdBy);
   const lead = variant === "detail" ? "Started by" : "by";
-  const className = `creator-chip ${variant}`;
+  const className = `creator-chip ${variant === "detail" ? "in-header" : "in-row"}`;
   if (createdBy.kind === "orchestrator") {
     return (
       <span className={className} title="Started by the orchestrator">

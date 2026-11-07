@@ -118,10 +118,10 @@ button.creator-chip:hover {
 button.creator-chip:focus-visible {
   outline: 1px solid var(--c-accent);
 }
-.creator-chip.detail {
+.creator-chip.in-header {
   max-width: 320px;
 }
-.creator-chip.detail .creator-name {
+.creator-chip.in-header .creator-name {
   color: var(--fg-2);
 }
 
@@ -160,12 +160,12 @@ button.creator-chip:focus-visible {
 }
 
 /* In a session's header, on the line above the title. */
-.detail-top .creator-chip.detail {
+.detail-top .creator-chip.in-header {
   margin-left: 10px;
   vertical-align: baseline;
 }
 
-/* In a session's header, on the line above the title. */
-.detail-top .creator-chip.detail {
-  margin-left: 10px;
+/* The row being dragged stays in place, dimmed, until it lands. */
+.session-row.dragging {
+  opacity: 0.45;
 }

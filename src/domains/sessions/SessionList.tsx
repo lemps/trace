@@ -1,4 +1,11 @@
-import { type DragEvent, type KeyboardEvent, type ReactNode, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "@/app/toast";
 import type { AgentLight } from "@/domains/live/types";
 import { isShortcut } from "@/platform/shortcuts";
@@ -52,6 +59,10 @@ export function SessionList(props: SessionListProps) {
   const [dropBefore, setDropBefore] = useState<string | null | undefined>(undefined);
   const listRef = useRef<HTMLDivElement>(null);
   const shownRef = useRef<string[]>([]);
+  // A drag cancelled (Esc) or dropped elsewhere leaves no indicator behind.
+  useEffect(() => {
+    if (!dragging) setDropBefore(undefined);
+  }, [dragging]);
 
   const placed = sortSessions(items, prefs.sort, { lights, lastActive, order: prefs.order });
   const byId = new Map<string, Placed>(placed.map((p) => [p.session.id, p]));
@@ -81,10 +92,11 @@ export function SessionList(props: SessionListProps) {
     if (next.join(" ") !== ids.join(" ")) commit(next, prefs.sort);
   };
 
-  /** The row a drop at this height lands before (null = after the last). */
-  const beforeAt = (clientY: number): string | null => {
+  /** The row a drop at this height lands before (null = after the last), skipping the dragged one. */
+  const beforeAt = (clientY: number, dragId: string): string | null => {
     const els = listRef.current?.querySelectorAll<HTMLElement>("[data-sid]") ?? [];
     for (const el of els) {
+      if (el.dataset.sid === dragId) continue;
       const r = el.getBoundingClientRect();
       if (clientY < r.top + r.height / 2) return el.dataset.sid ?? null;
     }
@@ -100,10 +112,11 @@ export function SessionList(props: SessionListProps) {
   };
 
   const onDragOver = (e: DragEvent) => {
-    if (!accepts()) return;
+    const drag = accepts();
+    if (!drag) return;
     e.preventDefault();
     e.stopPropagation();
-    setDropBefore(beforeAt(e.clientY));
+    setDropBefore(beforeAt(e.clientY, drag.id));
   };
   const onDragLeave = (e: DragEvent) => {
     if (!listRef.current?.contains(e.relatedTarget as Node | null)) setDropBefore(undefined);
@@ -116,7 +129,7 @@ export function SessionList(props: SessionListProps) {
     e.stopPropagation();
     sessionsDrag.current = null;
     // From what's on screen now, so a session that appeared mid-drag keeps its place.
-    const next = insertBefore(ids, drag.id, beforeAt(e.clientY));
+    const next = insertBefore(ids, drag.id, beforeAt(e.clientY, drag.id));
     if (!drag.inList) onMoveIn(drag.id);
     if (next.join(" ") !== ids.join(" ") || !drag.inList) commit(next, prefs.sort);
   };

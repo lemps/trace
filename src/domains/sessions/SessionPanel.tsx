@@ -45,7 +45,7 @@ export function SessionPanel({
         <div className="detail-right">
           {hasPr && <PrRailSection urls={prUrls} />}
           <StartedSessionsSection workspaceId={sessionId} />
-          <TurnSection workspaceId={activeWorkspaceId} hasPr />
+          <TurnSection workspaceId={activeWorkspaceId} hasPr={hasPr} />
           <WorkspaceSection workspaceId={sessionId} turnIds={turnIds} refreshKey={running} />
         </div>
       ),

@@ -213,7 +213,7 @@ async function start(input: unknown, caller: string): Promise<string> {
   const remote = bool(input, "remote_control");
   const cli: AgentCli = remote ? "claude" : str(input, "cli") === "codex" ? "codex" : agentCli();
   const repo = await resolveRepo(str(input, "repo"));
-  const createdBy = creatorFromCaller(caller);
+  const createdBy = await creatorFromCaller(caller);
   const session = await createSession(title, cli, repo, agentProvider(), remote, null, createdBy);
   useSessionsStore.getState().adopt(session);
   activity.log({
