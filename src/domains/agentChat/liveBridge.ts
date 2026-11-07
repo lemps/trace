@@ -1,5 +1,10 @@
 import { useBoardStore } from "@/domains/board/store";
-import { askIsOver, noteAgentTurn, noteTurnOver } from "@/domains/board/waitingNotify";
+import {
+  askIsOver,
+  noteAgentTurn,
+  noteTurnOver,
+  settleBackground,
+} from "@/domains/board/waitingNotify";
 import { noteLiveAsk } from "@/domains/live/sync";
 import { useAgentChatStore } from "./store";
 import type { JournalRow, SessionInfo } from "./types";
@@ -26,6 +31,8 @@ export function noteChatInfo(workspaceId: string, info: SessionInfo): void {
     if (prev) board.noteUserTurn(workspaceId);
     board.setActivity(workspaceId, "working");
   } else if (!now && was === true) {
+    // Its own count is the truth: a hook's "background tasks" may be stale.
+    settleBackground(workspaceId);
     // The turn's end cancels what it still asked, whichever arrives first.
     if (open.delete(workspaceId)) askIsOver(workspaceId);
     noteTurnOver(workspaceId);

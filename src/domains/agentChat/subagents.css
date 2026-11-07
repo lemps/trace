@@ -161,7 +161,6 @@
   font-size: var(--text-meta);
   line-height: 1.45;
   color: var(--fg-3);
-  white-space: pre-line;
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;

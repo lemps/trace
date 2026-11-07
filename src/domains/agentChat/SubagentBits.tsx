@@ -44,10 +44,28 @@ export function SubagentMark({ status, pending }: { status: SubagentStatus; pend
   return <StatusLight light="stopped" label="Stopped" />;
 }
 
-/** How long it's run: ticking while it runs, its reported time once over. */
+/**
+ * How long it's run: ticking while it runs, its reported time once it ends. A
+ * stopped one's last report is from before it stopped, so it shows none.
+ */
 export function useElapsed(thread: SubagentThread): string | null {
   const running = thread.status === "running";
   const now = useNow(running);
   if (running) return formatDuration(Math.max(0, now - thread.startedAt));
-  return thread.durationMs !== null ? formatDuration(thread.durationMs) : null;
+  if (thread.status === "stopped" || thread.durationMs === null) return null;
+  return formatDuration(thread.durationMs);
+}
+
+/** A report as a card's two lines: plain text, its lines run together. */
+export function plainLine(text: string): string {
+  return text
+    .split("\n")
+    .map((l) =>
+      l
+        .replace(/^\s*(?:[-*+]|\d+\.|#+)\s+/, "")
+        .replace(/`+|\*\*|__/g, "")
+        .trim()
+    )
+    .filter(Boolean)
+    .join(" · ");
 }

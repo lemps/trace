@@ -5,7 +5,7 @@ import { ApprovalCard } from "./ApprovalCard";
 import { useChatActions } from "./actions";
 import { useChatView } from "./chatContext";
 import type { ToolItem } from "./projection";
-import { SubagentStatusWord, useElapsed } from "./SubagentBits";
+import { plainLine, SubagentStatusWord, useElapsed } from "./SubagentBits";
 import { useAgentChatStore } from "./store";
 import type { SubagentThread } from "./subagents";
 
@@ -26,7 +26,7 @@ function CardBody({ item }: { item: ToolItem }) {
       .catch((e) => toast.error(`Couldn't stop the subagent: ${String(e)}`));
   const running = thread.status === "running";
   const asks = pendingAsks(thread);
-  const line = running ? thread.activity : (thread.result ?? thread.activity);
+  const line = plainLine(running ? thread.activity : (thread.result ?? thread.activity));
   return (
     <div className={`ac-agent ${thread.status}${thread.pending ? " pending" : ""}`}>
       <div className="ac-agent-top">
