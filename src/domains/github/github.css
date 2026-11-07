@@ -147,7 +147,7 @@
   letter-spacing: 0.08em;
   color: var(--fg-0);
 }
-.gh-token-facts {
+.gh-note {
   font-size: var(--text-meta);
   color: var(--fg-3);
 }

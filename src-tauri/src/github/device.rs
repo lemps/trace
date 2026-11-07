@@ -102,6 +102,10 @@ pub async fn start() -> Result<DeviceStart, String> {
     ) else {
         return Err(text("error_description").unwrap_or_else(|| "GitHub refused to start.".into()));
     };
+    if !uri.starts_with("https://github.com/") {
+        // The renderer opens it in the browser, so only ever GitHub's own page.
+        return Err("GitHub sent an unexpected sign-in page.".into());
+    }
     let expires_in = num("expires_in").unwrap_or(900);
     let mut f = flow();
     if f.generation != generation {

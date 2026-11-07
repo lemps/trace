@@ -45,7 +45,7 @@ export function GitHubSignIn() {
         </div>
       )}
       {status?.ghAvailable && (
-        <div className="hint">
+        <div className="gh-note">
           Use my gh login copies the GitHub CLI's token once; trace doesn't need gh after that.
         </div>
       )}

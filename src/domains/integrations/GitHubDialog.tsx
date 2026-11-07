@@ -49,7 +49,7 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
                   {login}
                   {status.source && ` · ${SOURCE[status.source]}`}
                 </div>
-                {working && <div className="gh-token-facts">{tokenFacts(status)}</div>}
+                {working && <div className="gh-note">{tokenFacts(status)}</div>}
               </>
             )}
           </div>
