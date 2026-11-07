@@ -1,0 +1,171 @@
+/* ============ Sessions page: sort menus, manual order, who started a session ============ */
+
+/* A list's sort trigger: quiet, naming the sort. The unsectioned list carries it
+   in a slim head row; a section at the end of its header. */
+.sl-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 10px;
+  margin-bottom: 2px;
+}
+.sec-sort {
+  margin-left: auto;
+}
+.sl-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--control-h-xs);
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--fg-3);
+}
+.sl-sort:hover,
+.sl-sort.open {
+  color: var(--fg-1);
+  background: var(--bg-2);
+}
+/* The menu opens inside a section header, whose type is uppercase labels. */
+.sec-head .pop-menu-pop {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: default;
+}
+
+/* Reordering: a grip in the row's gutter on hover, and an accent line where a
+   dragged row will land. */
+.session-row {
+  position: relative;
+}
+.sr-grip {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--fg-4);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 0.12s ease;
+}
+.session-row:hover .sr-grip,
+.session-row:focus-visible .sr-grip {
+  opacity: 1;
+}
+.session-row.drop-before::before,
+.session-row.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--c-accent);
+  pointer-events: none;
+}
+.session-row.drop-before::before {
+  top: -1px;
+}
+.session-row.drop-after::after {
+  bottom: -1px;
+}
+.sl-drop-empty {
+  height: 2px;
+  margin: 8px 6px;
+  border-radius: 1px;
+  background: var(--c-accent);
+}
+
+/* Sorted by "Started by": a child sits indented under its parent. */
+.sr-indent {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  color: var(--fg-4);
+}
+
+/* "by <parent>": quiet in a row, a link in a detail header. */
+.creator-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 220px;
+  flex-shrink: 1;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+.creator-chip .creator-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.creator-chip {
+  padding: 1px 4px;
+  margin: -1px -4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+button.creator-chip:hover {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+button.creator-chip:focus-visible {
+  outline: 1px solid var(--c-accent);
+}
+.creator-chip.in-header {
+  max-width: 320px;
+}
+.creator-chip.in-header .creator-name {
+  color: var(--fg-2);
+}
+
+/* A parent's side panel: the sessions it started. */
+.started-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.started-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+  text-align: left;
+}
+.started-item:hover {
+  background: var(--bg-2);
+}
+.started-item .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.started-item .age {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+
+/* In a session's header, on the line above the title. */
+.detail-top .creator-chip.in-header {
+  margin-left: 10px;
+  vertical-align: baseline;
+}
+
+/* The row being dragged stays in place, dimmed, until it lands. */
+.session-row.dragging {
+  opacity: 0.45;
+}

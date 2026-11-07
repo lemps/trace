@@ -201,4 +201,16 @@ describe("sessionSnapshotLines", () => {
       sessionSnapshotLines(stats, NOW).join("\n")
     );
   });
+
+  it("says who started a session when it wasn't the user", () => {
+    const child = session("c", {
+      title: "Child",
+      createdBy: { kind: "agent", workspaceId: "a", parent: "session", label: "Fix login" },
+    });
+    const stats = computeSessionStats(input({ sessions: [session("a"), child] }));
+    const lines = sessionSnapshotLines(stats, NOW);
+    const line = (id: string) => lines.find((x) => x.startsWith(`- ${id} `)) ?? "";
+    assert.match(line("c"), /claude=stopped · started by session "Fix login" · active/);
+    assert.doesNotMatch(line("a"), /started by/);
+  });
 });

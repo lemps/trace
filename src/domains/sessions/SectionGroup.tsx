@@ -14,6 +14,8 @@ interface SectionGroupProps {
   onDropSession: (sessionId: string) => void;
   /** Another section's header was dropped on this one (reorder before it). */
   onDropSection: (sectionId: string) => void;
+  /** This section's sort menu, at the end of its header. */
+  sortMenu: ReactNode;
   children: ReactNode;
 }
 
@@ -27,6 +29,7 @@ export function SectionGroup({
   onDelete,
   onDropSession,
   onDropSection,
+  sortMenu,
   children,
 }: SectionGroupProps) {
   const [over, setOver] = useState(false);
@@ -111,6 +114,7 @@ export function SectionGroup({
             <I.X size={12} />
           </button>
         </span>
+        <span className="sec-sort">{sortMenu}</span>
       </div>
       {!section.collapsed && children}
     </section>

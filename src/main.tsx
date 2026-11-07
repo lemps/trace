@@ -42,6 +42,7 @@ import "@/domains/prs/checks.css";
 import "@/domains/prs/github-md.css";
 import "@/domains/sessions/sessions.css";
 import "@/domains/sessions/session-list.css";
+import "@/domains/sessions/sessions-order.css";
 import "@/domains/sessions/rail-recents.css";
 import "@/domains/schedules/schedules.css";
 import "@/domains/schedules/share.css";

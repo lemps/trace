@@ -16,7 +16,7 @@ import { SHORTCUTS } from "./definitions.ts";
  * keys it may take: `app` fires everywhere, terminals and text boxes included. `page` fires
  * everywhere but a focused terminal, and a key without Ctrl, ⌘ or Alt only when you
  * aren't typing. `reply` is the Inbox's reply box, `chat` a chat agent's composer,
- * `settings` a list in Settings.
+ * `settings` a list in Settings, `sessions` a row on the Sessions page.
  */
 export type Scope =
   | "app"
@@ -29,6 +29,7 @@ export type Scope =
   | "chat"
   | "search"
   | "settings"
+  | "sessions"
   | "mouse";
 
 export type GroupId =
@@ -40,6 +41,7 @@ export type GroupId =
   | "inbox"
   | "search"
   | "board"
+  | "sessions"
   | "settings";
 
 export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
@@ -55,6 +57,7 @@ export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
   { id: "inbox", label: "Inbox", desc: "On the Inbox page, when you aren't typing." },
   { id: "search", label: "Search box", desc: "While the search box has focus." },
   { id: "board", label: "Board", desc: "On a tracker's board." },
+  { id: "sessions", label: "Sessions", desc: "On a row in the Sessions page's lists." },
   { id: "settings", label: "Settings", desc: "In Settings → Sidebar's list of pages." },
 ];
 

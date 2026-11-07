@@ -60,8 +60,9 @@ export function sessionSnapshotLines(stats: SessionStats, now: number): string[]
       .join(", ");
     const branch = row.branch ? ` · ${row.branch}` : "";
     const pr = row.pr ? ` · PR#${row.pr.number}(${row.pr.state})` : "";
+    const by = row.startedBy ? ` · started by ${row.startedBy}` : "";
     lines.push(
-      `- ${row.id} "${oneLine(row.title, 60)}" · ${row.repo}${branch} · ${agents}${pr} · active ${agoLabel(row.lastActiveAt, now)} ago`
+      `- ${row.id} "${oneLine(row.title, 60)}" · ${row.repo}${branch} · ${agents}${pr}${by} · active ${agoLabel(row.lastActiveAt, now)} ago`
     );
   }
   if (stats.rows.length > LIST_CAP) {

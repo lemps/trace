@@ -13,6 +13,7 @@ import type { AgentCli } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
+import { creatorFromCaller } from "./callerOrigin";
 
 // Standalone-session tools for trace's agents: open a session in one of trace's
 // repos (optionally with Remote Control, so it can be driven from claude.ai/code),
@@ -207,12 +208,13 @@ async function launch(session: ScratchSession, prompt: string) {
   else if (transport === "chat") syncChatActivity(session.id);
 }
 
-async function start(input: unknown): Promise<string> {
+async function start(input: unknown, caller: string): Promise<string> {
   const title = str(input, "title") || "Exploration";
   const remote = bool(input, "remote_control");
   const cli: AgentCli = remote ? "claude" : str(input, "cli") === "codex" ? "codex" : agentCli();
   const repo = await resolveRepo(str(input, "repo"));
-  const session = await createSession(title, cli, repo, agentProvider(), remote);
+  const createdBy = await creatorFromCaller(caller);
+  const session = await createSession(title, cli, repo, agentProvider(), remote, null, createdBy);
   useSessionsStore.getState().adopt(session);
   activity.log({
     kind: "session-created",
@@ -271,8 +273,15 @@ async function list(): Promise<string> {
     .join("\n");
 }
 
-/** Run one session tool. Returns the text for the model; throws on failure. */
-export async function runSessionTool(name: string, input: unknown): Promise<string> {
+/**
+ * Run one session tool for the agent `caller` (its workspace id). Returns the
+ * text for the model; throws on failure.
+ */
+export async function runSessionTool(
+  name: string,
+  input: unknown,
+  caller: string
+): Promise<string> {
   switch (name) {
     case "list_repos": {
       const repos = await listRepos();
@@ -283,7 +292,7 @@ export async function runSessionTool(name: string, input: unknown): Promise<stri
     case "list_sessions":
       return list();
     case "start_session":
-      return start(input);
+      return start(input, caller);
     case "send_to_session":
       return send(input);
     case "read_session":

@@ -329,6 +329,22 @@ export const SHORTCUTS: ShortcutDef[] = [
     isFixed: true,
   },
   {
+    id: "sessionMoveUp",
+    label: "Move the session up its list",
+    group: "sessions",
+    scope: "sessions",
+    ...both(["Alt+ArrowUp"]),
+    isFixed: true,
+  },
+  {
+    id: "sessionMoveDown",
+    label: "Move the session down its list",
+    group: "sessions",
+    scope: "sessions",
+    ...both(["Alt+ArrowDown"]),
+    isFixed: true,
+  },
+  {
     id: "typeFilterHide",
     label: "Hide an issue type (on its filter chip)",
     group: "board",

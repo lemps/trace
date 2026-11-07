@@ -3,11 +3,9 @@ import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
 import { noteTransport } from "@/domains/agentChat/transport";
-import { useLiveStore } from "@/domains/live/store";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { setWorkspaceTransport } from "@/ipc/agentChat";
 import { ArchiveBin } from "./ArchiveBin";
-import { sessionLight } from "./agentRoster";
 import { sessionsDrag } from "./dragState";
 import {
   moveBefore,
@@ -21,11 +19,10 @@ import {
 } from "./groupOps";
 import { useLastTab } from "./hooks/useLastTab";
 import { useSessionColumns } from "./hooks/useSessionColumns";
-import { useSessionDiffs } from "./hooks/useSessionDiffs";
-import { useSessionsOverview } from "./hooks/useSessionsOverview";
+import { ListSortMenu, useSessionLists } from "./hooks/useSessionLists";
 import { NewSessionModal } from "./NewSessionModal";
+import { useSessionOrderStore } from "./orderStore";
 import { SectionGroup } from "./SectionGroup";
-import { SessionRow } from "./SessionRow";
 import { SessionTabs } from "./SessionTabs";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
@@ -37,14 +34,13 @@ export function SessionsView() {
   const loaded = useSessionsStore((s) => s.loaded);
   const load = useSessionsStore((s) => s.load);
   const create = useSessionsStore((s) => s.create);
-  const rename = useSessionsStore((s) => s.rename);
-  const select = useSessionsStore((s) => s.select);
   const archive = useSessionsStore((s) => s.archive);
   const unarchive = useSessionsStore((s) => s.unarchive);
   const remove = useSessionsStore((s) => s.remove);
   const saveGroups = useSessionsStore((s) => s.saveGroups);
   const assign = useSessionsStore((s) => s.assign);
-  const live = useLiveStore((s) => s.info);
+  const orderLoaded = useSessionOrderStore((s) => s.loaded);
+  const loadOrder = useSessionOrderStore((s) => s.load);
   const [creating, setCreating] = useState(false);
   const [binOpen, setBinOpen] = useState(false);
   // The tab you were on last time, if you have several.
@@ -56,6 +52,11 @@ export function SessionsView() {
       load().catch((err) => toast.error(`Couldn't load your sessions: ${String(err)}`));
     }
   }, [loaded, load]);
+  useEffect(() => {
+    if (!orderLoaded) {
+      loadOrder().catch((err) => toast.error(`Couldn't load your session order: ${String(err)}`));
+    }
+  }, [orderLoaded, loadOrder]);
 
   const active = sessions.filter((s) => !s.archivedAt);
   const archived = sessions.filter((s) => s.archivedAt);
@@ -69,10 +70,10 @@ export function SessionsView() {
   const sectionOf = (s: ScratchSession) =>
     s.section && sectionIds.has(s.section) ? s.section : null;
   const unsectioned = inTab.filter((s) => sectionOf(s) === null);
-  // Row decorations for this tab: diffs (worktree sessions only — a legacy one
-  // shares the repo root) and branch/PR, each fetched for the tab in one go.
-  const diffs = useSessionDiffs(inTab.filter((s) => s.worktree).map((s) => s.id));
-  const overview = useSessionsOverview(inTab.map((s) => s.id));
+  const { renderList, moveIn } = useSessionLists(inTab, (s) => ({
+    tab: tabOf(s),
+    section: sectionOf(s),
+  }));
 
   // --- groups manipulation (pure ops in groupOps.ts; backend sanitizes) ---
   const addTab = (name: string) => {
@@ -118,32 +119,10 @@ export function SessionsView() {
       const drag = sessionsDrag.current;
       sessionsDrag.current = null;
       if (!drag) return;
-      if (drag.kind === "session") void assign(drag.id, activeTab, null);
+      if (drag.kind === "session") moveIn(drag.id, { tab: activeTab, section: null });
       else if (drag.kind === "section") void saveGroups(sectionToEnd(groups, drag.id));
     },
   };
-
-  const list = (items: ScratchSession[]) => (
-    <div className="session-list">
-      {items.map((s) => {
-        // Across every agent on the session, not just the one it started with.
-        const { light, detail } = sessionLight(s, live);
-        return (
-          <SessionRow
-            key={s.id}
-            session={s}
-            light={light}
-            lightDetail={detail}
-            overview={overview[s.id]}
-            diff={diffs[s.id]}
-            onOpen={() => select(s.id)}
-            onArchive={() => void archive(s.id)}
-            onRename={(title) => void rename(s.id, title)}
-          />
-        );
-      })}
-    </div>
-  );
 
   const bodyRef = useRef<HTMLDivElement>(null);
   useSessionColumns(bodyRef);
@@ -174,7 +153,7 @@ export function SessionsView() {
         onReorder={(dragId, targetId) =>
           void saveGroups({ ...groups, tabs: moveBefore(groups.tabs, dragId, targetId) })
         }
-        onDropSession={(sessionId, tab) => void assign(sessionId, tab, null)}
+        onDropSession={(sessionId, tab) => moveIn(sessionId, { tab, section: null })}
       />
       <div className="page-body" ref={bodyRef}>
         {nothingAnywhere ? (
@@ -201,9 +180,12 @@ export function SessionsView() {
         ) : (
           <>
             <div className="unsectioned" {...unsectionedDrop}>
-              {unsectioned.length > 0 ? (
-                list(unsectioned)
-              ) : (
+              <div className="sl-head">
+                <ListSortMenu place={{ tab: activeTab, section: null }} />
+              </div>
+              {renderList(
+                unsectioned,
+                { tab: activeTab, section: null },
                 <div className="pr-muted">Drop a session here to take it out of its section.</div>
               )}
             </div>
@@ -216,7 +198,8 @@ export function SessionsView() {
                 onToggle={() => patchSection(sec.id, { collapsed: !sec.collapsed })}
                 onRename={(name) => patchSection(sec.id, { name })}
                 onDelete={() => deleteSection(sec.id)}
-                onDropSession={(id) => void assign(id, activeTab, sec.id)}
+                sortMenu={<ListSortMenu place={{ tab: activeTab, section: sec.id }} />}
+                onDropSession={(id) => moveIn(id, { tab: activeTab, section: sec.id })}
                 onDropSection={(dragId) =>
                   void saveGroups({
                     ...groups,
@@ -224,7 +207,10 @@ export function SessionsView() {
                   })
                 }
               >
-                {list(inTab.filter((s) => sectionOf(s) === sec.id))}
+                {renderList(
+                  inTab.filter((s) => sectionOf(s) === sec.id),
+                  { tab: activeTab, section: sec.id }
+                )}
               </SectionGroup>
             ))}
 

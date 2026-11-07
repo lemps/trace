@@ -6,8 +6,11 @@ import type { AgentLight } from "@/domains/live/types";
 import type { SessionOverview } from "@/ipc/workspace";
 import { basename } from "@/platform/paths";
 import { companionsOf } from "./agentRoster";
-import { sessionsDrag } from "./dragState";
+import { CreatorChip } from "./CreatorChip";
+import { creatorLabel, creatorOf } from "./createdBy";
+import { sessionsDrag, setRowDragging } from "./dragState";
 import type { SessionDiffStat } from "./hooks/useSessionDiffs";
+import type { RowOrdering } from "./SessionList";
 import { TitleEditor } from "./TitleEditor";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
@@ -32,14 +35,21 @@ interface SessionRowProps {
   onOpen: () => void;
   onArchive: () => void;
   onRename: (title: string) => void;
+  /** Its place in the list's order (`SessionList`). */
+  ordering: RowOrdering;
 }
 
 // One session as a list row: status dot, name, where it works, its PR, its
 // diff and age — the facts that decide which one to open, and nothing else.
-// Rename/archive appear on hover; the row drags into sections, tabs and the bin.
+// Rename/archive appear on hover; the row drags up and down its list, into
+// other sections, tabs and the bin. One an agent started says who, and links to it;
+// sorted by "Started by", it sits indented under its parent instead.
 export function SessionRow(props: SessionRowProps) {
   const { session, light, lightDetail, overview, diff, onOpen, onArchive, onRename } = props;
+  const { depth, dropMark, onKeyDown } = props.ordering;
+  const createdBy = creatorOf(session);
   const [renaming, setRenaming] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const companions = companionsOf(session);
   const branch = meaningfulBranch(session, overview?.branch ?? null);
   const where = [overview ? basename(overview.repo) : null, branch].filter(Boolean).join(" · ");
@@ -55,26 +65,45 @@ export function SessionRow(props: SessionRowProps) {
     e.dataTransfer.effectAllowed = "move";
     // WKWebView won't start a drag session without data (see board/Board.tsx).
     e.dataTransfer.setData("text/plain", session.id);
+    setRowDragging(true);
+    setDragging(true);
   };
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: hosts nested buttons; HTML forbids nested interactives
     <div
-      className="session-row"
+      className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}`}
+      data-sid={session.id}
       role="button"
       tabIndex={0}
       draggable={!renaming}
       onDragStart={onDragStart}
       onDragEnd={() => {
         sessionsDrag.current = null;
+        setRowDragging(false);
+        setDragging(false);
       }}
       onClick={renaming ? undefined : onOpen}
       onKeyDown={(e) => {
-        if (!renaming && (e.key === "Enter" || e.key === " ")) onOpen();
+        if (renaming) return;
+        onKeyDown(e);
+        if (!e.defaultPrevented && (e.key === "Enter" || e.key === " ")) onOpen();
       }}
     >
+      <span className="sr-grip" title="Drag to reorder" aria-hidden="true">
+        <I.Grip size={12} />
+      </span>
       <StatusLight light={light} title={lightDetail} variant="word" />
       <div className="sr-name">
+        {depth > 0 && (
+          <span
+            className="sr-indent"
+            style={{ width: depth * 16 }}
+            title={`Started by “${creatorLabel(createdBy)}”, above`}
+          >
+            <I.StartedBy size={11} />
+          </span>
+        )}
         {renaming ? (
           <TitleEditor
             initial={session.title}
@@ -95,6 +124,7 @@ export function SessionRow(props: SessionRowProps) {
             +{companions.length}
           </span>
         )}
+        {depth === 0 && <CreatorChip createdBy={createdBy} />}
       </div>
       <span className="sr-where" title={overview?.branch ?? undefined}>
         {where}

@@ -57,6 +57,11 @@ pub fn list_session_groups() -> Result<SessionGroups, String> {
     RENDERER_COPY.observe(persist::read_or_default(&groups_file()))
 }
 
+/// Tabs + sections for read-only backend callers: a read failure reads as none.
+pub(crate) fn load() -> SessionGroups {
+    persist::read_or_log(&groups_file())
+}
+
 /// Enforce the structure's invariants: trimmed non-empty names, and sections
 /// always pointing at a tab that exists (a deleted tab's sections fall back
 /// to the default tab — never lost).
