@@ -258,6 +258,11 @@ pub(crate) fn is_session(id: &str) -> bool {
 /// whole point of companions.
 pub(crate) fn session_cwd(id: &str, create: bool) -> Result<String, String> {
     let session = owning_session(id).ok_or("That session no longer exists.")?;
+    cwd_of(&session, create)
+}
+
+/// `session_cwd` for a session already loaded (skips reading the sessions file again).
+pub(crate) fn cwd_of(session: &ScratchSession, create: bool) -> Result<String, String> {
     if let Some(folder) = &session.folder {
         return session_folder::folder_cwd(&session_folder::scratch_root(), folder, create);
     }

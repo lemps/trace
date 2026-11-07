@@ -2,7 +2,7 @@ import { toast } from "@/app/toast";
 import type { MenuItem } from "@/components/PopMenu";
 import { type Editor, openInEditor } from "@/ipc/editor";
 
-const EDITORS: { id: Editor; label: string }[] = [
+export const EDITORS: { id: Editor; label: string }[] = [
   { id: "vscode", label: "VS Code" },
   { id: "intellij", label: "IntelliJ" },
   { id: "cursor", label: "Cursor" },

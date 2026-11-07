@@ -7,6 +7,7 @@ pub mod agent_tools;
 pub mod cleanup;
 pub mod diff;
 pub mod editor;
+pub mod files;
 pub mod github;
 pub mod groups;
 pub mod interrupted;

@@ -9,5 +9,6 @@ pub mod env;
 pub mod hooks;
 pub mod permission_ask;
 pub mod pty;
+pub mod pty_exit;
 pub mod render_bridge;
 pub mod transcript;

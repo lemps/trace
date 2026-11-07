@@ -8,6 +8,7 @@ pub mod agent_tools;
 pub mod claude;
 pub mod cleanup;
 pub mod commands;
+pub mod diff_parse;
 pub mod git;
 pub mod github;
 pub mod helpers;
@@ -19,6 +20,8 @@ pub mod pylon;
 pub mod repo_catalog;
 pub mod schedule;
 pub mod state;
+pub mod workspace_dir;
+pub mod worktree_files;
 
 use std::sync::atomic::Ordering;
 
@@ -110,6 +113,7 @@ pub fn run() {
             commands::diff::git_diff_summary,
             commands::diff::git_diff_file,
             commands::diff::read_workspace_file,
+            commands::files::list_workspace_files,
             commands::rich_output::load_rich_output,
             commands::rich_output::save_rich_output,
             commands::editor::open_in_editor,

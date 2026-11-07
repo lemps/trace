@@ -39,6 +39,9 @@ export const isSearchKey = (e: KeyChord) => isShortcut("search", e);
 /** Flip the agent in view between its formatted transcript and its terminal. */
 export const isAgentViewKey = (e: KeyChord) => isShortcut("agentView", e);
 
+/** Open Quick Open: fuzzy-find a file in the open worktree. */
+export const isQuickOpenKey = (e: KeyChord) => isShortcut("quickOpen", e);
+
 /** Which tab (0-based) a number shortcut picks, or null. */
 export const tabKeyIndex = (e: KeyChord) => shortcutIndex("detailTab", e);
 

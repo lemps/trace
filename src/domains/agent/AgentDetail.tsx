@@ -16,6 +16,7 @@ import { PrRailSection } from "@/domains/prs/PrRailSection";
 import { primaryPr } from "@/domains/prs/primaryPr";
 import { canonicalPrUrl } from "@/domains/prs/prUrl";
 import { usePrWatchStore } from "@/domains/prs/watchStore";
+import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
 import { type AgentCli, type AgentProvider, resetAgentSession, stopAgent } from "@/ipc/agent";
 import { mergePr, raisePr } from "@/ipc/pr";
@@ -24,6 +25,7 @@ import { ChatSurface } from "./ChatSurface";
 import { ContextRail } from "./ContextRail";
 import { DetailHeader } from "./DetailHeader";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaults";
+import { useHasExited } from "./exitedStore";
 import { FilesPane } from "./FilesPane";
 import { launchIssueAgent } from "./launch";
 import { agentLabel } from "./providerLabel";
@@ -73,6 +75,8 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const [repos, setRepos] = useState<string[]>([]);
   const [repoChoice, setRepoChoice] = useState("");
   const running = useBoardStore((s) => s.runningAgents.has(issue.key));
+  const exited = useHasExited(issue.key);
+  const quickOpen = useQuickOpen(issue.key, true, () => setTab("files"));
   // Selecting a primitive (length) keeps this referentially stable across renders.
   const htmlCount = useRichOutputStore((s) => s.blocks[issue.key]?.length ?? 0);
   const status = useBoardStore((s) =>
@@ -224,6 +228,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         light={live?.light ?? "stopped"}
         askLabel={shownAsk(live)?.label}
         running={running}
+        exited={exited}
         cli={cli}
         provider={provider}
         openPr={openPr}
@@ -276,6 +281,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
                   onRepoChange={setRepoChoice}
                   agentName={agentLabel(cli, provider)}
                   cliName={cli}
+                  exited={exited}
                 />
               )}
             </ChatSurface>
@@ -315,6 +321,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         onShow={panel.show}
         onClose={panel.close}
       />
+      {quickOpen}
     </div>
   );
 }

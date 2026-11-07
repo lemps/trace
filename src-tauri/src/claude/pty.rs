@@ -18,6 +18,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::claude::discovery::find_cli_with_env;
 use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
+use crate::claude::pty_exit;
 use crate::platform::ports::{AgentEnvironment, ProcessHost, ToolLocator};
 use crate::platform::Os;
 use crate::state::AppState;
@@ -49,6 +50,12 @@ impl PtySession {
             .map_err(|e| format!("Failed to resize PTY: {e}"))
     }
 
+    /// The child's process id, which tells this run apart from a later one under the
+    /// same workspace id.
+    pub fn pid(&self) -> Option<u32> {
+        self.child.process_id()
+    }
+
     /// Terminate the child process (used by stop).
     pub fn kill(&mut self) {
         if let Some(pid) = self.child.process_id() {
@@ -77,6 +84,9 @@ struct PtyOutput {
 struct RunState {
     workspace_id: String,
     running: bool,
+    /// The process ended on its own (it quit, or crashed) rather than being
+    /// stopped: the renderer offers to restart it.
+    exited: bool,
 }
 
 /// Spawn the interactive `claude` TUI inside a PTY rooted at `cwd`.
@@ -210,28 +220,6 @@ pub fn spawn_shell_pty(
     run_in_pty(app, workspace_id, pair, cmd, cols, rows)
 }
 
-/// Close the PTY once its process has gone, where exit alone doesn't end the reader:
-/// dropping the session closes the console, which gives the pump thread its EOF.
-fn watch_for_exit(app: AppHandle, workspace_id: String, pid: Option<u32>) {
-    let Some(pid) = pid else { return };
-    std::thread::spawn(move || {
-        while Os::is_alive(pid) {
-            std::thread::sleep(std::time::Duration::from_millis(500));
-        }
-        // The caller registers the session after this returns, so a process that
-        // exits at once can get here first.
-        for _ in 0..20 {
-            let Some(state) = app.try_state::<AppState>() else {
-                return;
-            };
-            if state.pty_sessions.lock().remove(&workspace_id).is_some() {
-                return;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(250));
-        }
-    });
-}
-
 /// Spawn `cmd` against the PTY `pair`, register a pump thread that streams output
 /// to the frontend and tears down state on EOF, and return the live session.
 /// CLI-agnostic — shared by the agent and the plain-shell terminal.
@@ -243,6 +231,8 @@ fn run_in_pty(
     cols: u16,
     rows: u16,
 ) -> Result<(PtySession, Option<u32>), String> {
+    // An exit noted for an earlier run that its reader never read isn't this run's.
+    pty_exit::take_natural_exit(&workspace_id);
     let child = pair
         .slave
         .spawn_command(cmd)
@@ -276,7 +266,7 @@ fn run_in_pty(
     }
 
     if !Os::pty_reports_exit() {
-        watch_for_exit(app.clone(), workspace_id.clone(), pid);
+        pty_exit::watch_for_exit(app.clone(), workspace_id.clone(), pid);
     }
 
     let reader_app = app.clone();
@@ -325,15 +315,18 @@ fn run_in_pty(
         }
         // Process exited — drop session bookkeeping and tell the UI.
         crate::interrupted::record_exit(&reader_app, &reader_ws);
-        if let Some(state) = reader_app.try_state::<AppState>() {
-            state.pty_sessions.lock().remove(&reader_ws);
-            state.child_pids.lock().remove(&reader_ws);
-        }
+        // A stop takes the session out of state before killing it, so finding it
+        // still here means nobody asked the process to end.
+        // (On Windows `watch_for_exit` closes it first, and notes that it did.)
+        // Only this run's session: a quick restart may already have put a new one there.
+        let exited = pty_exit::take_session(&reader_app, &reader_ws, pid).is_some()
+            | pty_exit::take_natural_exit(&reader_ws);
         let _ = reader_app.emit(
             "agent-run-state",
             RunState {
                 workspace_id: reader_ws.clone(),
                 running: false,
+                exited,
             },
         );
         crate::activity::record_agent(

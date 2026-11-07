@@ -22,6 +22,7 @@ import "@/domains/agent/detail.css";
 import "@/domains/agent/answer.css";
 import "@/domains/agent/rail.css";
 import "@/domains/agent/files.css";
+import "@/domains/quickOpen/quick-open.css";
 import "@/domains/agent/panes.css";
 import "@/domains/transcript/transcript.css";
 import "@/domains/prs/prs.css";
