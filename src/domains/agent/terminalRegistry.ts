@@ -13,8 +13,8 @@ import {
   isTerminalPaste,
 } from "@/platform/shortcuts";
 import { useRichOutputStore } from "./richOutputStore";
-import { copyContext } from "./terminal/copyContext";
-import { forgetLinks, installLinks, oscLinkHandler } from "./terminal/links";
+import { copyContext, copySelection } from "./terminal/copyContext";
+import { installLinks, oscLinkHandler } from "./terminal/links";
 import { installSearch } from "./terminal/search";
 import { useTerminalUi } from "./terminal/store";
 
@@ -152,9 +152,7 @@ export function getTerminal(issueKey: string): TerminalEntry {
     }
     if (isAppKey(e)) return false;
     if (isTerminalCopy(e)) {
-      if (e.type === "keydown" && term.hasSelection()) {
-        void navigator.clipboard.writeText(term.getSelection()).catch(() => {});
-      }
+      if (e.type === "keydown") copySelection(term);
       return false;
     }
     if (isTerminalPaste(e)) {
@@ -336,7 +334,6 @@ export function disposeTerminal(issueKey: string): void {
   entry.term.dispose();
   entry.container.remove();
   registry.delete(issueKey);
-  forgetLinks(issueKey);
   useTerminalUi.getState().forget(issueKey);
   // Rendered HTML cards are intentionally kept (persisted) so they survive a
   // teardown — see the note in `resetTerminal`.

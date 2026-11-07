@@ -1,6 +1,13 @@
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { Terminal } from "@xterm/xterm";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "@/app/toast";
 import type { MenuItem } from "@/components/PopMenu";
 import { useDismiss } from "@/hooks/useDismiss";
@@ -82,6 +89,29 @@ export function TerminalMenu({ termKey, term, menu, onFind, onClose }: TerminalM
     setPos(place(menu, root, { w: el.offsetWidth, h: el.offsetHeight }));
   }, [menu]);
 
+  // Take focus once shown: a link click leaves it in xterm, which would send Esc to
+  // the agent (interrupting it) instead of closing the menu.
+  useEffect(() => {
+    if (pos) ref.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+  }, [pos]);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+      term.focus();
+    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const items = [
+        ...(ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []),
+      ];
+      const at = items.indexOf(document.activeElement as HTMLButtonElement);
+      const next = (at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      items[next]?.focus();
+    }
+  };
+
   const sections: MenuItem[][] = [];
   if (menu.link) sections.push(linkItems(termKey, menu.link));
   if (menu.isContext) {
@@ -102,6 +132,7 @@ export function TerminalMenu({ termKey, term, menu, onFind, onClose }: TerminalM
       className="pop-menu-pop term-menu"
       role="menu"
       style={pos ?? { visibility: "hidden" }}
+      onKeyDown={onKeyDown}
     >
       {sections.map((items, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: sections are fixed per menu
@@ -115,6 +146,7 @@ export function TerminalMenu({ termKey, term, menu, onFind, onClose }: TerminalM
               disabled={item.disabled}
               onClick={() => {
                 onClose();
+                term.focus();
                 item.onSelect();
               }}
             >

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { type BufferLike, formatContext, lastLines } from "./contextText.ts";
 import { findPaths, resolvePath } from "./paths.ts";
+import { type CellBufferLike, linkAt, linksOnLine } from "./rowLinks.ts";
 
 const paths = (text: string) => findPaths(text).map((m) => m.path);
 
@@ -95,5 +96,55 @@ describe("formatContext", () => {
   it("outgrows backticks inside the output", () => {
     const text = formatContext({ kind: "shell", id: "TRACE-1" }, "````x", true);
     assert.ok(text.includes("`````text\n````x\n`````"));
+  });
+});
+
+/** A fake cell buffer: each row a string (`＊` stands for a wide character), wrapped or not. */
+const cells = (rows: [string, boolean][], cols = 12): CellBufferLike => ({
+  getLine: (y) => {
+    const row = rows[y];
+    if (!row) return undefined;
+    const grid: { chars: string; width: number }[] = [];
+    for (const ch of row[0]) {
+      if (ch === "＊") grid.push({ chars: "漢", width: 2 }, { chars: "", width: 0 });
+      else grid.push({ chars: ch, width: 1 });
+    }
+    while (grid.length < cols) grid.push({ chars: "", width: 1 });
+    return {
+      isWrapped: row[1],
+      length: cols,
+      getCell: (x) => grid[x] && { getChars: () => grid[x].chars, getWidth: () => grid[x].width },
+    };
+  },
+});
+
+describe("linksOnLine", () => {
+  it("puts a path after wide characters on the right cells", () => {
+    const [link] = linksOnLine(cells([["＊＊ a/b.ts", false]]), 0, false);
+    assert.equal(link.text, "a/b.ts");
+    assert.deepEqual([link.start.x, link.end.x], [5, 10]);
+  });
+  it("follows a path across a soft wrap", () => {
+    const buf = cells([
+      ["see src/doma", false],
+      ["ins/x.ts ok", true],
+    ]);
+    for (const y of [0, 1]) {
+      const [link] = linksOnLine(buf, y, false);
+      assert.equal(link.text, "src/domains/x.ts");
+      assert.deepEqual(
+        [link.start, link.end],
+        [
+          { x: 4, y: 0, width: 1 },
+          { x: 7, y: 1, width: 1 },
+        ]
+      );
+    }
+  });
+  it("finds the link under a cell, URLs included, paths inside URLs not", () => {
+    const buf = cells([["go https://x.io/a/b.ts now", false]], 30);
+    assert.deepEqual(linkAt(buf, 10, 0), { kind: "url", url: "https://x.io/a/b.ts" });
+    assert.equal(linkAt(buf, 1, 0), null);
+    assert.equal(linksOnLine(buf, 0, false).length, 0);
   });
 });

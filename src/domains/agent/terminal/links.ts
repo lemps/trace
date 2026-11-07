@@ -2,7 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import type { ILink, Terminal } from "@xterm/xterm";
 import { isLinkClick } from "@/platform/shortcuts";
-import { findPaths } from "./paths";
+import { linkAt, linksOnLine } from "./rowLinks";
 import { workspaceOf } from "./source";
 import { type LinkTarget, useTerminalUi } from "./store";
 
@@ -29,9 +29,6 @@ export function openWebUrl(uri: string): void {
   if (isWebUrl(uri)) void openUrl(uri);
 }
 
-/** The link under the pointer in each terminal, for the right-click menu. */
-const hovered = new Map<string, LinkTarget>();
-
 function onClick(key: string, term: Terminal, event: MouseEvent, link: LinkTarget): void {
   const explicit = isLinkClick(event);
   if (term.modes.mouseTrackingMode !== "none" && !explicit) return;
@@ -44,40 +41,43 @@ function onClick(key: string, term: Terminal, event: MouseEvent, link: LinkTarge
     .openMenu(key, { x: event.clientX, y: event.clientY, link, isContext: false });
 }
 
-const hoverHandlers = (key: string, link: LinkTarget) => ({
-  hover: () => {
-    hovered.set(key, link);
-  },
-  leave: () => {
-    if (hovered.get(key) === link) hovered.delete(key);
-  },
-});
-
 /** xterm's handler for OSC 8 hyperlinks (ignored unless one is set). */
 export function oscLinkHandler(key: string, term: Terminal) {
   return {
     activate: (event: MouseEvent, uri: string) =>
       onClick(key, term, event, { kind: "url", url: uri }),
-    hover: (_e: MouseEvent, uri: string) => hovered.set(key, { kind: "url", url: uri }),
-    leave: () => hovered.delete(key),
   };
 }
 
-/** File paths on one buffer row, as xterm links (1-based, inclusive cell ranges). */
+/**
+ * File paths on one buffer row (1-based), as xterm links: matched on the whole
+ * logical line, so wide characters and soft-wrapped paths land on the right cells.
+ */
 function fileLinks(key: string, term: Terminal, y: number): ILink[] | undefined {
-  const row = term.buffer.active.getLine(y - 1);
-  if (!row) return undefined;
-  const links = findPaths(row.translateToString(true)).map((m): ILink => {
-    const target: LinkTarget = { kind: "file", path: m.path, line: m.line, col: m.col };
-    return {
-      range: { start: { x: m.start + 1, y }, end: { x: m.end, y } },
-      text: m.path,
-      decorations: { underline: true, pointerCursor: true },
-      activate: (event) => onClick(key, term, event, target),
-      ...hoverHandlers(key, target),
-    };
-  });
+  const links = linksOnLine(term.buffer.active, y - 1, false)
+    .filter((l) => l.start.y <= y - 1 && l.end.y >= y - 1)
+    .map(
+      (l): ILink => ({
+        range: {
+          start: { x: l.start.x + 1, y: l.start.y + 1 },
+          end: { x: l.end.x + l.end.width, y: l.end.y + 1 },
+        },
+        text: l.text,
+        decorations: { underline: true, pointerCursor: true },
+        activate: (event) => onClick(key, term, event, l.target),
+      })
+    );
   return links.length > 0 ? links : undefined;
+}
+
+/** The buffer cell under a pointer event, or null off the grid. */
+function cellAt(term: Terminal, container: HTMLElement, e: MouseEvent) {
+  const screen = container.querySelector(".xterm-screen")?.getBoundingClientRect();
+  if (!screen || screen.width === 0 || screen.height === 0) return null;
+  const x = Math.floor(((e.clientX - screen.left) / screen.width) * term.cols);
+  const row = Math.floor(((e.clientY - screen.top) / screen.height) * term.rows);
+  if (x < 0 || x >= term.cols || row < 0 || row >= term.rows) return null;
+  return { x, y: row + term.buffer.active.viewportY };
 }
 
 /**
@@ -87,10 +87,7 @@ function fileLinks(key: string, term: Terminal, y: number): ILink[] | undefined 
  */
 export function installLinks(key: string, term: Terminal, container: HTMLElement): void {
   term.loadAddon(
-    new WebLinksAddon((event, uri) => onClick(key, term, event, { kind: "url", url: uri }), {
-      hover: (_e, uri) => hovered.set(key, { kind: "url", url: uri }),
-      leave: () => hovered.delete(key),
-    })
+    new WebLinksAddon((event, uri) => onClick(key, term, event, { kind: "url", url: uri }))
   );
   if (workspaceOf(key)) {
     term.registerLinkProvider({ provideLinks: (y, done) => done(fileLinks(key, term, y)) });
@@ -106,19 +103,16 @@ export function installLinks(key: string, term: Terminal, container: HTMLElement
   );
   container.addEventListener("contextmenu", (e) => {
     e.preventDefault();
-    // xterm shows the hand only while a link is under the pointer; a missed `leave`
-    // (the pointer went onto a menu over the terminal) mustn't offer a stale link.
-    const isOnLink = container.querySelector(".xterm-cursor-pointer") !== null;
+    // The link under the pointer is read from the cells, not from hover state.
+    const cell = cellAt(term, container, e);
+    const found = cell ? linkAt(term.buffer.active, cell.x, cell.y) : null;
+    // A scheduled run's terminal has no workspace to open a path in; its URLs still work.
+    const link = found?.kind === "file" && workspaceOf(key) === null ? null : found;
     useTerminalUi.getState().openMenu(key, {
       x: e.clientX,
       y: e.clientY,
-      link: isOnLink ? (hovered.get(key) ?? null) : null,
+      link,
       isContext: true,
     });
   });
-}
-
-/** Forget a disposed terminal's hover state. */
-export function forgetLinks(key: string): void {
-  hovered.delete(key);
 }

@@ -134,7 +134,8 @@ export function isNumbered(def: ShortcutDef): boolean {
 function scopeProblem(def: ShortcutDef, chord: string, os: Os): string | null {
   const p = parseChord(chord);
   const appKeys = os === "macos" ? "⌘" : "Ctrl+Shift";
-  if (def.scope === "app" || def.scope === "detail") {
+  // A terminal's own shortcuts (find, Copy Context) are taken from it too.
+  if (def.scope === "app" || def.scope === "detail" || def.scope === "terminal") {
     if (terminalNeeds(chord, os)) {
       return `${formatChord(chord, os)} is the terminal's. Use ${appKeys} with a key.`;
     }

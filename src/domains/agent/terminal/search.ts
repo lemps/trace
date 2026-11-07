@@ -24,7 +24,11 @@ function toRgb(css: string): Rgb | null {
   canvas.height = 1;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx || !css) return null;
+  // An unparsable colour leaves fillStyle as it was rather than throwing, so check.
+  const sentinel = "#010203";
+  ctx.fillStyle = sentinel;
   ctx.fillStyle = css;
+  if (ctx.fillStyle === sentinel && css.toLowerCase() !== sentinel) return null;
   ctx.fillRect(0, 0, 1, 1);
   const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
   return [r, g, b];
@@ -91,8 +95,13 @@ export function onFindResults(
   return () => sub?.dispose();
 }
 
-/** Clear the highlights (the find bar closed). */
+/**
+ * Clear the highlights (the query emptied, or the find bar closed). The selection
+ * stays: it's the last match, or what the user had selected before searching.
+ */
 export function clearFind(term: Terminal): void {
   addons.get(term)?.clearDecorations();
-  term.clearSelection();
 }
+
+// A hot update would leave live terminals' addons in a stale map, so reload instead.
+import.meta.hot?.accept(() => location.reload());
