@@ -14,7 +14,7 @@ import type { Os } from "../os.ts";
  * Where a shortcut is listened for, which decides what it may collide with and what
  * keys it may take: `app` fires everywhere, terminals and text boxes included.
  */
-export type Scope = "app" | "detail" | "terminal" | "inbox" | "reply" | "search" | "mouse";
+export type Scope = "app" | "detail" | "terminal" | "find" | "inbox" | "reply" | "search" | "mouse";
 
 export type GroupId = "app" | "detail" | "terminal" | "inbox" | "search" | "board";
 
@@ -116,6 +116,31 @@ export const SHORTCUTS: ShortcutDef[] = [
     scope: "terminal",
     ...both(["Shift+Enter"]),
     isFixed: true,
+  },
+  {
+    id: "termFind",
+    label: "Find in the terminal's scrollback",
+    group: "terminal",
+    scope: "terminal",
+    // Off macOS WebView2 keeps Ctrl+F, and plain Ctrl is the terminal's anyway.
+    mac: ["Meta+f"],
+    pc: ["Ctrl+Shift+f"],
+  },
+  {
+    id: "termFindMove",
+    label: "Next or previous match (in the find bar)",
+    group: "terminal",
+    scope: "find",
+    ...both(["Enter", "Shift+Enter"]),
+    isFixed: true,
+  },
+  {
+    id: "termCopyContext",
+    label: "Copy the selection or last lines, saying where they came from",
+    group: "terminal",
+    scope: "terminal",
+    mac: ["Shift+Meta+c"],
+    pc: ["Ctrl+Shift+x"],
   },
   {
     id: "termLink",

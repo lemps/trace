@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 import { useBoardStore } from "@/domains/board/store";
+import { TerminalOverlay } from "./terminal/TerminalOverlay";
 import { disposeTerminal, getTerminal, syncPtySize } from "./terminalRegistry";
 
 // Renders the interactive Claude/Codex TUI for one issue. The actual xterm lives
@@ -71,6 +72,7 @@ export function PtyTerminal({ issueKey }: { issueKey: string }) {
   return (
     <div className="pty-pane">
       <div ref={hostRef} style={{ height: "100%" }} />
+      <TerminalOverlay termKey={issueKey} />
     </div>
   );
 }

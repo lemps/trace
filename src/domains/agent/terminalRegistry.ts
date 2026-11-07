@@ -1,36 +1,22 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { FitAddon } from "@xterm/addon-fit";
-import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { useAppearance } from "@/domains/appearance/store";
 import { terminalAppearance, terminalAppearanceKey } from "@/domains/appearance/terminalTheme";
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
-import { isAppKey, isLinkClick, isTerminalCopy, isTerminalPaste } from "@/platform/shortcuts";
+import {
+  isAppKey,
+  isCopyContext,
+  isTerminalCopy,
+  isTerminalFind,
+  isTerminalPaste,
+} from "@/platform/shortcuts";
 import { useRichOutputStore } from "./richOutputStore";
-
-/**
- * Open a link surfaced in terminal output in the system browser. The webview
- * can't `window.open` (Tauri blocks it), so clicks route through the opener
- * plugin — and only for http(s): terminal bytes are untrusted, and other
- * schemes (file:, custom app handlers) could do more than open a page.
- *
- * When the foreground app has mouse reporting on, a plain click belongs to the
- * app, not us: xterm forwards it, and Claude Code's fullscreen TUI (which turns
- * reporting on — `?1000/1002/1003h` right after `?1049h`) uses clicks for its
- * own selection/copy; opening here too once meant two tabs per click. Cmd- and
- * Option-click stay ours, matching native terminals (Claude Code ≥ 2.1.181
- * expects the emulator to own Cmd+click): the xterm mouse protocol has no meta
- * bit, so the app can never even see a Cmd+click, and xterm treats alt-clicks
- * as a selection gesture and never reports them.
- * Off macOS, Ctrl-click takes Cmd-click's place (`isLinkClick`).
- */
-function openLink(term: Terminal, event: MouseEvent, uri: string) {
-  if (!/^https?:\/\//i.test(uri)) return;
-  if (term.modes.mouseTrackingMode !== "none" && !isLinkClick(event)) return;
-  void openUrl(uri);
-}
+import { copyContext } from "./terminal/copyContext";
+import { forgetLinks, installLinks, oscLinkHandler } from "./terminal/links";
+import { installSearch } from "./terminal/search";
+import { useTerminalUi } from "./terminal/store";
 
 // Keys that can't be the user handing an agent work — they only ever accompany
 // another keystroke, so they must not arm a waiting notification on their own.
@@ -116,15 +102,18 @@ export function getTerminal(issueKey: string): TerminalEntry {
     // Colours, fonts and cursor come from Settings → Appearance. xterm paints
     // to a canvas and can't resolve CSS variables, so they're literal values.
     ...terminalAppearance(),
-    // OSC 8 hyperlinks (gh and modern CLIs emit these) are ignored by xterm
-    // unless a handler is set.
-    linkHandler: { activate: (event, uri) => openLink(term, event, uri) },
+    // Find's match highlights are decorations, which xterm still calls proposed API.
+    allowProposedApi: true,
   });
+  // OSC 8 hyperlinks (gh and modern CLIs emit these) are ignored by xterm unless a
+  // handler is set; they, plain URLs and file paths open through `terminal/links`.
+  term.options.linkHandler = oscLinkHandler(issueKey, term);
   const fit = new FitAddon();
   term.loadAddon(fit);
-  // Plain-text URLs (PR links in agent output) become clickable. Disposed
-  // with the terminal — loadAddon ties the addon's lifetime to it.
-  term.loadAddon(new WebLinksAddon((event, uri) => openLink(term, event, uri)));
+  // Clickable URLs and paths, the right-click menu, and find in scrollback. Addons
+  // are disposed with the terminal — loadAddon ties their lifetime to it.
+  installLinks(issueKey, term, container);
+  installSearch(term);
 
   // Out-of-band HTML channel: the agent prints OSC 7700 ; base64(html) ST and we
   // swallow it here so it never paints into the grid, decode the payload, and
@@ -146,6 +135,14 @@ export function getTerminal(issueKey: string): TerminalEntry {
   // line-continuation idiom, and conveniently also the shell's. (ESC CR /
   // meta+enter was tried first but current Claude builds submit on it.)
   term.attachCustomKeyEventHandler((e) => {
+    // trace's own terminal actions: not keys for the TUI, nor the user handing it work.
+    if (isTerminalFind(e) || isCopyContext(e)) {
+      if (e.type === "keydown") {
+        if (isTerminalFind(e)) useTerminalUi.getState().openFind(issueKey);
+        else void copyContext(issueKey, term);
+      }
+      return false;
+    }
     // A keystroke is the one unambiguous signal that the user is handing this
     // agent work — xterm funnels mouse reports, focus in/out and terminal query
     // replies through `onData` alongside real typing, so the key event (not the
@@ -339,6 +336,8 @@ export function disposeTerminal(issueKey: string): void {
   entry.term.dispose();
   entry.container.remove();
   registry.delete(issueKey);
+  forgetLinks(issueKey);
+  useTerminalUi.getState().forget(issueKey);
   // Rendered HTML cards are intentionally kept (persisted) so they survive a
   // teardown — see the note in `resetTerminal`.
 }

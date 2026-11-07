@@ -85,7 +85,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **Quick Open:** fuzzy file search within a worktree.
 - [ ] **File previews:** images, PDFs and Markdown next to the agent.
 - [ ] **Dictation:** speak into the prompt or terminal.
-- [ ] **Terminal extras:** find-in-scrollback, link action popovers, Copy Context and theme import.
+- [x] **Terminal extras:** find in scrollback (⌘F / Ctrl+Shift+F), a menu on links and file paths
+      (Open, Copy, Open in editor) and on right-click, and Copy Context (the selection or last 100
+      lines, headed with the agent and worktree). Theme import was left out.
 
 ## Not planned
 
