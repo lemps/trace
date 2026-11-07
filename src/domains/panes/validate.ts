@@ -50,6 +50,8 @@ export interface TabCatalog {
   fixed: string[];
   /** Tabs a layout may hold once opened (a subagent's view); others are dropped. */
   isOptional: (tab: string) => boolean;
+  /** Fixed tabs out of the tab row for now: kept in place in the layout, not shown. */
+  hidden?: ReadonlySet<string>;
 }
 
 /** Insert `tab` after `after` in whichever group holds it, or first in the first group. */
@@ -89,11 +91,34 @@ export function normalizeLayout(layout: PaneLayout | null, catalog: TabCatalog):
     root = insertTab(root, tab, i === 0 ? null : catalog.fixed[i - 1]);
     seen.add(tab);
   });
+  const hidden = catalog.hidden;
+  const shows = (t: string) => !hidden?.has(t);
+  // A group shows a tab that's on show, where it has one.
   const fixedRoot = mapGroups(root, (g) => ({
     ...g,
-    active: g.tabs.includes(g.active) ? g.active : g.tabs[0],
+    active:
+      g.tabs.includes(g.active) && shows(g.active) ? g.active : (g.tabs.find(shows) ?? g.tabs[0]),
   }));
   const groups = listGroups(fixedRoot);
   const focused = groups.some((g) => g.id === layout.focused) ? layout.focused : groups[0].id;
   return { root: fixedRoot, focused };
+}
+
+/**
+ * The layout as shown: `hidden` tabs taken out, and a pane left with nothing to
+ * show gone with them. The stored layout keeps them (and their panes), so a tab
+ * that comes back returns to where it was, beside the same tabs or in its own pane.
+ */
+export function hideTabs(layout: PaneLayout, hidden: ReadonlySet<string>): PaneLayout {
+  if (hidden.size === 0) return layout;
+  const shown = prune(
+    mapGroups(layout.root, (g) => ({ ...g, tabs: g.tabs.filter((t) => !hidden.has(t)) }))
+  );
+  if (!shown) return singleGroup([]);
+  const root = mapGroups(shown, (g) =>
+    g.tabs.includes(g.active) ? g : { ...g, active: g.tabs[0] }
+  );
+  const groups = listGroups(root);
+  const focused = groups.some((g) => g.id === layout.focused) ? layout.focused : groups[0].id;
+  return { root, focused };
 }

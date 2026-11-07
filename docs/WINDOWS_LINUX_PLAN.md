@@ -173,7 +173,7 @@ and `codex` installed the usual way for that platform.
 - [ ] Start an agent from a card: it gets a worktree, and typing and resizing work.
 - [ ] Stop the agent, and let another exit on its own: both show as stopped.
 - [ ] Turn tracking works: lights change, and a question reaches the Inbox.
-- [ ] Agent tools work, and `trace-render` shows a card in the HTML tab.
+- [x] Agent tools work, and `trace-render` publishes to the Plan tab (Markdown and HTML; checked on Windows 11).
 - [ ] Quit mid-task: the agent is offered back and resumes its conversation.
 - [ ] Diffs, tests, open in editor and the PR view work.
 - [ ] A scheduled prompt fires, with two trace processes running.

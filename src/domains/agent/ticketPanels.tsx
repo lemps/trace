@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
 import type { Issue } from "@/domains/issues/types";
 import type { PanelDescriptor } from "@/domains/panes/types";
+import { planTab } from "@/domains/plans/planTab";
+import type { PlanTabState } from "@/domains/plans/store";
 import { PrRailSection } from "@/domains/prs/PrRailSection";
 import type { AgentCli } from "@/ipc/agent";
 import { AgentViewSwitch } from "./AgentViewSwitch";
 import { FilesPane } from "./FilesPane";
-import { RichOutputPanel } from "./RichOutputPanel";
 import { TerminalPane } from "./TerminalPane";
 import { TestsPane } from "./TestsPane";
 import { TicketPane } from "./TicketPane";
@@ -19,12 +20,12 @@ interface TicketPanelsArgs {
   cli: AgentCli;
   /** The agent's own view: its chat, or its terminal under the start prompt. */
   chat: ReactNode;
-  htmlCount: number;
+  plan: PlanTabState;
   prUrls: string[];
 }
 
-/** A ticket's tabs, in their natural order (⌘1–7). */
-export function ticketPanels({ issue, cli, chat, htmlCount, prUrls }: TicketPanelsArgs) {
+/** A ticket's tabs, in their natural order (⌘1–7, counting only those shown). */
+export function ticketPanels({ issue, cli, chat, plan, prUrls }: TicketPanelsArgs) {
   const panels: PanelDescriptor[] = [
     {
       id: TICKET_CHAT_TAB,
@@ -33,13 +34,7 @@ export function ticketPanels({ issue, cli, chat, htmlCount, prUrls }: TicketPane
       toolbar: <AgentViewSwitch workspaceId={issue.key} cli={cli} />,
       render: () => chat,
     },
-    {
-      id: "html",
-      label: "HTML",
-      icon: I.Sparkles,
-      badge: htmlCount > 0 ? <span className="count">{htmlCount}</span> : undefined,
-      render: () => <RichOutputPanel issueKey={issue.key} />,
-    },
+    planTab({ workspaceId: issue.key, agentTab: TICKET_CHAT_TAB, state: plan }),
     { id: "ticket", label: "Ticket", icon: I.Ticket, render: () => <TicketPane issue={issue} /> },
     {
       id: "files",

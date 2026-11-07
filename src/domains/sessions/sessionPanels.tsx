@@ -2,10 +2,11 @@ import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
 import { AgentViewSwitch } from "@/domains/agent/AgentViewSwitch";
 import { FilesPane } from "@/domains/agent/FilesPane";
-import { RichOutputPanel } from "@/domains/agent/RichOutputPanel";
 import { TerminalPane } from "@/domains/agent/TerminalPane";
 import type { LiveInfo } from "@/domains/live/types";
 import type { PanelDescriptor } from "@/domains/panes/types";
+import { planTab } from "@/domains/plans/planTab";
+import type { PlanTabState } from "@/domains/plans/store";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
 import { AddAgentMenu } from "./AddAgentMenu";
 import type { RosterEntry } from "./agentRoster";
@@ -21,17 +22,18 @@ export const agentOfTab = (tab: string) => (tab.startsWith("agent:") ? tab.slice
 interface SessionPanelsArgs {
   session: ScratchSession;
   roster: RosterEntry[];
-  /** The agent the header acts on; HTML shows what it rendered. */
+  /** The agent the header acts on; Plan shows what it planned or published. */
   active: RosterEntry;
   live: Record<string, LiveInfo>;
-  htmlCount: number;
+  plan: PlanTabState;
   onAddAgent: (cli: AgentCli, provider?: AgentProvider) => void;
   addDisabled: boolean;
 }
 
 /**
  * A session's tabs, in their natural order: one per agent (a status dot each, the
- * "+" after the last), then HTML, Files (only with git) and Terminal after a rule.
+ * "+" after the last), then Plan (only with something to show), Files (only with git) and Terminal
+ * after a rule.
  * Files and Terminal are the worktree's, whichever agent is in front.
  */
 export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
@@ -54,15 +56,13 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
   );
   return [
     ...agents,
-    {
-      id: "html",
-      label: "HTML",
-      icon: I.Sparkles,
-      title: `What ${a.active.label} rendered with trace-render`,
-      badge: a.htmlCount > 0 ? <span className="count">{a.htmlCount}</span> : undefined,
+    planTab({
+      workspaceId: a.active.workspaceId,
+      agentTab: agentTab(a.active.workspaceId),
+      state: a.plan,
+      agentLabel: a.active.label,
       section: "workspace",
-      render: () => <RichOutputPanel issueKey={a.active.workspaceId} />,
-    },
+    }),
     ...(a.session.folder
       ? []
       : [

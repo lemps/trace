@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { allTabs, listGroups, singleGroup, splitTab, visibleTabs } from "./model.ts";
-import { normalizeLayout, parseLayout, type TabCatalog } from "./validate.ts";
+import { hideTabs, normalizeLayout, parseLayout, type TabCatalog } from "./validate.ts";
 
 const catalog = (fixed: string[], optional: string[] = []): TabCatalog => ({
   fixed,
@@ -106,5 +106,41 @@ describe("normalizeLayout", () => {
 
     const badActive = { ...singleGroup(TABS), root: { ...singleGroup(TABS).root, active: "zzz" } };
     assert.deepEqual(visibleTabs(normalizeLayout(badActive, catalog(TABS))), ["agent:a"]);
+  });
+});
+
+describe("a tab that comes and goes (Plan)", () => {
+  const hidden = new Set(["html"]);
+  const withHidden: TabCatalog = { ...catalog(TABS), hidden };
+
+  it("isn't drawn while hidden, and its pane goes with it", () => {
+    // Plan split off beside the chat, then emptied.
+    const split = splitTab(singleGroup(TABS), "html", "g1", "right");
+    const full = normalizeLayout(split, withHidden);
+    const shown = hideTabs(full, hidden);
+    assert.equal(listGroups(shown.root).length, 1);
+    assert.deepEqual(allTabs(shown), ["agent:a", "files", "terminal"]);
+    // The stored layout still has it in its own pane...
+    assert.equal(listGroups(full.root).length, 2);
+    // ...so when it's back, it's back there.
+    const back = hideTabs(normalizeLayout(split, catalog(TABS)), new Set());
+    assert.deepEqual(back, normalizeLayout(split, catalog(TABS)));
+    assert.deepEqual(listGroups(back.root)[1].tabs, ["html"]);
+  });
+
+  it("keeps its place among the tabs of one pane", () => {
+    const full = normalizeLayout(singleGroup(TABS), withHidden);
+    assert.deepEqual(allTabs(full), TABS);
+    assert.deepEqual(allTabs(hideTabs(full, hidden)), ["agent:a", "files", "terminal"]);
+  });
+
+  it("never leaves a pane showing it, or focus on a pane that's gone", () => {
+    const l = { ...singleGroup(TABS), root: { ...singleGroup(TABS).root, active: "html" } };
+    const full = normalizeLayout(l, withHidden);
+    assert.equal(visibleTabs(full)[0], "agent:a");
+    const split = splitTab(singleGroup(TABS), "html", "g1", "right");
+    const focusedOnPlan = { ...split, focused: listGroups(split.root)[1].id };
+    const shown = hideTabs(normalizeLayout(focusedOnPlan, withHidden), hidden);
+    assert.equal(shown.focused, listGroups(shown.root)[0].id);
   });
 });

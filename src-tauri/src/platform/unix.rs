@@ -149,3 +149,21 @@ mod tests {
         assert!(!is_alive(u32::MAX));
     }
 }
+
+/// WKWebView and WebKitGTK print through their own dialogs, which save as PDF.
+impl super::ports::PdfPrinter for Os {
+    fn prints_to_pdf() -> bool {
+        false
+    }
+
+    fn print_to_pdf(
+        _webview: &tauri::Webview,
+        _path: &Path,
+    ) -> std::sync::mpsc::Receiver<Result<(), String>> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let _ = tx.send(Err(
+            "Printing to a PDF file isn't supported here.".to_string()
+        ));
+        rx
+    }
+}

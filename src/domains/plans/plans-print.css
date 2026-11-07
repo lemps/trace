@@ -1,0 +1,84 @@
+/* ============ A Plan document on paper (domains/plans/PrintSheet) ============
+   The sheet is in the page only while a PDF is being made. In print it's all
+   there is: the app around it is hidden, and it carries the light theme
+   (data-theme on the sheet), so a dark trace still prints black on white. */
+
+/* On screen the sheet is laid out out of sight, at about a page's text width, so
+   an HTML document's frame can be measured to its full height before printing. */
+.plan-print {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 7in;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    /* Paper is white whatever the app's theme: a dark theme's color-scheme would
+       otherwise give the page a dark canvas. */
+    color-scheme: light !important;
+    background: Canvas !important;
+  }
+  body:has(> .plan-print) > :not(.plan-print) {
+    display: none !important;
+  }
+  .plan-print {
+    position: static;
+    width: auto;
+    visibility: visible;
+    display: block;
+    color-scheme: light;
+    background: Canvas;
+    color: var(--fg-0);
+    font-family: var(--font-sans);
+  }
+  .plan-print-head {
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .plan-print-head h1 {
+    margin: 0 0 4px;
+    font-size: 20pt;
+    font-weight: 600;
+    color: var(--fg-0);
+  }
+  .plan-print-meta {
+    font-size: 9pt;
+    color: var(--fg-2);
+  }
+  .plan-print-md {
+    --md-size: 10.5pt;
+    --md-code-size: 9pt;
+    --md-line: 1.55;
+    --md-gap: 9px;
+    color: var(--fg-0);
+  }
+  /* Code and tables don't scroll on paper: they wrap and break across pages. */
+  .plan-print-md pre,
+  .plan-print-md code {
+    white-space: pre-wrap !important;
+    overflow: visible !important;
+  }
+  .plan-print-md h1,
+  .plan-print-md h2,
+  .plan-print-md h3 {
+    break-after: avoid;
+  }
+  .plan-print-md pre,
+  .plan-print-md tr,
+  .plan-print-md img {
+    break-inside: avoid;
+  }
+  .plan-print-frame {
+    display: block;
+    width: 100%;
+    border: 0;
+    color-scheme: normal;
+  }
+}

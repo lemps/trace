@@ -9,7 +9,6 @@ import { useHasExited } from "@/domains/agent/exitedStore";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
 import { RestartChip } from "@/domains/agent/RestartChip";
-import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
 import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
@@ -20,6 +19,7 @@ import { focusedGroup } from "@/domains/panes/model";
 import { PaneArea } from "@/domains/panes/PaneArea";
 import { layoutItems } from "@/domains/panes/paneMenu";
 import { type Panes, usePanes } from "@/domains/panes/usePanes";
+import { usePlanTab } from "@/domains/plans/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
@@ -92,7 +92,7 @@ export function SessionDetail({
   // Repo + live branch for the header (the tab bar already names the agent).
   const info = useWorkspaceInfo(session.id, turnIds, run.running);
   const waiting = agentActivity[active.workspaceId] === "waiting";
-  const htmlCount = useRichOutputStore((s) => s.blocks[active.workspaceId]?.length ?? 0);
+  const plan = usePlanTab(active.workspaceId);
 
   // Viewing a waiting agent acknowledges it — see AgentDetail.
   useEffect(() => {
@@ -104,7 +104,7 @@ export function SessionDetail({
     roster,
     active,
     live,
-    htmlCount,
+    plan,
     onAddAgent: (cli, provider) => onAddAgent(cli, provider),
     addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
   });
@@ -129,7 +129,7 @@ export function SessionDetail({
   const quickOpen = useQuickOpen(session.id, hasFiles, () => panes.select("files"));
   useDetailKeys(
     onBack,
-    panels.map((p) => p.id),
+    panels.filter((p) => !p.hidden).map((p) => p.id),
     panes.select
   );
 

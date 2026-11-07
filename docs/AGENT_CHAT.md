@@ -49,6 +49,16 @@ that started it, and never open a turn.
 Plans and diffs are adapter output, not UI guesses: Claude's `TodoWrite` and Codex's plan updates
 both become `plan`; Claude's `Edit`/`Write` and Codex's file changes both become `diff`.
 
+**Plans.** The journal has no plan-document row: the Plan tab (`plans`, `src/domains/plans/`)
+reads plans out of the rows as they're written (`plans::on_row`, from the runtime's sink), so
+the contract is unchanged. A `tool` row named `ExitPlanMode` is a plan-mode document (its
+`input.plan`, Markdown; the row's input is capped like any other, at `CAP_CHARS`); a completed
+`Write`/`Edit`/`MultiEdit` row on a file in `~/.claude/plans/` is the plan file, read (from that
+folder only) if ExitPlanMode's input had no plan, or at the turn's end if the turn wrote it but
+never called ExitPlanMode. `plan` rows (TodoWrite, Codex's plan updates) are the tab's live task
+list. A terminal agent's plans come from its Claude transcript instead, read as its hooks fire
+(`plans::transcript`), through the same `plans::capture`.
+
 Session-wide facts (model, session id, slash commands, rate-limit windows, `busy` while a turn
 runs, `runningSubagents`) travel separately as `SessionInfo`, not as rows. An agent is working
 while `busy` or `runningSubagents > 0` (`agentChat/working.ts`): background subagents keep it

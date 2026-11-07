@@ -5,6 +5,7 @@ import { terminalAppearance, terminalAppearanceKey } from "@/domains/appearance/
 import { firstUnseenIndex, type OutputChunk } from "@/domains/board/outputBuffer";
 import { useBoardStore } from "@/domains/board/store";
 import { ptySnapshot, resizeAgent, sendAgentInput } from "@/ipc/agent";
+import { publishPlanDoc } from "@/ipc/plans";
 import { ptyCompat } from "@/platform/pty";
 import {
   isAppKey,
@@ -13,7 +14,6 @@ import {
   isTerminalFind,
   isTerminalPaste,
 } from "@/platform/shortcuts";
-import { useRichOutputStore } from "./richOutputStore";
 import { copyContext, copySelection } from "./terminal/copyContext";
 import { installLinks, oscLinkHandler } from "./terminal/links";
 import { installSearch } from "./terminal/search";
@@ -119,12 +119,11 @@ export function getTerminal(issueKey: string): TerminalEntry {
 
   // Out-of-band HTML channel: the agent prints OSC 7700 ; base64(html) ST and we
   // swallow it here so it never paints into the grid, decode the payload, and
-  // hand the raw HTML to the rich-output store; the panel renders it in a
-  // sandboxed iframe. The handler is disposed with the parser on `term.dispose()`.
+  // publish the raw HTML to the Plan tab, which renders it in a sandboxed iframe. The handler is disposed with the parser on `term.dispose()`.
   term.parser.registerOscHandler(RICH_HTML_OSC, (payload) => {
     try {
       const html = new TextDecoder().decode(decodeBase64(payload));
-      useRichOutputStore.getState().push(issueKey, html);
+      void publishPlanDoc(issueKey, "html", null, html).catch(() => {});
     } catch {
       // Drop a malformed marker rather than corrupt the screen.
     }

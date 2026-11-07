@@ -28,6 +28,19 @@ export interface PanelDescriptor {
    */
   optional?: boolean;
   /**
+   * Out of the tab row for now (the Plan tab with nothing to show). The layout keeps
+   * its place, so it comes back where it was; ⌘1–9 and the strip skip it.
+   */
+  hidden?: boolean;
+  /**
+   * For a tab that comes and goes: the pane menu always lists it, greyed out with
+   * this hint while hidden, and picking it then calls `onReveal` and shows it.
+   */
+  menuHint?: string;
+  onReveal?: () => void;
+  /** Closable for now (shown empty after a reveal): its × calls this. */
+  onClose?: () => void;
+  /**
    * The content. It stays mounted while the tab is shown — moving it to another pane
    * moves its DOM, so terminals, scroll and selection survive — and unmounts when hidden.
    */

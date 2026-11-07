@@ -36,6 +36,8 @@ import "@/domains/agentChat/cards.css";
 import "@/domains/agentChat/composer.css";
 import "@/domains/agentChat/subagents.css";
 import "@/domains/agentChat/transport.css";
+import "@/domains/plans/plans.css";
+import "@/domains/plans/plans-print.css";
 import "@/domains/prs/prs.css";
 import "@/domains/prs/rail.css";
 import "@/domains/prs/checks.css";

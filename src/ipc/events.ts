@@ -19,13 +19,6 @@ export interface AgentRunState {
   exited?: boolean;
 }
 
-export interface RichHtml {
-  /** The owning issue/workspace key — matches the rich-output store keying. */
-  issueKey: string;
-  /** Raw HTML from the agent's `trace-render`; rendered in a sandboxed iframe. */
-  html: string;
-}
-
 /**
  * A Claude agent's turn event, from its Stop/Notification hooks (`claude::hooks`).
  * Codex agents have no hooks and never send these.
@@ -77,10 +70,6 @@ export function onPtyOutput(cb: (payload: PtyOutput) => void): Promise<UnlistenF
 
 export function onAgentRunState(cb: (payload: AgentRunState) => void): Promise<UnlistenFn> {
   return listen<AgentRunState>("agent-run-state", (e) => cb(e.payload));
-}
-
-export function onRichHtml(cb: (payload: RichHtml) => void): Promise<UnlistenFn> {
-  return listen<RichHtml>("rich-html", (e) => cb(e.payload));
 }
 
 export function onScheduleRun(cb: (payload: ScheduleRunEvent) => void): Promise<UnlistenFn> {

@@ -4770,6 +4770,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "webview2-com",
+ "windows",
  "windows-sys 0.59.0",
 ]
 

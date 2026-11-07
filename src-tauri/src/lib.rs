@@ -17,6 +17,7 @@ pub mod helpers;
 pub mod interrupted;
 pub mod issues;
 pub mod jira;
+pub mod plans;
 pub mod platform;
 pub mod pylon;
 pub mod repo_catalog;
@@ -131,8 +132,11 @@ pub fn run() {
             commands::diff::git_diff_file,
             commands::diff::read_workspace_file,
             commands::files::list_workspace_files,
-            commands::rich_output::load_rich_output,
-            commands::rich_output::save_rich_output,
+            commands::plans::load_plan_docs,
+            commands::plans::publish_plan_doc,
+            commands::plans::remove_plan_doc,
+            commands::plans::export_plan_doc,
+            commands::plans::export_plan_pdf,
             commands::editor::open_in_editor,
             commands::session::list_sessions,
             commands::session::create_session,

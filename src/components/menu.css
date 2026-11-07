@@ -56,6 +56,17 @@
   opacity: 0.4;
   cursor: default;
 }
+.pop-menu-item.muted {
+  color: var(--fg-3);
+}
+.pop-menu-detail {
+  display: block;
+  max-width: 260px;
+  white-space: normal;
+  font-size: var(--text-meta);
+  line-height: 1.4;
+  color: var(--fg-3);
+}
 .pop-menu-item.danger {
   color: var(--c-danger);
 }

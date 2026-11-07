@@ -1,10 +1,11 @@
-//! Out-of-band HTML bridge for the agent's rich-output panel.
+//! Out-of-band bridge from an agent to its Plan tab (and, for `trace-hook`, its turns).
 //!
 //! A Claude agent can't push bytes onto its own chat PTY (Claude runs its Bash
 //! tool in a captured, tty-less shell), so the OSC-in-the-terminal channel can't
 //! be driven by the agent. Instead the agent runs `trace-render`, which opens a
 //! loopback TCP connection to this listener; the listener validates a per-session
-//! token and emits a `rich-html` Tauri event the frontend renders in the panel.
+//! token and publishes the document (Markdown or HTML) to the workspace's Plan tab
+//! (`plans::publish`).
 //!
 //! Security: binds `127.0.0.1` only (never network-exposed), and every message
 //! must carry a random per-app-session token, compared in constant time. The
@@ -15,10 +16,10 @@ use std::io::{BufRead, BufReader, Read};
 use std::net::{TcpListener, TcpStream};
 
 use base64::Engine;
-use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use crate::helpers::{new_id, trace_bin_dir};
+use crate::plans::model::PlanFormat;
 use crate::platform::ports::AgentBridge;
 use crate::platform::Os;
 
@@ -26,9 +27,14 @@ use crate::platform::Os;
 /// coordinates from the agent's env (set in `commands::agent::spawn_in`) and
 /// carries no secret itself. Accepts an HTML file arg or HTML on stdin.
 const PRODUCER_SCRIPT: &str = r#"#!/usr/bin/env bash
-# trace-render — render HTML in this agent's trace "Chat" panel.
-#   trace-render report.html        # from a file
-#   echo '<h2>Hi</h2>' | trace-render   # from stdin
+# trace-render: publish a document to this agent's Plan tab in trace, where the
+# user reads it, sees its versions and exports it (Markdown, PDF, HTML).
+#   trace-render plan.md                       # Markdown, titled by its first heading
+#   trace-render --title "Rollout plan" plan.md
+#   echo '# Plan' | trace-render --md          # Markdown from stdin
+#   trace-render report.html                   # HTML (shown sandboxed, no scripts)
+#   echo '<h2>Hi</h2>' | trace-render          # HTML from stdin
+# Publishing again with the same title adds a new version of that document.
 set -euo pipefail
 
 if [ -z "${TRACE_RENDER_PORT:-}" ] || [ -z "${TRACE_RENDER_TOKEN:-}" ] || [ -z "${TRACE_ISSUE_KEY:-}" ]; then
@@ -36,16 +42,35 @@ if [ -z "${TRACE_RENDER_PORT:-}" ] || [ -z "${TRACE_RENDER_TOKEN:-}" ] || [ -z "
   exit 1
 fi
 
-if [ "$#" -ge 1 ]; then
-  html="$(cat "$1")"
-else
-  html="$(cat)"
-fi
+format="" title="" file=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --md|--markdown) format="md" ;;
+    --html) format="html" ;;
+    --title) shift; title="${1:-}" ;;
+    --title=*) title="${1#--title=}" ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    *) file="$1" ;;
+  esac
+  shift
+done
 
-# base64 keeps the payload on one space-free, newline-free line so the listener
-# can frame the message as "<token> <issueKey> <payload>".
-payload="$(printf '%s' "$html" | base64 | tr -d '\n')"
-msg="$TRACE_RENDER_TOKEN $TRACE_ISSUE_KEY $payload"
+if [ -n "$file" ]; then
+  body="$(cat "$file")"
+  case "$file" in
+    *.md|*.markdown|*.MD) [ -n "$format" ] || format="md" ;;
+  esac
+else
+  body="$(cat)"
+fi
+[ -n "$format" ] || format="html"
+
+# base64 keeps each part on one space-free, newline-free line, so the listener
+# can frame the message as "<token> <issueKey> @<format> <title> <body>".
+b64() { printf '%s' "$1" | base64 | tr -d '\n'; }
+t="-"
+[ -z "$title" ] || t="$(b64 "$title")"
+msg="$TRACE_RENDER_TOKEN $TRACE_ISSUE_KEY @$format $t $(b64 "$body")"
 
 # Prefer bash's /dev/tcp (no external tool); fall back to nc.
 if exec 3<>"/dev/tcp/127.0.0.1/$TRACE_RENDER_PORT" 2>/dev/null; then
@@ -57,6 +82,7 @@ else
   echo "trace-render: cannot reach trace (no /dev/tcp or nc)" >&2
   exit 1
 fi
+echo "trace-render: published to the Plan tab"
 "#;
 
 /// Cap a single message at ~8 MiB of base64 (~6 MiB of HTML) so a malformed or
@@ -69,14 +95,6 @@ const MAX_MESSAGE_BYTES: u64 = 8 * 1024 * 1024;
 pub struct RenderBridge {
     pub port: u16,
     pub token: String,
-}
-
-/// Tauri event payload — `issueKey` matches the frontend store's keying.
-#[derive(Clone, Serialize)]
-struct RichHtml {
-    #[serde(rename = "issueKey")]
-    issue_key: String,
-    html: String,
 }
 
 /// Bind the loopback listener, write the producer script, and spawn the accept
@@ -132,19 +150,53 @@ fn handle_conn(stream: TcpStream, app: &AppHandle, token: &str) {
         crate::claude::hooks::on_hook(app, issue_key, event);
         return;
     }
-    let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(b64) else {
+    let Some(message) = parse_publish(b64) else {
         return;
     };
-    let Ok(html) = String::from_utf8(bytes) else {
-        return;
+    let title = message.title.as_deref();
+    if let Err(e) = crate::plans::publish(app, issue_key, message.format, title, message.body, None)
+    {
+        eprintln!("trace: trace-render: {e}");
+    }
+}
+
+/// A document `trace-render` sent: `@<md|html> <base64 title, or -> <base64 body>`,
+/// or, from an older script, the base64 HTML alone.
+#[derive(Debug, PartialEq)]
+struct Publish {
+    format: PlanFormat,
+    title: Option<String>,
+    body: String,
+}
+
+fn decode_text(b64: &str) -> Option<String> {
+    let bytes = base64::engine::general_purpose::STANDARD.decode(b64).ok()?;
+    String::from_utf8(bytes).ok()
+}
+
+fn parse_publish(payload: &str) -> Option<Publish> {
+    let Some(framed) = payload.strip_prefix('@') else {
+        return Some(Publish {
+            format: PlanFormat::Html,
+            title: None,
+            body: decode_text(payload)?,
+        });
     };
-    let _ = app.emit(
-        "rich-html",
-        RichHtml {
-            issue_key: issue_key.to_string(),
-            html,
-        },
-    );
+    let mut parts = framed.splitn(3, ' ');
+    let format = match parts.next()? {
+        "md" => PlanFormat::Markdown,
+        "html" => PlanFormat::Html,
+        _ => return None,
+    };
+    let title = match parts.next()? {
+        "-" => None,
+        t => Some(decode_text(t)?),
+    };
+    Some(Publish {
+        format,
+        title,
+        body: decode_text(parts.next()?).filter(|b| !b.is_empty())?,
+    })
 }
 
 /// Constant-time byte comparison so a token check can't be timed. (The length is
@@ -167,4 +219,50 @@ fn write_producer_script() -> std::io::Result<()> {
     std::fs::create_dir_all(&bin)?;
     let path = bin.join("trace-render");
     Os::install_script(&path, PRODUCER_SCRIPT)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn b64(s: &str) -> String {
+        base64::engine::general_purpose::STANDARD.encode(s)
+    }
+
+    #[test]
+    fn markdown_and_html_payloads_with_and_without_a_title() {
+        let md = format!(
+            "@md {} {}",
+            b64("Rollout plan"),
+            b64("# Plan
+1. a")
+        );
+        assert_eq!(
+            parse_publish(&md),
+            Some(Publish {
+                format: PlanFormat::Markdown,
+                title: Some("Rollout plan".into()),
+                body: "# Plan
+1. a"
+                    .into()
+            })
+        );
+        let html = format!("@html - {}", b64("<p>x</p>"));
+        assert_eq!(parse_publish(&html).unwrap().title, None);
+        // An older trace-render sends the HTML alone.
+        let old = parse_publish(&b64("<h2>Hi</h2>")).unwrap();
+        assert_eq!(
+            (old.format, old.body.as_str()),
+            (PlanFormat::Html, "<h2>Hi</h2>")
+        );
+    }
+
+    #[test]
+    fn malformed_payloads_are_dropped() {
+        assert_eq!(parse_publish("@pdf - eA=="), None);
+        assert_eq!(parse_publish("@md - "), None);
+        assert_eq!(parse_publish("@md"), None);
+        assert_eq!(parse_publish("@md !!! eA=="), None);
+        assert_eq!(parse_publish("not base64!"), None);
+    }
 }
