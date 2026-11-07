@@ -1,7 +1,8 @@
 import { type KeyboardEvent, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
-import { isShortcut, useHint } from "@/platform/shortcuts";
+import { KeyHint } from "@/components/KeyHint";
+import { isShortcut, useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { useChatActions } from "./actions";
 import { QueueList } from "./QueueList";
 import { SlashMenu, slashMatches } from "./SlashMenu";
@@ -25,7 +26,8 @@ const MAX_ROWS = 10;
 // Where you talk to the agent (the main one; subagents are read-only). Enter
 // sends (Shift+Enter is a new line); while a turn runs, Enter queues the message
 // instead. Esc interrupts (the pane hears it, wherever focus is). Typing `/`
-// lists the agent's slash commands.
+// lists the agent's slash commands. The keys are in the buttons' tooltips and the
+// cheat sheet, not spelled out under the box.
 export function Composer({
   workspaceId,
   busy,
@@ -39,9 +41,10 @@ export function Composer({
   const [active, setActive] = useState(0);
   const [menuClosed, setMenuClosed] = useState(false);
   const matches = menuClosed ? null : slashMatches(text, slashCommands);
-  const sendHint = useHint("chatSend");
-  const newlineHint = useHint("chatNewline");
-  const interruptHint = useHint("chatInterrupt");
+  const interruptTitle = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and its subagents`;
+  const interruptKeys = useAriaKeys("chatInterrupt");
+  const sendTitle = useTitleWithHint(busy ? "Queue the message" : "Send the message", "chatSend");
+  const slash = slashCommands.length > 0 ? ", / for commands" : "";
 
   const submit = () => {
     const message = text.trim();
@@ -103,10 +106,10 @@ export function Composer({
           aria-label="Message the agent"
           placeholder={
             busy
-              ? "Queue a message for when this turn ends"
+              ? `Queue a message for when this turn ends${slash}`
               : toMain
-                ? "Message the main agent"
-                : "Message the agent"
+                ? `Message the main agent${slash}`
+                : `Message the agent${slash}`
           }
           rows={rows}
           value={text}
@@ -118,20 +121,15 @@ export function Composer({
           onKeyDown={onKeyDown}
         />
         <div className="ac-composer-bar">
-          <span className="ac-composer-hints">
-            <span className="kbd">{sendHint}</span> {busy ? "queues" : "sends"} ·{" "}
-            <span className="kbd">{newlineHint}</span> new line
-            {working && (
-              <>
-                {" "}
-                · <span className="kbd">{interruptHint}</span> interrupts
-              </>
-            )}
-            {slashCommands.length > 0 && " · / for commands"}
-          </span>
           {working && (
-            <button type="button" className="btn" onClick={onInterrupt}>
-              <I.X size={13} /> Interrupt
+            <button
+              type="button"
+              className="btn"
+              onClick={onInterrupt}
+              title={interruptTitle}
+              aria-keyshortcuts={interruptKeys}
+            >
+              <I.X size={13} /> Interrupt <KeyHint id="chatInterrupt" />
             </button>
           )}
           <button
@@ -139,9 +137,10 @@ export function Composer({
             className="btn primary"
             disabled={!text.trim()}
             onClick={submit}
+            title={sendTitle}
             aria-label={busy ? "Queue the message" : "Send the message"}
           >
-            <I.Send size={13} /> {busy ? "Queue" : "Send"}
+            <I.Send size={13} /> {busy ? "Queue" : "Send"} <KeyHint id="chatSend" />
           </button>
         </div>
       </div>

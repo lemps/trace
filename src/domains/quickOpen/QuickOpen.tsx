@@ -6,6 +6,7 @@ import { Segmented } from "@/components/Segmented";
 import { EDITORS } from "@/domains/agent/editorItems";
 import { type Editor, openInEditor } from "@/ipc/editor";
 import { listWorkspaceFiles, type WorktreeFiles } from "@/ipc/files";
+import { useHint } from "@/platform/shortcuts";
 import { preferredEditor, setPreferredEditor } from "./editorPref";
 import { type FuzzyMatch, rankFiles } from "./fuzzy";
 import { Highlighted } from "./Highlighted";
@@ -23,6 +24,8 @@ interface QuickOpenProps {
 // opens it in the user's editor. The list is git's (tracked + new, minus ignored),
 // fetched each time the picker opens so it's never stale.
 export function QuickOpen({ workspaceId, onClose, onView }: QuickOpenProps) {
+  const pickHint = useHint("searchPick");
+  const editorHint = useHint("searchEditor");
   const [list, setList] = useState<WorktreeFiles | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -95,8 +98,8 @@ export function QuickOpen({ workspaceId, onClose, onView }: QuickOpenProps) {
       footer={
         <div className="qo-foot">
           <span className="qo-hints">
-            <span className="kbd">↵</span> view in Files
-            <span className="kbd">⇧↵</span> open in {editorLabel}
+            <span className="kbd">{pickHint}</span> view in Files
+            <span className="kbd">{editorHint}</span> open in {editorLabel}
           </span>
           <Segmented
             label="Editor"

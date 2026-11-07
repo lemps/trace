@@ -6,7 +6,6 @@ import { useBoardStore } from "@/domains/board/store";
 import { useAgentLight } from "@/domains/live/store";
 import type { AgentCli } from "@/ipc/agent";
 import { workspaceInfo } from "@/ipc/workspace";
-import { useHint } from "@/platform/shortcuts";
 import { type Block, formatDuration, toBlocks } from "./blocks";
 import { ToolRun } from "./ToolRun";
 import { useTranscriptFeed } from "./useTranscriptFeed";
@@ -41,7 +40,6 @@ export function TranscriptView({ workspaceId, cli }: TranscriptViewProps) {
 }
 
 function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
-  const viewKey = useHint("agentView");
   const feed = useTranscriptFeed(workspaceId);
   const light = useAgentLight(workspaceId);
   const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
@@ -115,8 +113,7 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
             ))}
             {working && <div className="tx-working">Working…</div>}
             <div className="tx-foot">
-              {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"}{" "}
-              · <span className="kbd">{viewKey}</span> switches views
+              {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"}
             </div>
           </div>
         </div>

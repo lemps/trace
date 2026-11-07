@@ -23,7 +23,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **iPhone and Android apps.**
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.
-      ([#13](https://github.com/noble1911/trace/pull/13))
+      ([#13](https://github.com/noble1911/trace/pull/13)) Shortcuts show in menus, tooltips, the
+      search palette and a cheat sheet (`?`, Ctrl+/, the rail's keyboard button), not as chips on
+      buttons unless Settings → Shortcuts' "Show shortcut hints on buttons" is on.
 - [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
       plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
       ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview, and

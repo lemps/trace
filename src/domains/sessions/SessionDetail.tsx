@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/app/toast";
+import { BackButton } from "@/components/BackButton";
 import { I } from "@/components/Icon";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
@@ -174,9 +175,7 @@ export function SessionDetail({
   return (
     <div className="detail">
       <div className="detail-top">
-        <button type="button" className="back" onClick={onBack}>
-          <I.Back size={14} /> {backLabel} <span className="kbd">esc</span>
-        </button>
+        <BackButton label={backLabel} onBack={onBack} />
         <span className="session-avatar">
           <I.Sparkles size={18} />
         </span>

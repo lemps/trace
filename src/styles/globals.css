@@ -60,6 +60,12 @@
   color: var(--fg-3);
   background: var(--bg-1);
 }
+/* On a filled button (Send, Open) the chip takes the button's own text colour. */
+.btn.primary .kbd {
+  background: transparent;
+  border-color: color-mix(in oklch, currentColor 35%, transparent);
+  color: inherit;
+}
 
 
 /* ============ Generic page (Agents, PRs, Activity, Settings) ============ */

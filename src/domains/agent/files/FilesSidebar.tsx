@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
 import { Segmented } from "@/components/Segmented";
 import { useQuickOpenStore } from "@/domains/quickOpen/store";
-import { useHint } from "@/platform/shortcuts";
+import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { FileTree, type TreeFocus } from "./FileTree";
 import type { Query, Row } from "./rows";
 import type { FilesMode } from "./store";
@@ -44,14 +44,23 @@ function ModeLabel({ text, count }: { text: string; count?: number | null }) {
 }
 
 /** A square tool button in the sidebar's toolbar. */
-function Tool(p: { label: string; on?: boolean; onClick: () => void; children: ReactNode }) {
+function Tool(p: {
+  label: string;
+  /** The tooltip, when it says more than the label (its shortcut). */
+  title?: string;
+  keys?: string;
+  on?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
     <button
       type="button"
       className={`fx-tool${p.on ? " on" : ""}`}
       onClick={p.onClick}
-      title={p.label}
+      title={p.title ?? p.label}
       aria-label={p.label}
+      aria-keyshortcuts={p.keys}
       aria-pressed={p.on}
     >
       {p.children}
@@ -62,7 +71,8 @@ function Tool(p: { label: string; on?: boolean; onClick: () => void; children: R
 // The Files tab's left side: Changes / All files, a filter, and the tree. Its own
 // header hides it (the viewer then takes the width), as the right-hand side panel's does.
 export function FilesSidebar(p: FilesSidebarProps) {
-  const quickOpenHint = useHint("quickOpen");
+  const quickOpenTitle = useTitleWithHint("Quick Open", "quickOpen");
+  const quickOpenKeys = useAriaKeys("quickOpen");
   const showQuickOpen = useQuickOpenStore((s) => s.show);
   const isChanges = p.mode === "changes";
   return (
@@ -128,7 +138,9 @@ export function FilesSidebar(p: FilesSidebarProps) {
           <I.Refresh size={14} />
         </Tool>
         <Tool
-          label={quickOpenHint ? `Quick Open (${quickOpenHint})` : "Quick Open"}
+          label="Quick Open"
+          title={quickOpenTitle}
+          keys={quickOpenKeys}
           onClick={() => showQuickOpen(p.workspaceId)}
         >
           <I.Search size={14} />

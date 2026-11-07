@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { KeyHint } from "@/components/KeyHint";
 import { ChatPrompts } from "@/domains/agentChat/PendingPrompts";
 import { useIsChatAgent } from "@/domains/agentChat/transport";
 import type { LiveEntry } from "@/domains/live/entries";
@@ -6,6 +7,7 @@ import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useSessionsOverview } from "@/domains/sessions/hooks/useSessionsOverview";
 import { type DiffSummary, gitDiffSummary } from "@/ipc/diff";
 import { basename } from "@/platform/paths";
+import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { AskCard } from "./AskCard";
 import { ReplyBox } from "./ReplyBox";
 
@@ -44,6 +46,10 @@ interface InboxDetailProps {
 export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: InboxDetailProps) {
   const { info } = entry;
   const ask = shownAsk(info);
+  const dismissTitle = useTitleWithHint("Dismiss", "inboxDismiss");
+  const dismissKeys = useAriaKeys("inboxDismiss");
+  const openTitle = useTitleWithHint(`Open ${OPEN_WHAT[entry.source]}`, "inboxOpen");
+  const openKeys = useAriaKeys("inboxOpen");
   // A chat agent's prompts are its own cards, answered over the chat protocol.
   const isChat = useIsChatAgent(entry.id);
   const overview = useSessionsOverview(entry.worktreeId ? [entry.worktreeId] : [])[
@@ -76,13 +82,20 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
             type="button"
             className="btn"
             onClick={onDismiss}
-            title="Takes it out of Needs you. This doesn't answer the agent."
+            title={`${dismissTitle}: takes it out of Needs you. This doesn't answer the agent.`}
+            aria-keyshortcuts={dismissKeys}
           >
-            Dismiss <span className="kbd">E</span>
+            Dismiss <KeyHint id="inboxDismiss" />
           </button>
         )}
-        <button type="button" className="btn primary" onClick={onOpen}>
-          Open {OPEN_WHAT[entry.source]} <span className="kbd">⏎</span>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={onOpen}
+          title={openTitle}
+          aria-keyshortcuts={openKeys}
+        >
+          Open {OPEN_WHAT[entry.source]} <KeyHint id="inboxOpen" />
         </button>
       </div>
 

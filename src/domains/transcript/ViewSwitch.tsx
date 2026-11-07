@@ -1,5 +1,5 @@
 import type { AgentCli } from "@/ipc/agent";
-import { useHint } from "@/platform/shortcuts";
+import { useTitleWithHint } from "@/platform/shortcuts";
 import { type AgentView, useAgentView, useTranscriptStore } from "./store";
 
 const OPTIONS: { value: AgentView; label: string }[] = [
@@ -11,7 +11,7 @@ const OPTIONS: { value: AgentView; label: string }[] = [
 // Both show the same running agent; switching never restarts it.
 export function ViewSwitch({ workspaceId, cli }: { workspaceId: string; cli: AgentCli }) {
   const view = useAgentView(workspaceId);
-  const viewKey = useHint("agentView");
+  const switchTitle = useTitleWithHint("Switch between transcript and terminal", "agentView");
   const setView = useTranscriptStore((s) => s.setView);
   const isCodex = cli === "codex";
   const shown = isCodex ? "terminal" : view;
@@ -19,11 +19,7 @@ export function ViewSwitch({ workspaceId, cli }: { workspaceId: string; cli: Age
     <fieldset
       className="seg tx-switch"
       aria-label="Agent view"
-      title={
-        isCodex
-          ? "Codex agents show the terminal only"
-          : `Switch between transcript and terminal (${viewKey})`
-      }
+      title={isCodex ? "Codex agents show the terminal only" : switchTitle}
     >
       {OPTIONS.map((o) => (
         <button

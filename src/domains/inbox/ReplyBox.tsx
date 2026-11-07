@@ -18,6 +18,7 @@ interface ReplyBoxProps {
 // Talk to the agent without opening its terminal. ⏎ sends; ⌘⏎ sends and moves on.
 export function ReplyBox({ workspaceId, pendingKind, chat, onSentNext }: ReplyBoxProps) {
   const [text, setText] = useState("");
+  const sendHint = useHint("inboxSend");
   const nextHint = useHint("sendAndNext");
   const send = (thenNext: boolean) => {
     if (!text.trim()) return;
@@ -59,11 +60,8 @@ export function ReplyBox({ workspaceId, pendingKind, chat, onSentNext }: ReplyBo
             : "Reply without opening the terminal…"
         }
         aria-label="Reply to the agent"
+        title={`Send (${sendHint}) · send and go to the next agent (${nextHint})`}
       />
-      <span className="ib-reply-hint">
-        <span className="kbd">⏎</span> send · <span className="kbd">{nextHint}</span> send &amp;
-        next
-      </span>
     </label>
   );
 }

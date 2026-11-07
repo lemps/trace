@@ -9,7 +9,6 @@ import { useLiveStore } from "@/domains/live/store";
 import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useNow } from "@/hooks/useNow";
 import { InboxDetail } from "./InboxDetail";
-import { InboxKeyHints } from "./InboxKeyHints";
 import { InboxRow } from "./InboxRow";
 import { useInboxKeys } from "./useInboxKeys";
 
@@ -133,7 +132,6 @@ export function InboxView({ onOpen }: InboxViewProps) {
           ))}
           {drag.dropAtEnd() && <div className="ib-drop" aria-hidden="true" />}
         </div>
-        <InboxKeyHints />
       </section>
       {selected ? (
         <InboxDetail

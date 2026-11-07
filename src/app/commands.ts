@@ -1,4 +1,5 @@
 import { useBoardStore } from "@/domains/board/store";
+import { useCheatSheet } from "@/domains/cheatSheet/store";
 import { useIssuesStore } from "@/domains/issues/store";
 import { choicesFor, choose } from "@/domains/live/answer";
 import { orderIds } from "@/domains/live/order";
@@ -97,6 +98,16 @@ export function buildCommands(query: string, setNav: (nav: NavId) => void): Comm
         if (next) openWorkspace(next, setNav);
         else toast.info("Nothing needs you right now");
       },
+    });
+  }
+
+  if (matches("keyboard shortcuts keys cheat sheet help")) {
+    out.push({
+      id: "cheat-sheet",
+      group: "action",
+      label: "Keyboard shortcuts",
+      kbd: hint("cheatSheet"),
+      run: () => useCheatSheet.getState().show(),
     });
   }
 

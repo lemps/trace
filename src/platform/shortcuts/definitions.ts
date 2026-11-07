@@ -31,6 +31,24 @@ export const SHORTCUTS: ShortcutDef[] = [
     pc: ["Ctrl+Shift+k", "Ctrl+Shift+/"],
   },
   {
+    // Not heard in a terminal, so off macOS it can be Ctrl+/ (the terminal keeps its ^_
+    // there). ⌘/ and Ctrl+Shift+/ are the search's.
+    id: "cheatSheet",
+    label: "Show keyboard shortcuts",
+    group: "help",
+    scope: "page",
+    ...both(["Ctrl+/"]),
+  },
+  {
+    // `?` is read by the character typed, whichever key a layout puts it on.
+    id: "cheatSheetKey",
+    label: "Show keyboard shortcuts (when you aren't typing)",
+    group: "help",
+    scope: "page",
+    ...both(["?"]),
+    isFixed: true,
+  },
+  {
     id: "agentView",
     label: "Switch between transcript and terminal",
     group: "detail",

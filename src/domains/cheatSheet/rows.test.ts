@@ -1,0 +1,46 @@
+// Run: `npm test` (node's own runner; Node strips the types).
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  effectiveKeymap,
+  GROUPS,
+  groupedShortcuts,
+  SHORTCUTS,
+} from "../../platform/shortcuts/registry.ts";
+import { cheatSheetGroups } from "./rows.ts";
+
+describe("cheatSheetGroups", () => {
+  it("lists Settings → Shortcuts' groups, in its order", () => {
+    const groups = cheatSheetGroups(effectiveKeymap({}, "windows"), "windows");
+    assert.deepEqual(
+      groups.map((g) => g.id),
+      groupedShortcuts().map((g) => g.id)
+    );
+    // Only groups with shortcuts, but in GROUPS' order.
+    const order = GROUPS.map((g) => g.id);
+    const at = groups.map((g) => order.indexOf(g.id));
+    assert.deepEqual(
+      at,
+      [...at].sort((a, b) => a - b)
+    );
+  });
+  it("lists every shortcut exactly once, under its own group", () => {
+    const groups = cheatSheetGroups(effectiveKeymap({}, "macos"), "macos");
+    const ids = groups.flatMap((g) => g.rows.map((r) => r.id));
+    assert.deepEqual([...ids].sort(), SHORTCUTS.map((s) => s.id).sort());
+    for (const g of groups) {
+      for (const r of g.rows) assert.equal(SHORTCUTS.find((s) => s.id === r.id)?.group, g.id);
+    }
+  });
+  it("shows the user's rebindings, as this OS writes them", () => {
+    const keymap = effectiveKeymap({ orchestrator: ["Ctrl+Shift+o"] }, "windows");
+    const row = cheatSheetGroups(keymap, "windows")
+      .flatMap((g) => g.rows)
+      .find((r) => r.id === "orchestrator");
+    assert.deepEqual(row?.keys, ["Ctrl+Shift+O"]);
+    const mac = cheatSheetGroups(effectiveKeymap({}, "macos"), "macos")
+      .flatMap((g) => g.rows)
+      .find((r) => r.id === "search");
+    assert.deepEqual(mac?.keys, ["⌘/", "⌘K"]);
+  });
+});

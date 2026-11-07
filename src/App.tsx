@@ -20,6 +20,7 @@ import { AgentDetail } from "@/domains/agent/AgentDetail";
 import { Board } from "@/domains/board/Board";
 import { useBoardAutoRefresh } from "@/domains/board/hooks/useBoardAutoRefresh";
 import { useBoardStore } from "@/domains/board/store";
+import { CheatSheet } from "@/domains/cheatSheet/CheatSheet";
 import { FleetView } from "@/domains/fleet/FleetView";
 import { InboxView } from "@/domains/inbox/InboxView";
 import { IntegrationsView } from "@/domains/integrations/IntegrationsView";
@@ -165,6 +166,7 @@ export function App() {
         </ErrorBoundary>
       )}
       <InterruptedAgents />
+      <CheatSheet onNav={handleNav} />
       <Toaster />
     </div>
   );
