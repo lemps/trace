@@ -70,10 +70,10 @@ fn edit_and_write_become_diffs() {
     assert_eq!(diffs.len(), 2);
     let (write, edit) = (diffs[0], diffs[1]);
     assert_eq!(write.path, "/home/dev/demo/notes.txt");
-    assert_eq!(write.kind, ChangeKind::Add);
+    assert_eq!(write.change, ChangeKind::Add);
     assert_eq!(write.after.as_deref(), Some("alpha"));
     assert_eq!(write.before, None);
-    assert_eq!(edit.kind, ChangeKind::Edit);
+    assert_eq!(edit.change, ChangeKind::Edit);
     assert_eq!(
         (edit.before.as_deref(), edit.after.as_deref()),
         (Some("alpha"), Some("beta"))

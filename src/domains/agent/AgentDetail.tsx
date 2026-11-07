@@ -5,6 +5,8 @@ import { I } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
 import { useSidePanel } from "@/components/useSidePanel";
 import { activity } from "@/domains/activity/store";
+import { ChatAgentPane } from "@/domains/agentChat/ChatAgentPane";
+import { useIsChatAgent } from "@/domains/agentChat/transport";
 import { adoptIfAlive } from "@/domains/board/adopt";
 import { statusOf, useBoardStore } from "@/domains/board/store";
 import type { Issue, PullRequest } from "@/domains/issues/types";
@@ -67,6 +69,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"raise" | "merge" | null>(null);
   const [cli, setCli] = useState<AgentCli>(agentCli);
+  const isChat = useIsChatAgent(issue.key);
   const [provider, setProvider] = useState<AgentProvider>(agentProvider);
   // Right edge: the ticket's details, or the orchestrator — one at a time.
   const panel = useSidePanel("ticket", ["context", "orchestrator"]);
@@ -260,10 +263,11 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
                 </button>
               );
             })}
-            {tab === "chat" && <ViewSwitch workspaceId={issue.key} cli={cli} />}
+            {tab === "chat" && !isChat && <ViewSwitch workspaceId={issue.key} cli={cli} />}
           </div>
 
-          {tab === "chat" && (
+          {tab === "chat" && isChat && <ChatAgentPane workspaceId={issue.key} />}
+          {tab === "chat" && !isChat && (
             // The terminal mounts even before the session starts so it can be
             // measured/fitted to the real pane; StartPrompt overlays it until then.
             <ChatSurface workspaceId={issue.key} cli={cli}>

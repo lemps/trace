@@ -41,10 +41,12 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [ ] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
       model/effort pills; half-typed terminal text carries over to chat.
 - [~] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
-      The Inbox has these today, but a chat view doesn't. *Started:* the chat transport's backend
-      (`agent_session/`) turns both into approval and question rows answered in place; its UI is
-      in progress.
-- [ ] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
+      The Inbox has these today, but a chat view doesn't. *Started:* the chat transport
+      (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
+      question rows answered in place. The terminal transcript still doesn't.
+- [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
+      *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
+      order). Not yet: reordering.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
 - [ ] **Default view setting:** choose chat or CLI globally or per agent.
 

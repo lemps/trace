@@ -66,7 +66,7 @@ pub fn diff(call_id: &str, name: &str, input: &Value, result: Option<&Value>) ->
     Some(FileDiff {
         call_id: Some(call_id.to_string()),
         path,
-        kind,
+        change: kind,
         before,
         after,
         patch,

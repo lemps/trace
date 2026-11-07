@@ -1,0 +1,236 @@
+/* Chat cards (`ac-`): tool rows, diffs, plans, approvals, questions, receipts. */
+
+/* Tool rows: the transcript's line (`tx-tool-line`), in a card of their own. */
+.ac-tool {
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.ac-tool.open > .tx-tool-line .tx-chev {
+  transform: rotate(90deg);
+}
+.ac-tool.failed {
+  border-color: var(--c-danger-border);
+}
+.ac-tool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 10px 30px;
+}
+.ac-tool-none {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.ac-cmd {
+  color: var(--fg-1);
+}
+.ac-tool-attached {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px 30px;
+}
+.ac-sub {
+  padding: 0 10px 8px 30px;
+}
+.ac-sub-head {
+  height: 26px;
+  font-size: var(--text-meta);
+}
+.ac-sub-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+/* Shared card frame: plans, prompts, answered questions. */
+.ac-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.ac-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}
+.ac-card-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-0);
+  font-weight: 500;
+}
+.ac-card-meta {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-3);
+}
+
+/* Diffs: path, change, +/− counts; the lines use the Files tab's `.diff-line`. */
+.ac-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  overflow: hidden;
+}
+.ac-diff-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+}
+.ac-diff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 100%;
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}
+.ac-diff-toggle:hover {
+  color: var(--fg-0);
+}
+.ac-change {
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+.ac-diff-stat {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.ac-diff-stat .add {
+  color: var(--state-ready);
+}
+.ac-diff-stat .del {
+  color: var(--c-danger);
+}
+.ac-diff-body {
+  max-height: 420px;
+  overflow: auto;
+  border-top: 1px solid var(--border-faint);
+  background: var(--bg-0);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: 1.55;
+}
+.ac-diff-body .diff-line {
+  grid-template-columns: 36px 36px 1fr;
+  min-width: max-content;
+}
+.ac-diff-body .diff-hunk {
+  padding: 2px 12px;
+  font-size: var(--text-label);
+}
+.ac-diff-body .diff-hunk:first-child {
+  border-top: 0;
+}
+.ac-diff-more {
+  margin: 6px 12px;
+}
+
+/* Plans. */
+.ac-plan-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-ui);
+}
+.ac-plan-items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--fg-2);
+}
+.ac-plan-mark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border: 1.5px solid var(--fg-4);
+  border-radius: 999px;
+}
+.ac-plan-items li.inProgress {
+  color: var(--fg-0);
+}
+.ac-plan-items li.inProgress .ac-plan-mark {
+  border-color: var(--c-accent);
+  background: color-mix(in oklch, var(--c-accent) 25%, transparent);
+}
+.ac-plan-items li.done {
+  color: var(--fg-3);
+}
+.ac-plan-items li.done .ac-plan-text {
+  text-decoration: line-through;
+}
+.ac-plan-items li.done .ac-plan-mark {
+  border-color: var(--fg-3);
+  color: var(--fg-2);
+}
+
+/* Prompts that wait on you: the "needs you" amber, answered in place. */
+.ac-ask {
+  border-color: var(--state-needs-border);
+  background: var(--state-needs-bg);
+}
+.ac-ask > .ac-card-head > svg {
+  color: var(--state-needs);
+}
+.ac-ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ac-receipt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.ac-receipt > svg {
+  flex-shrink: 0;
+}
+.ac-receipt-what {
+  flex-shrink: 0;
+  color: var(--fg-1);
+  font-weight: 500;
+}
+.ac-receipt.denied .ac-receipt-what,
+.ac-receipt.denied > svg {
+  color: var(--c-danger);
+}
+.ac-receipt-of,
+.ac-receipt-note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

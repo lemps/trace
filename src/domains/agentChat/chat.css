@@ -1,0 +1,233 @@
+/* A chat agent's pane (`ac-`): header strip, the conversation, the composer.
+   Shares the transcript's pieces (`tx-` bubbles, notices, tool lines, code). */
+
+.ac-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+}
+
+/* Header: agent, model, cost, usage-limit windows. */
+.ac-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-faint);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
+.ac-head-agent {
+  color: var(--fg-0);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+.ac-head-model,
+.ac-head-fact {
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}
+.ac-head-limits {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ac-limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ac-limit-name {
+  color: var(--fg-3);
+}
+.ac-limit-bar {
+  position: relative;
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.ac-limit-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--fg-3);
+}
+.ac-limit.high .ac-limit-bar > span {
+  background: var(--c-warn);
+}
+.ac-limit.full .ac-limit-bar > span {
+  background: var(--c-danger);
+}
+.ac-limit-pct,
+.ac-limit-reset {
+  font-family: var(--font-mono);
+}
+.ac-limit-reset {
+  color: var(--fg-3);
+}
+
+/* The conversation. */
+.ac-col {
+  gap: 10px;
+}
+.ac-earlier {
+  align-self: center;
+}
+.ac-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Off-screen turns skip layout and paint until scrolled to. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+.ac-reply .md,
+.ac-thought-body .md {
+  font-size: var(--text-body);
+  color: var(--fg-1);
+}
+.ac-md .ac-p {
+  margin: 0 0 8px;
+}
+.ac-md > :first-child {
+  margin-top: 0;
+}
+.ac-md > :last-child {
+  margin-bottom: 0;
+}
+.ac-md .tx-file {
+  vertical-align: baseline;
+}
+.ac-reply.streaming .md > :last-child::after {
+  content: "▍";
+  margin-left: 2px;
+  color: var(--fg-3);
+}
+.ac-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Reasoning: one quiet line, unfolding to the text. */
+.ac-thought-head,
+.ac-fold-head,
+.ac-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+  text-align: left;
+}
+.ac-thought-head:hover,
+.ac-fold-head:hover,
+.ac-sub-head:hover {
+  color: var(--fg-1);
+}
+.ac-thought-label {
+  flex-shrink: 0;
+  color: var(--fg-2);
+}
+.ac-thought-preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+}
+.ac-thought-body {
+  margin-left: 6px;
+  padding: 2px 0 4px 14px;
+  border-left: 2px solid var(--border);
+}
+.ac-thought-body .md {
+  color: var(--fg-2);
+}
+.ac-thought.open > .ac-thought-head .tx-chev,
+.ac-fold.open > .ac-fold-head .tx-chev,
+.ac-sub:has(> .ac-sub-rows) > .ac-sub-head .tx-chev,
+.ac-diff.open .ac-diff-toggle .tx-chev {
+  transform: rotate(90deg);
+}
+
+/* A finished turn's work, folded above its answer. */
+.ac-fold {
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.ac-fold-head {
+  height: 32px;
+  padding: 0 10px;
+}
+.ac-fold-sentence {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-2);
+}
+.ac-fold-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+.ac-fold-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border-faint);
+}
+
+/* Notices and the turn's footer. */
+.ac-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: var(--text-ui);
+  line-height: 1.45;
+}
+.ac-status > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ac-status.warning {
+  border: 1px solid color-mix(in oklch, var(--c-warn) 35%, transparent);
+  background: color-mix(in oklch, var(--c-warn) 9%, transparent);
+  color: var(--fg-1);
+}
+.ac-status.warning > svg {
+  color: var(--c-warn);
+}
+.ac-status.error {
+  border: 1px solid var(--c-danger-border);
+  background: var(--c-danger-bg);
+  color: var(--fg-0);
+}
+.ac-status.error > svg {
+  color: var(--c-danger);
+}
+.ac-turn-end.failed {
+  color: var(--c-danger);
+}
+.ac-working {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}

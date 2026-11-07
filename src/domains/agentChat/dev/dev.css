@@ -1,0 +1,21 @@
+/* The dev-only fixture page around the chat pane. */
+.ac-dev {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+  color: var(--fg-1);
+}
+.ac-dev-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+  font-size: var(--text-ui);
+}
+.ac-dev-note {
+  margin-right: auto;
+  color: var(--fg-3);
+}
