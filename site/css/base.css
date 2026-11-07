@@ -1,0 +1,280 @@
+/* trace homepage: base, header, buttons, hero and the window frame around app footage. */
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  color: var(--fg-1);
+  background:
+    radial-gradient(ellipse 70% 40% at 10% -5%, color-mix(in oklch, var(--accent) var(--glow), transparent), transparent 60%),
+    var(--bg-0);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img,
+video {
+  display: block;
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -80px;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  z-index: 20;
+}
+.skip:focus {
+  top: 8px;
+}
+.wrap {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* Header */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in oklch, var(--bg-0) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-faint);
+}
+.top .wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 56px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--fg-0);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+.brand img {
+  width: 26px;
+  height: 26px;
+}
+.top nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  align-items: center;
+}
+.top nav a {
+  color: var(--fg-2);
+  text-decoration: none;
+  font-size: 13.5px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+.top nav a:hover {
+  color: var(--fg-0);
+  background: var(--bg-2);
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+  color: var(--fg-1);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  border-color: var(--border-strong);
+}
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--control-h);
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--fg-0);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-3);
+}
+.btn.primary {
+  background: var(--fg-0);
+  color: var(--bg-0);
+  border-color: var(--fg-0);
+}
+.btn.primary:hover {
+  background: var(--fg-1);
+}
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.btn .sub {
+  font-weight: 400;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 12.5px;
+}
+
+/* Hero */
+.hero {
+  padding: 72px 0 40px;
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-3);
+  letter-spacing: 0.02em;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--state-ready);
+  display: inline-block;
+}
+.hero h1 {
+  font-size: clamp(34px, 5.4vw, 60px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  color: var(--fg-0);
+  margin: 0;
+  max-width: 17ch;
+}
+.hero .lede {
+  font-size: clamp(16px, 1.6vw, 18.5px);
+  color: var(--fg-2);
+  max-width: 60ch;
+  margin: 20px 0 28px;
+}
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.cta .note {
+  font-size: 12.5px;
+  color: var(--fg-3);
+  flex-basis: 100%;
+  margin-top: 4px;
+}
+.cta .note a {
+  color: var(--fg-2);
+}
+.hero-media {
+  margin-top: 48px;
+}
+
+/* A window frame around app footage. */
+.frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-1);
+  overflow: hidden;
+  box-shadow: var(--frame-shadow);
+  aspect-ratio: 16 / 10;
+}
+.frame video,
+.frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+.frame .toggle {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, #fff 18%, transparent);
+  background: rgba(10, 10, 10, 0.72);
+  color: #fafafa;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.frame .toggle:hover,
+.frame .toggle:focus-visible {
+  opacity: 1;
+}
+.frame .toggle svg {
+  width: 14px;
+  height: 14px;
+}
+.frame .toggle.big {
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+}
+.frame .toggle.big svg {
+  width: 22px;
+  height: 22px;
+}
+.frame.still {
+  aspect-ratio: auto;
+}
+

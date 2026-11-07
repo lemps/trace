@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>trace: run coding agents side by side</title>
+    <meta name="description" content="trace is a desktop app for running Claude Code and Codex agents in parallel, each in its own git worktree, on your tickets and sessions. For macOS, Windows and Linux." />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="trace" />
+    <meta property="og:title" content="trace: run coding agents side by side" />
+    <meta property="og:description" content="Claude Code and Codex on your tickets and sessions, each in its own git worktree, followed from one window. macOS, Windows and Linux." />
+    <meta property="og:image" content="{{SITE_URL}}assets/social.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="trace, with an agent's chat, changed files and terminal side by side." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="trace: run coding agents side by side" />
+    <meta name="twitter:description" content="Claude Code and Codex on your tickets and sessions, each in its own git worktree. macOS, Windows and Linux." />
+    <meta name="twitter:image" content="{{SITE_URL}}assets/social.jpg" />
+    <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/sections.css" />
+    <script>
+      // Apply a saved theme before first paint, so there's no flash.
+      try {
+        const t = localStorage.getItem("trace-site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="./" aria-label="trace home">
+          <img src="assets/icon-64.png" alt="" width="26" height="26" />trace
+        </a>
+        <nav aria-label="Site">
+          <a class="hide-sm" href="#features">Features</a>
+          <a href="#download">Download</a>
+          <a class="hide-sm" href="https://github.com/noble1911/trace">GitHub</a>
+          <button class="icon-btn" id="theme" type="button" aria-label="Switch theme">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 1.5v10a5 5 0 0 1 0-10Z" fill="currentColor"/></svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap">
+          <p class="eyebrow"><span class="dot" aria-hidden="true"></span>macOS, Windows and Linux · <span data-version>latest release</span></p>
+          <h1 id="hero-title">{{HERO_TITLE}}</h1>
+          <p class="lede">{{HERO_LEDE}}</p>
+          <div class="cta">
+            <a class="btn primary" id="primary-download" href="#download">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0 3.5-3.5M8 10 4.5 6.5M2.5 13.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span data-os-label>Download</span>
+            </a>
+            <a class="btn" href="https://github.com/noble1911/trace">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.3.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.5 7.5 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2Z"/></svg>
+              View on GitHub
+            </a>
+            <p class="note">Free and open source (Apache 2.0). <a href="#download">Other platforms</a></p>
+          </div>
+          <figure class="hero-media">
+            <div class="frame">
+              <img src="media/{{HERO_MEDIA}}.jpg" width="1280" height="800" alt="{{HERO_ALT}}" fetchpriority="high" />
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <nav class="index" id="features" aria-label="Features">
+        <div class="wrap">
+          <ol>
+{{INDEX}}
+          </ol>
+        </div>
+      </nav>
+
+{{FEATURES}}
+
+      <section class="download" id="download" aria-labelledby="download-title">
+        <div class="wrap">
+          <h2 id="download-title">Download trace</h2>
+          <p>
+            Builds for every platform come from the latest GitHub release. You'll need
+            <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> or Codex installed and signed in;
+            git for worktrees.
+          </p>
+          <div class="platforms">
+            <article class="platform" data-os="macos">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M11.2 8.5c0-1.5 1.2-2.2 1.3-2.3-.7-1-1.8-1.2-2.2-1.2-.9-.1-1.8.6-2.3.6-.5 0-1.2-.5-2-.5-1 0-2 .6-2.5 1.6-1.1 1.9-.3 4.6.8 6.1.5.7 1.1 1.6 1.9 1.5.8 0 1-.5 2-.5s1.2.5 2 .5c.8 0 1.3-.8 1.8-1.5.6-.8.8-1.6.8-1.7 0 0-1.6-.6-1.6-2.6ZM9.7 4c.4-.5.7-1.2.6-1.9-.6 0-1.3.4-1.8.9-.4.4-.7 1.1-.6 1.8.7.1 1.4-.3 1.8-.8Z"/></svg>macOS</h3>
+              <p>Apple silicon. A disk image to drag into Applications.</p>
+              <div class="btns"><a class="btn" data-asset="macos" href="https://github.com/noble1911/trace/releases/latest">Download .dmg</a></div>
+            </article>
+            <article class="platform" data-os="windows">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 2.8 6.7 2v5.5H1V2.8Zm0 10.4 5.7.8V8.5H1v4.7ZM7.4 14.1 15 15V8.5H7.4v5.6Zm0-12.2v5.6H15V1L7.4 1.9Z"/></svg>Windows</h3>
+              <p>Windows 10 and 11, x64. An installer that updates itself.</p>
+              <div class="btns"><a class="btn" data-asset="windows" href="https://github.com/noble1911/trace/releases/latest">Download installer</a></div>
+            </article>
+            <article class="platform" data-os="linux">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1c-1.7 0-2.6 1.4-2.6 3.3 0 1 .2 1.6-.5 2.6-.8 1.1-2 2.6-2 4.3 0 .5.1.9.4 1.2-.6.4-.9.9-.6 1.4.4.8 2 .4 3.1.9.9.4 2.2.4 2.4-.4h.6c.2.8 1.5.8 2.4.4 1.1-.5 2.7-.1 3.1-.9.3-.5 0-1-.6-1.4.3-.3.4-.7.4-1.2 0-1.7-1.2-3.2-2-4.3-.7-1-.5-1.6-.5-2.6C10.6 2.4 9.7 1 8 1Zm-1 3c.3 0 .5.4.5.8s-.2.7-.5.7-.5-.3-.5-.7.2-.8.5-.8Zm2 0c.3 0 .5.4.5.8s-.2.7-.5.7-.5-.3-.5-.7.2-.8.5-.8Z"/></svg>Linux</h3>
+              <p>x86_64. An AppImage for any distro, or a .deb for Debian and Ubuntu.</p>
+              <div class="btns">
+                <a class="btn" data-asset="appimage" href="https://github.com/noble1911/trace/releases/latest">AppImage</a>
+                <a class="btn" data-asset="deb" href="https://github.com/noble1911/trace/releases/latest">.deb</a>
+              </div>
+            </article>
+          </div>
+          <p class="release-note">
+            Release notes, checksums and older versions are on the
+            <a href="https://github.com/noble1911/trace/releases">releases page</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <a class="brand" href="./"><img src="assets/icon-64.png" alt="" width="20" height="20" />trace</a>
+        <span>Apache License 2.0</span>
+        <div class="links">
+          <a href="https://github.com/noble1911/trace">GitHub</a>
+          <a href="https://github.com/noble1911/trace/releases">Releases</a>
+          <a href="https://github.com/noble1911/trace/blob/main/LICENSE">Licence</a>
+          <a href="https://github.com/noble1911/trace/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+    <script src="site.js" defer></script>
+  </body>
+</html>

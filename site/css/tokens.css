@@ -1,0 +1,100 @@
+/* trace homepage: fonts and theme tokens. Colours, type and corners follow the app's design tokens
+   (src/styles/tokens.css and themes.css): dark first, Geist, violet accent,
+   colour reserved for agent state. */
+
+@font-face {
+  font-family: "Geist";
+  src: url("../fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Dark: the app's default theme. */
+:root {
+  --bg-0: #050505;
+  --bg-1: #0a0a0a;
+  --bg-2: #111111;
+  --bg-3: #161616;
+  --border-faint: #1c1c1c;
+  --border: #262626;
+  --border-strong: #363636;
+  --fg-0: #fafafa;
+  --fg-1: #ededed;
+  --fg-2: #a1a1a1;
+  --fg-3: #8a8a8a;
+  --accent-l: 0.72;
+  --accent-c: 0.16;
+  --state-needs: oklch(0.8 0.15 75);
+  --state-working: oklch(0.74 0.12 235);
+  --state-ready: oklch(0.76 0.14 155);
+  --glow: 10%;
+  --frame-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
+/* Light: the app's Light theme. Used when the OS asks for it (unless the
+   toggle says dark) or when the toggle says light. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-0: #f4f4f5;
+    --bg-1: #fafafa;
+    --bg-2: #ffffff;
+    --bg-3: #ededef;
+    --border-faint: #e9e9ec;
+    --border: #dcdce0;
+    --border-strong: #c4c4ca;
+    --fg-0: #09090b;
+    --fg-1: #1f1f23;
+    --fg-2: #52525a;
+    --fg-3: #6b6b73;
+    --accent-l: 0.52;
+    --accent-c: 0.2;
+    --state-needs: oklch(0.6 0.14 70);
+    --state-working: oklch(0.55 0.14 240);
+    --state-ready: oklch(0.55 0.14 155);
+    --glow: 7%;
+    --frame-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.35);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg-0: #f4f4f5;
+  --bg-1: #fafafa;
+  --bg-2: #ffffff;
+  --bg-3: #ededef;
+  --border-faint: #e9e9ec;
+  --border: #dcdce0;
+  --border-strong: #c4c4ca;
+  --fg-0: #09090b;
+  --fg-1: #1f1f23;
+  --fg-2: #52525a;
+  --fg-3: #6b6b73;
+  --accent-l: 0.52;
+  --accent-c: 0.2;
+  --state-needs: oklch(0.6 0.14 70);
+  --state-working: oklch(0.55 0.14 240);
+  --state-ready: oklch(0.55 0.14 155);
+  --glow: 7%;
+  --frame-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.35);
+  color-scheme: light;
+}
+
+:root {
+  --accent: oklch(var(--accent-l) var(--accent-c) 290);
+  --accent-bg: color-mix(in oklch, var(--accent) 10%, transparent);
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --control-h: 36px;
+  --font-sans: "Geist", -apple-system, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --gutter: 24px;
+  --page: 1280px;
+}
+

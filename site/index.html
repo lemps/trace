@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>trace: run coding agents side by side</title>
+    <meta name="description" content="trace is a desktop app for running Claude Code and Codex agents in parallel, each in its own git worktree, on your tickets and sessions. For macOS, Windows and Linux." />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#050505" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f4f5" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="trace" />
+    <meta property="og:title" content="trace: run coding agents side by side" />
+    <meta property="og:description" content="Claude Code and Codex on your tickets and sessions, each in its own git worktree, followed from one window. macOS, Windows and Linux." />
+    <meta property="og:image" content="https://noble1911.github.io/trace/assets/social.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="trace, with an agent's chat, changed files and terminal side by side." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="trace: run coding agents side by side" />
+    <meta name="twitter:description" content="Claude Code and Codex on your tickets and sessions, each in its own git worktree. macOS, Windows and Linux." />
+    <meta name="twitter:image" content="https://noble1911.github.io/trace/assets/social.jpg" />
+    <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/sections.css" />
+    <script>
+      // Apply a saved theme before first paint, so there's no flash.
+      try {
+        const t = localStorage.getItem("trace-site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="./" aria-label="trace home">
+          <img src="assets/icon-64.png" alt="" width="26" height="26" />trace
+        </a>
+        <nav aria-label="Site">
+          <a class="hide-sm" href="#features">Features</a>
+          <a href="#download">Download</a>
+          <a class="hide-sm" href="https://github.com/noble1911/trace">GitHub</a>
+          <button class="icon-btn" id="theme" type="button" aria-label="Switch theme">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 1.5v10a5 5 0 0 1 0-10Z" fill="currentColor"/></svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap">
+          <p class="eyebrow"><span class="dot" aria-hidden="true"></span>macOS, Windows and Linux · <span data-version>latest release</span></p>
+          <h1 id="hero-title">Run your coding agents side by side, and see what each one is doing.</h1>
+          <p class="lede">trace is a desktop app for Claude Code and Codex. Start an agent on a ticket or a quick idea; each gets its own git worktree, and you follow them all from one calm window: chat, files, terminal, inbox and fleet.</p>
+          <div class="cta">
+            <a class="btn primary" id="primary-download" href="#download">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0 3.5-3.5M8 10 4.5 6.5M2.5 13.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span data-os-label>Download</span>
+            </a>
+            <a class="btn" href="https://github.com/noble1911/trace">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.3.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.5 7.5 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2Z"/></svg>
+              View on GitHub
+            </a>
+            <p class="note">Free and open source (Apache 2.0). <a href="#download">Other platforms</a></p>
+          </div>
+          <figure class="hero-media">
+            <div class="frame">
+              <img src="media/hero.jpg" width="1280" height="800" alt="trace showing an agent's chat on the left, the files it changed with their diff on the right, and a terminal below running the tests: three passing." fetchpriority="high" />
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <nav class="index" id="features" aria-label="Features">
+        <div class="wrap">
+          <ol>
+            <li><a href="#chat"><span class="n">01</span>Agents as a chat</a></li>
+            <li><a href="#subagents"><span class="n">02</span>Subagents</a></li>
+            <li><a href="#panes"><span class="n">03</span>Split panes</a></li>
+            <li><a href="#tickets"><span class="n">04</span>Board and ticket agents</a></li>
+            <li><a href="#sessions"><span class="n">05</span>Sessions and worktrees</a></li>
+            <li><a href="#inbox"><span class="n">06</span>Inbox</a></li>
+            <li><a href="#fleet"><span class="n">07</span>Fleet</a></li>
+            <li><a href="#orchestrator"><span class="n">08</span>Orchestrator</a></li>
+            <li><a href="#schedules"><span class="n">09</span>Scheduled prompts</a></li>
+            <li><a href="#files"><span class="n">10</span>Files and Quick Open</a></li>
+            <li><a href="#terminal"><span class="n">11</span>Terminal extras</a></li>
+            <li><a href="#appearance"><span class="n">12</span>Make it yours</a></li>
+          </ol>
+        </div>
+      </nav>
+
+      <section class="feature" id="chat" aria-labelledby="chat-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>01</b> Agents as a chat</p>
+            <h2 id="chat-title">Claude and Codex, as a conversation you can read</h2>
+            <p>Agents run as a formatted chat rather than a wall of terminal output: Markdown replies, a card per tool call, the diff of every edit, and permission prompts answered right where they appear.</p>
+            <ul class="points">
+              <li>Claude Code and Codex, in chat or in their own terminal</li>
+              <li>Tool runs fold into one line once a turn ends</li>
+              <li>Allow once, always, or deny, without leaving the conversation</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/chat.jpg" aria-label="Agents as a chat" aria-describedby="chat-desc">
+                <source data-src="media/chat.mp4" type="video/mp4" />
+                <source data-src="media/chat.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="chat-desc"><span class="visually-hidden">What the clip shows: </span>A prompt asks the agent to add a delete() helper and a test. Read cards appear for the files it looks at, then an edit waits for permission; Allow once is clicked, the diff appears, the tests run, and the agent replies in Markdown that all three tests pass.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="subagents" aria-labelledby="subagents-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>02</b> Subagents</p>
+            <h2 id="subagents-title">Subagents get live cards, their own tabs, and a pane beside you</h2>
+            <p>When an agent fans work out, each subagent shows as a live card with its state, tool count and time. Open one in its own tab, or beside the chat to watch its brief, calls and report come in.</p>
+            <ul class="points">
+              <li>Background subagents keep the agent working, and stoppable</li>
+              <li>Each subagent's brief and report, in full</li>
+              <li>Stop one without stopping the rest</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/subagents.jpg" aria-label="Subagents" aria-describedby="subagents-desc">
+                <source data-src="media/subagents.mp4" type="video/mp4" />
+                <source data-src="media/subagents.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="subagents-desc"><span class="visually-hidden">What the clip shows: </span>The agent starts two subagents in parallel. Two cards show them running; one is opened beside the chat, where its brief, a Read call and then its finished report appear while the other card turns to Done.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="panes" aria-labelledby="panes-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>03</b> Split panes</p>
+            <h2 id="panes-title">Chat, Files and Terminal, arranged like an IDE</h2>
+            <p>Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. Layouts are remembered per workspace.</p>
+            <ul class="points">
+              <li>Split right, split down, or move a tab to the next pane</li>
+              <li>Files shows the changes against the base branch, with diffs</li>
+              <li>A plain shell rooted in the agent's worktree</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/panes.jpg" aria-label="Split panes" aria-describedby="panes-desc">
+                <source data-src="media/panes.mp4" type="video/mp4" />
+                <source data-src="media/panes.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="panes-desc"><span class="visually-hidden">What the clip shows: </span>From a single chat pane, Files is split to the right and Terminal moved below it. A shell opens in the agent's worktree, npm test runs and passes, and the changed test file's diff is shown.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="tickets" aria-labelledby="tickets-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>04</b> Board and ticket agents</p>
+            <h2 id="tickets-title">Start an agent from a Jira or Pylon ticket</h2>
+            <p>Connect Jira, Pylon or both, and each adds its board to the sidebar exactly as your tracker shows it. Start work on a card and trace opens an agent in a new worktree for that ticket; moves sync back to the tracker. Everything else works with no tracker at all.</p>
+            <ul class="points">
+              <li>Your board's own columns, filters and sprints</li>
+              <li>Dragging a card to in progress starts its agent</li>
+              <li>GitHub sign-in to browse and clone your repos</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame"><img src="media/tickets.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="trace's Integrations page with three cards: Jira, Pylon and GitHub." /></div>
+            <figcaption>Shown without a tracker connected: no ticket data is made up for this page.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="sessions" aria-labelledby="sessions-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>05</b> Sessions and worktrees</p>
+            <h2 id="sessions-title">Every agent in its own worktree, and you can see who started it</h2>
+            <p>Sessions are agents that aren't tied to a ticket. Each runs in its own git worktree of a repo you've added, or in any folder. Lists sort by status, name, age or who started them, or keep your own order.</p>
+            <ul class="points">
+              <li>Started by you, another agent, the orchestrator or a schedule</li>
+              <li>Sections and drag to reorder</li>
+              <li>Branch and diff counts on every row</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/sessions.jpg" aria-label="Sessions and worktrees" aria-describedby="sessions-desc">
+                <source data-src="media/sessions.mp4" type="video/mp4" />
+                <source data-src="media/sessions.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="sessions-desc"><span class="visually-hidden">What the clip shows: </span>The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="inbox" aria-labelledby="inbox-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>06</b> Inbox</p>
+            <h2 id="inbox-title">One inbox for every question and approval</h2>
+            <p>When any agent needs you, it lands in the Inbox with its question or the exact change it wants to make. Answer it there and the agent carries on; you don't have to find its tab first.</p>
+            <ul class="points">
+              <li>Questions with options, or your own answer</li>
+              <li>Approvals with the full command or edit</li>
+              <li>Notifications and an optional sound</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/inbox.jpg" aria-label="Inbox" aria-describedby="inbox-desc">
+                <source data-src="media/inbox.mp4" type="video/mp4" />
+                <source data-src="media/inbox.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="inbox-desc"><span class="visually-hidden">What the clip shows: </span>The Inbox lists agents that need you. A question about default units is answered with Metric, then an agent's edit adding a --json flag is approved, and the next request arrives.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="fleet" aria-labelledby="fleet-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>07</b> Fleet</p>
+            <h2 id="fleet-title">Every running agent at a glance</h2>
+            <p>Fleet is a table of every live agent: its state, how long it's been there, its repo and branch, changes, PR and latest line. Rows stay put when an agent changes state, so you never lose your place.</p>
+            <ul class="points">
+              <li>Filter by Needs you, Working or Ready</li>
+              <li>Opened order, or drag to reorder</li>
+              <li>The latest thing each agent said</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/fleet.jpg" aria-label="Fleet" aria-describedby="fleet-desc">
+                <source data-src="media/fleet.mp4" type="video/mp4" />
+                <source data-src="media/fleet.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="fleet-desc"><span class="visually-hidden">What the clip shows: </span>The Fleet table with five agents: some Ready, two needing you and one Working. Filters for Needs you and Working are tried, and the working agent finishes while its row stays in place.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="orchestrator" aria-labelledby="orchestrator-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>08</b> Orchestrator</p>
+            <h2 id="orchestrator-title">Ask what your agents are doing</h2>
+            <p>The orchestrator sits in the side panel and knows your board and sessions. Ask it for a status round-up, what's blocked, or to nudge an agent; every action it takes waits for your confirm. Stats chart your agents and their work.</p>
+            <ul class="points">
+              <li>Your API key, or your logged-in Claude CLI</li>
+              <li>Charts of agents by state, and session stats</li>
+              <li>Actions behind a confirm card</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/orchestrator.jpg" aria-label="Orchestrator" aria-describedby="orchestrator-desc">
+                <source data-src="media/orchestrator.mp4" type="video/mp4" />
+                <source data-src="media/orchestrator.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="orchestrator-desc"><span class="visually-hidden">What the clip shows: </span>The orchestrator is asked what the agents are doing. It replies with who needs you, which agents are ready and a chart of agents by state, then its Stats tab is opened.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="schedules" aria-labelledby="schedules-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>09</b> Scheduled prompts</p>
+            <h2 id="schedules-title">Prompts that run themselves, when there's something to do</h2>
+            <p>Run a prompt every few minutes, daily, weekly, monthly or on a cron expression, each run in a fresh worktree. A precheck command decides whether a run goes ahead, so a nightly job can skip the nights nothing changed.</p>
+            <ul class="points">
+              <li>Variables like {lastRunAt}, {date} and {repo}</li>
+              <li>Run history with each run's conversation</li>
+              <li>Import and export prompts to share them</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/schedules.jpg" aria-label="Scheduled prompts" aria-describedby="schedules-desc">
+                <source data-src="media/schedules.mp4" type="video/mp4" />
+                <source data-src="media/schedules.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="schedules-desc"><span class="visually-hidden">What the clip shows: </span>A new scheduled prompt called Morning test run is filled in: a prompt, a daily schedule, allowed tools and a precheck command that only runs it when the branch is behind. It's saved and its detail shows the precheck.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="files" aria-labelledby="files-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>10</b> Files and Quick Open</p>
+            <h2 id="files-title">Find any file in the worktree in a keystroke</h2>
+            <p>The Files tab shows the worktree's tree and what the agent changed. Quick Open fuzzy-searches the whole worktree, and opens a file in the Files tab or in your own editor.</p>
+            <ul class="points">
+              <li>Changes or all files, with filters</li>
+              <li>Quick Open: Ctrl+Shift+P on Windows and Linux, ⌘P on macOS</li>
+              <li>Open in your editor from any file</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/files.jpg" aria-label="Files and Quick Open" aria-describedby="files-desc">
+                <source data-src="media/files.mp4" type="video/mp4" />
+                <source data-src="media/files.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="files-desc"><span class="visually-hidden">What the clip shows: </span>In an agent's Files tab, All files shows the worktree's tree and a file is opened. Quick Open is then brought up, a few letters narrow it to router.test.ts, and Enter opens that file with its diff.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="terminal" aria-labelledby="terminal-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>11</b> Terminal extras</p>
+            <h2 id="terminal-title">A terminal that knows what it's showing</h2>
+            <p>Find in the scrollback, a menu on links and file paths (open, copy, open in editor), and Copy Context, which copies the selection or the last 100 lines headed with the agent and worktree, ready to paste into another agent.</p>
+            <ul class="points">
+              <li>Find: Ctrl+Shift+F on Windows and Linux, ⌘F on macOS</li>
+              <li>Right-click for the same menu</li>
+              <li>Copy Context for handing work between agents</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/terminal.jpg" aria-label="Terminal extras" aria-describedby="terminal-desc">
+                <source data-src="media/terminal.mp4" type="video/mp4" />
+                <source data-src="media/terminal.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="terminal-desc"><span class="visually-hidden">What the clip shows: </span>In an agent's shell, git status lists the two changed files. Right-clicking a file path opens a menu with Open in VS Code, IntelliJ or Cursor, Show in folder, Copy path, Copy context and Find; Find then highlights each match for router in the scrollback.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="feature" id="appearance" aria-labelledby="appearance-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>12</b> Make it yours</p>
+            <h2 id="appearance-title">Themes, fonts, density, sidebar and shortcuts</h2>
+            <p>Dark, Light, Midnight, Paper or System, an accent colour, interface size and density, fonts for the UI, terminal and chat, each with a live preview. Order and hide the sidebar's pages, rebind every shortcut, and press ? for the cheat sheet.</p>
+            <ul class="points">
+              <li>Live previews while you choose</li>
+              <li>Terminal schemes and cursor styles</li>
+              <li>Every shortcut rebindable, shown in menus and the cheat sheet</li>
+            </ul>
+          </div>
+          <figure>
+            <div class="frame">
+              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/appearance.jpg" aria-label="Make it yours" aria-describedby="appearance-desc">
+                <source data-src="media/appearance.mp4" type="video/mp4" />
+                <source data-src="media/appearance.webm" type="video/webm" />
+              </video>
+            </div>
+            <figcaption id="appearance-desc"><span class="visually-hidden">What the clip shows: </span>Settings → Appearance: the theme switches from Dark to Light, Paper and Midnight and back, with the previews updating; the accent and density change; then the Sidebar settings and the keyboard shortcut cheat sheet open.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="download" id="download" aria-labelledby="download-title">
+        <div class="wrap">
+          <h2 id="download-title">Download trace</h2>
+          <p>
+            Builds for every platform come from the latest GitHub release. You'll need
+            <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> or Codex installed and signed in;
+            git for worktrees.
+          </p>
+          <div class="platforms">
+            <article class="platform" data-os="macos">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M11.2 8.5c0-1.5 1.2-2.2 1.3-2.3-.7-1-1.8-1.2-2.2-1.2-.9-.1-1.8.6-2.3.6-.5 0-1.2-.5-2-.5-1 0-2 .6-2.5 1.6-1.1 1.9-.3 4.6.8 6.1.5.7 1.1 1.6 1.9 1.5.8 0 1-.5 2-.5s1.2.5 2 .5c.8 0 1.3-.8 1.8-1.5.6-.8.8-1.6.8-1.7 0 0-1.6-.6-1.6-2.6ZM9.7 4c.4-.5.7-1.2.6-1.9-.6 0-1.3.4-1.8.9-.4.4-.7 1.1-.6 1.8.7.1 1.4-.3 1.8-.8Z"/></svg>macOS</h3>
+              <p>Apple silicon. A disk image to drag into Applications.</p>
+              <div class="btns"><a class="btn" data-asset="macos" href="https://github.com/noble1911/trace/releases/latest">Download .dmg</a></div>
+            </article>
+            <article class="platform" data-os="windows">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 2.8 6.7 2v5.5H1V2.8Zm0 10.4 5.7.8V8.5H1v4.7ZM7.4 14.1 15 15V8.5H7.4v5.6Zm0-12.2v5.6H15V1L7.4 1.9Z"/></svg>Windows</h3>
+              <p>Windows 10 and 11, x64. An installer that updates itself.</p>
+              <div class="btns"><a class="btn" data-asset="windows" href="https://github.com/noble1911/trace/releases/latest">Download installer</a></div>
+            </article>
+            <article class="platform" data-os="linux">
+              <h3><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1c-1.7 0-2.6 1.4-2.6 3.3 0 1 .2 1.6-.5 2.6-.8 1.1-2 2.6-2 4.3 0 .5.1.9.4 1.2-.6.4-.9.9-.6 1.4.4.8 2 .4 3.1.9.9.4 2.2.4 2.4-.4h.6c.2.8 1.5.8 2.4.4 1.1-.5 2.7-.1 3.1-.9.3-.5 0-1-.6-1.4.3-.3.4-.7.4-1.2 0-1.7-1.2-3.2-2-4.3-.7-1-.5-1.6-.5-2.6C10.6 2.4 9.7 1 8 1Zm-1 3c.3 0 .5.4.5.8s-.2.7-.5.7-.5-.3-.5-.7.2-.8.5-.8Zm2 0c.3 0 .5.4.5.8s-.2.7-.5.7-.5-.3-.5-.7.2-.8.5-.8Z"/></svg>Linux</h3>
+              <p>x86_64. An AppImage for any distro, or a .deb for Debian and Ubuntu.</p>
+              <div class="btns">
+                <a class="btn" data-asset="appimage" href="https://github.com/noble1911/trace/releases/latest">AppImage</a>
+                <a class="btn" data-asset="deb" href="https://github.com/noble1911/trace/releases/latest">.deb</a>
+              </div>
+            </article>
+          </div>
+          <p class="release-note">
+            Release notes, checksums and older versions are on the
+            <a href="https://github.com/noble1911/trace/releases">releases page</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <a class="brand" href="./"><img src="assets/icon-64.png" alt="" width="20" height="20" />trace</a>
+        <span>Apache License 2.0</span>
+        <div class="links">
+          <a href="https://github.com/noble1911/trace">GitHub</a>
+          <a href="https://github.com/noble1911/trace/releases">Releases</a>
+          <a href="https://github.com/noble1911/trace/blob/main/LICENSE">Licence</a>
+          <a href="https://github.com/noble1911/trace/issues">Issues</a>
+        </div>
+      </div>
+    </footer>
+    <script src="site.js" defer></script>
+  </body>
+</html>
