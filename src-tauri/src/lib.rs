@@ -4,6 +4,7 @@
 //! Feature logic lives in `jira/`, `claude/`, `schedule/`, `git`, and thin `commands/*`.
 
 pub mod activity;
+pub mod agent_session;
 pub mod agent_tools;
 pub mod claude;
 pub mod cleanup;
