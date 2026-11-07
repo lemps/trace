@@ -8,6 +8,7 @@ pub mod agent_tools;
 pub mod claude;
 pub mod cleanup;
 pub mod commands;
+pub mod diff_parse;
 pub mod git;
 pub mod github;
 pub mod helpers;

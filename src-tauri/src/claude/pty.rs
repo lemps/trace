@@ -11,6 +11,7 @@
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::sync::Mutex;
 
 use base64::Engine;
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtyPair, PtySize};
@@ -213,6 +214,27 @@ pub fn spawn_shell_pty(
     run_in_pty(app, workspace_id, pair, cmd, cols, rows)
 }
 
+/// Workspaces whose process `watch_for_exit` saw end by itself. Its removal of the
+/// session is what ends the reader there, so the reader can't tell from the session
+/// alone whether this was an exit or a stop.
+static NATURAL_EXITS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+fn note_natural_exit(workspace_id: &str) {
+    if let Ok(mut exits) = NATURAL_EXITS.lock() {
+        exits.push(workspace_id.to_string());
+    }
+}
+
+/// Whether `watch_for_exit` recorded this workspace's process ending (and forget it).
+fn take_natural_exit(workspace_id: &str) -> bool {
+    let Ok(mut exits) = NATURAL_EXITS.lock() else {
+        return false;
+    };
+    let before = exits.len();
+    exits.retain(|w| w != workspace_id);
+    exits.len() != before
+}
+
 /// Close the PTY once its process has gone, where exit alone doesn't end the reader:
 /// dropping the session closes the console, which gives the pump thread its EOF.
 fn watch_for_exit(app: AppHandle, workspace_id: String, pid: Option<u32>) {
@@ -227,7 +249,11 @@ fn watch_for_exit(app: AppHandle, workspace_id: String, pid: Option<u32>) {
             let Some(state) = app.try_state::<AppState>() else {
                 return;
             };
-            if state.pty_sessions.lock().remove(&workspace_id).is_some() {
+            let removed = state.pty_sessions.lock().remove(&workspace_id);
+            if let Some(session) = removed {
+                // Say so before the drop below ends the reader, which reads this.
+                note_natural_exit(&workspace_id);
+                drop(session);
                 return;
             }
             std::thread::sleep(std::time::Duration::from_millis(250));
@@ -330,9 +356,10 @@ fn run_in_pty(
         crate::interrupted::record_exit(&reader_app, &reader_ws);
         // A stop takes the session out of state before killing it, so finding it
         // still here means nobody asked the process to end.
-        let mut exited = false;
+        // (On Windows `watch_for_exit` closes it first, and notes that it did.)
+        let mut exited = take_natural_exit(&reader_ws);
         if let Some(state) = reader_app.try_state::<AppState>() {
-            exited = state.pty_sessions.lock().remove(&reader_ws).is_some();
+            exited |= state.pty_sessions.lock().remove(&reader_ws).is_some();
             state.child_pids.lock().remove(&reader_ws);
         }
         let _ = reader_app.emit(
