@@ -53,7 +53,8 @@ export type ChangeKind = "add" | "edit" | "delete";
 export interface FileDiff {
   callId?: string;
   path: string;
-  kind: ChangeKind;
+  /** Named `change`, not `kind`: `kind` is the body's own tag. */
+  change: ChangeKind;
   before?: string;
   after?: string;
   patch?: string;

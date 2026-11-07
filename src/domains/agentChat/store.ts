@@ -1,0 +1,103 @@
+import { create } from "zustand";
+import { EMPTY_JOURNAL, type Journal, upsertRows } from "./journal";
+import type { JournalRow, SessionInfo } from "./types";
+
+// Chat agents' state in the renderer, per workspace: the journal (rows upserted
+// by id at their highest revision), the agent's SessionInfo, messages queued
+// while a turn runs, and prompts being answered (so their buttons disable).
+
+/** A message typed while the agent was busy, sent once its turn ends. */
+export interface QueuedMessage {
+  id: string;
+  text: string;
+}
+
+interface AgentChatState {
+  journals: Record<string, Journal>;
+  info: Record<string, SessionInfo>;
+  /** Workspaces whose saved journal has been read. */
+  loaded: Record<string, boolean>;
+  queues: Record<string, QueuedMessage[]>;
+  /** `${workspaceId}:${requestId}` of answers on their way to the agent. */
+  answering: Record<string, boolean>;
+  /** A queued message was just sent; hold the next until the agent picks it up. */
+  sending: Record<string, boolean>;
+  applyRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
+  setInfo: (workspaceId: string, info: SessionInfo) => void;
+  markLoaded: (workspaceId: string) => void;
+  enqueue: (workspaceId: string, text: string) => void;
+  editQueued: (workspaceId: string, id: string, text: string) => void;
+  removeQueued: (workspaceId: string, id: string) => void;
+  setAnswering: (key: string, on: boolean) => void;
+  setSending: (workspaceId: string, on: boolean) => void;
+}
+
+let nextQueued = 0;
+
+export const useAgentChatStore = create<AgentChatState>((set) => ({
+  journals: {},
+  info: {},
+  loaded: {},
+  queues: {},
+  answering: {},
+  sending: {},
+  applyRows: (workspaceId, rows) =>
+    set((s) => {
+      const current = s.journals[workspaceId] ?? EMPTY_JOURNAL;
+      const next = upsertRows(current, rows);
+      if (next === current) return s;
+      // A new turn row means a sent message was picked up.
+      const picked = rows.some((r) => r.body.kind === "turn" && r.body.state === "running");
+      return {
+        journals: { ...s.journals, [workspaceId]: next },
+        sending: picked ? { ...s.sending, [workspaceId]: false } : s.sending,
+      };
+    }),
+  setInfo: (workspaceId, info) =>
+    set((s) => ({
+      info: { ...s.info, [workspaceId]: info },
+      sending: info.busy ? { ...s.sending, [workspaceId]: false } : s.sending,
+    })),
+  markLoaded: (workspaceId) => set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } })),
+  enqueue: (workspaceId, text) =>
+    set((s) => {
+      nextQueued += 1;
+      const queue = [...(s.queues[workspaceId] ?? []), { id: `q${nextQueued}`, text }];
+      return { queues: { ...s.queues, [workspaceId]: queue } };
+    }),
+  editQueued: (workspaceId, id, text) =>
+    set((s) => ({
+      queues: {
+        ...s.queues,
+        [workspaceId]: (s.queues[workspaceId] ?? []).map((q) => (q.id === id ? { ...q, text } : q)),
+      },
+    })),
+  removeQueued: (workspaceId, id) =>
+    set((s) => ({
+      queues: {
+        ...s.queues,
+        [workspaceId]: (s.queues[workspaceId] ?? []).filter((q) => q.id !== id),
+      },
+    })),
+  setAnswering: (key, on) =>
+    set((s) => {
+      const answering = { ...s.answering };
+      if (on) answering[key] = true;
+      else delete answering[key];
+      return { answering };
+    }),
+  setSending: (workspaceId, on) => set((s) => ({ sending: { ...s.sending, [workspaceId]: on } })),
+}));
+
+/** A workspace's journal (empty until loaded). */
+export function useJournal(workspaceId: string): Journal {
+  return useAgentChatStore((s) => s.journals[workspaceId] ?? EMPTY_JOURNAL);
+}
+
+const NO_QUEUE: QueuedMessage[] = [];
+
+export function useQueue(workspaceId: string): QueuedMessage[] {
+  return useAgentChatStore((s) => s.queues[workspaceId] ?? NO_QUEUE);
+}
+
+import.meta.hot?.accept(() => location.reload());

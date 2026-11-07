@@ -1,5 +1,7 @@
 import { I } from "@/components/Icon";
 import { ChatSurface } from "@/domains/agent/ChatSurface";
+import { ChatAgentPane } from "@/domains/agentChat/ChatAgentPane";
+import { useIsChatAgent } from "@/domains/agentChat/transport";
 import type { AgentCli } from "@/ipc/agent";
 import type { AgentRun } from "./hooks/useAgentRun";
 
@@ -18,6 +20,8 @@ interface AgentPaneProps {
 // both the session's own agent and every companion agent — they differ only in
 // workspace id and how they're spawned (see useAgentRun).
 export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
+  const isChat = useIsChatAgent(workspaceId);
+  if (isChat) return <ChatAgentPane workspaceId={workspaceId} />;
   return (
     <ChatSurface workspaceId={workspaceId} cli={cli}>
       {!run.running && (

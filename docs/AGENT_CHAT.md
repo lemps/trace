@@ -29,7 +29,7 @@ Every adapter turns its protocol into the same rows: `agent_session::journal` (R
 | --- | --- |
 | `message` | `role` (user, assistant, reasoning, system), Markdown `text`, `streaming` |
 | `tool` | `callId`, `name`, `input`, `state` (running, completed, failed), bounded `output`, `parentCallId` for subagents |
-| `diff` | a file change: `path`, `kind` (add, edit, delete), `before`/`after` or a unified `patch` |
+| `diff` | a file change: `path`, `change` (add, edit, delete), `before`/`after` or a unified `patch` |
 | `plan` | a task list: items with `text` and `status` (pending, in progress, done) |
 | `approval` | a permission request: tool, title, detail, options (allow once, allow always, deny), `resolution` |
 | `question` | one or more questions with options, multi-select, free text, `resolution` |

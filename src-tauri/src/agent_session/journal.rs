@@ -100,7 +100,8 @@ pub struct FileDiff {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub call_id: Option<String>,
     pub path: String,
-    pub kind: ChangeKind,
+    /// Named `change`, not `kind`: `kind` is the body's own tag on the wire.
+    pub change: ChangeKind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub before: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -321,6 +322,22 @@ mod tests {
         assert_eq!(v["body"]["state"], "completed");
         assert_eq!(v["turnId"], "turn-1");
         assert_eq!(serde_json::from_value::<JournalRow>(v).unwrap(), row);
+    }
+
+    #[test]
+    fn a_diff_keeps_its_change_beside_the_kind_tag() {
+        let body = JournalBody::Diff(FileDiff {
+            call_id: None,
+            path: "a.rs".into(),
+            change: ChangeKind::Add,
+            before: None,
+            after: Some("fn main() {}".into()),
+            patch: None,
+        });
+        let v = serde_json::to_value(&body).unwrap();
+        assert_eq!(v["kind"], "diff");
+        assert_eq!(v["change"], "add");
+        assert_eq!(serde_json::from_value::<JournalBody>(v).unwrap(), body);
     }
 
     #[test]
