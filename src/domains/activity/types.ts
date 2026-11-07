@@ -18,6 +18,12 @@ export type ActivityKind =
   | "checks-passed"
   /** Auto-cleanup deleted an idle workspace's checkout; `data.branchKept`. */
   | "workspace-removed"
+  /** An agent's turn was interrupted from outside it (`interrupt_session`). */
+  | "agent-interrupted"
+  /** An agent was stopped from outside it (`stop_session`). */
+  | "agent-stopped"
+  /** A repository joined trace's list (an agent's approved `add_repo` / `clone_repo`). */
+  | "repo-added"
   /** A kind this build doesn't know (written by a newer one). */
   | "other";
 

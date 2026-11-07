@@ -37,3 +37,8 @@ export function listRepoMappings(): Promise<RepoMapping[]> {
 export function setRepoMappings(mappings: RepoMapping[]): Promise<RepoMapping[]> {
   return invoke("set_repo_mappings", { mappings });
 }
+
+/** An agent's `add_repo` path checked (absolute, a repo's top level, outside trace's config dir); returns the path to add. */
+export function checkRepoPath(path: string): Promise<string> {
+  return invoke("check_repo_path", { path });
+}

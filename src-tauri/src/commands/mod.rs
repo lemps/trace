@@ -17,6 +17,7 @@ pub mod orchestrator;
 pub mod pr;
 pub mod pr_watch;
 pub mod providers;
+pub mod repo_guard;
 pub mod repo_setup;
 pub mod repos;
 pub mod rich_output;

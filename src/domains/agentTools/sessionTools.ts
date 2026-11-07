@@ -14,6 +14,7 @@ import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
 import { creatorFromCaller } from "./callerOrigin";
+import { cachedPrLine } from "./prCache";
 
 // Standalone-session tools for trace's agents: open a session in one of trace's
 // repos (optionally with Remote Control, so it can be driven from claude.ai/code),
@@ -42,7 +43,7 @@ export const SESSION_TOOLS: Anthropic.Tool[] = [
   {
     name: "list_sessions",
     description:
-      "List trace's standalone sessions (not ticket agents): id, title, repo, agent state (working / needs you / ready / stopped) and whether Remote Control is on.",
+      "List trace's standalone sessions (not ticket agents): id, title, repo, agent state (working / needs you / ready / stopped), whether Remote Control is on, and its pull request (number, state, checks) when trace has already seen one; get_session_pr looks one up.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -141,7 +142,7 @@ async function resolveRepo(wanted: string): Promise<string | null> {
   );
 }
 
-function findSession(ref: string): ScratchSession {
+export function findSession(ref: string): ScratchSession {
   const active = useSessionsStore.getState().sessions.filter((s) => !s.archivedAt);
   const byId = active.find((s) => s.id === ref);
   if (byId) return byId;
@@ -268,7 +269,8 @@ async function list(): Promise<string> {
     .map((s) => {
       const repo = s.folder ? basename(s.folder) : s.repo ? basename(s.repo) : "default repo";
       const rc = s.remoteControl ? " · Remote Control" : "";
-      return `- ${s.id} "${s.title}" · ${repo} · ${s.cli} · ${stateOf(s.id)}${rc}`;
+      const pr = cachedPrLine(s.id);
+      return `- ${s.id} "${s.title}" · ${repo} · ${s.cli} · ${stateOf(s.id)}${rc}${pr ? ` · ${pr}` : ""}`;
     })
     .join("\n");
 }

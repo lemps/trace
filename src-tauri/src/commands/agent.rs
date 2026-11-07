@@ -138,6 +138,9 @@ pub(crate) fn spawn_in(
             extra_args,
         )?;
         (wiring.model, wiring.extra_args, wiring.env)
+    } else if cli == "codex" {
+        let wiring = launch::codex_wiring(&app, state, &workspace_id, model, extra_args);
+        (wiring.model, wiring.extra_args, wiring.env)
     } else {
         let env = launch::bridge_env(&app, state, &workspace_id);
         (model, extra_args, env)

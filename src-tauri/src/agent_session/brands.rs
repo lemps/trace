@@ -21,9 +21,9 @@ pub fn supports_chat(cli: &str) -> bool {
 }
 
 /// What trace adds to a `cli` chat agent: Claude's tools, hooks and provider
-/// (`claude::launch`); for Codex the render bridge's coordinates only, since
-/// providers are Anthropic-compatible endpoints and `--mcp-config` /
-/// `--settings` are Claude flags.
+/// (`claude::launch`); for Codex the render bridge and trace's tools as `-c`
+/// overrides (`codex_wiring`). Providers are Anthropic-compatible endpoints, so
+/// Codex has none; hooks are Claude's `--settings`.
 pub fn wiring(
     app: &AppHandle,
     state: &AppState,
@@ -42,11 +42,13 @@ pub fn wiring(
             provider,
             extra_args,
         ),
-        "codex" => Ok(Wiring {
+        "codex" => Ok(crate::claude::launch::codex_wiring(
+            app,
+            state,
+            workspace_id,
             model,
             extra_args,
-            env: crate::claude::launch::bridge_env(app, state, workspace_id),
-        }),
+        )),
         other => Err(unsupported(other)),
     }
 }

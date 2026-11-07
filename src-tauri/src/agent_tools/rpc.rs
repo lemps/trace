@@ -14,7 +14,7 @@ const DEFAULT_PROTOCOL: &str = "2025-06-18";
 
 /// Told to every agent at `initialize` — what these tools are for and the rules
 /// that come with them.
-const INSTRUCTIONS: &str = "You are running inside trace, the desktop app that hosts this session. \
+pub const INSTRUCTIONS: &str = "You are running inside trace, the desktop app that hosts this session. \
 These tools act on trace itself: the issue board it shows (read tickets, move them between columns, \
 comment, start a coding agent on a ticket, message running agents) and its scheduled prompts. \
 To fan work out across tickets, start trace agents on them with start_agent rather than spawning \
@@ -25,7 +25,10 @@ On a long-running task, use update_user now and then to say how it's going in on
 it shows beside you on trace's Fleet page and doesn't interrupt the user. \
 For work that isn't a ticket, start_session opens a standalone session in one of trace's repos \
 (list_repos); send_to_session types into it (slash commands included) and read_session shows its \
-screen. Pass remote_control to make it drivable from claude.ai/code and the Claude app.";
+screen. Pass remote_control to make it drivable from claude.ai/code and the Claude app. \
+get_session_changes and get_session_pr show a session's diff and PR; interrupt_session and \
+stop_session act on sessions you started; read_activity reads trace's activity log; add_repo and \
+clone_repo wait for the user's approval.";
 
 /// Answer one JSON-RPC message. `None` for a notification (no `id`), which gets
 /// no body. `call` runs a tool; it's only invoked for `tools/call`.

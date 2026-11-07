@@ -3,6 +3,7 @@ import { buildBoardContext } from "@/domains/orchestrator/context";
 import { runWriteTool, WRITE_TOOL_NAMES, WRITE_TOOLS } from "@/domains/orchestrator/mutations";
 import { READ_TOOLS, runReadTool } from "@/domains/orchestrator/tools";
 import type { McpTool } from "@/ipc/agentTools";
+import { isMoreTool, MORE_TOOLS, runMoreTool } from "./moreTools";
 import { runScheduleTool, SCHEDULE_TOOLS } from "./scheduleTools";
 import { isSessionTool, runSessionTool, SESSION_TOOLS } from "./sessionTools";
 import { runUpdateUser, UPDATE_USER } from "./updateTool";
@@ -30,6 +31,7 @@ const TOOLS: Anthropic.Tool[] = [
   ...SCHEDULE_TOOLS,
   ...SESSION_TOOLS,
   UPDATE_USER,
+  ...MORE_TOOLS,
 ];
 
 /** The tool definitions in MCP's shape. */
@@ -48,5 +50,6 @@ export async function runAgentTool(name: string, input: unknown, caller: string)
   if (WRITE_TOOL_NAMES.has(name)) return runWriteTool(name, input, "agent");
   if (SCHEDULE_TOOL_NAMES.has(name)) return runScheduleTool(name, input);
   if (isSessionTool(name)) return runSessionTool(name, input, caller);
+  if (isMoreTool(name)) return runMoreTool(name, input, caller);
   return runReadTool(name, input);
 }

@@ -29,6 +29,12 @@ pub enum ActivityKind {
     ChecksPassed,
     /// Auto-cleanup deleted an idle workspace's checkout (`cleanup::sweep`).
     WorkspaceRemoved,
+    /// An agent's turn was interrupted from outside (e.g. `interrupt_session`).
+    AgentInterrupted,
+    /// An agent was stopped from outside (e.g. `stop_session`).
+    AgentStopped,
+    /// A repository joined trace's list (e.g. an agent's approved `add_repo`).
+    RepoAdded,
     #[serde(other)]
     Other,
 }

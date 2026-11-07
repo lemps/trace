@@ -137,7 +137,7 @@ fn validate_repo(path: &str) -> Result<(), String> {
     if !git::is_git_repo(path) {
         return Err(format!("{path} isn't a git repository."));
     }
-    Ok(())
+    super::repo_guard::outside_config(path)
 }
 
 /// The repo a workspace is assigned to. Errors (prompting assignment) if none.
