@@ -13,6 +13,8 @@ import type {
 
 export interface StartChatAgentArgs {
   workspaceId: string;
+  /** Which agent runs: Claude when unset. */
+  cli?: "claude" | "codex";
   model?: string;
   /** A registered model provider ("moonshot", "wafer", …); Anthropic when unset. */
   provider?: string;

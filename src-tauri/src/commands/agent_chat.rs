@@ -11,10 +11,13 @@ use crate::state::{AppState, StartGuard};
 /// Start a chat agent for an issue (in its worktree) or a session (where the
 /// session runs). Idempotent: a no-op while one runs.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn start_chat_agent(
     app: AppHandle,
     state: State<'_, AppState>,
     workspace_id: String,
+    // "claude" (when unset) or "codex": `agent_session::brands`.
+    cli: Option<String>,
     model: Option<String>,
     provider: Option<String>,
     extra_args: Option<Vec<String>>,
@@ -39,6 +42,7 @@ pub fn start_chat_agent(
     };
     let req = StartRequest {
         workspace_id,
+        cli: cli.unwrap_or_else(|| "claude".to_string()),
         model,
         provider,
         extra_args: extra_args.unwrap_or_default(),

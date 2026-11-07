@@ -104,6 +104,49 @@ Interrupt is the stream-json `control_request` `interrupt`; the process stays up
 requests (hook callbacks, SDK MCP) are refused with an error response so Claude never waits on
 one. Claude Code 2.1.319 has no TodoWrite tool, so its fixture is hand-made from a real turn.
 
+## The Codex adapter, as built
+
+`agent_session::codex`, built against codex-cli 0.147.0 (`codex app-server generate-ts
+--experimental` for the types, recordings in `codex/fixtures/`). One `codex app-server` per
+agent, JSON-RPC over stdio (no `jsonrpc` field on the wire), threaded like the Claude adapter.
+`brands` picks the adapter by the start's `cli` ("claude" when unset); `brands::supports_chat`
+/ `CHAT_BRANDS` say which brands run as chat.
+
+- Handshake: `initialize` (with `experimentalApi`, for approvals' `availableDecisions`), then
+  `initialized` and `thread/start`, or `thread/resume` (`excludeTurns`) of `spec.resume` or the
+  workspace's saved thread (`codex-threads.json`, apart from Claude's `sessions.json`). A resume
+  Codex refuses with "no rollout found" (no turn ever ran) starts a fresh thread. The thread id is
+  `SessionInfo.conversationId` and is saved as it arrives.
+- Settings → Agents flags are the TUI's, which app-server doesn't take: `-m`, `-a`, `-s`,
+  `--full-auto`, `--yolo` become the thread's `model` / `approvalPolicy` / `sandbox`; `-c`,
+  `--enable`, `--disable` go to app-server; anything else is dropped with a warning row. With no
+  flags the user's `config.toml` decides, as for a terminal Codex. trace's MCP tools and hooks
+  aren't wired for Codex yet; the render bridge env is.
+- A message is `turn/start` (text, pictures as `localImage`, other files named by path), or
+  `turn/steer` into the running turn; before the thread is up it waits. Interrupt is
+  `turn/interrupt`, sent once Codex has named the turn.
+
+| Codex sends | Row |
+| --- | --- |
+| `item/agentMessage/delta`, `item/reasoning/*Delta` | `message` (assistant / reasoning), streaming until `item/completed` |
+| `commandExecution` item | `tool` "shell", input `{command, cwd}` (the parsed command, not the `powershell -Command` wrapper), output `aggregatedOutput` capped |
+| `fileChange` item | `tool` "apply_patch" (input in apply_patch form, so the view names the files), plus a `diff` per file once applied: add → `after`, delete → `before`, update → `patch` |
+| `mcpToolCall`, `dynamicToolCall`, `webSearch`, `imageView` items | `tool` `mcp__<server>__<tool>`, the tool's name, `web_search`, `view_image` |
+| `turn/plan/updated` | `plan`, one per turn |
+| `item/commandExecution/requestApproval`, `item/fileChange/requestApproval` | `approval`: Codex's `availableDecisions` (accept → allow once, acceptForSession and exec-policy / network amendments → always, cancel → "Deny and stop"), plus `decline` ("Deny", the turn goes on) when Codex didn't list it; answered with the request's response |
+| `item/tool/requestUserInput` | `question`, answered as `{answers: {id: {answers}}}` |
+| `serverRequest/resolved` for a prompt still open | that prompt cancelled |
+| `turn/completed` | `turn` with Codex's `durationMs`; usage is the sum of each request's `thread/tokenUsage/updated` `last` (cached input split out); Codex reports no cost |
+| `error` | `status` (a warning while Codex retries; otherwise an error, once, with the API's own message) |
+| `warning`, `configWarning`, `deprecationNotice` | `status` warning, each text once |
+| `account/rateLimits/updated` | `SessionInfo.limits`, windows named by length (`five_hour`, `seven_day`) |
+
+Other server requests are answered at once (MCP elicitation declined, extra permissions not
+granted, dynamic tool calls failed, the rest a JSON-RPC error) so Codex never waits on one.
+Notifications from another thread (a subagent's) are dropped. Not mapped yet: subagent
+(`collabAgentToolCall`) activity, a denial's note (Codex's decline carries none), hooks,
+context-window size, Codex's own slash commands.
+
 ## The chat view
 
 `src/domains/agentChat/`, shared by ticket agents and sessions:

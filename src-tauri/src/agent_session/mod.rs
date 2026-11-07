@@ -10,9 +10,11 @@
 //! - `registry`: the chat agents, starting, running or stopping.
 //! - `runtime`: starting and driving them, and the sink that persists and emits rows.
 //! - `store`: the journal file; `settle`: rows a vanished process left open.
-//! - `claude`: the Claude adapter.
+//! - `claude`, `codex`: the adapters; `brands` picks one by its CLI.
 
+pub mod brands;
 pub mod claude;
+pub mod codex;
 pub mod journal;
 pub mod registry;
 pub mod runtime;

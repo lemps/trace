@@ -1,0 +1,20 @@
+# Hand-made from codex-cli 0.147.0's schema (generate-ts --experimental): request_user_input
+# isn't offered outside Codex's plan mode, so it wasn't recorded. Frame shapes follow the
+# recordings beside it.
+>>> {"method":"initialize","id":0,"params":{"clientInfo":{"name":"trace","title":"trace","version":"0.1.0"},"capabilities":{"experimentalApi":true,"requestAttestation":false}}}
+{"id":0,"result":{"userAgent":"trace/0.147.0","codexHome":"C:\\Users\\dev\\.codex","platformFamily":"windows","platformOs":"windows"}}
+>>> {"method":"initialized"}
+>>> {"method":"thread/start","id":1,"params":{"cwd":"C:/dev/demo"}}
+{"id":1,"result":{"thread":{"id":"01a1b60b-0000-7000-8000-00000000a001","sessionId":"01a1b60b-0000-7000-8000-00000000a001","preview":"","ephemeral":false,"modelProvider":"openai","createdAt":1794055577,"updatedAt":1794055577,"status":{"type":"idle"},"path":null,"cwd":"C:\\dev\\demo","cliVersion":"0.147.0","turns":[]},"model":"gpt-5.6-sol","modelProvider":"openai","serviceTier":null,"cwd":"C:\\dev\\demo","approvalPolicy":"on-request","sandbox":{"type":"workspaceWrite"},"reasoningEffort":"low"}}
+>>> {"method":"turn/start","id":2,"params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","input":[{"type":"text","text":"Ask me which color I prefer, then say it back.","text_elements":[]}]}}
+{"id":2,"result":{"turn":{"id":"01a1b60b-0000-7000-8000-00000000b001","items":[],"itemsView":"notLoaded","status":"inProgress","error":null,"startedAt":null,"completedAt":null,"durationMs":null}}}
+{"method":"turn/started","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turn":{"id":"01a1b60b-0000-7000-8000-00000000b001","items":[],"itemsView":"notLoaded","status":"inProgress","error":null,"startedAt":1794055577,"completedAt":null,"durationMs":null}}}
+{"method":"item/tool/requestUserInput","id":0,"params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","itemId":"call_q1","questions":[{"id":"color","header":"Color","question":"Which color do you prefer?","isOther":true,"isSecret":false,"options":[{"label":"Red","description":"Warm"},{"label":"Blue","description":""}]}],"isBlocking":true,"autoResolutionMs":null}}
+>>> {"id":0,"result":{"answers":{"color":{"answers":["Blue"]}}}}
+{"method":"serverRequest/resolved","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","requestId":0}}
+{"method":"item/started","params":{"item":{"type":"agentMessage","id":"msg_q1","text":"","phase":"final_answer","memoryCitation":null},"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","startedAtMs":1794055580000}}
+{"method":"item/agentMessage/delta","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","itemId":"msg_q1","delta":"You prefer "}}
+{"method":"item/agentMessage/delta","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","itemId":"msg_q1","delta":"blue."}}
+{"method":"item/completed","params":{"item":{"type":"agentMessage","id":"msg_q1","text":"You prefer blue.","phase":"final_answer","memoryCitation":null},"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","completedAtMs":1794055580100}}
+{"method":"thread/tokenUsage/updated","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turnId":"01a1b60b-0000-7000-8000-00000000b001","tokenUsage":{"total":{"totalTokens":120,"inputTokens":100,"cachedInputTokens":40,"cacheWriteInputTokens":0,"outputTokens":20,"reasoningOutputTokens":0},"last":{"totalTokens":120,"inputTokens":100,"cachedInputTokens":40,"cacheWriteInputTokens":0,"outputTokens":20,"reasoningOutputTokens":0},"modelContextWindow":258400}}}
+{"method":"turn/completed","params":{"threadId":"01a1b60b-0000-7000-8000-00000000a001","turn":{"id":"01a1b60b-0000-7000-8000-00000000b001","items":[],"itemsView":"summary","status":"completed","error":null,"startedAt":1794055577,"completedAt":1794055580,"durationMs":3000}}}
