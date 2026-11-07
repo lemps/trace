@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::precheck::PrecheckResult;
 use super::timing::Schedule;
 use crate::helpers::new_id;
 
@@ -30,6 +31,10 @@ pub struct ScheduledPrompt {
     #[serde(default)]
     pub extra_args: Vec<String>,
     pub schedule: Schedule,
+    /// Shell line run in the worktree before each run: exit 0 runs it, anything
+    /// else skips it (`precheck`). `None` = always run.
+    #[serde(default)]
+    pub precheck: Option<String>,
     pub enabled: bool,
     /// Kill a run still going after this many minutes; 0 = no limit.
     pub timeout_mins: u32,
@@ -54,6 +59,8 @@ pub enum RunStatus {
     Failed,
     TimedOut,
     Stopped,
+    /// The precheck said there was nothing to do; no agent was started.
+    Skipped,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
@@ -102,6 +109,9 @@ pub struct ScheduleRun {
     /// The terminal output was saved to disk (`transcript`) and can be replayed.
     #[serde(default)]
     pub has_transcript: bool,
+    /// What the prompt's precheck did before this run, if it has one.
+    #[serde(default)]
+    pub precheck: Option<PrecheckResult>,
 }
 
 /// What the create/edit form sends. `id` = `None` creates a new prompt.
@@ -117,6 +127,8 @@ pub struct PromptInput {
     #[serde(default)]
     pub extra_args: Vec<String>,
     pub schedule: Schedule,
+    #[serde(default)]
+    pub precheck: Option<String>,
     pub timeout_mins: u32,
     pub notify: bool,
 }
@@ -144,6 +156,7 @@ impl PromptInput {
         if self.timeout_mins > MAX_TIMEOUT_MINS {
             return Err("Timeouts can be at most 24 hours.".to_string());
         }
+        let precheck = super::precheck::normalize(self.precheck)?;
         let repo = trimmed(self.repo);
         match &repo {
             Some(r) if !crate::commands::repos::all_repos().contains(r) => {
@@ -181,6 +194,7 @@ impl PromptInput {
                 None
             },
             schedule: self.schedule,
+            precheck,
             enabled,
             timeout_mins: self.timeout_mins,
             notify: self.notify,

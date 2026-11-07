@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -43,6 +44,21 @@ pub fn is_alive(pid: u32) -> bool {
         return false;
     };
     unsafe { libc::kill(pid, 0) == 0 }
+}
+
+/// Start `command` as the leader of a new process group (its pgid = its pid).
+pub fn own_group(command: &mut Command) {
+    command.process_group(0);
+}
+
+/// SIGKILL the whole process group `pid` leads.
+pub fn stop_group(pid: u32) {
+    let Ok(pid) = libc::pid_t::try_from(pid) else {
+        return;
+    };
+    unsafe {
+        libc::kill(-pid, libc::SIGKILL);
+    }
 }
 
 /// The user's login-shell environment, so an agent sees the same PATH, API keys and

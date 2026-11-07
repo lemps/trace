@@ -33,6 +33,7 @@ import "@/domains/sessions/session-list.css";
 import "@/domains/sessions/rail-recents.css";
 import "@/domains/schedules/schedules.css";
 import "@/domains/schedules/share.css";
+import "@/domains/schedules/precheck.css";
 import "@/domains/integrations/integrations.css";
 import "@/domains/github/github.css";
 import "@/domains/repos/repos.css";

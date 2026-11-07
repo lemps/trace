@@ -9,6 +9,7 @@
 //!
 //! - `timing` / `cron`: when a schedule fires next.
 //! - `model` / `store` / `prompts`: the persisted shapes, their files, and CRUD.
+//! - `precheck`: the shell line that decides whether a run goes ahead.
 //! - `run`: launching and finishing one run; `completion` decides when its work
 //!   (background tasks included) is done, from `claude::hooks` turn events;
 //!   `wakeup` spots a turn that ended by scheduling its own next check-in.
@@ -23,6 +24,7 @@ pub mod completion;
 pub mod cron;
 pub mod handoff;
 pub mod model;
+pub mod precheck;
 pub mod prompts;
 pub mod run;
 pub mod runner;

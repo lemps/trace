@@ -9,6 +9,7 @@ import { useNow } from "@/hooks/useNow";
 import { resizeAgent } from "@/ipc/agent";
 import { formatDuration, formatWhen } from "./describe";
 import { runWorkspaceId } from "./ids";
+import { PrecheckNote, stoppedAtPrecheck } from "./PrecheckNote";
 import { PromptView } from "./PromptView";
 import { RunBadge, useRunNeedsYou } from "./RunBadge";
 import { RunConversation } from "./RunConversation";
@@ -30,13 +31,6 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
   const continueAsSession = useSchedulesStore((s) => s.continueAsSession);
   const needsYou = useRunNeedsYou(run);
   const now = useNow(live ? 1000 : null);
-  // A live run you may need to answer opens on the terminal; a finished one on
-  // its summary; otherwise the conversation.
-  const [picked, setView] = useState<RunView>(
-    live && !run.claudeSessionId ? "terminal" : run.summary ? "summary" : "log"
-  );
-  // The Summary tab only exists once there is one.
-  const view: RunView = picked === "summary" && !run.summary ? "log" : picked;
 
   // The backend spawns runs at a default size. If this pane was already open
   // while the run was starting, its size went nowhere — push it once the PTY
@@ -132,6 +126,32 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
           run was going.
         </div>
       )}
+      <PrecheckNote run={run} />
+      {/* A run that stopped at its precheck never had an agent to show. */}
+      {!stoppedAtPrecheck(run) && <RunViews run={run} prompt={prompt} live={live} />}
+    </div>
+  );
+}
+
+interface RunViewsProps {
+  run: ScheduleRun;
+  prompt: ScheduledPrompt;
+  live: boolean;
+}
+
+// The tabs of a run that got as far as starting its agent.
+function RunViews({ run, prompt, live }: RunViewsProps) {
+  const ws = runWorkspaceId(run.id);
+  // A live run you may need to answer opens on the terminal; a finished one on
+  // its summary; otherwise the conversation.
+  const [picked, setView] = useState<RunView>(
+    live && !run.claudeSessionId ? "terminal" : run.summary ? "summary" : "log"
+  );
+  // The Summary tab only exists once there is one.
+  const view: RunView = picked === "summary" && !run.summary ? "log" : picked;
+
+  return (
+    <>
       <div className="sched-views">
         {run.summary && (
           <button
@@ -198,6 +218,6 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
             </div>
           </div>
         ))}
-    </div>
+    </>
   );
 }

@@ -49,6 +49,9 @@ pub struct SharedPrompt {
     pub model: Option<String>,
     #[serde(default)]
     pub extra_args: Vec<String>,
+    /// A shell line — shown in the import preview, since it runs unattended.
+    #[serde(default)]
+    pub precheck: Option<String>,
     pub timeout_mins: u32,
     pub notify: bool,
 }
@@ -177,6 +180,7 @@ fn to_shared(p: ScheduledPrompt) -> SharedPrompt {
         provider: p.provider,
         model: p.model,
         extra_args: p.extra_args,
+        precheck: p.precheck,
         timeout_mins: p.timeout_mins,
         notify: p.notify,
     }
@@ -193,6 +197,7 @@ fn to_input(item: ImportItem) -> PromptInput {
         model: s.model,
         extra_args: s.extra_args,
         schedule: s.schedule,
+        precheck: s.precheck,
         timeout_mins: s.timeout_mins,
         notify: s.notify,
     }
@@ -227,6 +232,7 @@ mod tests {
             provider: Some("deepseek".to_string()),
             model: None,
             extra_args: vec!["--permission-mode".to_string(), "acceptEdits".to_string()],
+            precheck: Some("gh run list --status failure --limit 1".to_string()),
             timeout_mins: 30,
             notify: true,
         }
@@ -253,6 +259,16 @@ mod tests {
         let newer = file(vec![sample()]).replace(r#""version":1"#, r#""version":99"#);
         assert!(parse(&newer).unwrap_err().contains("newer trace"));
         assert!(parse(&file(vec![])).unwrap_err().contains("no prompts"));
+    }
+
+    #[test]
+    fn reads_files_from_before_prechecks() {
+        let old = file(vec![sample()]).replace(
+            r#""precheck":"gh run list --status failure --limit 1","#,
+            "",
+        );
+        assert!(!old.contains("precheck"));
+        assert_eq!(parse(&old).unwrap_or_default()[0].precheck, None);
     }
 
     #[test]

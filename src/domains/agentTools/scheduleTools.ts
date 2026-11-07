@@ -44,6 +44,11 @@ const EDITABLE = {
     items: { type: "string" },
     description: "Extra CLI arguments for the run's Claude session.",
   },
+  precheck: {
+    type: "string",
+    description:
+      "One shell line run in the prompt's worktree before each scheduled run (sh; cmd on Windows): exit 0 runs it, any other exit skips it. Max 2 minutes. Empty string removes it.",
+  },
 };
 
 export const SCHEDULE_TOOLS: Anthropic.Tool[] = [
@@ -109,6 +114,7 @@ function asInput(p: ScheduledPrompt): PromptInput {
     model: p.model ?? null,
     extraArgs: p.extraArgs,
     schedule: p.schedule,
+    precheck: p.precheck ?? null,
     timeoutMins: p.timeoutMins,
     notify: p.notify,
   };
@@ -125,6 +131,7 @@ function withEdits(base: PromptInput, a: Args): PromptInput {
     notify: bool(a.notify) ?? base.notify,
     model: str(a.model) ?? base.model,
     extraArgs: strings(a.extra_args) ?? base.extraArgs,
+    precheck: str(a.precheck) ?? base.precheck,
   };
 }
 
@@ -153,6 +160,7 @@ async function getPrompt(id: string): Promise<string> {
     `${p.title} (${p.id}) — ${p.enabled ? "on" : "paused"}`,
     `Schedule: ${describeSchedule(p.schedule)} · timeout ${p.timeoutMins ? `${p.timeoutMins}m` : "none"} · notify ${p.notify ? "on" : "off"}`,
     `Model: ${p.model ?? "default"} · provider ${p.provider ?? "anthropic"} · args ${p.extraArgs.join(" ") || "none"}`,
+    `Precheck: ${p.precheck ?? "none"}`,
     "",
     "PROMPT:",
     p.prompt,
@@ -164,6 +172,10 @@ async function getPrompt(id: string): Promise<string> {
     lines.push(
       `- ${formatWhen(r.startedAt)} · ${r.status} · ${took}${r.error ? ` · error: ${r.error}` : ""}`
     );
+    if (r.precheck) {
+      const out = r.precheck.output.slice(-300).replace(/\s+/g, " ");
+      lines.push(`  precheck: exit ${r.precheck.exitCode ?? "none"}${out ? ` · ${out}` : ""}`);
+    }
     if (r.summary) lines.push(`  summary: ${r.summary.slice(0, 600).replace(/\s+/g, " ")}`);
   }
   return lines.join("\n");

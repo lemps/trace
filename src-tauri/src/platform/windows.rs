@@ -58,6 +58,13 @@ impl ProcessHost for Os {
     fn pty_reports_exit() -> bool {
         false
     }
+
+    /// Nothing to set up: `taskkill /T` finds the descendants by parent id.
+    fn own_group(_command: &mut Command) {}
+
+    fn stop_group(pid: u32) {
+        Self::stop_tree(pid);
+    }
 }
 
 /// Executable forms of `name`. A bare `name` is left out on purpose: npm puts a Unix

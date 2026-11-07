@@ -1,4 +1,5 @@
 import { formatDuration, formatWhen } from "./describe";
+import { precheckOutcome } from "./PrecheckNote";
 import { RunBadge } from "./RunBadge";
 import type { ScheduleRun } from "./types";
 
@@ -23,6 +24,9 @@ export function RunList({ runs, activeId, onSelect }: RunListProps) {
             run.endedAt ? formatDuration(run.endedAt - run.startedAt) : null,
             run.trigger === "manual" ? "manual" : null,
             run.skipped > 0 ? `${run.skipped} skipped` : null,
+            run.status === "skipped" && run.precheck
+              ? `precheck ${precheckOutcome(run.precheck)}`
+              : null,
           ].filter(Boolean);
           return (
             <button

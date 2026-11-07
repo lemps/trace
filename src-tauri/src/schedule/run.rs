@@ -76,6 +76,7 @@ pub fn start(app: &AppHandle, prompt_id: &str, trigger: Trigger) -> Result<Sched
         summary: String::new(),
         error: None,
         has_transcript: false,
+        precheck: None,
     };
     let ws = run_workspace_id(&run.id);
     {
@@ -107,16 +108,32 @@ pub fn start(app: &AppHandle, prompt_id: &str, trigger: Trigger) -> Result<Sched
         return Err(err);
     }
     emit(app, &run);
-    super::activity::log_run(app, &run);
+    // A run that has to pass its precheck is logged once it has (`precheck::gate`).
+    if !gated(&prompt, trigger) {
+        super::activity::log_run(app, &run);
+    }
     let worker = app.clone();
     let launched = run.clone();
     std::thread::spawn(move || launch(&worker, &prompt, &launched));
     Ok(run)
 }
 
+/// Whether a run has to pass the prompt's precheck: scheduled firings do; "Run
+/// now" is the user saying go.
+fn gated(prompt: &ScheduledPrompt, trigger: Trigger) -> bool {
+    prompt.precheck.is_some() && trigger == Trigger::Schedule
+}
+
 fn launch(app: &AppHandle, prompt: &ScheduledPrompt, run: &ScheduleRun) {
     let ws = run_workspace_id(&run.id);
-    let (rendered, claude_id) = match spawn(app, prompt, run) {
+    let (repo, cwd) = match prepare(prompt) {
+        Ok(ready) => ready,
+        Err(err) => return finish(app, &ws, RunStatus::Failed, Some(err)),
+    };
+    if gated(prompt, run.trigger) && !super::precheck::gate::passes(app, prompt, run, &cwd) {
+        return;
+    }
+    let (rendered, claude_id) = match spawn(app, prompt, run, &repo, cwd) {
         Ok(spawned) => spawned,
         Err(err) => return finish(app, &ws, RunStatus::Failed, Some(err)),
     };
@@ -145,13 +162,9 @@ fn launch(app: &AppHandle, prompt: &ScheduledPrompt, run: &ScheduleRun) {
     );
 }
 
-/// Make sure the worktree exists and spawn the agent. Returns the rendered
-/// prompt and the conversation id.
-fn spawn(
-    app: &AppHandle,
-    prompt: &ScheduledPrompt,
-    run: &ScheduleRun,
-) -> Result<(String, Option<String>), String> {
+/// The prompt's repo and its worktree, created if need be, with the repo's
+/// setup done.
+fn prepare(prompt: &ScheduledPrompt) -> Result<(String, String), String> {
     let repo = prompt
         .repo
         .clone()
@@ -159,18 +172,24 @@ fn spawn(
         .ok_or("Add a repository in Settings first.")?;
     let cwd = ensure_worktree(&repo, &prompt.id)?;
     // Unattended and on its own thread: let the repo's setup (`npm ci`, `.env`)
-    // finish first, rather than race the agent in the same tree.
+    // finish first, rather than race the precheck or agent in the same tree.
     crate::repo_catalog::setup::wait_for(&cwd, SETUP_WAIT);
-    let previous_run = store::runs()
-        .into_iter()
-        .filter(|r| r.prompt_id == prompt.id && r.id != run.id)
-        .map(|r| r.started_at)
-        .max();
+    Ok((repo, cwd))
+}
+
+/// Spawn the agent in `cwd`. Returns the rendered prompt and the conversation id.
+fn spawn(
+    app: &AppHandle,
+    prompt: &ScheduledPrompt,
+    run: &ScheduleRun,
+    repo: &str,
+    cwd: String,
+) -> Result<(String, Option<String>), String> {
     let vars = template::Vars {
         now: run.started_at,
-        last_run_at: previous_run,
+        last_run_at: store::last_run_at(&prompt.id, &run.id),
         title: &prompt.title,
-        repo: &repo,
+        repo,
     };
     let rendered = template::render(&prompt.prompt, &vars);
     // `spawn_in` attaches the turn hooks (`claude::hooks`) that tell us when the

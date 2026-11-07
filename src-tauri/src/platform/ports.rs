@@ -29,6 +29,13 @@ pub trait ProcessHost {
     /// Whether a PTY's reader sees EOF when its process exits. A pseudo console stays
     /// open until it's closed, so on Windows trace has to watch the process itself.
     fn pty_reports_exit() -> bool;
+
+    /// Make `command` lead a process group of its own, so [`Self::stop_group`] reaches
+    /// everything it starts: stopping `sh -c` alone would leave its `curl` running.
+    fn own_group(command: &mut Command);
+
+    /// Stop a process started with [`Self::own_group`], and what it started.
+    fn stop_group(pid: u32);
 }
 
 /// Finding the CLIs trace runs (`claude`, `codex`, `git`, `gh`, …).

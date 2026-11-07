@@ -65,6 +65,14 @@ impl ProcessHost for Os {
     fn pty_reports_exit() -> bool {
         true
     }
+
+    fn own_group(command: &mut Command) {
+        unix::own_group(command);
+    }
+
+    fn stop_group(pid: u32) {
+        unix::stop_group(pid);
+    }
 }
 
 impl ToolLocator for Os {
