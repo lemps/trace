@@ -23,7 +23,8 @@ export function noteChatInfo(workspaceId: string, info: SessionInfo): void {
     if (prev) board.noteUserTurn(workspaceId);
     board.setActivity(workspaceId, "working");
   } else if (!info.busy && prev?.busy === true) {
-    open.delete(workspaceId);
+    // The turn's end cancels what it still asked, whichever arrives first.
+    if (open.delete(workspaceId)) askIsOver(workspaceId);
     noteTurnOver(workspaceId);
   }
 }

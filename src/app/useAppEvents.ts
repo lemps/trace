@@ -3,7 +3,7 @@ import { toast } from "@/app/toast";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { ensureChatListeners } from "@/domains/agentChat/hooks/useJournalFeed";
 import { syncChatActivity } from "@/domains/agentChat/liveBridge";
-import { hydrateChatState, loadChatBrands } from "@/domains/agentChat/transport";
+import { hydrateChatState, isChatAgent, loadChatBrands } from "@/domains/agentChat/transport";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
 import { adoptLiveAgents } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
@@ -54,7 +54,7 @@ export function useAppEvents(): void {
     const runState = onAgentRunState((p) => {
       setAgentRunning(p.workspaceId, p.running);
       // A chat agent resumed with nothing to do (after a quit) is idle, not working.
-      if (p.running) syncChatActivity(p.workspaceId);
+      if (p.running && isChatAgent(p.workspaceId)) syncChatActivity(p.workspaceId);
     });
     keep(runState);
     // A reload empties the run-state while the backend's PTYs survive it. Only once

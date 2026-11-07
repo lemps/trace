@@ -63,8 +63,12 @@ impl JournalSink for Sink {
             .info(&self.workspace_id)
             .is_some_and(|i| i.busy);
         let info = state.chat_agents.note_info(&self.workspace_id, info);
-        // What a resume after a quit needs to know: was it mid-turn.
-        if info.busy != was_busy {
+        // What a resume after a quit needs to know: was it mid-turn. Not the
+        // turn that ends because trace is going down: that one was cut off.
+        let going_down = state
+            .shutting_down
+            .load(std::sync::atomic::Ordering::SeqCst);
+        if info.busy != was_busy && !going_down {
             crate::interrupted::record_busy(&self.workspace_id, info.busy);
         }
         let event = SessionInfoEvent {
@@ -247,6 +251,28 @@ pub fn stop(state: &AppState, workspace_id: &str) {
     state.chat_agents.stop(workspace_id);
 }
 
+/// trace is quitting: end every chat agent's process now, while trace can still
+/// wait for it. Headless Claude doesn't exit on its own when its stdin closes in
+/// the middle of a turn. Their ledger entries stay (`shutting_down` is set), so
+/// the next launch offers them back.
+pub fn stop_all_now(state: &AppState) {
+    use crate::platform::ports::ProcessHost;
+    let pids = state.chat_agents.pids();
+    // Asked first, so each turn ends as interrupted rather than as a crash.
+    for id in state.chat_agents.workspaces() {
+        state.chat_agents.stop(&id);
+    }
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while !state.chat_agents.workspaces().is_empty() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    for pid in pids {
+        if crate::platform::Os::is_alive(pid) {
+            crate::platform::Os::stop_tree(pid);
+        }
+    }
+}
+
 /// What a view needs to know about a workspace's chat agent when it mounts:
 /// `chat_agent_state`'s payload (`ChatAgentState` in types.ts).
 #[derive(Serialize)]
@@ -281,7 +307,12 @@ pub fn load(state: &AppState, workspace_id: &str) -> Result<Vec<JournalRow>, Str
 
 /// The workspace is gone for good: its journal and transport go with it.
 pub fn forget(workspace_id: &str) {
-    let _ = std::fs::remove_file(store::journal_path(workspace_id));
+    let path = store::journal_path(workspace_id);
+    let _ = std::fs::remove_file(&path);
+    // `persist`'s lock file beside it.
+    let mut lock = path.into_os_string();
+    lock.push(".lock");
+    let _ = std::fs::remove_file(lock);
     super::transport::forget(workspace_id);
 }
 

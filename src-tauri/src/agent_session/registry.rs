@@ -213,6 +213,18 @@ impl ChatAgents {
     pub fn workspaces(&self) -> Vec<String> {
         self.slots.lock().keys().cloned().collect()
     }
+
+    /// The process ids of the running and stopping agents.
+    pub fn pids(&self) -> Vec<u32> {
+        self.slots
+            .lock()
+            .values()
+            .filter_map(|slot| match slot {
+                Slot::Running { adapter, .. } => adapter.pid(),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
