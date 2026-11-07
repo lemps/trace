@@ -50,11 +50,11 @@ export function StartPrompt({
             </div>
           </>
         )}
-        {exited ? null : noRepos ? (
+        {noRepos ? (
           <div className="hint" style={{ color: "var(--c-warn)" }}>
             Add a repository in Settings first.
           </div>
-        ) : (
+        ) : exited ? null : (
           <label className="field" style={{ width: 280, marginTop: 4 }}>
             <span className="field-label">Repository</span>
             <select value={repoChoice} onChange={(e) => onRepoChange(e.target.value)}>

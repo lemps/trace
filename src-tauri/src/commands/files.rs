@@ -7,7 +7,7 @@ use crate::worktree_files::{self, WorktreeFiles};
 #[tauri::command]
 pub async fn list_workspace_files(issue_key: String) -> Result<WorktreeFiles, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let (_repo, work_dir) = crate::commands::diff::work_dir_for(&issue_key)?;
+        let (_repo, work_dir) = crate::workspace_dir::work_dir_for(&issue_key)?;
         worktree_files::list(&work_dir)
     })
     .await

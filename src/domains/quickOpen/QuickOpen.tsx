@@ -138,7 +138,11 @@ export function QuickOpen({ workspaceId, onClose, onView }: QuickOpenProps) {
               type="button"
               key={hit.path}
               className={`qo-row${hit === current ? " active" : ""}`}
-              onMouseEnter={() => setActive(i)}
+              // Pointer *movement*, not enter: arrow keys scroll rows under a resting
+              // pointer, and enter events would steal the keyboard's selection.
+              onMouseMove={() => {
+                if (i !== active) setActive(i);
+              }}
               onClick={(e) => (e.shiftKey ? edit(hit) : view(hit))}
               title={hit.path}
             >

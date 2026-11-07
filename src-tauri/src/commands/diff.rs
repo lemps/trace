@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use crate::diff_parse::{parse_unified, FileDiff};
 use crate::git;
+use crate::workspace_dir::work_dir_for;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -21,41 +22,6 @@ pub struct DiffSummary {
     /// The ref we diffed against, e.g. `origin/main`.
     pub base: String,
     pub files: Vec<FileSummary>,
-}
-
-/// Resolve `(repo, work_dir)` for a workspace's diff. Board agents have an
-/// isolated worktree at `.worktrees/<slug>`; exploratory sessions run in the
-/// repo root and have none, so we fall back to the repo itself. Returns
-/// `(repo, work_dir)` where the diff is computed in `work_dir`.
-pub(crate) fn work_dir_for(workspace_id: &str) -> Result<(String, String), String> {
-    // A session in a plain folder has no repo. The fallback below would show the
-    // diff of an unrelated default repo as if it were this session's.
-    if let Some(session) = crate::commands::session::owning_session(workspace_id) {
-        if session.folder.is_some() {
-            return Err("This session runs in a plain folder, so it has no diff.".to_string());
-        }
-        // A session runs in its own repo (not the default one): its worktree once it
-        // has started, the repo root before that.
-        let cwd = crate::commands::session::session_cwd(&session.id, false)?;
-        let repo = session
-            .repo
-            .or_else(crate::commands::repos::default_repo)
-            .ok_or_else(|| "Choose a repository folder in Settings first.".to_string())?;
-        return Ok((repo, cwd));
-    }
-    // Issues resolve to their assigned repo; sessions (and anything unassigned)
-    // fall back to the default repo.
-    let repo = crate::commands::repos::repo_for(workspace_id)
-        .ok()
-        .or_else(crate::commands::repos::default_repo)
-        .ok_or_else(|| "Choose a repository folder in Settings first.".to_string())?;
-    let worktree = crate::commands::repos::workspace_dir(&repo, workspace_id);
-    if std::path::Path::new(&worktree).exists() {
-        Ok((repo, worktree))
-    } else {
-        // No worktree → exploratory session working directly in the repo root.
-        Ok((repo.clone(), repo))
-    }
 }
 
 fn base_ref(repo: &str) -> String {

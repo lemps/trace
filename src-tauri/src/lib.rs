@@ -20,6 +20,7 @@ pub mod pylon;
 pub mod repo_catalog;
 pub mod schedule;
 pub mod state;
+pub mod workspace_dir;
 pub mod worktree_files;
 
 use std::sync::atomic::Ordering;

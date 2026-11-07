@@ -137,12 +137,15 @@ function DiffBody({ fd }: { fd: FileDiff }) {
 }
 
 /** A whole file with line numbers, for a file that has no diff to show. */
+/** Past this many lines a file is cut short: every line is a DOM row. */
+const MAX_SOURCE_LINES = 3000;
+
 function SourceBody({ text }: { text: string }) {
   if (text.length === 0) return <div className="diff-note">Empty file.</div>;
   const lines = text.replace(/\r?\n$/, "").split(/\r?\n/);
   return (
     <div className="src-body">
-      {lines.map((line, i) => (
+      {lines.slice(0, MAX_SOURCE_LINES).map((line, i) => (
         // Line numbers are the identity here: the file doesn't change under the view.
         // biome-ignore lint/suspicious/noArrayIndexKey: see above
         <div key={i} className="src-line">
@@ -150,6 +153,12 @@ function SourceBody({ text }: { text: string }) {
           <div className="content">{line}</div>
         </div>
       ))}
+      {lines.length > MAX_SOURCE_LINES && (
+        <div className="diff-note">
+          Showing the first {MAX_SOURCE_LINES.toLocaleString()} of {lines.length.toLocaleString()}{" "}
+          lines. Open it in your editor for the rest.
+        </div>
+      )}
     </div>
   );
 }

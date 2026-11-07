@@ -22,8 +22,9 @@ pub struct WorktreeFiles {
 
 /// List tracked files plus untracked ones `.gitignore` doesn't exclude.
 ///
-/// `-z` keeps paths verbatim (no C-quoting of spaces or non-ASCII names), and
-/// `--deduplicate` drops the repeats an unmerged path would otherwise produce.
+/// `-z` keeps paths verbatim (no C-quoting of spaces or non-ASCII names). An
+/// unmerged path is listed once per stage; `parse` drops the repeats (git's own
+/// `--deduplicate` needs git 2.31, newer than some Linux distributions ship).
 pub fn list(work_dir: &str) -> Result<WorktreeFiles, String> {
     let out = crate::claude::discovery::command("git")
         .args([
@@ -34,7 +35,6 @@ pub fn list(work_dir: &str) -> Result<WorktreeFiles, String> {
             "--cached",
             "--others",
             "--exclude-standard",
-            "--deduplicate",
         ])
         .current_dir(work_dir)
         .output()
@@ -46,11 +46,15 @@ pub fn list(work_dir: &str) -> Result<WorktreeFiles, String> {
     Ok(parse(&out.stdout, MAX_FILES))
 }
 
-/// Split `git ls-files -z` output into paths, keeping at most `cap`.
+/// Split `git ls-files -z` output into distinct paths, keeping at most `cap`.
 pub fn parse(stdout: &[u8], cap: usize) -> WorktreeFiles {
     let mut files = Vec::new();
+    let mut seen = std::collections::HashSet::new();
     let mut truncated = false;
     for raw in stdout.split(|b| *b == 0).filter(|p| !p.is_empty()) {
+        if !seen.insert(raw) {
+            continue;
+        }
         if files.len() == cap {
             truncated = true;
             break;
@@ -75,6 +79,12 @@ mod tests {
             vec!["src/a.ts", "dir with space/b.md", "été.txt"]
         );
         assert!(!got.truncated);
+    }
+
+    #[test]
+    fn lists_an_unmerged_path_once() {
+        let got = parse(b"a.rs\0b.rs\0b.rs\0b.rs\0c.rs\0", 10);
+        assert_eq!(got.files, vec!["a.rs", "b.rs", "c.rs"]);
     }
 
     #[test]

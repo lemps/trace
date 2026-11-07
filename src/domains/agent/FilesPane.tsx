@@ -14,10 +14,12 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [fileDiff, setFileDiff] = useState<FileDiff | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [loadingFile, setLoadingFile] = useState(false);
   const reveal = useQuickOpenStore((s) => s.reveals[workspaceId]);
-  // The Quick Open pick, which a summary reload must not deselect.
-  const opened = reveal?.path ?? null;
+  const clearReveal = useQuickOpenStore((s) => s.clearReveal);
+  // The Quick Open pick, kept while the tab is open; a summary reload must not deselect it.
+  const [opened, setOpened] = useState<string | null>(null);
   const openedRef = useRef(opened);
   openedRef.current = opened;
 
@@ -52,11 +54,17 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
     return load();
   }, [load]);
 
-  // Each Quick Open pick (even of the same file again) selects it.
+  // Each Quick Open pick (even of the same file again) selects it. Taking it out of
+  // the store means it lasts while this tab is open, not every time it opens.
   useEffect(() => {
-    if (reveal) setSelected(reveal.path);
-  }, [reveal]);
+    if (!reveal) return;
+    setOpened(reveal.path);
+    setSelected(reveal.path);
+    clearReveal(workspaceId);
+  }, [reveal, workspaceId, clearReveal]);
 
+  // Re-read on `summary` too: a refresh may have changed the open file's diff.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: summary is a refresh trigger
   useEffect(() => {
     if (!selected) {
       setFileDiff(null);
@@ -64,6 +72,7 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
     }
     let cancelled = false;
     setLoadingFile(true);
+    setFileError(null);
     gitDiffFile(workspaceId, selected)
       .then((d) => {
         if (!cancelled) {
@@ -73,14 +82,16 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
       })
       .catch((e) => {
         if (!cancelled) {
-          setError(String(e));
+          // One file failing leaves the rest of the tab usable.
+          setFileDiff(null);
+          setFileError(String(e));
           setLoadingFile(false);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, selected]);
+  }, [workspaceId, selected, summary]);
 
   if (error) return <Centered title="Couldn't load diff" hint={error} />;
   if (!summary)
@@ -102,7 +113,9 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
           onRefresh={() => void load()}
         />
         <div className="diff-pane">
-          {fileDiff ? (
+          {fileError ? (
+            <div className="diff-note">{fileError}</div>
+          ) : fileDiff ? (
             // Key by path so switching files remounts FileView — its preview
             // toggle resets to the diff without a reset effect.
             <FileView

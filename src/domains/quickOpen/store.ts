@@ -10,6 +10,8 @@ interface QuickOpenStore {
   /** The last file picked per workspace id; the Files tab selects it when it changes. */
   reveals: Record<string, Reveal>;
   reveal: (workspaceId: string, path: string) => void;
+  /** The Files tab took the pick: forget it, so the tab doesn't reopen on it. */
+  clearReveal: (workspaceId: string) => void;
   /** The workspace whose picker is up, if any. */
   openFor: string | null;
   show: (workspaceId: string) => void;
@@ -23,6 +25,13 @@ let nonce = 0;
 export const useQuickOpenStore = create<QuickOpenStore>((set) => ({
   reveals: {},
   openFor: null,
+  clearReveal(workspaceId) {
+    set((s) => {
+      if (!(workspaceId in s.reveals)) return {};
+      const { [workspaceId]: _taken, ...rest } = s.reveals;
+      return { reveals: rest };
+    });
+  },
   show(workspaceId) {
     set({ openFor: workspaceId });
   },
