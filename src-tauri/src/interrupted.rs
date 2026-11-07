@@ -49,6 +49,9 @@ pub struct AgentLaunch {
     /// turn ended. An entry from before this was tracked counts as busy.
     #[serde(default = "busy_if_unknown")]
     pub busy: bool,
+    /// Chat or terminal; entries from before this was recorded ran in a terminal.
+    #[serde(default)]
+    pub transport: crate::agent_session::transport::Transport,
 }
 
 fn busy_if_unknown() -> bool {
@@ -173,6 +176,7 @@ mod tests {
             started_at: 0,
             pid: None,
             busy,
+            transport: Default::default(),
         }
     }
 

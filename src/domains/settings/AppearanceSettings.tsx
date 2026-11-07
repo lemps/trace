@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { FontField } from "@/components/FontField";
 import { Segmented } from "@/components/Segmented";
+import { StatusLight } from "@/components/StatusLight";
 import { Switch } from "@/components/Switch";
 import { setTermFont, setTermFontSize, setTermLineHeight } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
 import { installedOnly, UI_FONT_SUGGESTIONS } from "@/domains/appearance/installedFonts";
 import { type Density, UI_SCALES } from "@/domains/appearance/prefs";
+import { AppPreview } from "@/domains/appearance/previews/AppPreview";
+import { TextPreview } from "@/domains/appearance/previews/TextPreview";
 import { useAppearance } from "@/domains/appearance/store";
 import { AccentPicker, ThemePicker } from "@/domains/appearance/ThemePicker";
+import { AppearanceGroup } from "./AppearanceGroup";
+import { ChatAppearance } from "./ChatAppearance";
 import { SettingRow } from "./SettingRow";
 import { TerminalAppearance } from "./TerminalAppearance";
 
@@ -18,9 +23,10 @@ const DENSITIES: { value: Density; label: string }[] = [
 ];
 const SCALES = UI_SCALES.map((s) => ({ value: s, label: `${s}%` }));
 
-// Settings → Appearance: theme, accent, text and layout, terminal, motion.
-// Every control writes the appearance store, which applies itself live
-// (domains/appearance/apply.ts) and persists.
+// Settings → Appearance: theme, accent, text and layout, terminal, chat &
+// transcript, motion. Every control writes the appearance store, which applies
+// itself live (domains/appearance/apply.ts) and persists; each group shows a
+// live preview of what it changes beside it.
 export function AppearanceSettings() {
   const prefs = useAppearance((s) => s.prefs);
   const systemReducedMotion = useAppearance((s) => s.systemReducedMotion);
@@ -41,9 +47,11 @@ export function AppearanceSettings() {
 
   return (
     <div className="ap-page">
-      <section className="setting-group">
-        <h2>Theme</h2>
-        <div className="desc">Colours for the whole app. Changes apply as you pick them.</div>
+      <AppearanceGroup
+        title="Theme"
+        desc="Colours for the whole app. Changes apply as you pick them."
+        preview={<AppPreview />}
+      >
         <ThemePicker />
         <SettingRow
           label="Accent"
@@ -51,11 +59,13 @@ export function AppearanceSettings() {
         >
           <AccentPicker />
         </SettingRow>
-      </section>
+      </AppearanceGroup>
 
-      <section className="setting-group">
-        <h2>Text and layout</h2>
-        <div className="desc">How large and how dense the interface is.</div>
+      <AppearanceGroup
+        title="Text and layout"
+        desc="How large and how dense the interface is."
+        preview={<TextPreview />}
+      >
         <SettingRow label="Interface size" hint="Zooms everything but the terminals.">
           <Segmented
             className="ap-seg"
@@ -83,12 +93,20 @@ export function AppearanceSettings() {
             defaultFamily="Geist"
           />
         </SettingRow>
-      </section>
+      </AppearanceGroup>
 
       <TerminalAppearance key={resets} />
+      <ChatAppearance key={`chat${resets}`} />
 
-      <section className="setting-group">
-        <h2>Motion</h2>
+      <AppearanceGroup
+        title="Motion"
+        preview={
+          <div className="ap-motion-pv" inert aria-hidden="true">
+            <StatusLight light="working" variant="pill" />
+            <StatusLight light="attention" variant="pill" />
+          </div>
+        }
+      >
         <SettingRow
           label="Reduce motion"
           hint={
@@ -104,7 +122,7 @@ export function AppearanceSettings() {
             disabled={systemReducedMotion}
           />
         </SettingRow>
-      </section>
+      </AppearanceGroup>
 
       <div className="ap-reset">
         <button type="button" className="btn" onClick={resetAll}>

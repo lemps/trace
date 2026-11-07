@@ -154,6 +154,29 @@ export function watchForQuiet(workspaceId: string): void {
   );
 }
 
+/** How long a chat agent's finished turn waits before notifying: a stop right behind it cancels it. */
+const TURN_OVER_NOTIFY_MS = 800;
+
+/**
+ * A chat agent's turn ended — its own report, not a guess from quiet output
+ * (`agentChat/liveBridge`). The pill flips now; the notification follows
+ * unless the agent stops first (a stop clears the timers).
+ */
+export function noteTurnOver(workspaceId: string): void {
+  clearTimer(waitingTimers, workspaceId);
+  clearTimer(notifyTimers, workspaceId);
+  if (busyInBackground(workspaceId)) return;
+  useBoardStore.getState().setActivity(workspaceId, "waiting");
+  refreshPrsFor(workspaceId);
+  notifyTimers.set(
+    workspaceId,
+    setTimeout(() => {
+      notifyTimers.delete(workspaceId);
+      maybeNotifyWaiting(workspaceId);
+    }, TURN_OVER_NOTIFY_MS)
+  );
+}
+
 /** An agent's hook-reported turn event (see `AgentTurn`). */
 export function noteAgentTurn({ workspaceId, event, backgroundTasks }: AgentTurn): void {
   if (event === "stop") {

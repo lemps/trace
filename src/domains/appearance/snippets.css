@@ -1,0 +1,103 @@
+/* Settings → Appearance: the terminal snippet, the code theme thumbnails and
+   the chat preview (previews/*.tsx). The terminal's colours come inline from
+   its scheme (ansi.ts); the code thumbnails from code-themes.css. */
+
+.ap-term {
+  overflow: hidden;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre;
+}
+.ap-term-line {
+  overflow: hidden;
+  text-overflow: clip;
+}
+.ap-term-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.15em;
+  vertical-align: text-bottom;
+  background: var(--term-cursor);
+}
+.ap-term-cursor.bar {
+  width: 2px;
+}
+.ap-term-cursor.underline {
+  height: 2px;
+  vertical-align: baseline;
+}
+.ap-term-cursor.blink {
+  animation: ap-blink 1s steps(1) infinite;
+}
+@keyframes ap-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.ap-term-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ap-term-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ap-thumb .ap-term {
+  font-size: 9.5px;
+  padding: 6px 7px;
+}
+
+/* A code theme's thumbnail: its own data-code-theme, its own colours. */
+.ap-code-card {
+  display: block;
+  overflow: hidden;
+  padding: 6px 7px;
+  border: 1px solid var(--code-border, var(--border-faint));
+  border-radius: var(--radius-sm);
+  background: var(--code-bg, var(--bg-1));
+  color: var(--code-fg, var(--fg-1));
+}
+.ap-code-thumb {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+/* The chat preview: a column inside a pane, as wide as the setting says
+   (scaled to the preview: Readable leaves margins, Full fills it). */
+.ap-chat-pv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ap-chat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-0);
+}
+.ap-chat-col > * {
+  width: 100%;
+  margin-inline: auto;
+}
+.ap-chat-col.readable > * {
+  max-width: 84%;
+}
+.ap-chat-col.wide > * {
+  max-width: 94%;
+}
+.ap-chat-col .tx-prompt {
+  margin-top: 0;
+}

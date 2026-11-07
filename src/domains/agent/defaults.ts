@@ -1,12 +1,13 @@
 // Agent launch defaults configured in Settings, read from localStorage so the
 // start flows and the Settings UI share one source of truth.
 
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 
 const CLI_KEY = "trace.agentCli";
 const PROVIDER_KEY = "trace.agentProvider";
 const MODEL_KEY = "trace.agentModel";
 const ARGS_KEY = "trace.agentArgs";
+const TRANSPORT_KEY = "trace.agentTransport";
 const NOTIFY_WAITING_KEY = "trace.notifyOnWaiting";
 const NOTIFY_SOUND_KEY = "trace.notifySound";
 const NOTIFY_SOUND_ON_KEY = "trace.notifySoundOn";
@@ -47,6 +48,19 @@ export function agentProvider(): AgentProvider {
 
 export function setAgentProvider(next: AgentProvider) {
   write(PROVIDER_KEY, next);
+}
+
+/**
+ * How a new agent is shown: the chat view (default) or its terminal. Brands
+ * without a chat adapter always get the terminal (`agentChat/transport`).
+ */
+export function agentTransport(): Transport {
+  return read(TRANSPORT_KEY) === "terminal" ? "terminal" : "chat";
+}
+
+export function setAgentTransport(next: Transport) {
+  // Chat is the default: store nothing for it.
+  write(TRANSPORT_KEY, next === "terminal" ? "terminal" : "");
 }
 
 /** The default model, or undefined to use the CLI's own default. */

@@ -1,8 +1,10 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { activity } from "@/domains/activity/store";
 import { agentArgs, agentCli, agentProvider } from "@/domains/agent/defaults";
-import { submitLine } from "@/domains/agent/submitLine";
 import { decodePtyChunk, transcriptText } from "@/domains/agent/transcript";
+import { chatTail, runsAsChat, sendToAgent } from "@/domains/agentChat/deliver";
+import { syncChatActivity } from "@/domains/agentChat/liveBridge";
+import { noteTransport, resolveTransport } from "@/domains/agentChat/transport";
 import { useBoardStore } from "@/domains/board/store";
 import { useLiveStore } from "@/domains/live/store";
 import { useSessionsStore } from "@/domains/sessions/store";
@@ -190,13 +192,19 @@ async function waitForLink(id: string): Promise<string | null> {
   return null;
 }
 
-/** Start (or resume) a session's agent and mark it running. */
+/** Start (or resume) a session's agent, on its transport, and mark it running. */
 async function launch(session: ScratchSession, prompt: string) {
   knownLinks.delete(session.id);
-  await startSession(session.id, COLS, ROWS, agentArgs(), prompt || undefined);
+  // Remote Control is a TUI feature, so a session started with it is a terminal.
+  const transport = session.remoteControl
+    ? "terminal"
+    : await resolveTransport(session.id, session.cli);
+  await startSession(session.id, COLS, ROWS, agentArgs(), prompt || undefined, transport);
+  noteTransport(session.id, transport);
   const board = useBoardStore.getState();
   board.setAgentRunning(session.id, true);
   if (prompt) board.noteUserTurn(session.id);
+  else if (transport === "chat") syncChatActivity(session.id);
 }
 
 async function start(input: unknown): Promise<string> {
@@ -232,14 +240,19 @@ async function send(input: unknown): Promise<string> {
     return `"${session.title}" wasn't running — started it with that as its first message.`;
   }
   board.noteUserTurn(session.id);
-  await submitLine(session.id, message);
+  await sendToAgent(session.id, message);
   return `Sent to "${session.title}".`;
 }
 
-function read(input: unknown): string {
+async function read(input: unknown): Promise<string> {
   const session = findSession(str(input, "session_id"));
   const chunks = useBoardStore.getState().outputBuffers[session.id] ?? [];
-  const tail = transcriptText(chunks, 6_000).trim();
+  // A chat agent has no screen: its conversation's end stands in for one.
+  const tail = (
+    (await runsAsChat(session.id))
+      ? await chatTail(session.id, 6_000)
+      : transcriptText(chunks, 6_000)
+  ).trim();
   const link = session.remoteControl ? remoteLink(session.id) : null;
   const head = `"${session.title}" (id ${session.id}) — ${stateOf(session.id)}`;
   const lines = link ? [head, `Remote Control: ${link}`] : [head];

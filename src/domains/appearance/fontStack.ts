@@ -1,6 +1,9 @@
 // One rule for turning a font family as typed into a CSS font stack, shared by
 // the UI font (Appearance) and the terminal font (agent/terminalPrefs).
 
+// Suggestions only — any installed family can be typed.
+export { MONO_FONT_SUGGESTIONS, UI_FONT_SUGGESTIONS } from "./installedFonts.ts";
+
 const GENERIC = new Set([
   "serif",
   "sans-serif",

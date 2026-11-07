@@ -139,7 +139,7 @@ function scopeProblem(def: ShortcutDef, chord: string, os: Os): string | null {
     if (terminalNeeds(chord, os)) {
       return `${formatChord(chord, os)} is the terminal's. Use ${appKeys} with a key.`;
     }
-  } else if (def.scope === "reply") {
+  } else if (def.scope === "reply" || def.scope === "chat") {
     if (!p.ctrl && !p.meta && !p.alt) return "Hold a modifier, or it types into the reply.";
     if (textNeeds(chord, os)) return `${formatChord(chord, os)} edits the reply.`;
   } else if (def.scope === "inbox") {

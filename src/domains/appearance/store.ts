@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ChatStyle } from "./chatStyle";
 import { type AppearancePrefs, DEFAULT_PREFS, loadPrefs, savePrefs } from "./prefs";
 import { type ColorScheme, resolveTheme, type ThemeId } from "./themes";
 
@@ -24,6 +25,8 @@ interface AppearanceStore {
    */
   appliedScale: number;
   update: (patch: Partial<AppearancePrefs>) => void;
+  /** Change some of the Chat & transcript settings. */
+  updateChat: (patch: Partial<ChatStyle>) => void;
   reset: () => void;
   setSystem: (scheme: ColorScheme, reducedMotion: boolean) => void;
   setAppliedScale: (scale: number) => void;
@@ -39,6 +42,9 @@ export const useAppearance = create<AppearanceStore>((set, get) => ({
     const prefs = { ...get().prefs, ...patch };
     savePrefs(prefs);
     set({ prefs });
+  },
+  updateChat(patch) {
+    get().update({ chat: { ...get().prefs.chat, ...patch } });
   },
   reset() {
     savePrefs(DEFAULT_PREFS);

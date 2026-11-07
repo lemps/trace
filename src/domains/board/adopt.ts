@@ -57,13 +57,14 @@ function adopt(id: string): boolean {
   return true;
 }
 
-/** Adopt everything the backend is running. Called once at app start. */
-export async function adoptLiveAgents(): Promise<void> {
+/** Adopt everything the backend is running (PTYs and chat agents). Called once at
+ * app start; returns the ids it found live. */
+export async function adoptLiveAgents(): Promise<string[]> {
   const [ids, gone] = await tracking(liveWorkspaces());
-  for (const id of ids) {
-    if (!gone.has(id)) adopt(id);
-  }
+  const live = ids.filter((id) => !gone.has(id));
+  for (const id of live) adopt(id);
   forgetUnclaimedMemory();
+  return live;
 }
 
 /** Adopt one workspace if it's alive; true when that changed anything. */

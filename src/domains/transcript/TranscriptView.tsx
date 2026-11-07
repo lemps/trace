@@ -1,6 +1,7 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { I } from "@/components/Icon";
-import { Markdown } from "@/components/Markdown";
+import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
+import { ChatViewContext } from "@/domains/agentChat/chatContext";
 import { useBoardStore } from "@/domains/board/store";
 import { useAgentLight } from "@/domains/live/store";
 import type { AgentCli } from "@/ipc/agent";
@@ -46,6 +47,7 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
   const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
   const blocks = useMemo(() => toBlocks(feed.items), [feed.items]);
   const [root, setRoot] = useState<string | null>(null);
+  const view = useMemo(() => ({ workspaceId, root, expandAll: false }), [workspaceId, root]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [following, setFollowing] = useState(true);
   const followingRef = useRef(true);
@@ -98,31 +100,33 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
   }
   const working = light === "working";
   return (
-    <div className="tx-wrap">
-      <div className="tx-scroll" ref={scrollRef} onScroll={onScroll} tabIndex={-1}>
-        <div className="tx-col">
-          {blocks.map((block, i) => (
-            <BlockView
-              key={blockKey(block)}
-              block={block}
-              workspaceId={workspaceId}
-              root={root}
-              isCurrent={working && i === blocks.length - 1}
-            />
-          ))}
-          {working && <div className="tx-working">Working…</div>}
-          <div className="tx-foot">
-            {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"} ·{" "}
-            <span className="kbd">{viewKey}</span> switches views
+    <ChatViewContext.Provider value={view}>
+      <div className="tx-wrap">
+        <div className="tx-scroll" ref={scrollRef} onScroll={onScroll} tabIndex={-1}>
+          <div className="tx-col">
+            {blocks.map((block, i) => (
+              <BlockView
+                key={blockKey(block)}
+                block={block}
+                workspaceId={workspaceId}
+                root={root}
+                isCurrent={working && i === blocks.length - 1}
+              />
+            ))}
+            {working && <div className="tx-working">Working…</div>}
+            <div className="tx-foot">
+              {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"}{" "}
+              · <span className="kbd">{viewKey}</span> switches views
+            </div>
           </div>
         </div>
+        {!following && (
+          <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
+            <I.Download size={13} /> Latest
+          </button>
+        )}
       </div>
-      {!following && (
-        <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
-          <I.Download size={13} /> Latest
-        </button>
-      )}
-    </div>
+    </ChatViewContext.Provider>
   );
 }
 
@@ -138,21 +142,25 @@ interface BlockViewProps {
 }
 
 // A reply's Markdown parse is the costly part of a render; text never changes
-// once written, so each new item re-renders the list without re-parsing them.
-const Reply = memo(function Reply({ text }: { text: string }) {
+// once written, so each new item re-renders the list without re-parsing them
+// (ChatMarkdown is memoised on its text). It's the chat view's renderer, so
+// file paths link to the editor here too.
+function Reply({ text }: { text: string }) {
   return (
     <div className="tx-reply">
-      <Markdown text={text} />
+      <ChatMarkdown text={text} />
     </div>
   );
-});
+}
 
 function BlockView({ block, workspaceId, root, isCurrent }: BlockViewProps) {
   switch (block.type) {
     case "prompt":
       return (
         <div className="tx-prompt">
-          <div className="tx-bubble">{block.item.text}</div>
+          <div className="tx-bubble">
+            <ChatMarkdown text={block.item.text} />
+          </div>
         </div>
       );
     case "reply":

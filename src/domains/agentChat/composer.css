@@ -1,0 +1,259 @@
+/* Questions, answered questions, and the composer with its queue and slash menu. */
+
+/* Questions. */
+.ac-q {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ac-q-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  font-size: var(--text-body);
+  color: var(--fg-0);
+}
+.ac-q-header {
+  flex-shrink: 0;
+  padding: 0 6px;
+  height: var(--control-h-xs);
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-2);
+}
+.ac-q-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ac-q-option {
+  display: grid;
+  grid-template-columns: 16px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-h);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+  text-align: left;
+}
+.ac-q-option:hover {
+  border-color: var(--border-strong);
+}
+.ac-q-option.on {
+  border-color: var(--c-accent);
+  background: var(--c-accent-bg);
+  color: var(--fg-0);
+}
+.ac-q-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--fg-4);
+  border-radius: 999px;
+}
+.ac-q-option.multi .ac-q-mark {
+  border-radius: 3px;
+}
+.ac-q-option.on .ac-q-mark {
+  border-color: var(--c-accent);
+  background: var(--c-accent);
+  color: var(--on-bright);
+}
+.ac-q-desc {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.ac-q-input {
+  height: var(--control-h);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font: inherit;
+  font-size: var(--text-ui);
+}
+.ac-q-input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+.ac-answered {
+  gap: 6px;
+}
+.ac-answered-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--text-ui);
+}
+.ac-answered-q {
+  color: var(--fg-2);
+}
+.ac-answered-a {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.ac-chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-xs);
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--fg-0);
+  font-size: var(--text-meta);
+}
+
+/* Composer. */
+.ac-composer-wrap {
+  max-width: var(--chat-col, 820px);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px 14px;
+}
+.ac-composer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.ac-composer:focus-within {
+  border-color: var(--border-strong);
+}
+.ac-input {
+  resize: none;
+  padding: 10px 12px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-0);
+  font: inherit;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  max-height: 260px;
+}
+.ac-input:focus {
+  outline: none;
+}
+.ac-input::placeholder {
+  color: var(--fg-3);
+}
+.ac-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 8px 12px;
+}
+.ac-composer-hints {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+
+/* Slash commands, above the composer. */
+.ac-slash {
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-pop);
+}
+.ac-slash-item {
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+  text-align: left;
+}
+.ac-slash-item.active,
+.ac-slash-item:hover {
+  background: var(--c-accent-bg);
+  color: var(--fg-0);
+}
+
+/* Messages queued while the agent works. */
+.ac-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.ac-queue-label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.ac-queued {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-h);
+  padding: 2px 4px 2px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.ac-queued-n {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-3);
+}
+.ac-queued-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-queued-edit {
+  flex: 1;
+  resize: none;
+  padding: 4px 6px;
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font: inherit;
+}
+.ac-queued-btn.btn.icon {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+}

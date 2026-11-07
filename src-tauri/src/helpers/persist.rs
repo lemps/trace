@@ -16,6 +16,7 @@
 //!
 //! Plain reads take no lock: a rename means they always see a whole file.
 
+mod append;
 mod atomic;
 mod gate;
 mod lock;
@@ -33,6 +34,7 @@ use serde_json::error::Category;
 use super::restrict_perms;
 use lock::FileLock;
 
+pub use append::{append_line, rewrite};
 pub use atomic::write_atomic;
 pub use gate::LoadGate;
 

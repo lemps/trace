@@ -1,7 +1,7 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { activity } from "@/domains/activity/store";
 import type { ActivityActor } from "@/domains/activity/types";
-import { submitLine } from "@/domains/agent/submitLine";
+import { sendToAgent } from "@/domains/agentChat/deliver";
 import { startOfWorkStatus } from "@/domains/board/columns";
 import { useBoardStore } from "@/domains/board/store";
 import { isScheduledRun } from "@/domains/schedules/ids";
@@ -158,7 +158,7 @@ export async function runWriteTool(
     const results = await Promise.allSettled(
       agents.map((k) => {
         board.noteUserTurn(k);
-        return submitLine(k, message);
+        return sendToAgent(k, message);
       })
     );
     const failed = agents.filter((_, i) => results[i].status === "rejected");
@@ -254,7 +254,7 @@ export async function runWriteTool(
     if (!message.trim()) return "Error: empty message.";
     try {
       board.noteUserTurn(key);
-      await submitLine(key, message);
+      await sendToAgent(key, message);
       return `Sent to ${key}'s agent.`;
     } catch (e) {
       return `Couldn't send to ${key}: ${e instanceof Error ? e.message : String(e)}`;

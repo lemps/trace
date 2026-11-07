@@ -1,9 +1,11 @@
 import { activity } from "@/domains/activity/store";
 import type { ActivityActor } from "@/domains/activity/types";
+import { syncChatActivity } from "@/domains/agentChat/liveBridge";
+import { noteTransport, resolveTransport } from "@/domains/agentChat/transport";
 import { rememberIssues } from "@/domains/board/issueBoards";
 import { useBoardStore } from "@/domains/board/store";
 import type { Issue } from "@/domains/issues/types";
-import { type AgentCli, type AgentProvider, startAgent } from "@/ipc/agent";
+import { type AgentCli, type AgentProvider, startAgent, type Transport } from "@/ipc/agent";
 import { listIssueComments } from "@/ipc/issues";
 import {
   agentArgs,
@@ -51,22 +53,24 @@ interface LaunchOptions {
   cli?: AgentCli;
   /** Model provider for the Claude harness (third-party Anthropic-compatible endpoint). */
   provider?: AgentProvider;
-  /** Sent as the CLI's positional prompt — fresh conversations only. */
+  /** Sent as the first message (a terminal's positional prompt) — fresh conversations only. */
   prompt?: string;
+  /** Chat or terminal for this start; unset keeps the ticket's last, else Settings' default. */
+  transport?: Transport;
   /** Who started it, for the activity log (default: the user). */
   actor?: ActivityActor;
 }
 
 /**
- * Start an issue's agent: fit/clear the live terminal, spawn the PTY with the
- * configured defaults, and mark it running. Shared by the detail view's Start
- * button and the board's kickoff paths. The backend resolves the repo (saved
- * assignment, or the sole configured repo) and is idempotent if a session is
- * already live.
+ * Start an issue's agent: fit/clear the live terminal, spawn the PTY (or the
+ * chat agent) with the configured defaults, and mark it running. Shared by the
+ * detail view's Start button and the board's kickoff paths (the orchestrator's
+ * `start_agent` among them). The backend resolves the repo (saved assignment, or
+ * the sole configured repo) and is idempotent if a session is already live.
  */
 export async function launchIssueAgent(
   issueKey: string,
-  { cli, provider, prompt, actor }: LaunchOptions = {}
+  { cli, provider, prompt, actor, transport }: LaunchOptions = {}
 ): Promise<void> {
   const { clearOutput, setAgentRunning, data, boardKey } = useBoardStore.getState();
   const chosen = cli ?? agentCli();
@@ -84,8 +88,11 @@ export async function launchIssueAgent(
   // from the board there's no terminal yet, so 80x24 — the first mount's
   // fit-and-resize repaints the TUI at the real size.
   const size = fitTerminal(issueKey) ?? { cols: 80, rows: 24 };
-  clearOutput(issueKey);
-  resetTerminal(issueKey);
+  const chosenTransport = await resolveTransport(issueKey, chosen, transport);
+  if (chosenTransport === "terminal") {
+    clearOutput(issueKey);
+    resetTerminal(issueKey);
+  }
   await startAgent(
     issueKey,
     size.cols,
@@ -95,11 +102,14 @@ export async function launchIssueAgent(
     agentArgs(),
     prompt,
     matchText,
-    chosenProvider
+    chosenProvider,
+    chosenTransport
   );
+  noteTransport(issueKey, chosenTransport);
   setAgentRunning(issueKey, true);
+  if (chosenTransport === "chat") syncChatActivity(issueKey);
   // The pane may have resized while the spawn was in flight.
-  syncPtySize(issueKey);
+  else syncPtySize(issueKey);
   activity.log({
     kind: "agent-start",
     actor,

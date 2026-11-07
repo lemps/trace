@@ -4,6 +4,7 @@
 //! Feature logic lives in `jira/`, `claude/`, `schedule/`, `git`, and thin `commands/*`.
 
 pub mod activity;
+pub mod agent_session;
 pub mod agent_tools;
 pub mod claude;
 pub mod cleanup;
@@ -109,6 +110,13 @@ pub fn run() {
             commands::snapshot::pty_snapshot,
             commands::agent::stop_agent,
             commands::agent::reset_agent_session,
+            commands::agent_chat::chat_agent_state,
+            commands::agent_chat::chat_agent_brands,
+            commands::agent_chat::set_agent_transport,
+            commands::agent_chat::send_chat_message,
+            commands::agent_chat::answer_chat_prompt,
+            commands::agent_chat::interrupt_chat_agent,
+            commands::agent_chat::load_journal,
             commands::pr::raise_pr,
             commands::pr::merge_pr,
             commands::pr_watch::workspace_prs,
@@ -177,9 +185,10 @@ pub fn run() {
             // Quitting or restarting for an update kills every agent; mark it, so
             // they're remembered as interrupted rather than finished.
             if let tauri::RunEvent::Exit = event {
-                app.state::<AppState>()
-                    .shutting_down
-                    .store(true, Ordering::SeqCst);
+                let state = app.state::<AppState>();
+                state.shutting_down.store(true, Ordering::SeqCst);
+                // A PTY's agent ends with its pseudo-terminal; a chat agent has to be stopped.
+                agent_session::runtime::stop_all_now(&state);
             }
         });
 }

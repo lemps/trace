@@ -2,8 +2,10 @@ import { type DragEvent, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
+import { noteTransport } from "@/domains/agentChat/transport";
 import { useLiveStore } from "@/domains/live/store";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
+import { setWorkspaceTransport } from "@/ipc/agentChat";
 import { ArchiveBin } from "./ArchiveBin";
 import { sessionLight } from "./agentRoster";
 import { sessionsDrag } from "./dragState";
@@ -90,13 +92,17 @@ export function SessionsView() {
     cli: AgentCli,
     repo: string | null,
     provider: AgentProvider,
-    folder: string | null
+    folder: string | null,
+    transport: Transport
   ) => {
     setAgentCli(cli);
     setAgentProvider(provider);
     setCreating(false);
     void create(title, cli, repo, provider, folder).then((s) => {
       if (activeTab) void assign(s.id, activeTab, null);
+      // Its first start runs on what was picked here (and every start after).
+      noteTransport(s.id, transport);
+      void setWorkspaceTransport(s.id, transport).catch(() => {});
     });
   };
 

@@ -208,6 +208,7 @@ fn spawn(
         Some(rendered.clone()),
         None,
         prompt.provider.clone(),
+        Some(crate::agent_session::transport::Transport::Terminal),
         COLS,
         ROWS,
     )?;

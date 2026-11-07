@@ -8,6 +8,7 @@ pub mod discovery;
 pub mod env;
 pub mod folder_trust;
 pub mod hooks;
+pub mod launch;
 pub mod permission_ask;
 pub mod pty;
 pub mod pty_exit;

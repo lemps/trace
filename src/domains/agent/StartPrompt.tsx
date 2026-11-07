@@ -13,6 +13,8 @@ interface StartPromptProps {
   cliName: string;
   /** The agent exited by itself: word this as a restart of the same conversation. */
   exited?: boolean;
+  /** It will start as a chat rather than its TUI. */
+  asChat: boolean;
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -28,6 +30,7 @@ export function StartPrompt({
   agentName,
   cliName,
   exited = false,
+  asChat,
 }: StartPromptProps) {
   const noRepos = repos.length === 0;
   return (
@@ -43,10 +46,14 @@ export function StartPrompt({
           </>
         ) : (
           <>
-            <div className="title">Start an interactive {capitalize(agentName)} session</div>
+            <div className="title">
+              Start {asChat ? "a" : "an interactive"} {capitalize(agentName)} session
+            </div>
             <div className="hint">
-              The agent runs in an isolated git worktree under the repo you pick. You'll get the
-              full {cliName} TUI right here.
+              The agent runs in an isolated git worktree under the repo you pick.{" "}
+              {asChat
+                ? "Its work shows here as a chat: messages, tool runs, diffs and approvals."
+                : `You'll get the full ${cliName} TUI right here.`}
             </div>
           </>
         )}

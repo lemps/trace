@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { toast } from "@/app/toast";
 import { noteRunState } from "@/domains/agent/exitedStore";
 import { useRichOutputStore } from "@/domains/agent/richOutputStore";
+import { ensureChatListeners } from "@/domains/agentChat/hooks/useJournalFeed";
+import { syncChatActivity } from "@/domains/agentChat/liveBridge";
+import { hydrateChatState, isChatAgent, loadChatBrands } from "@/domains/agentChat/transport";
 import { useAgentTools } from "@/domains/agentTools/useAgentTools";
 import { adoptLiveAgents } from "@/domains/board/adopt";
 import { useBoardStore } from "@/domains/board/store";
@@ -45,16 +48,28 @@ export function useAppEvents(): void {
         if (cancelled) fn();
         else unlisteners.push(fn);
       });
+    // Chat agents' rows and info, from the start: they drive the board and
+    // notifications for chat agents whose view isn't open (`agentChat/liveBridge`).
+    ensureChatListeners();
+    loadChatBrands();
     const runState = onAgentRunState((p) => {
       setAgentRunning(p.workspaceId, p.running);
       noteRunState(p);
+      // A chat agent resumed with nothing to do (after a quit) is idle, not working.
+      if (p.running && isChatAgent(p.workspaceId)) syncChatActivity(p.workspaceId);
     });
     keep(runState);
     // A reload empties the run-state while the backend's PTYs survive it. Only once
     // exits can reach us: one that landed before this was listening is already off
     // the backend's list, and a later one can't be missed (`adopt` checks for it).
     void runState.then(() => {
-      if (!cancelled) void adoptLiveAgents().catch(() => {});
+      if (cancelled) return;
+      void adoptLiveAgents()
+        .then((ids) => {
+          // A chat agent's busy state and transport, so its light is right after a reload.
+          for (const id of ids) if (!id.startsWith("term:")) hydrateChatState(id);
+        })
+        .catch(() => {});
     });
     keep(onPtyOutput((p) => appendOutput(p.workspaceId, p.data, p.seq)));
     // HTML the agent emits via `trace-render` (out-of-band, bypassing the PTY) —

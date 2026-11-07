@@ -1,0 +1,157 @@
+/* ============ Code themes ============
+   The colours of fenced code (markdown/CodeBlock.tsx, highlighted by lowlight
+   into hljs-* spans). apply.ts sets data-code-theme on <html> from
+   Settings → Appearance → Chat & transcript; a preview sets it on itself, so
+   the nearest one wins. Like the terminal schemes, the fixed themes are
+   literal palettes. "Match theme" takes its surfaces from the app tokens and
+   its syntax colours by light-dark(), which follows the color-scheme each
+   app theme declares — so it's right under any theme, even inside a preview
+   card that carries its own data-theme. */
+
+:root,
+[data-code-theme="match"] {
+  /* Unset, so each use falls back to the app tokens where it is drawn. */
+  --code-bg: initial;
+  --code-fg: initial;
+  --code-border: initial;
+  --code-comment: light-dark(#6e7781, #8b949e);
+  --code-keyword: light-dark(#cf222e, #ff7b72);
+  --code-string: light-dark(#0a3069, #a5d6ff);
+  --code-number: light-dark(#0550ae, #79c0ff);
+  --code-title: light-dark(#8250df, #d2a8ff);
+  --code-type: light-dark(#953800, #ffa657);
+  --code-attr: light-dark(#0550ae, #79c0ff);
+  --code-tag: light-dark(#116329, #7ee787);
+  --code-add: light-dark(#116329, #7ee787);
+  --code-del: light-dark(#82071e, #ffa198);
+}
+[data-code-theme="github-light"] {
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --code-border: #d0d7de;
+  --code-comment: #6e7781;
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-number: #0550ae;
+  --code-title: #8250df;
+  --code-type: #953800;
+  --code-attr: #0550ae;
+  --code-tag: #116329;
+  --code-add: #116329;
+  --code-del: #82071e;
+}
+[data-code-theme="github-dark"] {
+  --code-bg: #161b22;
+  --code-fg: #e6edf3;
+  --code-border: #30363d;
+  --code-comment: #8b949e;
+  --code-keyword: #ff7b72;
+  --code-string: #a5d6ff;
+  --code-number: #79c0ff;
+  --code-title: #d2a8ff;
+  --code-type: #ffa657;
+  --code-attr: #79c0ff;
+  --code-tag: #7ee787;
+  --code-add: #7ee787;
+  --code-del: #ffa198;
+}
+[data-code-theme="solarized-light"] {
+  --code-bg: #fdf6e3;
+  --code-fg: #4f6269;
+  --code-border: #e8e1cc;
+  --code-comment: #7e8f8f;
+  --code-keyword: #6c7f00;
+  --code-string: #1f7f78;
+  --code-number: #c22a74;
+  --code-title: #1f6fb0;
+  --code-type: #946f00;
+  --code-attr: #b9440f;
+  --code-tag: #1f6fb0;
+  --code-add: #6c7f00;
+  --code-del: #c42a27;
+}
+[data-code-theme="nord"] {
+  --code-bg: #2e3440;
+  --code-fg: #d8dee9;
+  --code-border: #3b4252;
+  --code-comment: #8690a3;
+  --code-keyword: #81a1c1;
+  --code-string: #a3be8c;
+  --code-number: #b48ead;
+  --code-title: #88c0d0;
+  --code-type: #8fbcbb;
+  --code-attr: #ebcb8b;
+  --code-tag: #81a1c1;
+  --code-add: #a3be8c;
+  --code-del: #d08770;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag,
+.hljs-operator {
+  color: var(--code-keyword);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-char,
+.hljs-template-tag {
+  color: var(--code-string);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: var(--code-number);
+}
+.hljs-title,
+.hljs-section {
+  color: var(--code-title);
+}
+.hljs-title.class_,
+.hljs-type,
+.hljs-built_in {
+  color: var(--code-type);
+}
+.hljs-attr,
+.hljs-attribute,
+.hljs-property,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-meta {
+  color: var(--code-attr);
+}
+.hljs-tag,
+.hljs-name,
+.hljs-selector-pseudo {
+  color: var(--code-tag);
+}
+.hljs-params,
+.hljs-subst,
+.hljs-punctuation {
+  color: var(--code-fg, var(--fg-1));
+}
+.hljs-addition {
+  color: var(--code-add);
+  background: color-mix(in oklch, var(--code-add) 12%, transparent);
+}
+.hljs-deletion {
+  color: var(--code-del);
+  background: color-mix(in oklch, var(--code-del) 12%, transparent);
+}
+.hljs-section,
+.hljs-strong {
+  font-weight: 600;
+}
+.hljs-emphasis {
+  font-style: italic;
+}

@@ -1,4 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { Transport } from "@/domains/agentChat/types";
+
+export type { Transport };
 
 // Typed wrappers around the agent/PTY Tauri commands.
 
@@ -6,7 +9,8 @@ export function agentRunning(issueKey: string): Promise<boolean> {
   return invoke("agent_running", { issueKey });
 }
 
-/** Every live PTY's workspace id: agents, sessions, shells (`term:`), runs (`sched:`). */
+/** Every live agent's workspace id (PTYs and chat agents): agents, sessions,
+ * shells (`term:`), runs (`sched:`). */
 export function liveWorkspaces(): Promise<string[]> {
   return invoke("live_workspaces");
 }
@@ -36,7 +40,9 @@ export function startAgent(
   extraArgs?: string[],
   initialPrompt?: string,
   matchText?: string,
-  provider?: AgentProvider
+  provider?: AgentProvider,
+  /** Unset keeps what the ticket ran on last (the terminal if it never ran). */
+  transport?: Transport
 ): Promise<void> {
   return invoke("start_agent", {
     issueKey,
@@ -48,6 +54,7 @@ export function startAgent(
     extraArgs: extraArgs ?? null,
     initialPrompt: initialPrompt ?? null,
     matchText: matchText ?? null,
+    transport: transport ?? null,
   });
 }
 
@@ -79,6 +86,7 @@ export function ptySnapshot(workspaceId: string): Promise<PtySnapshot | null> {
   return invoke("pty_snapshot", { workspaceId });
 }
 
+/** Stop a workspace's agent, terminal or chat. A chat agent's exit follows shortly. */
 export function stopAgent(issueKey: string): Promise<void> {
   return invoke("stop_agent", { issueKey });
 }

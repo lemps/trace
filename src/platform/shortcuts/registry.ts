@@ -12,16 +12,27 @@ import type { Os } from "../os.ts";
 
 /**
  * Where a shortcut is listened for, which decides what it may collide with and what
- * keys it may take: `app` fires everywhere, terminals and text boxes included.
+ * keys it may take: `app` fires everywhere, terminals and text boxes included. `reply` is the Inbox's
+ * reply box, `chat` a chat agent's composer.
  */
-export type Scope = "app" | "detail" | "terminal" | "find" | "inbox" | "reply" | "search" | "mouse";
+export type Scope =
+  | "app"
+  | "detail"
+  | "terminal"
+  | "find"
+  | "inbox"
+  | "reply"
+  | "chat"
+  | "search"
+  | "mouse";
 
-export type GroupId = "app" | "detail" | "terminal" | "inbox" | "search" | "board";
+export type GroupId = "app" | "detail" | "terminal" | "chat" | "inbox" | "search" | "board";
 
 export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
   { id: "app", label: "Anywhere", desc: "Work on every page, in terminals too." },
   { id: "detail", label: "Agent and ticket views", desc: "While a session or ticket is open." },
   { id: "terminal", label: "Terminal", desc: "In an agent's chat or a shell terminal." },
+  { id: "chat", label: "Agent chat", desc: "In a chat agent's message box." },
   { id: "inbox", label: "Inbox", desc: "On the Inbox page, when you aren't typing." },
   { id: "search", label: "Search box", desc: "While the search box has focus." },
   { id: "board", label: "Board", desc: "On a tracker's board." },
@@ -157,6 +168,30 @@ export const SHORTCUTS: ShortcutDef[] = [
     scope: "mouse",
     mac: ["Meta+Click", "Alt+Click"],
     pc: ["Ctrl+Click", "Alt+Click"],
+    isFixed: true,
+  },
+  {
+    id: "chatSend",
+    label: "Send, or queue it while the agent works",
+    group: "chat",
+    scope: "chat",
+    ...both(["Enter"]),
+    isFixed: true,
+  },
+  {
+    id: "chatNewline",
+    label: "New line without sending",
+    group: "chat",
+    scope: "chat",
+    ...both(["Shift+Enter"]),
+    isFixed: true,
+  },
+  {
+    id: "chatInterrupt",
+    label: "Interrupt the agent's turn",
+    group: "chat",
+    scope: "chat",
+    ...both(["Escape"]),
     isFixed: true,
   },
   {

@@ -26,7 +26,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       ([#13](https://github.com/noble1911/trace/pull/13))
 - [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
       plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
-      ([#14](https://github.com/noble1911/trace/pull/14))
+      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview, and
+      Chat & transcript styles agent Markdown (fonts, sizes, spacing, width, code theme, tool
+      activity); fenced code is highlighted.
 
 ## Candidates
 
@@ -43,11 +45,20 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       subagent sections, codex.
 - [ ] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
       model/effort pills; half-typed terminal text carries over to chat.
-- [ ] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
-      The Inbox has these today, but a chat view doesn't.
-- [ ] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
+- [~] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
+      The Inbox has these today, but a chat view doesn't. *Started:* the chat transport
+      (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
+      question rows answered in place, for Claude and Codex (`agent_session/codex/`). The terminal
+      transcript still doesn't.
+- [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
+      *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
+      order). Not yet: reordering.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
-- [ ] **Default view setting:** choose chat or CLI globally or per agent.
+- [x] **Default view setting:** choose chat or CLI globally or per agent. Settings → Agents →
+      Shows as (Chat by default; brands without a chat adapter stay Terminal), overridden per
+      agent from the New session dialog or the ticket's Start menu, and kept with the workspace so
+      restarts, resumes and resume-after-quit use the same one. "Open in terminal" / "Open as
+      chat" moves an idle agent across, resuming its conversation (docs/AGENT_CHAT.md).
 
 ### Reviewing agent work
 

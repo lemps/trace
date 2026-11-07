@@ -12,6 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 
+use crate::agent_session::transport::Transport;
 use crate::claude::conversations::forget_session_id;
 use crate::commands::agent::spawn_in;
 use crate::commands::session_agents::{discard_agents, stop_agents, SessionAgent};
@@ -327,10 +328,12 @@ pub fn delete_session(state: State<'_, AppState>, id: String) -> Result<(), Stri
         discard_agents(&state, &session.workspace_ids());
         for agent in &session.agents {
             let _ = forget_session_id(&agent.id);
+            crate::agent_session::runtime::forget(&agent.id);
         }
         session_folder::remove_scratch_folder(&session);
     }
     let _ = forget_session_id(&id);
+    crate::agent_session::runtime::forget(&id);
     // Clean up any worktree/branch backing this workspace — the session is
     // gone for good, so its checkout is too.
     crate::commands::worktrees::remove_for_workspace(&id);
@@ -340,6 +343,7 @@ pub fn delete_session(state: State<'_, AppState>, id: String) -> Result<(), Stri
 /// Start (or resume) an exploratory session's agent in its worktree.
 /// `initial_prompt` is submitted as its first message, fresh conversation or
 /// resumed — what an agent driving the session over trace's tools asks of it.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn start_session(
     app: AppHandle,
@@ -349,6 +353,8 @@ pub fn start_session(
     rows: u16,
     extra_args: Option<Vec<String>>,
     initial_prompt: Option<String>,
+    // "chat" | "terminal"; unset keeps what the session ran on last.
+    transport: Option<String>,
 ) -> Result<(), String> {
     if state.pty_sessions.lock().contains_key(&id) {
         return Ok(());
@@ -384,6 +390,12 @@ pub fn start_session(
         initial_prompt.clone(),
         initial_prompt,
         session.provider,
+        // Remote Control is the TUI's: a session started with it is a terminal.
+        if session.remote_control {
+            Some(Transport::Terminal)
+        } else {
+            transport.as_deref().and_then(Transport::parse)
+        },
         cols,
         rows,
     )

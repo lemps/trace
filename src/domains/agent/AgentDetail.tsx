@@ -5,6 +5,10 @@ import { I } from "@/components/Icon";
 import { SidePanel } from "@/components/SidePanel";
 import { useSidePanel } from "@/components/useSidePanel";
 import { activity } from "@/domains/activity/store";
+import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
+import { ChatAgentPane } from "@/domains/agentChat/ChatAgentPane";
+import { stopAndWait } from "@/domains/agentChat/switch";
+import { defaultTransport, hasChat, useAgentTransport } from "@/domains/agentChat/transport";
 import { adoptIfAlive } from "@/domains/board/adopt";
 import { statusOf, useBoardStore } from "@/domains/board/store";
 import type { Issue, PullRequest } from "@/domains/issues/types";
@@ -18,7 +22,13 @@ import { canonicalPrUrl } from "@/domains/prs/prUrl";
 import { usePrWatchStore } from "@/domains/prs/watchStore";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import { ViewSwitch } from "@/domains/transcript/ViewSwitch";
-import { type AgentCli, type AgentProvider, resetAgentSession, stopAgent } from "@/ipc/agent";
+import {
+  type AgentCli,
+  type AgentProvider,
+  resetAgentSession,
+  stopAgent,
+  type Transport,
+} from "@/ipc/agent";
 import { mergePr, raisePr } from "@/ipc/pr";
 import { issueRepo, listRepos, setIssueRepo } from "@/ipc/repos";
 import { ChatSurface } from "./ChatSurface";
@@ -69,6 +79,10 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"raise" | "merge" | null>(null);
   const [cli, setCli] = useState<AgentCli>(agentCli);
+  // What the agent runs on (once it has run), and what the Start menu picks for the next start.
+  const ranOn = useAgentTransport(issue.key);
+  const [nextTransport, setNextTransport] = useState<Transport | undefined>();
+  const isChat = ranOn === "chat";
   const [provider, setProvider] = useState<AgentProvider>(agentProvider);
   // Right edge: the ticket's details, or the orchestrator — one at a time.
   const panel = useSidePanel("ticket", ["context", "orchestrator"]);
@@ -145,12 +159,12 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
     setAgentProvider(next);
   };
 
-  const start = async () => {
+  const start = async (transport: Transport | undefined = nextTransport) => {
     // Guard against a re-entrant start: worktree creation takes a few seconds,
     // during which the button still reads "Start". A second click would spawn a
     // *second* agent into the same workspace — two processes painting one
     // terminal, which duplicates the banner.
-    if (startingRef.current || running) return;
+    if (startingRef.current || useBoardStore.getState().runningAgents.has(issue.key)) return;
     if (!repoChoice) {
       setError("Add a repository in Settings, then pick one for this ticket.");
       return;
@@ -166,7 +180,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       // SIGWINCH double-painting the banner. No kickoff brief here: starting
       // from inside the ticket opens a plain session (the user is present to
       // direct it) — only the board paths (card button, drag) send the brief.
-      await launchIssueAgent(issue.key, { cli, provider });
+      await launchIssueAgent(issue.key, { cli, provider, transport });
     } catch (err) {
       setError(String(err));
     } finally {
@@ -174,13 +188,25 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
     }
   };
   const stop = async () => {
-    await stopAgent(issue.key).catch(() => {});
+    // A chat agent takes a moment to exit; Start must not race it.
+    await stopAndWait(issue.key).catch(() => stopAgent(issue.key).catch(() => {}));
     setAgentRunning(issue.key, false);
     clearOutput(issue.key);
     // Keep the terminal alive and attached — it stays measurable so the next
     // start() can spawn at the real pane size, and it's torn down by
     // PtyTerminal's unmount cleanup once nothing is running.
   };
+  const restart = async (transport?: Transport) => {
+    await stopAndWait(issue.key);
+    await start(transport);
+  };
+  const agentItems = useAgentMenuItems({
+    workspaceId: issue.key,
+    cli,
+    running,
+    restart,
+    start: (t) => start(t),
+  });
   // Forget the saved Claude conversation, then start clean — the escape hatch
   // when a stored session id has gone stale ("session not found" on resume).
   const startFresh = async () => {
@@ -237,10 +263,13 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         backLabel={backLabel}
         onRaisePr={onRaisePr}
         onMergePr={onMergePr}
-        onStart={start}
+        onStart={() => void start()}
         onStop={stop}
         onChooseCli={chooseCli}
         onChooseProvider={chooseProvider}
+        transport={nextTransport ?? ranOn}
+        onChooseTransport={setNextTransport}
+        agentItems={agentItems}
       />
 
       {error && (
@@ -265,16 +294,19 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
                 </button>
               );
             })}
-            {tab === "chat" && <ViewSwitch workspaceId={issue.key} cli={cli} />}
+            {tab === "chat" && !isChat && <ViewSwitch workspaceId={issue.key} cli={cli} />}
           </div>
 
-          {tab === "chat" && (
+          {tab === "chat" && isChat && (
+            <ChatAgentPane workspaceId={issue.key} onStart={() => void start()} />
+          )}
+          {tab === "chat" && !isChat && (
             // The terminal mounts even before the session starts so it can be
             // measured/fitted to the real pane; StartPrompt overlays it until then.
             <ChatSurface workspaceId={issue.key} cli={cli}>
               {!running && (
                 <StartPrompt
-                  onStart={start}
+                  onStart={() => void start()}
                   onStartFresh={startFresh}
                   repos={repos}
                   repoChoice={repoChoice}
@@ -282,6 +314,9 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
                   agentName={agentLabel(cli, provider)}
                   cliName={cli}
                   exited={exited}
+                  asChat={
+                    hasChat(cli) && (nextTransport ?? ranOn ?? defaultTransport(cli)) === "chat"
+                  }
                 />
               )}
             </ChatSurface>
