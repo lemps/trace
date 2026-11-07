@@ -126,7 +126,8 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
       {insertAt && <span className="pn-insert" style={{ left: insertAt.x }} />}
       <div className="pn-strip-end">
         {active?.toolbar}
-        {multi && !narrow && (
+        {/* A pane holding only a closable panel: its tab's × already closes both. */}
+        {multi && !narrow && !(group.tabs.length === 1 && active?.optional) && (
           <button
             type="button"
             className="btn ghost icon pn-act"

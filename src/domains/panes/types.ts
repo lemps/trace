@@ -43,4 +43,11 @@ export interface PanelDescriptor {
 export interface PanelKind {
   prefix: string;
   resolve: (rest: string) => { owner: string; panel: PanelDescriptor } | null;
+  /**
+   * Live kinds: `subscribe` to whatever `resolve` reads, and `version` a cheap key
+   * that changes when a resolved panel would (one appearing or going, a new label).
+   * Details showing panels of the kind re-resolve when it changes.
+   */
+  subscribe?: (onChange: () => void) => () => void;
+  version?: () => string;
 }

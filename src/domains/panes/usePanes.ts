@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { allTabs, isArranged, openBeside, type PaneLayout, selectTab } from "./model";
-import { resolvePanel, useOpenRequests } from "./registry";
+import { resolvePanel, useOpenRequests, usePanelKindsVersion } from "./registry";
 import { storedLayout, usePaneLayoutStore } from "./store";
 import type { PanelDescriptor } from "./types";
 import { normalizeLayout, type TabCatalog } from "./validate";
@@ -38,6 +38,9 @@ export function usePanes(
 
   const fixedIds = fixed.map((p) => p.id).join("\n");
   const ownerKey = Object.keys(owners).join("\n");
+  // Optional panels re-resolve when their kind's data changes (a subagent appears).
+  const kindsVersion = usePanelKindsVersion();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: kindsVersion invalidates isOptional
   const catalog = useMemo<TabCatalog>(() => {
     const ids = fixedIds.split("\n");
     const hosted = new Set(ownerKey.split("\n"));
@@ -50,7 +53,7 @@ export function usePanes(
         return found !== null && hosted.has(found.owner);
       },
     };
-  }, [fixedIds, ownerKey]);
+  }, [fixedIds, ownerKey, kindsVersion]);
   const layout = useMemo(() => normalizeLayout(saved, catalog), [saved, catalog]);
 
   const panels = new Map(fixed.map((p) => [p.id, p]));
@@ -95,8 +98,14 @@ function useOpenRequestsFor(
       const mine = useOpenRequests.getState().take((r) => catalog.isOptional(r.id));
       for (const r of mine) {
         const owner = resolvePanel(r.id)?.owner;
-        const beside = owner ? owners[owner] : undefined;
-        if (beside) apply((l) => openBeside(l, r.id, beside, r.edge));
+        const ownerTab = owner ? owners[owner] : undefined;
+        if (!ownerTab) continue;
+        apply((l) => {
+          // Beside the last panel of the same agent that's open already, so a
+          // second subagent splits that pane rather than halving the chat again.
+          const siblings = allTabs(l).filter((t) => t !== r.id && resolvePanel(t)?.owner === owner);
+          return openBeside(l, r.id, siblings[siblings.length - 1] ?? ownerTab, r.edge);
+        });
       }
     };
     drain();

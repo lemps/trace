@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import type { Edge } from "./model";
 import type { PanelDescriptor, PanelKind } from "./types";
@@ -18,6 +19,19 @@ const kinds = new Map<string, PanelKind>();
 
 export function registerPanelKind(kind: PanelKind): void {
   kinds.set(kind.prefix, kind);
+}
+
+const subscribeAll = (onChange: () => void) => {
+  const offs = [...kinds.values()].map((k) => k.subscribe?.(onChange) ?? (() => {}));
+  return () => {
+    for (const off of offs) off();
+  };
+};
+const versionAll = () => [...kinds.values()].map((k) => k.version?.() ?? "").join("|");
+
+/** Changes whenever a live kind's panels might resolve differently. */
+export function usePanelKindsVersion(): string {
+  return useSyncExternalStore(subscribeAll, versionAll);
 }
 
 /** The optional panel an id names, with the agent it belongs to — or null. */

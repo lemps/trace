@@ -125,7 +125,8 @@ export const SHORTCUTS: ShortcutDef[] = [
     group: "detail",
     scope: "detail",
     mac: ["Meta+]"],
-    pc: ["Ctrl+Shift+]"],
+    // Off macOS Ctrl+Shift+] is the chat's next tab (Shift can't tell ⌘] from ⇧⌘]).
+    pc: ["Ctrl+Shift+."],
   },
   {
     id: "paneFocusPrev",
@@ -133,7 +134,7 @@ export const SHORTCUTS: ShortcutDef[] = [
     group: "detail",
     scope: "detail",
     mac: ["Meta+["],
-    pc: ["Ctrl+Shift+["],
+    pc: ["Ctrl+Shift+,"],
   },
   {
     id: "paneMoveTab",
