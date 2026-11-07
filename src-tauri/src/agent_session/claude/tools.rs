@@ -100,6 +100,20 @@ fn patch_text(hunks: &Value) -> Option<String> {
     Some(cap(&out))
 }
 
+/// A tool's input as shown in its row, every string in it capped: a Write's
+/// content can be megabytes, and the row is written out on every revision.
+/// The full input is kept for answering prompts and building diffs.
+pub fn cap_input(input: &Value) -> Value {
+    match input {
+        Value::String(s) => Value::String(cap(s)),
+        Value::Array(items) => Value::Array(items.iter().map(cap_input).collect()),
+        Value::Object(map) => {
+            Value::Object(map.iter().map(|(k, v)| (k.clone(), cap_input(v))).collect())
+        }
+        other => other.clone(),
+    }
+}
+
 /// A tool result's content as text: a string, or the text of its blocks.
 pub fn result_text(content: Option<&Value>) -> String {
     let text = match content {
@@ -116,4 +130,23 @@ pub fn result_text(content: Option<&Value>) -> String {
         _ => String::new(),
     };
     cap(&text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::agent_session::journal::CAP_CHARS;
+    use serde_json::json;
+
+    #[test]
+    fn a_tool_rows_input_is_capped_but_keeps_its_shape() {
+        let big = "x".repeat(CAP_CHARS + 10);
+        let shown = cap_input(&json!({"file_path": "a.txt", "content": big, "n": 3}));
+        assert_eq!(shown["file_path"], "a.txt");
+        assert_eq!(shown["n"], 3);
+        assert!(shown["content"]
+            .as_str()
+            .unwrap()
+            .ends_with("(10 more characters)"));
+    }
 }

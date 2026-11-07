@@ -21,28 +21,29 @@ pub fn start_chat_agent(
     // An issue's summary + labels, for repo mappings (as `start_agent`).
     match_text: Option<String>,
 ) -> Result<(), String> {
-    if state.chat_agents.is_running(&workspace_id) {
-        return Ok(());
-    }
     if state.pty_sessions.lock().contains_key(&workspace_id) {
         return Err("This agent is running in a terminal. Stop it first.".to_string());
     }
-    let Some(_guard) = StartGuard::acquire(&state, &format!("chat:{workspace_id}")) else {
+    // The same reservation a terminal start takes, so the two can't race into
+    // one conversation while a worktree is being made.
+    let Some(_guard) = StartGuard::acquire(&state, &workspace_id) else {
         return Ok(());
     };
-    let cwd = if crate::commands::session::is_session(&workspace_id) {
-        crate::commands::session::session_cwd(&workspace_id, true)?
-    } else {
-        crate::commands::agent::issue_worktree(&workspace_id, match_text.as_deref().unwrap_or(""))?
+    let id = workspace_id.clone();
+    let cwd = move || {
+        if crate::commands::session::is_session(&id) {
+            crate::commands::session::session_cwd(&id, true)
+        } else {
+            crate::commands::agent::issue_worktree(&id, match_text.as_deref().unwrap_or(""))
+        }
     };
     let req = StartRequest {
         workspace_id,
-        cwd,
         model,
         provider,
         extra_args: extra_args.unwrap_or_default(),
     };
-    runtime::start(&app, &state, req)
+    runtime::start(&app, &state, req, cwd)
 }
 
 /// A user turn. Sent while a turn runs, Claude queues it.

@@ -264,9 +264,15 @@ pub struct Turn {
     pub usage: Option<Usage>,
 }
 
-/// The user's reply to an approval or question.
+/// The user's reply to an approval or question. `rename_all_fields` too: on an
+/// enum `rename_all` renames only the variant tags, which left `option_id`
+/// snake_case on the wire while types.ts sends `optionId`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum Answer {
     /// The chosen `ApprovalOption::id`, with an optional note for a denial.
     Approval {
@@ -332,6 +338,20 @@ mod tests {
         assert_eq!(v["state"], "answered");
         assert_eq!(v["answer"]["kind"], "questions");
         assert_eq!(v["answer"]["answers"]["q1"][0], "Yes");
+    }
+
+    #[test]
+    fn answers_read_what_types_ts_sends() {
+        let sent = json!({"kind": "approval", "optionId": "always:0", "note": "ok"});
+        let answer: Answer = serde_json::from_value(sent.clone()).unwrap();
+        assert_eq!(
+            answer,
+            Answer::Approval {
+                option_id: "always:0".into(),
+                note: Some("ok".into()),
+            }
+        );
+        assert_eq!(serde_json::to_value(&answer).unwrap(), sent);
     }
 
     #[test]

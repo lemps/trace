@@ -36,6 +36,8 @@ pub enum Out {
     Reply(Value),
 }
 
+/// One agent's translation state: the rows still open and what they wait on.
+/// Owned by the adapter's thread, never shared.
 pub struct Translator {
     book: RowBook,
     info: SessionInfo,
@@ -64,6 +66,8 @@ struct Block {
 }
 
 impl Translator {
+    /// `next_seq` continues the journal; `clock` gives Unix milliseconds (fixed
+    /// in tests).
     pub fn new(next_seq: u64, clock: fn() -> u64) -> Self {
         Self {
             book: RowBook::new(next_seq, clock),
@@ -206,7 +210,7 @@ impl Translator {
                         let body = JournalBody::Tool(ToolCall {
                             call_id: call_id.clone(),
                             name: name.clone(),
-                            input: input.clone(),
+                            input: tools::cap_input(&input),
                             state: ToolState::Running,
                             output: None,
                             parent_call_id: parent.clone(),

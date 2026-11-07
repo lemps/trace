@@ -22,6 +22,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Child, ChildStdin, Stdio};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use super::journal::{Answer, Tone};
 use super::{AgentAdapter, JournalSink, LaunchSpec, UserMessage};
@@ -44,6 +45,11 @@ const STREAM_FLAGS: [&str; 9] = [
     "--permission-prompt-tool",
     "stdio",
 ];
+
+/// Least time between two streaming revisions of one row sent on. Every delta
+/// re-sends the whole text so far, so passing each one costs the square of the
+/// answer's length; the final revision always goes.
+const STREAM_EVERY: Duration = Duration::from_millis(50);
 
 /// How many stderr lines to keep for saying why Claude exited.
 const STDERR_TAIL: usize = 5;
@@ -191,6 +197,7 @@ fn run(
     let mut stdin = Some(stdin);
     let mut stopping = false;
     let mut stderr_tail: VecDeque<String> = VecDeque::new();
+    let mut paced = Pacer::default();
     while let Ok(cmd) = rx.recv() {
         let outs = match cmd {
             Cmd::Line(line) => tr.line(&line),
@@ -225,21 +232,49 @@ fn run(
                 let status = child.wait();
                 let reason = (!stopping).then(|| exit_reason(status, &stderr_tail));
                 for out in tr.exited(reason.as_deref()) {
-                    deliver(out, sink.as_ref(), &mut stdin);
+                    deliver(out, sink.as_ref(), &mut stdin, &mut paced);
                 }
                 sink.exited(reason);
                 return;
             }
         };
         for out in outs {
-            deliver(out, sink.as_ref(), &mut stdin);
+            deliver(out, sink.as_ref(), &mut stdin, &mut paced);
         }
     }
 }
 
-fn deliver(out: Out, sink: &dyn JournalSink, stdin: &mut Option<ChildStdin>) {
+/// When each streaming row last went out.
+#[derive(Default)]
+struct Pacer(HashMap<String, Instant>);
+
+impl Pacer {
+    /// Whether this revision goes out now.
+    fn passes(&mut self, row: &crate::agent_session::journal::JournalRow) -> bool {
+        use crate::agent_session::journal::JournalBody;
+        let streaming = matches!(&row.body, JournalBody::Message(m) if m.streaming);
+        if !streaming {
+            self.0.remove(&row.id);
+            return true;
+        }
+        let now = Instant::now();
+        match self.0.get(&row.id) {
+            Some(last) if now.duration_since(*last) < STREAM_EVERY => false,
+            _ => {
+                self.0.insert(row.id.clone(), now);
+                true
+            }
+        }
+    }
+}
+
+fn deliver(out: Out, sink: &dyn JournalSink, stdin: &mut Option<ChildStdin>, paced: &mut Pacer) {
     match out {
-        Out::Row(row) => sink.row(row),
+        Out::Row(row) => {
+            if paced.passes(&row) {
+                sink.row(row);
+            }
+        }
         Out::Info(info) => sink.info(info),
         Out::Reply(value) => {
             let Some(pipe) = stdin.as_mut() else { return };

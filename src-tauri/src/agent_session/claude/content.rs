@@ -12,6 +12,8 @@ use crate::agent_session::UserMessage;
 /// Largest image sent inline; the API rejects bigger ones anyway.
 const MAX_IMAGE_BYTES: u64 = 5 * 1024 * 1024;
 
+/// The `content` for `message`: a plain string when nothing is attached, the
+/// form Claude Code itself sends.
 pub fn user_content(message: &UserMessage) -> Value {
     if message.attachments.is_empty() {
         return Value::String(message.text.clone());

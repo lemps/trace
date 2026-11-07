@@ -7,12 +7,14 @@
 //! This is the contract the runtime and the UI are built against; the runtime
 //! (process handling, persistence, commands) and the adapters live beside it.
 //!
-//! - `runtime`: the running agents, and the sink that persists and emits rows.
+//! - `registry`: the chat agents, starting, running or stopping.
+//! - `runtime`: starting and driving them, and the sink that persists and emits rows.
 //! - `store`: the journal file; `settle`: rows a vanished process left open.
 //! - `claude`: the Claude adapter.
 
 pub mod claude;
 pub mod journal;
+pub mod registry;
 pub mod runtime;
 pub mod settle;
 pub mod store;
@@ -69,6 +71,7 @@ pub struct SessionInfo {
     pub limits: Vec<LimitWindow>,
 }
 
+/// One usage-limit window, so the header can warn before the agent is cut off.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LimitWindow {

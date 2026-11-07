@@ -217,6 +217,8 @@ fn detail(tool: &str, input: &Value, description: Option<&str>) -> Option<String
     }
 }
 
+/// `v[key]` as a string, if it is one: stream-json is read field by field
+/// rather than into types, so a newer CLI's extra or missing fields don't break it.
 pub fn str_at<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
     v.get(key).and_then(Value::as_str)
 }
