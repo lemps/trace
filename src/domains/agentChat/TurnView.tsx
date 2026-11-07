@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { I } from "@/components/Icon";
+import { useAppearance } from "@/domains/appearance/store";
 import { formatDuration, workSentence } from "./format";
 import { useDisclosure } from "./hooks/useDisclosure";
 import { ItemView } from "./ItemView";
@@ -27,7 +28,9 @@ function TurnBody({ turn }: { turn: ChatTurn }) {
 }
 
 function Folded({ turn }: { turn: ChatTurn }) {
-  const [open, toggle] = useDisclosure(false);
+  // Settings → Appearance → Chat & transcript: "Folded" keeps a finished turn's work in one line.
+  const tools = useAppearance((s) => s.prefs.chat.tools);
+  const [open, toggle] = useDisclosure(tools !== "folded");
   const ms = turn.summary?.durationMs;
   return (
     <div className={`ac-fold${open ? " open" : ""}`}>

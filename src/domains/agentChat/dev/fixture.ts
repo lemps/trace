@@ -5,6 +5,7 @@ import type { JournalRow, SessionInfo } from "../types.ts";
 // and for the projection tests. Never imported by shipped code.
 
 import { COLUMN_BEFORE, editTurn } from "./fixtureEdits.ts";
+import { markdownTurn } from "./fixtureMarkdown.ts";
 import { row, say, T0, user } from "./fixtureRows.ts";
 
 export const FIXTURE_ROWS: JournalRow[] = [
@@ -76,6 +77,8 @@ export const FIXTURE_ROWS: JournalRow[] = [
   }),
 
   ...editTurn(),
+
+  ...markdownTurn(),
 
   // Turn 3: interrupted part-way.
   user("u3", "t3", "Also make the drop indicator animate"),

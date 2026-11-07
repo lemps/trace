@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
+import { Markdown, NO_LINK_COMPONENTS } from "@/components/Markdown";
+import { ChatMarkdown } from "./ChatMarkdown";
 import { useAnswer } from "./hooks/useAnswer";
 import type { Question, QuestionSet } from "./types";
 
@@ -45,7 +47,7 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
         <fieldset key={q.id} className="ac-q" disabled={busy}>
           <legend className="ac-q-text">
             {q.header && <span className="ac-q-header">{q.header}</span>}
-            {q.text}
+            <ChatMarkdown text={q.text} inline />
             {q.multiSelect && <span className="ac-card-meta">Pick any</span>}
           </legend>
           <div className="ac-q-options">
@@ -60,8 +62,14 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
                   onClick={() => pick(q, o.label)}
                 >
                   <span className="ac-q-mark">{on && <I.Check size={11} />}</span>
-                  <span className="ac-q-label">{o.label}</span>
-                  {o.description && <span className="ac-q-desc">{o.description}</span>}
+                  <span className="ac-q-label">
+                    <Markdown text={o.label} prose inline components={NO_LINK_COMPONENTS} />
+                  </span>
+                  {o.description && (
+                    <span className="ac-q-desc">
+                      <Markdown text={o.description} prose inline components={NO_LINK_COMPONENTS} />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -115,7 +123,9 @@ function Answered({ set }: { set: QuestionSet }) {
     <div className="ac-card ac-answered">
       {set.questions.map((q) => (
         <div key={q.id} className="ac-answered-row">
-          <span className="ac-answered-q">{q.text}</span>
+          <span className="ac-answered-q">
+            <ChatMarkdown text={q.text} inline />
+          </span>
           <span className="ac-answered-a">
             {(answers[q.id] ?? []).map((a) => (
               <span key={a} className="ac-chip">

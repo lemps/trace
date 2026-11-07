@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
+import { useAppearance } from "@/domains/appearance/store";
 import { FileLink } from "@/domains/transcript/FileLink";
 import { ApprovalCard } from "./ApprovalCard";
 import { resolvePath, useChatView } from "./chatContext";
@@ -31,7 +32,8 @@ function glyphFor(name: string, category: ToolCategory): Glyph {
 // diff cards below it, and a subagent's calls nest inside it.
 export function ToolCard({ item }: { item: ToolItem }) {
   const { workspaceId, root } = useChatView();
-  const [open, toggle] = useDisclosure(false);
+  const tools = useAppearance((s) => s.prefs.chat.tools);
+  const [open, toggle] = useDisclosure(tools === "expanded");
   const { call, approval, diffs, children } = item;
   const summary = summarizeTool(call.name, call.input);
   const Glyph = glyphFor(call.name, summary.category);
@@ -86,7 +88,8 @@ function ToolState({ item }: { item: ToolItem }) {
 /** A subagent's own calls: folded to a count, open while it's still working. */
 function SubagentCalls({ calls }: { calls: ToolItem[] }) {
   const live = calls.some((c) => c.call.state === "running");
-  const [open, toggle] = useDisclosure(live);
+  const tools = useAppearance((s) => s.prefs.chat.tools);
+  const [open, toggle] = useDisclosure(live || tools !== "folded");
   return (
     <div className="ac-sub">
       <button type="button" className="ac-sub-head" aria-expanded={open} onClick={toggle}>

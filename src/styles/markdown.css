@@ -1,0 +1,254 @@
+/* ============ Markdown (components/Markdown.tsx) ============
+   One scope for every Markdown surface. Its type and rhythm are custom
+   properties (--md-*): plain `.md` (docs, release notes, PR comments) keeps
+   fixed values; `.md.prose` (agent output: chat, transcript, plan and
+   question cards) takes them from Settings → Appearance → Chat & transcript,
+   which domains/appearance/apply.ts sets on <html> as --chat-*. Code colours
+   come from the code theme (code-themes.css). */
+
+.md {
+  --md-font: inherit;
+  --md-size: 12.5px;
+  --md-code-font: var(--font-mono);
+  --md-code-size: 11.5px;
+  --md-line: 1.6;
+  --md-gap: 8px;
+  --md-h1: 1.2;
+  --md-h2: 1.08;
+  --md-h3: 1;
+  font-family: var(--md-font);
+  font-size: var(--md-size);
+  line-height: var(--md-line);
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+.md.prose {
+  --md-font: var(--chat-font, var(--font-sans));
+  --md-size: var(--chat-size, var(--text-body));
+  --md-code-font: var(--chat-code-font, var(--font-mono));
+  /* In proportion to the text by default (11.5px at the 13.5px body). */
+  --md-code-size: var(--chat-code-size, 0.85em);
+  --md-line: var(--chat-line-height, 1.6);
+  --md-gap: var(--chat-gap, 8px);
+  --md-h1: var(--chat-h1, 1.11);
+  --md-h2: var(--chat-h2, 1);
+  --md-h3: var(--chat-h3, 1);
+  color: var(--fg-1);
+}
+/* Inline Markdown takes its card's type; only the formatting is its own. */
+.md.md-inline {
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md p {
+  margin: 0 0 var(--md-gap);
+}
+.md ul,
+.md ol {
+  margin: 0 0 calc(var(--md-gap) * 1.25);
+  padding-left: 20px;
+}
+.md ul {
+  padding-left: 18px;
+}
+.md li {
+  margin: calc(var(--md-gap) / 4) 0;
+}
+.md li > ul,
+.md li > ol {
+  margin-bottom: 0;
+}
+.md h1,
+.md h2,
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+  font-weight: 600;
+  color: var(--fg-0);
+  line-height: 1.3;
+  margin: calc(var(--md-gap) * 1.75) 0 calc(var(--md-gap) * 0.75);
+}
+.md h1 {
+  font-size: calc(var(--md-size) * var(--md-h1));
+}
+.md h2 {
+  font-size: calc(var(--md-size) * var(--md-h2));
+}
+.md h3,
+.md h4,
+.md h5,
+.md h6 {
+  font-size: calc(var(--md-size) * var(--md-h3));
+}
+.md blockquote {
+  margin: 0 0 calc(var(--md-gap) * 1.25);
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--fg-3);
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--border-faint);
+  margin: calc(var(--md-gap) * 1.75) 0;
+}
+.md code {
+  font-family: var(--md-code-font);
+  font-size: var(--md-code-size);
+  background: var(--bg-2);
+  border: 1px solid var(--border-faint);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.md strong {
+  color: var(--fg-0);
+  font-weight: 600;
+}
+.md del {
+  color: var(--fg-3);
+}
+.md a.md-link {
+  color: var(--c-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.md a.md-link:hover {
+  color: var(--fg-0);
+}
+
+/* A bare <pre> (GitHub comments render their own, prs/GithubMarkdown.tsx). */
+.md pre {
+  margin: 0 0 calc(var(--md-gap) * 1.25);
+  padding: 10px 12px;
+  background: var(--code-bg, var(--bg-1));
+  border: 1px solid var(--code-border, var(--border-faint));
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+.md pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--code-fg, var(--fg-1));
+  white-space: pre;
+}
+
+/* Fenced code (markdown/CodeBlock.tsx): the code theme's colours, and a
+   slim head with the language and a copy button. */
+.md-code {
+  position: relative;
+  margin: 0 0 calc(var(--md-gap) * 1.25);
+  border: 1px solid var(--code-border, var(--border-faint));
+  border-radius: var(--radius-sm);
+  background: var(--code-bg, var(--bg-1));
+  overflow-wrap: normal;
+}
+.md-code pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.md-code pre code {
+  display: block;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--code-fg, var(--fg-1));
+  line-height: 1.5;
+  white-space: pre;
+}
+.md-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  padding: 0 3px 0 12px;
+  border-bottom: 1px solid var(--code-border, var(--border-faint));
+}
+.md-code-lang {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--code-comment);
+}
+.md-code-copy {
+  display: grid;
+  place-items: center;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  border-radius: var(--radius-sm);
+  color: var(--code-comment);
+  opacity: 0.6;
+}
+.md-code:hover .md-code-copy,
+.md-code-copy:focus-visible {
+  opacity: 1;
+}
+.md-code-copy:hover {
+  color: var(--code-fg, var(--fg-1));
+}
+.md-code-copy:focus-visible {
+  outline: 2px solid var(--c-accent);
+}
+
+/* GFM tables — separate borders + overflow clip so rounded corners render
+   correctly in WebKit (border-collapse drops border-radius there). A wide
+   table scrolls inside its own box instead of widening the column. */
+.md table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 0 calc(var(--md-gap) * 1.5);
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.93em;
+  overflow-wrap: normal;
+}
+.md thead {
+  background: var(--bg-2);
+}
+.md th,
+.md td {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-faint);
+  border-right: 1px solid var(--border-faint);
+}
+.md th:last-child,
+.md td:last-child {
+  border-right: 0;
+}
+.md tbody tr:last-child td {
+  border-bottom: 0;
+}
+.md th {
+  color: var(--fg-0);
+  font-weight: 600;
+}
+.md tbody tr:hover {
+  background: var(--bg-1);
+}
+
+/* GFM task lists */
+.md li.task-list-item {
+  list-style: none;
+  margin-left: -18px;
+}
+.md li input[type="checkbox"] {
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+  accent-color: var(--c-accent);
+}

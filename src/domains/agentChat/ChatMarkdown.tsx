@@ -1,14 +1,14 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { type MouseEvent, memo, type ReactNode } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { memo, type ReactNode } from "react";
+import type { Components } from "react-markdown";
+import { ExternalLink, MARKDOWN_COMPONENTS, Markdown } from "@/components/Markdown";
 import { FileLink } from "@/domains/transcript/FileLink";
 import { resolvePath, useChatView } from "./chatContext";
 
-// An agent's Markdown, as the shared `<Markdown>` renders it (react-markdown +
-// GFM, no raw HTML), plus file links: an inline code span or a link that names
-// a file (`src/a.ts`, `src/a.ts:42`) becomes the transcript's FileLink, which
-// opens it in an editor or copies its path.
+// An agent's Markdown, as the shared `<Markdown>` renders it (GFM, highlighted
+// fences, no raw HTML, the Chat & transcript style), plus file links: an
+// inline code span or a link that names a file (`src/a.ts`, `src/a.ts:42`)
+// becomes the transcript's FileLink, which opens it in an editor or copies
+// its path. The transcript view uses it too, under its own ChatViewContext.
 
 /** A path with a directory and an extension, optionally `:line` or `:line:col`. */
 const FILE_REF = /^(?:[a-zA-Z]:)?[\w.@~-]*[\\/][\w./\\@~ -]*\.[\w]{1,8}(?::\d+(?:[:-]\d+)?)?$/;
@@ -34,41 +34,25 @@ function InlineFile({ text }: { text: string }) {
 }
 
 const components: Components = {
+  ...MARKDOWN_COMPONENTS,
   // A file link's menu is a block element, which a <p> can't hold.
   p: ({ children }) => <div className="ac-p">{children}</div>,
   a: ({ href, children }) => {
     const target = href && !/^[a-z]+:/i.test(href) ? fileRef(href) : null;
     if (target) return <InlineFile text={href ?? ""} />;
-    return (
-      <a
-        href={href}
-        className="md-link"
-        onClick={(e: MouseEvent) => {
-          e.preventDefault();
-          if (href && /^https?:\/\//.test(href)) void openUrl(href);
-        }}
-      >
-        {children}
-      </a>
-    );
+    return <ExternalLink href={href}>{children}</ExternalLink>;
   },
-  code: ({ className, children }) => {
-    const text = textOf(children);
-    // Fenced blocks carry a language class or span lines; only inline spans link.
-    if (className || text.includes("\n")) return <code className={className}>{children}</code>;
-    return <InlineFile text={text} />;
-  },
+  // Fenced blocks go through `pre` (a CodeBlock), so this is only inline code.
+  code: ({ children }) => <InlineFile text={textOf(children)} />,
 };
 
-const remarkPlugins = [remarkGfm];
+interface ChatMarkdownProps {
+  text: string;
+  /** Inline formatting only, for a line inside a card (a plan step, a question). */
+  inline?: boolean;
+}
 
 /** Parsing is the costly part of a render; text that hasn't changed isn't re-parsed. */
-export const ChatMarkdown = memo(function ChatMarkdown({ text }: { text: string }) {
-  return (
-    <div className="md ac-md">
-      <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
-        {text}
-      </ReactMarkdown>
-    </div>
-  );
+export const ChatMarkdown = memo(function ChatMarkdown({ text, inline }: ChatMarkdownProps) {
+  return <Markdown text={text} prose inline={inline} className="ac-md" components={components} />;
 });
