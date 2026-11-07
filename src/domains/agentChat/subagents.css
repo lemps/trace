@@ -156,8 +156,11 @@
 }
 /* Fixed to two lines, so a card's height doesn't jump as its steps change. */
 .ac-agent-line {
-  padding: 0 12px 10px 31px;
-  min-height: calc(2 * 1.45em + 10px);
+  /* Spacing below is a margin: padding inside the clamped box would show part
+     of a third line. */
+  padding: 0 12px 0 31px;
+  margin-bottom: 10px;
+  min-height: calc(2 * 1.45em);
   font-size: var(--text-meta);
   line-height: 1.45;
   color: var(--fg-3);

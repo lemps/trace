@@ -29,8 +29,10 @@ export function useChat(workspaceId: string): Chat {
 export interface SubagentSummary {
   /** The call that started it: what `SubagentView` takes. */
   callId: string;
-  /** "Explore: find the auth code". */
+  /** What it was asked to do: "find the auth code". */
   label: string;
+  /** "Explore", "general-purpose": shown beside the label, not in it. */
+  agentType: string | null;
   status: SubagentStatus;
   toolCount: number;
   /** One of its calls waits on a permission answer. */
@@ -50,6 +52,7 @@ export function useSubagents(workspaceId: string): SubagentSummary[] {
       subagents.map((s) => ({
         callId: s.callId,
         label: s.label,
+        agentType: s.agentType,
         status: s.status,
         toolCount: s.toolCount,
         pending: s.pending,

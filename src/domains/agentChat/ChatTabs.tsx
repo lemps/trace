@@ -38,7 +38,7 @@ export function ChatTabs({ subagents, active, onPick }: ChatTabsProps) {
           id={s.callId}
           active={active}
           onPick={onPick}
-          title={`${s.label}: ${WORDS[s.status]}, ${s.toolCount} calls`}
+          title={`${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${s.toolCount} calls`}
         >
           <SubagentMark status={s.status} pending={s.pending} />
           <span className="ac-tab-label">{s.label}</span>

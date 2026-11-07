@@ -68,8 +68,11 @@ function Thread({ thread }: { thread: SubagentThread }) {
     <>
       <div className="ac-subview-head">
         <I.Sparkles size={13} />
-        <span className="ac-subview-title">{thread.label}</span>
+        <span className="ac-subview-title" title={thread.label}>
+          {thread.label}
+        </span>
         <span className="ac-agent-facts">
+          {thread.agentType && <span>{thread.agentType}</span>}
           <SubagentStatusWord thread={thread} />
           {elapsed && <span>{elapsed}</span>}
           <span>

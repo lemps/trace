@@ -13,7 +13,7 @@ export interface SubagentThread {
   callId: string;
   /** The call that started it (its card in the main timeline). */
   call: ToolItem;
-  /** "Explore: find the auth code". */
+  /** What it was asked to do: "find the auth code". */
   label: string;
   agentType: string | null;
   description: string | null;
@@ -97,10 +97,9 @@ export function finishThread(t: SubagentThread, isPending: (i: ChatItem) => bool
   t.agentType = s?.agentType ?? (str(call.input, "subagent_type") || null);
   t.description = s?.description ?? (str(call.input, "description") || null);
   t.brief = str(call.input, "prompt");
-  t.label =
-    t.agentType && t.description
-      ? `${t.agentType}: ${t.description}`
-      : (t.description ?? t.agentType ?? (firstLine(t.brief) || "Subagent"));
+  // The task leads: the type ("general-purpose") is long and says little, so it's
+  // shown beside the label (view header, tooltips), not in it.
+  t.label = t.description ?? (firstLine(t.brief) || t.agentType || "Subagent");
   t.status = STATUS[s?.state ?? call.state] ?? "running";
   t.background = s?.background ?? false;
   t.durationMs = s?.durationMs ?? null;

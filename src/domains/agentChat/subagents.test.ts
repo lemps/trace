@@ -84,7 +84,7 @@ describe("subagents", () => {
       ]
     );
     const [a, b] = subagents;
-    assert.equal(a.label, "Explore: job a");
+    assert.equal(a.label, "job a");
     assert.equal(a.brief, "Do a.");
     assert.equal(a.toolCount, 2);
     assert.equal(b.toolCount, 2);
@@ -202,7 +202,7 @@ describe("subagents", () => {
       i.type === "tool" ? `${i.call.name}${i.diffs.length ? "+diff" : ""}` : i.type
     );
     assert.deepEqual(kinds, ["message", "Read", "Edit+diff", "Bash", "message"]);
-    assert.equal(fix.label, "general-purpose: Fix parseRank");
+    assert.equal(fix.label, "Fix parseRank");
     assert.match(fix.result ?? "", /Infinity/);
     const auth = subagents.find((s) => s.agentType === "Explore" && !s.background);
     assert.ok(
