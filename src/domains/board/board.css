@@ -126,6 +126,12 @@
   color: var(--fg-0);
   border-color: var(--border);
 }
+/* A chip's count (Inbox, Fleet). */
+.filter-chip .mono {
+  font-family: var(--font-mono);
+  font-size: calc(var(--text-meta) - 0.5px);
+  color: var(--fg-3);
+}
 
 /* Issue-type filter row, under the header: Epic / Story / Bug … */
 .type-filter {

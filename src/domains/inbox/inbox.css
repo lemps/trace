@@ -34,49 +34,18 @@
   font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
 }
-.ib-tabs {
+/* The state filter: `.filter-chip`s, as Fleet's, then Reset order. */
+.ib-filters {
   display: flex;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   padding: 0 6px 8px;
-}
-.ib-tabs button {
-  height: var(--control-h-sm);
-  padding: 0 10px;
-  border-radius: 7px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  color: var(--fg-3);
-}
-.ib-tabs button:hover {
-  color: var(--fg-1);
-}
-.ib-tabs button.on {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
-.ib-tabs .mono {
-  font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
-  margin-left: 4px;
-  color: var(--fg-3);
 }
 .ib-order {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 0 6px 8px;
   font-size: var(--text-meta);
   color: var(--fg-3);
-}
-.ib-order button {
-  margin-left: auto;
-  font-size: var(--text-meta);
-  color: var(--fg-2);
-  padding: 2px 6px;
-  border-radius: 5px;
-}
-.ib-order button:hover {
-  background: var(--bg-3);
-  color: var(--fg-0);
 }
 
 .ib-rows {

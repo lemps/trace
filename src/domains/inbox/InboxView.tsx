@@ -5,6 +5,7 @@ import { isChatAgent } from "@/domains/agentChat/transport";
 import { dismissAsk } from "@/domains/board/waitingNotify";
 import { choicesFor, choose } from "@/domains/live/answer";
 import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
+import { ResetOrderButton } from "@/domains/live/ResetOrderButton";
 import { useLiveStore } from "@/domains/live/store";
 import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useNow } from "@/hooks/useNow";
@@ -38,8 +39,6 @@ export function InboxView({ onOpen }: InboxViewProps) {
   const [tab, setTab] = useState<Tab>("needs");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const nudge = useLiveStore((s) => s.nudge);
-  const resetOrder = useLiveStore((s) => s.resetOrder);
-  const manualOrder = useLiveStore((s) => s.manualOrder);
   const now = useNow(30_000) * 1000;
 
   const order = entries.map((e) => e.id);
@@ -94,28 +93,21 @@ export function InboxView({ onOpen }: InboxViewProps) {
             Agents that need you, from the board, sessions and scheduled prompts.
           </div>
         </div>
-        <div className="ib-tabs" role="tablist">
+        <div className="ib-filters">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              className={tab === t.id ? "on" : undefined}
+              aria-pressed={tab === t.id}
+              className={`filter-chip${tab === t.id ? " active" : ""}`}
               onClick={() => setTab(t.id)}
             >
               {t.label} <span className="mono">{count(t)}</span>
             </button>
           ))}
+          <ResetOrderButton />
         </div>
-        <div className="ib-order">
-          <span>In the order you opened them · drag to reorder</span>
-          {manualOrder && (
-            <button type="button" onClick={resetOrder}>
-              Reset order
-            </button>
-          )}
-        </div>
+        <div className="ib-order">In the order you opened them · drag to reorder</div>
         <div className="ib-rows">
           {shown.length === 0 && <div className="ib-empty">{EMPTY[tab]}</div>}
           {shown.map((e) => (

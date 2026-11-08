@@ -20,7 +20,7 @@ interface SessionTabsProps {
   onDropSession: (sessionId: string, tab: string | null) => void;
 }
 
-// The design's tab-bar, repurposed: one tab per user-defined view. Tabs drag
+// The page's tab row (`.detail-tabs`, as every tab row is): one tab per user-defined view. Tabs drag
 // to reorder and accept session drops; the active custom tab gets rename and
 // delete actions at the end of the bar.
 export function SessionTabs({
@@ -57,10 +57,10 @@ export function SessionTabs({
   });
 
   return (
-    <div className="tab-bar">
+    <div className="detail-tabs">
       <button
         type="button"
-        className={active === null ? "active" : ""}
+        className={`detail-tab${active === null ? " active" : ""}`}
         onClick={() => onSelect(null)}
         {...dropHandlers(null)}
       >
@@ -70,7 +70,7 @@ export function SessionTabs({
         <button
           type="button"
           key={t.id}
-          className={active === t.id ? "active" : ""}
+          className={`detail-tab${active === t.id ? " active" : ""}`}
           onClick={() => onSelect(t.id)}
           draggable
           onDragStart={(e) => {

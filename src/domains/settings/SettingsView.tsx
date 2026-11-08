@@ -58,12 +58,12 @@ export function SettingsView() {
           </button>
         </div>
       </div>
-      <div className="tab-bar">
+      <div className="detail-tabs">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
-            className={tab === t.id ? "active" : ""}
+            className={`detail-tab${tab === t.id ? " active" : ""}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}

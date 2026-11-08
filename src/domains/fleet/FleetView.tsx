@@ -2,7 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useState } from "react";
 import { useBoardStore } from "@/domains/board/store";
 import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
-import { useLiveStore } from "@/domains/live/store";
+import { ResetOrderButton } from "@/domains/live/ResetOrderButton";
 import type { AgentLight } from "@/domains/live/types";
 import { useRowDrag } from "@/domains/live/useRowDrag";
 import { useSessionDiffs } from "@/domains/sessions/hooks/useSessionDiffs";
@@ -29,8 +29,6 @@ interface FleetViewProps {
 export function FleetView({ onOpen }: FleetViewProps) {
   const entries = useLiveEntries();
   const [filter, setFilter] = useState<Filter>("all");
-  const manualOrder = useLiveStore((s) => s.manualOrder);
-  const resetOrder = useLiveStore((s) => s.resetOrder);
   const ticketPrs = useBoardStore((s) => s.pullRequests);
   const now = useNow(30_000) * 1000;
 
@@ -75,17 +73,14 @@ export function FleetView({ onOpen }: FleetViewProps) {
             <button
               key={f.id}
               type="button"
+              aria-pressed={filter === f.id}
               className={`filter-chip${filter === f.id ? " active" : ""}`}
               onClick={() => setFilter(f.id)}
             >
               {f.label} <span className="mono">{count(f.id)}</span>
             </button>
           ))}
-          {manualOrder && (
-            <button type="button" className="btn ghost" onClick={resetOrder}>
-              Reset to opened order
-            </button>
-          )}
+          <ResetOrderButton />
         </div>
       </header>
 

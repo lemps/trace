@@ -27,11 +27,6 @@
   align-items: center;
   gap: 6px;
 }
-.fl-filters .mono {
-  font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
-  color: var(--fg-3);
-}
 .fl-scroll {
   flex: 1;
   min-height: 0;

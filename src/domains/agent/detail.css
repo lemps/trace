@@ -155,6 +155,8 @@
   overflow: hidden;
   border-right: 1px solid var(--border-faint);
 }
+/* Every tab row in trace: a detail's panes, a page's tabs (Settings, Pull requests,
+   Sessions) and the orchestrator's. Its tabs are `.detail-tab`, a count `.count`. */
 .detail-tabs {
   display: flex;
   align-items: center;
@@ -162,6 +164,10 @@
   padding: 0 16px;
   border-bottom: 1px solid var(--border-faint);
   height: calc(var(--control-h) + 8px);
+}
+/* On a page, the row lines up with the page head's 24px inset. */
+.page > .detail-tabs {
+  padding: 0 24px;
 }
 .detail-tab {
   display: inline-flex;

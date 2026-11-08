@@ -24,14 +24,14 @@ export function OrchestratorPane() {
   const overview = useSessionsOverview(ids);
   return (
     <div className="orch-pane">
-      <div className="orch-tabs" role="tablist">
+      <div className="detail-tabs" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             role="tab"
             aria-selected={tab === t.id}
-            className={tab === t.id ? "active" : ""}
+            className={`detail-tab${tab === t.id ? " active" : ""}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}
