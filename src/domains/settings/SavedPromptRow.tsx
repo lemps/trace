@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import type { SavedPrompt } from "@/ipc/savedPrompts";
 
@@ -46,15 +47,13 @@ export function SavedPromptRow({ prompt, onEdit }: SavedPromptRowProps) {
           <button type="button" className="btn" onClick={onEdit}>
             Edit
           </button>
-          <button
-            type="button"
-            className="btn icon"
-            aria-label={`Delete /${prompt.name}`}
+          <IconButton
+            label={`Delete /${prompt.name}`}
             title="Delete"
             onClick={() => setConfirming(true)}
           >
-            <I.X size={13} />
-          </button>
+            <I.Trash size={14} />
+          </IconButton>
         </>
       )}
     </div>

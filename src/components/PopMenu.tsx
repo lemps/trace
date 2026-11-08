@@ -80,7 +80,7 @@ export function PopMenu({ trigger, sections, align = "right" }: PopMenuProps) {
 export function MoreTrigger({ toggle, label }: { toggle: () => void; label: string }) {
   return (
     <button type="button" className="btn icon" onClick={toggle} title={label} aria-label={label}>
-      <I.More size={15} />
+      <I.More size={14} />
     </button>
   );
 }

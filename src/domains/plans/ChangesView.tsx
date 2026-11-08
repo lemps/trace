@@ -33,7 +33,7 @@ export function ChangesView({ lines, stat, base, doc, earlier, onPickBase }: Cha
               title="Compare with another version"
               onClick={toggle}
             >
-              v{base.version} <I.Chevron size={11} />
+              v{base.version} <I.Chevron size={12} />
             </button>
           )}
           sections={[

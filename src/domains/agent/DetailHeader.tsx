@@ -63,7 +63,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
   if (openPr && isLive(openPr.state)) {
     return (
       <button type="button" className="btn success" onClick={onMergePr} disabled={busy === "merge"}>
-        <I.Check size={13} /> {busy === "merge" ? "Merging…" : `Merge #${openPr.number}`}
+        <I.GitMerge size={14} /> {busy === "merge" ? "Merging…" : `Merge #${openPr.number}`}
       </button>
     );
   }
@@ -75,7 +75,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
         onClick={() => void openUrl(openPr.url)}
         title={openPr.title || "Open on GitHub"}
       >
-        <I.GitPR size={13} /> #{openPr.number} {prStateLabel(openPr.state)}
+        <I.GitPR size={14} /> #{openPr.number} {prStateLabel(openPr.state)}
       </button>
     );
   }
@@ -87,7 +87,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
       disabled={busy === "raise"}
       title="Push branch and open a pull request via gh"
     >
-      <I.GitPR size={13} /> {busy === "raise" ? "Raising…" : "Raise PR"}
+      <I.GitPR size={14} /> {busy === "raise" ? "Raising…" : "Raise PR"}
     </button>
   );
 }
@@ -147,7 +147,7 @@ export function DetailHeader({
         <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         {running ? (
           <button type="button" className="btn" onClick={onStop}>
-            <I.Stop size={13} /> Stop agent
+            <I.Stop size={14} /> Stop agent
           </button>
         ) : exited ? (
           <RestartChip agentName={agentLabel(cli, provider)} onRestart={onStart} />

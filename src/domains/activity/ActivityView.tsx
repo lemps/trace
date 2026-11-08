@@ -9,9 +9,9 @@ type IconFn = (p: { size?: number }) => ReactNode;
 
 const ICON: Record<ActivityKind, IconFn> = {
   transition: I.Activity,
-  "agent-start": I.Bolt,
+  "agent-start": I.Play,
   "pr-raised": I.GitPR,
-  "pr-merged": I.Check,
+  "pr-merged": I.GitMerge,
   "session-created": I.Sparkles,
   "agent-needs-input": I.Chat,
   "agent-turn-end": I.Terminal,

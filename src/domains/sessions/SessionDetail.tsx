@@ -208,7 +208,7 @@ export function SessionDetail({
       <div className="detail-top">
         <BackButton label={backLabel} onBack={onBack} />
         <span className="session-avatar">
-          <I.Sparkles size={18} />
+          <I.Sparkles size={16} />
         </span>
         <div>
           <span className="id" title={info?.cwd ?? session.host?.sandbox}>
@@ -258,7 +258,7 @@ export function SessionDetail({
                 onClick={onRemoveAgent}
                 title="Stops this agent and forgets its conversation; the worktree stays"
               >
-                <I.X size={13} /> Confirm remove {active.label}
+                <I.Trash size={14} /> Confirm remove {active.label}
               </button>
             </>
           )}

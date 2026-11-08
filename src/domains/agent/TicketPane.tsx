@@ -25,7 +25,7 @@ export function TicketPane({ issue, site }: TicketPaneProps) {
     <div className="tk">
       <article className="tk-doc">
         <div className="tk-meta">
-          <I.Ticket size={13} />
+          <I.Ticket size={14} />
           {issueUrl ? (
             <button
               type="button"
@@ -34,7 +34,7 @@ export function TicketPane({ issue, site }: TicketPaneProps) {
               title={`Open ${issue.key} in the tracker`}
             >
               {issue.key}
-              <I.External size={11} />
+              <I.External size={12} />
             </button>
           ) : (
             <span className="tk-key">{issue.key}</span>

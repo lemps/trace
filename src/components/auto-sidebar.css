@@ -91,12 +91,6 @@
 }
 .as-pin {
   margin-left: auto;
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  color: var(--fg-3);
-}
-.as-pin.on {
-  color: var(--c-accent);
 }
 .as-body {
   flex: 1;

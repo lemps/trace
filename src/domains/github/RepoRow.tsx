@@ -29,11 +29,11 @@ export function RepoRow({ repo, cloning, busy, onClone }: RepoRowProps) {
       </div>
       {repo.localPath ? (
         <span className="gh-row-local" title={repo.localPath}>
-          <I.Check size={13} /> In trace
+          <I.Check size={14} /> In trace
         </span>
       ) : (
         <button type="button" className="btn" disabled={busy} onClick={onClone}>
-          <I.Download size={13} /> {cloning ? "Cloning…" : "Clone"}
+          <I.Download size={14} /> {cloning ? "Cloning…" : "Clone"}
         </button>
       )}
     </div>

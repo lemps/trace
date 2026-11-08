@@ -138,7 +138,7 @@ export function SearchPalette({ onNav }: { onNav: (nav: NavId) => void }) {
 
   return (
     <div className="search" ref={rootRef}>
-      <I.Search size={13} />
+      <I.Search size={14} />
       <input
         ref={inputRef}
         placeholder="Search, or > for actions…"

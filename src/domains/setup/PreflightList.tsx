@@ -7,7 +7,7 @@ function CheckRow({ check }: { check: PreflightCheck }) {
   return (
     <li className={`su-check ${tone}`}>
       <span className="su-check-ic" aria-hidden="true">
-        {check.ok ? <I.Check size={13} /> : <I.X size={13} />}
+        {check.ok ? <I.Check size={14} /> : <I.X size={14} />}
       </span>
       <div className="su-check-body">
         <div className="su-check-title">
@@ -32,7 +32,7 @@ export function PreflightList() {
 
   const again = (
     <button type="button" className="btn" disabled={checking} onClick={() => void check()}>
-      <I.Refresh size={13} />
+      <I.Refresh size={14} />
       {checking ? "Checking…" : "Check again"}
     </button>
   );

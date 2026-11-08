@@ -121,7 +121,7 @@ export function ChatView() {
           disabled={busy || !draft.trim()}
           aria-label="Send"
         >
-          <I.Send size={13} /> Send
+          <I.Send size={14} /> Send
         </button>
       </div>
     </div>

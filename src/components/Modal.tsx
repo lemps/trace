@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from "react";
 import { I } from "./Icon";
+import { IconButton } from "./IconButton";
 
 interface ModalProps {
   title: string;
@@ -37,9 +38,9 @@ export function Modal({ title, onClose, children, footer, className }: ModalProp
       >
         <div className="modal-head">
           <span className="modal-title">{title}</span>
-          <button type="button" className="modal-x" onClick={onClose} aria-label="Close">
+          <IconButton size="sm" className="ghost modal-x" onClick={onClose} label="Close">
             <I.X size={14} />
-          </button>
+          </IconButton>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}

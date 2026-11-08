@@ -189,12 +189,8 @@
   font-size: var(--text-label);
   color: var(--code-comment);
 }
-.md-code-copy {
-  display: grid;
-  place-items: center;
-  width: var(--control-h-xs);
-  height: var(--control-h-xs);
-  border-radius: var(--radius-sm);
+/* `.btn.ghost.icon.xs` in the code theme's colours. */
+.btn.md-code-copy {
   color: var(--code-comment);
   opacity: 0.6;
 }
@@ -202,8 +198,9 @@
 .md-code-copy:focus-visible {
   opacity: 1;
 }
-.md-code-copy:hover {
+.btn.md-code-copy:hover:not(:disabled) {
   color: var(--code-fg, var(--fg-1));
+  background: transparent;
 }
 .md-code-copy:focus-visible {
   outline: 2px solid var(--c-accent);

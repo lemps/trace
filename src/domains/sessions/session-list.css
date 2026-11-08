@@ -115,8 +115,6 @@
   cursor: default;
 }
 .btn.icon.vs-refresh {
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
   margin-left: auto;
 }
 .vs-ic {

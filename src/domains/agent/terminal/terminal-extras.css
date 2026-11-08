@@ -57,29 +57,22 @@
 .term-find-count.none {
   color: var(--c-danger);
 }
+/* The find bar's text toggles (Aa, .*); its arrows and × are `.btn.icon.xs`. */
 .term-find-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--control-h-xs);
+  min-width: var(--control-h-xs);
   height: var(--control-h-xs);
+  padding: 0 4px;
   border-radius: var(--radius-sm);
   color: var(--fg-2);
-}
-.term-find-btn.text {
-  width: auto;
-  min-width: var(--control-h-xs);
-  padding: 0 4px;
   font-family: var(--font-mono);
   font-size: var(--text-label);
 }
-.term-find-btn:hover:not(:disabled) {
+.term-find-btn:hover {
   background: var(--bg-3);
   color: var(--fg-0);
-}
-.term-find-btn:disabled {
-  color: var(--fg-4);
-  cursor: default;
 }
 .term-find-btn.on {
   color: var(--c-accent);
@@ -93,10 +86,10 @@
 .term-find:focus-within {
   border-color: color-mix(in oklch, var(--c-accent) 60%, var(--border));
 }
-.term-find-btn.up svg {
+.term-find-up svg {
   transform: rotate(-90deg);
 }
-.term-find-btn.down svg {
+.term-find-down svg {
   transform: rotate(90deg);
 }
 .term-find-btn:focus-visible {

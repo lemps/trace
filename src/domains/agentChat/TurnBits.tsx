@@ -15,7 +15,7 @@ export function StatusRow({ status }: { status: Status }) {
       className={`ac-status ${status.tone}`}
       role={status.tone === "error" ? "alert" : undefined}
     >
-      {status.tone === "error" ? <I.X size={13} /> : <I.Alert size={13} />}
+      {status.tone === "error" ? <I.X size={14} /> : <I.Alert size={14} />}
       <span>{status.text}</span>
     </div>
   );

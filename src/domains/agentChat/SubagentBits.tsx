@@ -28,14 +28,14 @@ export function SubagentMark({ status, pending }: { status: SubagentStatus; pend
   if (status === "done") {
     return (
       <span className="ac-mark done" role="img" aria-label="Done">
-        <I.Check size={11} />
+        <I.Check size={12} />
       </span>
     );
   }
   if (status === "failed") {
     return (
       <span className="ac-mark failed" role="img" aria-label="Failed">
-        <I.X size={11} />
+        <I.X size={12} />
       </span>
     );
   }

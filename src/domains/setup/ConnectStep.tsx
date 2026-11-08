@@ -33,7 +33,7 @@ export function ConnectStep({ onOpenIntegrations }: ConnectStepProps) {
                 <span className="su-service-name">{s.name}</span>
                 <span className="su-service-desc">{s.description}</span>
               </span>
-              <I.Chevron size={13} />
+              <I.Chevron size={14} />
             </button>
           </li>
         ))}

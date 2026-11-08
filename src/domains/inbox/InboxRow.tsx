@@ -1,5 +1,6 @@
 import type { DragEvent } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { StatusLight } from "@/components/StatusLight";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
@@ -74,31 +75,33 @@ export function InboxRow(props: InboxRowProps) {
           </span>
           <span className="ib-row-actions">
             {info.light === "attention" && (
-              <button
-                type="button"
-                className="ib-open"
+              <IconButton
+                size="xs"
+                className="ghost ib-open"
                 onClick={(e) => {
                   e.stopPropagation();
                   props.onDismiss();
                 }}
                 title={dismissTitle}
-                aria-label={`Dismiss ${entry.title}`}
+                label={`Dismiss ${entry.title}`}
+                shortcut="inboxDismiss"
               >
-                <I.X size={13} />
-              </button>
+                <I.X size={12} />
+              </IconButton>
             )}
-            <button
-              type="button"
-              className="ib-open"
+            <IconButton
+              size="xs"
+              className="ghost ib-open"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpen();
               }}
               title={openTitle}
-              aria-label={`Open ${entry.title}`}
+              label={`Open ${entry.title}`}
+              shortcut="inboxOpen"
             >
-              <I.Chevron size={13} />
-            </button>
+              <I.Chevron size={12} />
+            </IconButton>
           </span>
         </span>
       </div>

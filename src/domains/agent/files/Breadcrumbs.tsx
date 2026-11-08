@@ -14,7 +14,7 @@ interface BreadcrumbsProps {
 function Sep() {
   return (
     <span className="fx-crumb-sep" aria-hidden="true">
-      <I.Chevron size={13} />
+      <I.Chevron size={14} />
     </span>
   );
 }

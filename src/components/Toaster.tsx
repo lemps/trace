@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { type ToastKind, useToastStore } from "@/app/toast";
 import { I } from "./Icon";
+import { IconButton } from "./IconButton";
 
 const ICON: Record<ToastKind, (p: { size?: number }) => ReactNode> = {
   success: I.Check,
@@ -36,17 +37,17 @@ export function Toaster() {
                 {t.action.label}
               </button>
             )}
-            <button
-              type="button"
-              className="toast-x"
+            <IconButton
+              size="xs"
+              className="ghost toast-x"
               onClick={() => {
                 dismiss(t.id);
                 t.onDismiss?.();
               }}
-              aria-label="Dismiss"
+              label="Dismiss"
             >
               <I.X size={12} />
-            </button>
+            </IconButton>
           </div>
         );
       })}

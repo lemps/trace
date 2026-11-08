@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { sessionsDrag } from "./dragState";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
@@ -38,8 +39,8 @@ export function ArchiveBin({
       }}
     >
       <button type="button" className="archive-head" onClick={onToggle}>
-        <I.Chevron size={13} style={{ transform: open ? "rotate(90deg)" : "none" }} />
-        <I.Archive size={13} />
+        <I.Chevron size={14} style={{ transform: open ? "rotate(90deg)" : "none" }} />
+        <I.Archive size={14} />
         Archived
         <span className="count">{archived.length}</span>
       </button>
@@ -56,16 +57,16 @@ export function ArchiveBin({
                 onClick={() => onRestore(s.id)}
                 title="Restore"
               >
-                <I.Back size={13} /> Restore
+                <I.ArchiveRestore size={12} /> Restore
               </button>
-              <button
-                type="button"
-                className="archive-action danger"
+              <IconButton
+                size="xs"
+                className="ghost archive-delete"
                 onClick={() => onDelete(s.id)}
-                title="Delete permanently"
+                label="Delete permanently"
               >
-                <I.X size={13} />
-              </button>
+                <I.Trash size={12} />
+              </IconButton>
             </div>
           ))}
         </div>

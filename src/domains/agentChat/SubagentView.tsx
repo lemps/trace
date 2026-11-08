@@ -70,7 +70,7 @@ function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean })
   return (
     <>
       <div className="ac-subview-head">
-        <I.Sparkles size={13} />
+        <I.Sparkles size={14} />
         <span className="ac-subview-title" title={thread.label}>
           {thread.label}
         </span>
@@ -90,12 +90,12 @@ function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean })
             onClick={() => openSubagentBeside(workspaceId, thread.callId)}
             title="Open beside: its conversation in a pane next to the chat"
           >
-            <I.SplitRight size={13} /> Open beside
+            <I.SplitRight size={14} /> Open beside
           </button>
         )}
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
-            <I.Stop size={13} /> Stop subagent
+            <I.Stop size={14} /> Stop subagent
           </button>
         )}
       </div>

@@ -47,7 +47,7 @@ export function RepoPickModal({ issueKey }: { issueKey: string }) {
             className="repo-pick-row"
             onClick={() => void pick(path)}
           >
-            <I.Code size={13} />
+            <I.Code size={14} />
             <span className="name">{basename(path)}</span>
             <span className="path">{path}</span>
           </button>

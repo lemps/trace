@@ -228,20 +228,6 @@
   color: var(--fg-3);
   margin-left: 2px;
 }
-.col-add {
-  margin-left: auto;
-  color: var(--fg-3);
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  display: grid;
-  place-items: center;
-}
-.col-add:hover {
-  background: var(--bg-3);
-  color: var(--fg-1);
-}
-
 .col-body {
   flex: 1;
   overflow-y: auto;

@@ -91,55 +91,21 @@
 .fx-filter input::placeholder {
   color: var(--fg-3);
 }
-.fx-filter-clear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--control-h-xs);
-  height: var(--control-h-xs);
-  border-radius: var(--radius-sm);
-  color: var(--fg-3);
-}
-.fx-filter-clear:hover {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
-
-/* A square tool button for in-content toolbars (sidebar and viewer headers). */
+/* The viewer header's "Open in ▾" (its icon tools are `.btn.ghost.icon.sm`). */
 .fx-tool {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   flex: none;
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  border-radius: var(--radius-sm);
-  color: var(--fg-3);
-}
-.fx-tool:hover {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
-.fx-tool.on {
-  color: var(--c-accent);
-  background: var(--c-accent-bg);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--c-accent) 45%, transparent);
-}
-.fx-tool:focus-visible,
-.fx-filter-clear:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 1px var(--c-accent);
-}
-.fx-tool.text {
-  width: auto;
   gap: 6px;
+  height: var(--control-h-sm);
   padding: 0 8px;
+  border-radius: var(--radius-sm);
   font-size: var(--text-ui);
   color: var(--fg-2);
 }
-.fx-tool.text:hover,
-.fx-tool.text.on {
+.fx-tool:hover,
+.fx-tool.on {
+  background: var(--bg-3);
   color: var(--fg-0);
 }
 .fx-caret {

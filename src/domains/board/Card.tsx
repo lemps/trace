@@ -92,7 +92,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
                 onClick={onKickoff}
                 title={`Start an agent on ${issue.key} with the ticket brief`}
               >
-                <I.Play size={10} /> Start
+                <I.Play size={12} /> Start
               </button>
             )
           )}
@@ -110,7 +110,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               onClick={onEpicClick}
               title={`${issue.epicKey ?? ""} · ${issue.epic} — opens in Jira`}
             >
-              <I.Branch size={10} />
+              <I.Layers size={12} />
               <span className="epic-name">{issue.epic}</span>
             </button>
           ) : (
@@ -119,7 +119,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
               title={issue.epic}
             >
-              <I.Branch size={10} />
+              <I.Layers size={12} />
               <span className="epic-name">{issue.epic}</span>
             </span>
           )}
@@ -137,7 +137,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
       {density !== "compact" && (
         <div className="meta">
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <I.Ticket size={11} /> {issue.issueType}
+            <I.Ticket size={12} /> {issue.issueType}
           </span>
           {issue.labels.slice(0, 2).map((label) => (
             <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -153,7 +153,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               onClick={onPrClick}
               title={`${firstPr.title || `PR #${firstPr.number}`} — opens on GitHub`}
             >
-              <I.GitPR size={11} /> #{firstPr.number}
+              <I.GitPR size={12} /> #{firstPr.number}
             </button>
           )}
         </div>

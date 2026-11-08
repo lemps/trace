@@ -36,7 +36,7 @@ interface LinkedRowProps {
 function LinkedRow({ icon: Icon, keyText, sub, url }: LinkedRowProps) {
   return (
     <div className="linked-row">
-      <Icon size={13} style={{ color: "var(--fg-3)" }} />
+      <Icon size={14} style={{ color: "var(--fg-3)" }} />
       {url ? (
         <a className="linked-key" href={url} target="_blank" rel="noreferrer">
           {keyText}

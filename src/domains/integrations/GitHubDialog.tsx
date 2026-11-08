@@ -75,7 +75,7 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
               />
             ) : (
               <button type="button" className="btn" onClick={() => setAdding(true)}>
-                <I.Plus size={13} /> Add another account
+                <I.Plus size={14} /> Add another account
               </button>
             )}
           </div>
@@ -102,7 +102,7 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
                 </button>
                 {working && (
                   <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>
-                    <I.Download size={13} /> Browse repositories
+                    <I.Download size={14} /> Browse repositories
                   </button>
                 )}
               </>

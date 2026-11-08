@@ -76,7 +76,7 @@ export function PlanViewer({ workspaceId, agentTab, series }: PlanViewerProps) {
                   title="Show another version"
                   onClick={toggle}
                 >
-                  v{doc.version} of {series.versions.length} <I.Chevron size={11} />
+                  v{doc.version} of {series.versions.length} <I.Chevron size={12} />
                 </button>
               )}
               sections={[

@@ -27,7 +27,7 @@ export function CleanupPreview({ report, busy, onRun }: CleanupPreviewProps) {
         </span>
         {deletable.length > 0 && (
           <button type="button" className="btn" onClick={onRun} disabled={busy}>
-            <I.Archive size={13} /> {busy ? "Cleaning up…" : "Clean up now"}
+            <I.Archive size={14} /> {busy ? "Cleaning up…" : "Clean up now"}
           </button>
         )}
       </div>

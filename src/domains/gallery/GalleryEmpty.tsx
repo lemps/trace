@@ -18,14 +18,14 @@ export function GalleryEmpty({ workspaceId }: { workspaceId: string }) {
   };
   return (
     <div className="pl-empty">
-      <I.Images size={18} />
+      <I.Images size={16} />
       <div className="pl-empty-title">No images yet</div>
       <p>
         Screenshots, charts or icons an agent points you at show here, and so does any folder you
         open. New files show up as they're written.
       </p>
       <button type="button" className="btn primary" onClick={() => void pickFolder()}>
-        <I.FolderOpen size={13} /> Open a folder…
+        <I.FolderOpen size={14} /> Open a folder…
       </button>
     </div>
   );
