@@ -11,8 +11,9 @@
 }
 
 /* The flyout: hidden until the group is hovered (or reached by keyboard). It
-   waits a beat before showing, so a pointer passing over Sessions on its way
-   elsewhere doesn't pop it, and hides at once. `visibility` (not opacity alone)
+   waits --rr-delay before showing (Settings → Sidebar sets it on the group), so
+   a pointer passing over Sessions on its way elsewhere doesn't pop it, and
+   hides at once. `visibility` (not opacity alone)
    keeps the invisible panel from catching clicks. Its left padding bridges the
    gap from the rail so moving onto it never breaks the hover. */
 .rr-flyout {
@@ -34,9 +35,9 @@
   visibility: visible;
   transform: none;
   transition:
-    opacity 0.15s ease 0.35s,
-    transform 0.15s ease 0.35s,
-    visibility 0s linear 0.35s;
+    opacity 0.15s ease var(--rr-delay, 2s),
+    transform 0.15s ease var(--rr-delay, 2s),
+    visibility 0s linear var(--rr-delay, 2s);
 }
 /* Reached by keyboard: no wait. */
 .rail-group:has(:focus-visible) .rr-flyout {
@@ -49,7 +50,7 @@
     transition: none;
   }
   .rail-group:hover .rr-flyout {
-    transition: visibility 0s linear 0.35s;
+    transition: visibility 0s linear var(--rr-delay, 2s);
   }
 }
 .rr-panel {
