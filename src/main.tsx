@@ -37,6 +37,7 @@ import "@/domains/panes/pane-layout.css";
 import "@/domains/agent/terminal/terminal-extras.css";
 import "@/domains/transcript/transcript.css";
 import "@/domains/agentChat/chat.css";
+import "@/domains/agentChat/latest.css";
 import "@/domains/agentChat/cards.css";
 import "@/domains/agentChat/composer.css";
 import "@/domains/agentChat/agentOptions.css";
