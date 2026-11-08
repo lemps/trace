@@ -178,12 +178,7 @@ export function SessionsView() {
                 Spin up an interactive agent for spikes, debugging, or poking around — in a repo or
                 any folder, with no ticket attached.
               </div>
-              <button
-                type="button"
-                className="btn primary"
-                style={{ marginTop: 6 }}
-                onClick={() => setCreating(true)}
-              >
+              <button type="button" className="btn empty-action" onClick={() => setCreating(true)}>
                 <I.Plus size={14} /> New session
               </button>
             </div>

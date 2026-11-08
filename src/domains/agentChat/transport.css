@@ -1,4 +1,5 @@
-/* A stopped chat agent's conversation: one line above the composer to start it again. */
+/* A stopped chat agent's conversation: one line above the composer to start it again,
+   with a plain Start (the header's Start is the screen's primary). */
 .ac-stopped {
   flex-shrink: 0;
   margin-bottom: 8px;
