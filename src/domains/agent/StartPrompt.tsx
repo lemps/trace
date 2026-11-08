@@ -75,13 +75,7 @@ export function StartPrompt({
             </select>
           </label>
         )}
-        <button
-          type="button"
-          className="btn primary"
-          style={{ marginTop: 6 }}
-          onClick={onStart}
-          disabled={noRepos}
-        >
+        <button type="button" className="btn empty-action" onClick={onStart} disabled={noRepos}>
           <I.Play size={14} /> {exited ? "Restart" : "Start"} {agentName}
         </button>
         <button

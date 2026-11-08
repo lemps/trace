@@ -7,27 +7,9 @@
   display: flex;
   flex-direction: column;
 }
-.orch-tabs {
-  display: flex;
-  gap: 2px;
+/* Its Chat | Stats row is the shared `.detail-tabs`, inset to the panel's padding. */
+.orch-pane > .detail-tabs {
   padding: 0 12px;
-  border-bottom: 1px solid var(--border-faint);
-  height: calc(var(--control-h) + 4px);
-}
-.orch-tabs button {
-  height: 100%;
-  padding: 0 10px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  color: var(--fg-3);
-  border-bottom: 1px solid transparent;
-  margin-bottom: -1px;
-}
-.orch-tabs button:hover {
-  color: var(--fg-1);
-}
-.orch-tabs button.active {
-  color: var(--fg-0);
-  border-bottom-color: var(--fg-0);
 }
 
 .orch-body {

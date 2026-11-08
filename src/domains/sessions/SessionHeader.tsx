@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { I } from "@/components/Icon";
-import { InlineConfirm } from "@/components/InlineConfirm";
+import { ConfirmPrompt } from "@/components/InlineConfirm";
 import { type MenuItem, MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
 import { editorItems } from "@/domains/agent/editorItems";
@@ -118,10 +118,8 @@ export function SessionHeader({
           />
         )}
         {confirmRemove && (
-          <InlineConfirm
-            startArmed
+          <ConfirmPrompt
             onCancel={() => setConfirmRemove(false)}
-            label={`Remove ${active.label}`}
             message="Stops this agent and forgets its conversation; the worktree stays."
             confirmLabel={
               <>

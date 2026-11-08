@@ -70,12 +70,12 @@ export function PrsView() {
           <div className="desc">Pull requests linked to the tickets on this board.</div>
         </div>
       </div>
-      <div className="tab-bar">
+      <div className="detail-tabs">
         {TABS.map((t) => (
           <button
             key={t}
             type="button"
-            className={t === tab ? "active" : ""}
+            className={`detail-tab${t === tab ? " active" : ""}`}
             onClick={() => setTab(t)}
           >
             {TAB_LABEL[t]}

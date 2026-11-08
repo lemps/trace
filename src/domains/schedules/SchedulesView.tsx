@@ -57,12 +57,7 @@ export function SchedulesView() {
                 summary. Every run is saved, so you can read the conversation or pick it up as a
                 session.
               </div>
-              <button
-                type="button"
-                className="btn primary"
-                style={{ marginTop: 6 }}
-                onClick={() => setEditing("new")}
-              >
+              <button type="button" className="btn empty-action" onClick={() => setEditing("new")}>
                 <I.Plus size={14} /> New scheduled prompt
               </button>
             </div>

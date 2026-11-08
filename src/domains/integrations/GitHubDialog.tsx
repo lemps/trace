@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Modal } from "@/components/Modal";
 import { GitHubAccounts } from "@/domains/github/GitHubAccounts";
 import { GitHubSignIn } from "@/domains/github/GitHubSignIn";
@@ -33,7 +34,6 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
   const status = useGitHubStore((s) => s.status);
   const signOut = useGitHubStore((s) => s.signOut);
   const [browsing, setBrowsing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [adding, setAdding] = useState(false);
   const login = status?.login;
   const accounts = status?.accounts ?? [];
@@ -82,30 +82,16 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
         )}
         {accounts.length > 0 && !adding && (
           <div className="ig-form-foot">
-            {confirming ? (
-              <>
-                <button type="button" className="btn" onClick={() => setConfirming(false)}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn danger"
-                  onClick={() => void signOut().then(() => setConfirming(false))}
-                >
-                  Disconnect GitHub and delete {tokens}
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" className="btn" onClick={() => setConfirming(true)}>
-                  {accounts.length > 1 ? "Disconnect all accounts" : "Disconnect"}
-                </button>
-                {working && (
-                  <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>
-                    <I.Download size={14} /> Browse repositories
-                  </button>
-                )}
-              </>
+            <InlineConfirm
+              label={accounts.length > 1 ? "Disconnect all accounts" : "Disconnect"}
+              message={`Disconnect GitHub and delete ${tokens}?`}
+              confirmLabel="Disconnect"
+              onConfirm={() => void signOut()}
+            />
+            {working && (
+              <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>
+                <I.Download size={14} /> Browse repositories
+              </button>
             )}
           </div>
         )}
