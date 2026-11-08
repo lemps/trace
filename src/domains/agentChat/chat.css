@@ -279,36 +279,47 @@
   box-shadow: none;
 }
 
-/* A message's actions (MessageRow): Copy under a reply, or under your bubble
-   on the right. Quiet until the message is hovered or the button has focus. */
+/* A message's hover bar (MessageRow): Copy, Edit on yours, and when it was said;
+   under a reply, or under your bubble on the right. Quiet until the message is
+   hovered or holds focus, or its menu is open, or it says "Copied"; always there
+   without a pointer that hovers (trace-ui §2 rule 1). */
 .ac-msg-actions {
   display: flex;
+  align-items: center;
+  gap: 2px;
   height: var(--control-h-xs);
   margin: 2px 0 -6px;
+  opacity: 0;
+  transition: opacity 0.12s;
 }
 .ac-msg.mine .ac-msg-actions {
   justify-content: flex-end;
 }
-.ac-msg-copy {
-  display: grid;
-  place-items: center;
-  width: var(--control-h-xs);
-  height: var(--control-h-xs);
-  border-radius: var(--radius-sm);
-  color: var(--fg-3);
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-.ac-msg:hover .ac-msg-copy,
-.ac-msg-copy:focus-visible,
-.ac-msg-copy[aria-label="Copied"] {
+.ac-msg:hover .ac-msg-actions,
+.ac-msg:focus-within .ac-msg-actions,
+.ac-msg.menu-open .ac-msg-actions,
+.ac-msg-actions:has([aria-label="Copied"]) {
   opacity: 1;
 }
-.ac-msg-copy:hover {
-  background: var(--bg-2);
+@media (hover: none) {
+  .ac-msg-actions {
+    opacity: 1;
+  }
+}
+.btn.icon.ac-msg-btn {
+  color: var(--fg-3);
+}
+.btn.icon.ac-msg-btn:hover:not(:disabled) {
   color: var(--fg-1);
 }
-.ac-msg-copy:focus-visible {
+.btn.icon.ac-msg-btn:focus-visible {
   outline: 2px solid var(--c-accent);
   outline-offset: -1px;
+}
+.ac-msg-time {
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-3);
+  white-space: nowrap;
 }

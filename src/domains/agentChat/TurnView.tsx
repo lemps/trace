@@ -25,7 +25,7 @@ function TurnBody({ turn }: { turn: ChatTurn }) {
   return (
     <section className="ac-turn">
       {turn.prompts.map((p) => (
-        <MessageRow key={p.row.id} message={p.message} />
+        <MessageRow key={p.row.id} message={p.message} at={p.row.at} />
       ))}
       {folded && <FoldHead turn={turn} open={open} toggle={toggle} />}
       {turn.items.map((item) =>

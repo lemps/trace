@@ -12,7 +12,7 @@ import { StatusRow } from "./TurnBits";
 function ItemSwitch({ item }: { item: ChatItem }) {
   switch (item.type) {
     case "message":
-      return <MessageRow message={item.message} />;
+      return <MessageRow message={item.message} at={item.row.at} />;
     case "tool":
       return item.subagent ? <SubagentCard item={item} /> : <ToolCard item={item} />;
     case "diff":
