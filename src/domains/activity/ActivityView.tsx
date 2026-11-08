@@ -1,5 +1,6 @@
 import { type ReactNode, useMemo } from "react";
 import { I } from "@/components/Icon";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useActivityStore } from "./store";
 import type { ActivityEvent, ActivityKind } from "./types";
@@ -91,9 +92,14 @@ export function ActivityView() {
         </div>
         {events.length > 0 && (
           <div className="right">
-            <button type="button" className="btn ghost" onClick={clear} title="Clear activity">
-              Clear
-            </button>
+            <InlineConfirm
+              label="Clear"
+              className="btn ghost"
+              title="Clear activity"
+              message="Delete the whole activity log? This can't be undone."
+              confirmLabel="Clear"
+              onConfirm={clear}
+            />
           </div>
         )}
       </div>

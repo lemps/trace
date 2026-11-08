@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { SetupFields } from "@/domains/repos/SetupFields";
 import { fullName, isEmptySetup, type RepoDetails, type SetupConfig } from "@/domains/repos/types";
 import { setRepoSetup, suggestRepoSetup } from "@/ipc/repoSetup";
@@ -79,14 +80,15 @@ export function RepoRow({
         >
           {saved && !isEmptySetup(saved) ? `Setup · ${setupCount(saved)}` : "Setup"}
         </button>
-        <button
-          type="button"
+        <InlineConfirm
+          label={<I.X size={13} />}
           className="repo-remove"
-          onClick={onRemove}
-          aria-label={`Remove ${name}`}
-        >
-          <I.X size={13} />
-        </button>
+          ariaLabel={`Remove ${name}`}
+          title={`Remove ${name}`}
+          message="Remove from trace, with its ticket mappings? The folder stays."
+          confirmLabel="Remove"
+          onConfirm={onRemove}
+        />
       </div>
       {editing && (
         <div className="rp-editor">

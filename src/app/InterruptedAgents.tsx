@@ -19,13 +19,20 @@ import {
 type Sessions = ReturnType<typeof useSessionsStore.getState>["sessions"];
 type Issues = { key: string; summary: string }[];
 
+/**
+ * An agent's row: its `title` and `sub` line, and `name`, which says which one it
+ * is in a sentence (a toast) — never the bare workspace id of a session.
+ */
 function describe(id: string, issues: Issues, sessions: Sessions) {
   for (const session of sessions) {
     const entry = agentRoster(session).find((r) => r.workspaceId === id);
-    if (entry) return { title: session.title, sub: `session · ${entry.label}` };
+    if (entry) {
+      const name = entry.companion ? `${session.title} · ${entry.label}` : session.title;
+      return { title: session.title, sub: `session · ${entry.label}`, name };
+    }
   }
   const issue = issues.find((i) => i.key === id);
-  return { title: issue?.summary ?? id, sub: id };
+  return { title: issue?.summary ?? id, sub: id, name: issue ? `${id} ${issue.summary}` : id };
 }
 
 /** What resuming will do — mirrors `interrupted::resume_prompt`. */
@@ -72,7 +79,10 @@ export function InterruptedAgents() {
       const failed = results.filter((r) => r.error);
       const ok = results.length - failed.length;
       if (ok) toast.success(`Resumed ${ok === 1 ? "1 agent" : `${ok} agents`}`);
-      for (const f of failed) toast.error(`Couldn't resume ${f.workspaceId}: ${f.error}`);
+      for (const f of failed) {
+        const { name } = describe(f.workspaceId, issues, sessions);
+        toast.error(`Couldn't resume ${name}: ${f.error}`);
+      }
       // The rest weren't picked: let them go too.
       void dismissInterruptedAgents();
       setAgents([]);

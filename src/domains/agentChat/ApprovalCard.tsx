@@ -69,9 +69,12 @@ function Receipt({ approval }: { approval: Approval }) {
     text = option ? RECEIPT[option.kind] : optionId;
     note = resolution.answer.note;
   }
+  // Only an allow earns the check. Denied is a red ×; cancelled (or an option we
+  // can't name) is a grey one, so it never reads as allowed.
+  const allowed = kind === "allowOnce" || kind === "allowAlways";
   return (
     <div className={`ac-receipt${kind === "deny" ? " denied" : ""}`}>
-      {kind === "deny" ? <I.X size={12} /> : <I.Check size={12} />}
+      {allowed ? <I.Check size={12} /> : <I.X size={12} />}
       <span className="ac-receipt-what">{text}</span>
       <span className="ac-receipt-of">
         <ChatMarkdown text={approval.title} inline />
