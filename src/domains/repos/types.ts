@@ -24,6 +24,8 @@ export interface RepoDetails {
   remote: RemoteRepo | null;
   defaultBranch: string;
   setup: SetupConfig;
+  /** The GitHub account picked for it in Settings; null = automatic. */
+  githubAccount: string | null;
 }
 
 /** `owner/name`. */

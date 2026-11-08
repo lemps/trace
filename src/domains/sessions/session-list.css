@@ -106,3 +106,68 @@
 }
 
 /* The status light itself lives in components/status-light.css (StatusLight). */
+
+/* ============ "On Vercel": sessions to join (RemoteSessions) ============ */
+.vs-group {
+  margin-top: 18px;
+}
+.vs-group .sec-head {
+  cursor: default;
+}
+.btn.icon.vs-refresh {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  margin-left: auto;
+}
+.vs-ic {
+  display: inline-flex;
+}
+.vs-ic.spinning {
+  animation: vs-spin 0.8s linear infinite;
+}
+@keyframes vs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.vs-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 2fr) minmax(0, 1fr) auto var(--sr-time-w, 64px) auto;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+}
+.vs-row:hover {
+  background: var(--bg-2);
+}
+.vs-row .btn {
+  height: var(--control-h-sm);
+}
+.vs-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  color: var(--fg-0);
+}
+.vs-where,
+.vs-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.vs-empty {
+  padding: 10px 12px;
+  border: 1px dashed var(--border-faint);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}

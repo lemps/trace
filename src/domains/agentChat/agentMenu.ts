@@ -1,5 +1,6 @@
 import { toast } from "@/app/toast";
 import type { MenuItem } from "@/components/PopMenu";
+import { useCapabilities } from "@/domains/agent/capabilities";
 import type { AgentCli } from "@/ipc/agent";
 import { useSwitchBlocker } from "./switch";
 import { useAgentTransport, useHasChat } from "./transport";
@@ -28,7 +29,10 @@ export function useAgentMenuItems({
   start,
 }: AgentMenuArgs): MenuItem[] {
   const current = useAgentTransport(workspaceId);
-  const canChat = useHasChat(cli);
+  const hasChat = useHasChat(cli);
+  // A sandbox runs the terminal only: no chat to move to there.
+  const hostChats = useCapabilities(workspaceId)?.chat !== false;
+  const canChat = hasChat && hostChats;
   const to: Transport = current === "chat" ? "terminal" : "chat";
   const blocker = useSwitchBlocker(workspaceId, to);
   const items: MenuItem[] = [];

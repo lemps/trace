@@ -52,7 +52,7 @@ pub fn claude_wiring(
     provider: Option<&str>,
     mut extra_args: Vec<String>,
 ) -> Result<Wiring, String> {
-    let mut env = bridge_env(app, state, workspace_id);
+    let env = bridge_env(app, state, workspace_id);
     let bridge_up = !env.is_empty();
     // Turn hooks (`claude::hooks`) report through the bridge, so they need it.
     // Appended last: `--settings <json>` also ends any variadic user flag
@@ -75,7 +75,20 @@ pub fn claude_wiring(
             extra_args.push(settings);
         }
     }
+    let mut wiring = provider_wiring(model, provider, extra_args)?;
+    wiring.env.extend(env);
+    Ok(wiring)
+}
+
+/// Only the provider's endpoint and model: for an agent trace's loopback hooks
+/// and tools can't reach, such as one in a cloud sandbox (`execution`).
+pub fn provider_wiring(
+    model: Option<String>,
+    provider: Option<&str>,
+    extra_args: Vec<String>,
+) -> Result<Wiring, String> {
     let mut model = model;
+    let mut env = HashMap::new();
     if let Some(spec) = provider.and_then(crate::commands::providers::spec) {
         model = Some(provider_model(
             model.as_deref(),

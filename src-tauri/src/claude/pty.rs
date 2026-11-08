@@ -12,16 +12,14 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 
-use base64::Engine;
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtyPair, PtySize};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::AppHandle;
 
 use crate::claude::discovery::find_cli_with_env;
 use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
-use crate::claude::pty_exit;
+use crate::claude::{pty_exit, pty_output};
 use crate::platform::ports::{AgentEnvironment, ProcessHost, ToolLocator};
 use crate::platform::Os;
-use crate::state::AppState;
 
 /// A live interactive Claude TUI hosted in a pseudo-terminal. Dropping `master`
 /// closes the PTY and tears down the child, so keep it alive for the session.
@@ -64,29 +62,6 @@ impl PtySession {
         let _ = self.child.kill();
         let _ = self.child.wait();
     }
-}
-
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PtyOutput {
-    /// The owning issue/workspace — the frontend filters output by this.
-    workspace_id: String,
-    /// Base64-encoded raw PTY bytes (preserves ANSI + multibyte splits).
-    data: String,
-    /// Monotonic chunk counter, matching the backend output history — lets a
-    /// freshly-created terminal replay a snapshot then skip already-replayed
-    /// live chunks.
-    seq: u64,
-}
-
-#[derive(Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct RunState {
-    workspace_id: String,
-    running: bool,
-    /// The process ended on its own (it quit, or crashed) rather than being
-    /// stopped: the renderer offers to restart it.
-    exited: bool,
 }
 
 /// Spawn the interactive `claude` TUI inside a PTY rooted at `cwd`.
@@ -250,20 +225,7 @@ fn run_in_pty(
         .take_writer()
         .map_err(|e| format!("Failed to take PTY writer: {e}"))?;
 
-    // Fresh history for this run — the new process repaints from scratch, so
-    // the previous run's bytes are no longer a valid replay.
-    if let Some(state) = app.try_state::<AppState>() {
-        state.output_history.lock().insert(
-            workspace_id.clone(),
-            crate::state::OutputHistory {
-                seq: 0,
-                chunks: std::collections::VecDeque::new(),
-                bytes: 0,
-                cols,
-                rows,
-            },
-        );
-    }
+    pty_output::begin_run(&app, &workspace_id, cols, rows);
 
     if !Os::pty_reports_exit() {
         pty_exit::watch_for_exit(app.clone(), workspace_id.clone(), pid);
@@ -277,65 +239,14 @@ fn run_in_pty(
             match reader.read(&mut buf) {
                 Ok(0) => break, // EOF — the process exited
                 Ok(n) => {
-                    let encoded = base64::engine::general_purpose::STANDARD.encode(&buf[..n]);
-                    // Record into the rolling history first, so any snapshot
-                    // taken after this emit is a superset of what the event
-                    // stream delivered (the seq handoff depends on it).
-                    let seq = match reader_app.try_state::<AppState>() {
-                        Some(state) => {
-                            let mut histories = state.output_history.lock();
-                            let Some(h) = histories.get_mut(&reader_ws) else {
-                                break; // torn down (e.g. session deleted)
-                            };
-                            h.seq += 1;
-                            h.bytes += encoded.len();
-                            h.chunks.push_back((h.seq, encoded.clone()));
-                            while h.bytes > crate::state::OUTPUT_HISTORY_CAP {
-                                if let Some((_, dropped)) = h.chunks.pop_front() {
-                                    h.bytes -= dropped.len();
-                                } else {
-                                    break;
-                                }
-                            }
-                            h.seq
-                        }
-                        None => 0,
-                    };
-                    let _ = reader_app.emit(
-                        "pty-output",
-                        PtyOutput {
-                            workspace_id: reader_ws.clone(),
-                            data: encoded,
-                            seq,
-                        },
-                    );
+                    if !pty_output::record(&reader_app, &reader_ws, &buf[..n]) {
+                        break; // torn down (e.g. session deleted)
+                    }
                 }
                 Err(_) => break,
             }
         }
-        // Process exited — drop session bookkeeping and tell the UI.
-        crate::interrupted::record_exit(&reader_app, &reader_ws);
-        // A stop takes the session out of state before killing it, so finding it
-        // still here means nobody asked the process to end.
-        // (On Windows `watch_for_exit` closes it first, and notes that it did.)
-        // Only this run's session: a quick restart may already have put a new one there.
-        let exited = pty_exit::take_session(&reader_app, &reader_ws, pid).is_some()
-            | pty_exit::take_natural_exit(&reader_ws);
-        let _ = reader_app.emit(
-            "agent-run-state",
-            RunState {
-                workspace_id: reader_ws.clone(),
-                running: false,
-                exited,
-            },
-        );
-        crate::activity::record_agent(
-            &reader_app,
-            &reader_ws,
-            crate::activity::ActivityKind::AgentExit,
-            "session ended",
-            serde_json::Value::Null,
-        );
+        pty_output::end_run(&reader_app, &reader_ws, pid.map(u64::from));
     });
 
     Ok((

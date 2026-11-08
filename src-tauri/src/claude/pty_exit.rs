@@ -6,7 +6,7 @@ use std::sync::Mutex;
 
 use tauri::{AppHandle, Manager};
 
-use crate::claude::pty::PtySession;
+use crate::execution::LiveSession;
 use crate::platform::ports::ProcessHost;
 use crate::platform::Os;
 use crate::state::AppState;
@@ -33,16 +33,16 @@ pub fn take_natural_exit(workspace_id: &str) -> bool {
     exits.len() != before
 }
 
-/// Take `workspace_id`'s session out of state only if it is still the one running
-/// `pid`. A stop followed quickly by a start puts a new session under the same id,
+/// Take `workspace_id`'s session out of state only if it is still run `run`
+/// (`AgentSession::run_id`). A stop followed quickly by a start puts a new session under the same id,
 /// and that one must not be torn down for the old process's exit. Dropping the
 /// returned session closes its PTY.
-pub fn take_session(app: &AppHandle, workspace_id: &str, pid: Option<u32>) -> Option<PtySession> {
+pub fn take_session(app: &AppHandle, workspace_id: &str, run: Option<u64>) -> Option<LiveSession> {
     let state = app.try_state::<AppState>()?;
     let mut sessions = state.pty_sessions.lock();
     let owns = sessions
         .get(workspace_id)
-        .is_some_and(|s| pid.is_none() || s.pid() == pid);
+        .is_some_and(|s| run.is_none() || s.run_id() == run);
     let session = if owns {
         sessions.remove(workspace_id)
     } else {
@@ -50,7 +50,8 @@ pub fn take_session(app: &AppHandle, workspace_id: &str, pid: Option<u32>) -> Op
     };
     drop(sessions);
     let mut pids = state.child_pids.lock();
-    if session.is_some() && (pid.is_none() || pids.get(workspace_id).copied() == pid) {
+    if session.is_some() && (run.is_none() || pids.get(workspace_id).map(|p| u64::from(*p)) == run)
+    {
         pids.remove(workspace_id);
     }
     session
@@ -67,7 +68,7 @@ pub fn watch_for_exit(app: AppHandle, workspace_id: String, pid: Option<u32>) {
         // The caller registers the session after this returns, so a process that
         // exits at once can get here first.
         for _ in 0..20 {
-            if let Some(session) = take_session(&app, &workspace_id, Some(pid)) {
+            if let Some(session) = take_session(&app, &workspace_id, Some(u64::from(pid))) {
                 // Say so before the drop ends the reader, which reads this.
                 note_natural_exit(&workspace_id);
                 drop(session);

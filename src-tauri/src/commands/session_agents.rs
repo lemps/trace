@@ -156,7 +156,7 @@ pub(crate) fn stop_agents(state: &AppState, ids: &[String]) {
         // so we never hold a lock across the wait.
         let live = state.pty_sessions.lock().remove(id);
         if let Some(mut session) = live {
-            session.kill();
+            session.stop();
         }
         state.child_pids.lock().remove(id);
     }

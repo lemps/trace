@@ -16,11 +16,13 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [x] **GitHub integration:** browse your repos and clone one into a folder you choose, added to
       trace's repositories and set up for agents. ([#11](https://github.com/noble1911/trace/pull/11))
       trace now holds its own GitHub token (paste, import from `gh`, or device flow), no `gh` needed.
-- [ ] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
+- [~] **Cloud VMs:** move sessions to the Vercel cloud and interact with them there, through a new
       Vercel integration. This comes after the Windows and Linux builds. A sandbox checks its repo out
       with `github::checkout::RepoCheckout` (clone at a branch with trace's token, then run setup),
       which has no desktop dependencies.
-- [ ] **iPhone and Android apps.**
+      *Started:* Vercel sessions, terminal or chat, that survive a quit and resume after a stop
+      ([remote execution](REMOTE_EXECUTION_PLAN.md)); another trace over Tailscale is next.
+- [ ] **iPhone and Android apps.** Not planned yet; they'd speak the remote-execution peer protocol.
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.
       ([#13](https://github.com/noble1911/trace/pull/13)) Shortcuts show in menus, tooltips, the

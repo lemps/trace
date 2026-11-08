@@ -13,6 +13,11 @@ export function setRepoSetup(path: string, setup: SetupConfig): Promise<SetupCon
   return invoke("set_repo_setup", { path, setup });
 }
 
+/** Pick the GitHub account a sandbox clones and pushes the repo at `path` as; null is automatic. */
+export function setRepoGitHubAccount(path: string, login: string | null): Promise<void> {
+  return invoke("set_repo_github_account", { path, login });
+}
+
 /** A first guess at the setup, from the repo's lockfiles. */
 export function suggestRepoSetup(path: string): Promise<SetupConfig> {
   return invoke("suggest_repo_setup", { path });

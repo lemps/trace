@@ -5,10 +5,11 @@
 
 use crate::commands::repos;
 use crate::github::account::{self, GitHubStatus};
+use crate::github::accounts::{self, Source};
 use crate::github::clone::{self, Cloned};
 use crate::github::device::{self, DeviceStart};
 use crate::github::repo_list::{self, GhRepo};
-use crate::github::token::{self, Source, Token};
+use crate::github::token::Token;
 use crate::repo_catalog::{self, store};
 
 async fn blocking<T: Send + 'static>(
@@ -33,11 +34,29 @@ pub async fn github_sign_in_token(token: String) -> Result<GitHubStatus, String>
     account::sign_in(token, Source::Pasted).await
 }
 
-/// Copy `gh`'s token once; after this trace doesn't need `gh` for GitHub.
+/// Copy every `gh` account's token once; after this trace doesn't need `gh`
+/// for GitHub. Each becomes one of trace's accounts.
 #[tauri::command]
 pub async fn github_import_gh() -> Result<GitHubStatus, String> {
-    let token = blocking(account::gh_token).await?;
-    account::sign_in(token, Source::Gh).await
+    let tokens = blocking(account::gh_tokens).await?;
+    if tokens.is_empty() {
+        return Err("gh has no github.com account to import.".to_string());
+    }
+    // Each account on its own: one GitHub refuses doesn't stop the others.
+    let mut added = 0;
+    let mut first_error = None;
+    for token in tokens {
+        match account::add(token, Source::Gh).await {
+            Ok(()) => added += 1,
+            Err(e) => {
+                first_error.get_or_insert(e);
+            }
+        }
+    }
+    match (added, first_error) {
+        (0, Some(e)) => Err(e),
+        _ => Ok(account::status().await),
+    }
 }
 
 /// Start the OAuth device flow: the code to enter on github.com.
@@ -59,11 +78,26 @@ pub fn github_device_cancel() {
     device::cancel();
 }
 
-/// Delete trace's GitHub token.
+/// Delete every GitHub token trace holds.
 #[tauri::command]
 pub fn github_sign_out() -> Result<(), String> {
     device::cancel();
-    token::clear()
+    accounts::clear()
+}
+
+/// Sign one account out; the next becomes primary if it was.
+#[tauri::command]
+pub async fn github_remove_account(login: String) -> Result<GitHubStatus, String> {
+    accounts::remove(&login)?;
+    Ok(account::status().await)
+}
+
+/// Make `login` the account the repo browser and other single-account
+/// features use.
+#[tauri::command]
+pub async fn github_set_primary(login: String) -> Result<GitHubStatus, String> {
+    accounts::set_primary(&login)?;
+    Ok(account::status().await)
 }
 
 /// Owners whose repos can be listed: the signed-in `login`, then the orgs the

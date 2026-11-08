@@ -116,18 +116,33 @@ pub struct StartRequest {
     pub initial_prompt: Option<String>,
     /// Sent instead when a saved conversation is resumed (`interrupted`).
     pub resume_prompt: Option<String>,
+    /// Starts it on another host (a cloud sandbox); None runs it here.
+    pub remote: Option<crate::agent_session::process::RemoteOpener>,
 }
 
 /// Start a chat agent for `req.workspace_id` in `req.cwd`. A no-op while one
 /// starts or runs. Its first message, if any, is sent once it's up.
-pub fn start(app: &AppHandle, state: &AppState, req: StartRequest) -> Result<(), String> {
+pub fn start(app: &AppHandle, state: &AppState, mut req: StartRequest) -> Result<(), String> {
     let agents = &state.chat_agents;
+    // On another host only the host can tell a rejoin from a resume from a
+    // fresh start, so it picks the first message (`execution::sandbox::chat`).
+    let remote = req.remote.is_some();
+    if let Some(open) = req.remote.take() {
+        let (initial, resume) = (req.initial_prompt.clone(), req.resume_prompt.clone());
+        req.remote = Some(Box::new(move |mut launch, say| {
+            launch.initial_prompt = initial;
+            launch.resume_prompt = resume;
+            open(launch, say)
+        }));
+    }
     let Begin::Start(instance) = agents.begin(&req.workspace_id)? else {
         return Ok(());
     };
     let workspace_id = req.workspace_id.clone();
     let resume = brands::resumable(&req.cli, &req.workspace_id, &req.cwd);
-    let prompt = if resume.is_some() {
+    let prompt = if remote {
+        None
+    } else if resume.is_some() {
         req.resume_prompt.clone()
     } else {
         req.initial_prompt.clone()
@@ -157,7 +172,10 @@ pub fn start(app: &AppHandle, state: &AppState, req: StartRequest) -> Result<(),
     };
     ledger.pid = adapter.pid();
     let pid = ledger.pid;
-    crate::interrupted::record_start(ledger, pid);
+    // A remote agent outlives a quit by itself, so it isn't "interrupted" by one.
+    if !remote {
+        crate::interrupted::record_start(ledger, pid);
+    }
     if !agents.register(&workspace_id, instance, adapter) {
         // It exited before it was registered, so its exit didn't unlist it.
         crate::interrupted::record_exit(app, &workspace_id);
@@ -182,15 +200,24 @@ fn launch(
     instance: u64,
     resume: Option<String>,
 ) -> Result<Box<dyn super::AgentAdapter>, String> {
-    let wiring = brands::wiring(
-        app,
-        state,
-        &req.cli,
-        &req.workspace_id,
-        req.model,
-        req.provider.as_deref(),
-        req.extra_args,
-    )?;
+    // trace's loopback (tools, hooks, render bridge) can't reach another host:
+    // an agent there gets only its provider's endpoint and model.
+    let wiring = match &req.remote {
+        Some(_) => crate::claude::launch::provider_wiring(
+            req.model,
+            req.provider.as_deref(),
+            req.extra_args,
+        )?,
+        None => brands::wiring(
+            app,
+            state,
+            &req.cli,
+            &req.workspace_id,
+            req.model,
+            req.provider.as_deref(),
+            req.extra_args,
+        )?,
+    };
     let path = store::journal_path(&req.workspace_id);
     let rows = store::load_compacted(&path)?;
     // The last run's open rows end now, on disk too, before this run adds to them.
@@ -213,7 +240,7 @@ fn launch(
         path,
         instance,
     });
-    let adapter = brands::launch(&req.cli, spec, sink.clone())?;
+    let adapter = brands::launch(&req.cli, spec, sink.clone(), req.remote)?;
     // The view knows it's a chat agent, and its model, before the first turn.
     sink.info(SessionInfo {
         agent: req.cli,
@@ -260,6 +287,12 @@ pub fn stop(state: &AppState, workspace_id: &str) {
     state.chat_agents.stop(workspace_id);
 }
 
+/// Let go of a workspace's chat agent and leave it running on its host (a
+/// cloud sandbox). False for one that can't outlive trace.
+pub fn detach(state: &AppState, workspace_id: &str) -> bool {
+    state.chat_agents.detach(workspace_id)
+}
+
 /// trace is quitting: end every chat agent's process now, while trace can still
 /// wait for it. Headless Claude doesn't exit on its own when its stdin closes in
 /// the middle of a turn. Their ledger entries stay (`shutting_down` is set), so
@@ -268,8 +301,11 @@ pub fn stop_all_now(state: &AppState) {
     use crate::platform::ports::ProcessHost;
     let pids = state.chat_agents.pids();
     // Asked first, so each turn ends as interrupted rather than as a crash.
+    // One on another host is left running there, for the next launch to rejoin.
     for id in state.chat_agents.workspaces() {
-        state.chat_agents.stop(&id);
+        if !state.chat_agents.detach(&id) {
+            state.chat_agents.stop(&id);
+        }
     }
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while !state.chat_agents.workspaces().is_empty() && std::time::Instant::now() < deadline {

@@ -44,11 +44,18 @@ impl ToolLocator for Os {
     }
 
     /// An app opened from Finder or the Dock has a minimal `PATH` with no Homebrew.
+    /// Tailscale from the Mac App Store installs no CLI; its app binary is one.
     fn system_tool_paths(name: &str) -> Vec<PathBuf> {
-        ["/usr/local/bin", "/opt/homebrew/bin"]
+        let mut paths: Vec<PathBuf> = ["/usr/local/bin", "/opt/homebrew/bin"]
             .iter()
             .map(|dir| Path::new(dir).join(name))
-            .collect()
+            .collect();
+        if name == "tailscale" {
+            paths.push(PathBuf::from(
+                "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+            ));
+        }
+        paths
     }
 
     fn project_wrapper(dir: &Path, name: &str) -> PathBuf {

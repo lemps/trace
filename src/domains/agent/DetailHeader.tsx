@@ -44,8 +44,6 @@ interface DetailHeaderProps {
   /** Restart, Open in terminal / as chat (`agentChat/agentMenu`). */
   agentItems: MenuItem[];
   /** The pane layout's own (Reset layout). */
-  /** Tabs that come and go (Plan, Files, Terminal…): open one from here too. */
-  tabItems: MenuItem[];
   layoutItems: MenuItem[];
 }
 
@@ -118,7 +116,6 @@ export function DetailHeader({
   transport,
   onChooseTransport,
   agentItems,
-  tabItems,
   layoutItems,
 }: DetailHeaderProps) {
   const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
@@ -171,7 +168,6 @@ export function DetailHeader({
           sections={[
             { title: "Worktree", items: editorItems(issue.key) },
             { title: "Agent", items: agentItems },
-            { title: "Tabs", items: tabItems },
             { title: "Layout", items: layoutItems },
           ]}
         />

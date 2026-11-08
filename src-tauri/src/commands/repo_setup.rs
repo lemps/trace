@@ -34,6 +34,18 @@ pub async fn set_repo_setup(path: String, setup: SetupConfig) -> Result<SetupCon
     .map_err(|e| e.to_string())?
 }
 
+/// Pick which GitHub account a cloud sandbox uses for the repo at `path`; None
+/// lets trace work it out (`github::pick`). Reads the origin, so off the main thread.
+#[tauri::command]
+pub async fn set_repo_github_account(path: String, login: Option<String>) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        configured(&path)?;
+        repo_catalog::set_github_account(&path, login)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// A suggested setup for the repo at `path`, from its lockfiles.
 #[tauri::command]
 pub fn suggest_repo_setup(path: String) -> Result<SetupConfig, String> {

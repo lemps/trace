@@ -12,6 +12,7 @@ pub mod cleanup;
 pub mod commands;
 pub mod diff_parse;
 pub mod diff_summary;
+pub mod execution;
 pub mod gallery;
 pub mod git;
 pub mod github;
@@ -114,7 +115,20 @@ pub fn run() {
             commands::agent::agent_running,
             commands::agent::live_workspaces,
             commands::agent::start_agent,
-            commands::agent::start_terminal,
+            commands::terminal::start_terminal,
+            commands::tailscale::tailscale_status,
+            commands::agent::detach_agent,
+            commands::session_host::agent_capabilities,
+            commands::github::github_remove_account,
+            commands::github::github_set_primary,
+            commands::repo_setup::set_repo_github_account,
+            commands::vercel::vercel_status,
+            commands::vercel::connect_vercel,
+            commands::vercel::disconnect_vercel,
+            commands::vercel::set_claude_credential,
+            commands::vercel::clear_claude_credential,
+            commands::vercel::list_remote_sessions,
+            commands::vercel::join_remote_session,
             commands::agent::send_agent_input,
             commands::agent::resize_agent,
             commands::snapshot::pty_snapshot,

@@ -154,6 +154,25 @@ impl ChatAgents {
         }
     }
 
+    /// Leave the workspace's agent running where it is (a remote one) and let
+    /// go of it. False when it can't outlive trace; then nothing changes.
+    pub fn detach(&self, workspace_id: &str) -> bool {
+        let mut slots = self.slots.lock();
+        let Some(slot) = slots.get_mut(workspace_id) else {
+            return false;
+        };
+        let Slot::Running { instance, adapter } = slot else {
+            return false;
+        };
+        if !adapter.detach() {
+            return false;
+        }
+        *slot = Slot::Stopping {
+            instance: *instance,
+        };
+        true
+    }
+
     /// An instance's process ended: forget it, unless a newer one took its place.
     /// True when it was the workspace's agent (so the workspace is free now).
     pub fn ended(&self, workspace_id: &str, instance: u64) -> bool {

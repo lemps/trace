@@ -92,6 +92,8 @@ src-tauri/src/
 ├── gallery/                # Gallery tab: sets, scanning, path containment, the `trace-img` protocol
 ├── repo_catalog/           # per-repo remote, checkouts, default branch + worktree setup hooks
 ├── interrupted.rs          # ledger of live agents; ones cut off by quit/update/crash are offered back
+├── execution/              # where agents run: AgentHost port; this machine, or a cloud sandbox
+│                           #   (sandbox/ + vercel/: terminal in tmux, chat as a background command)
 └── commands/               # thin wrappers: agent, session, schedules, issues, activity, pr, diff, tests, repos, editor
 ```
 
@@ -174,6 +176,13 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   doesn't, so the next launch offers those agents back (`app/InterruptedAgents.tsx`). Resuming is
   `spawn_in` again, which `--resume`s the saved conversation; entries whose pid is alive belong to another
   running trace and are left alone.
+- **Remote sessions:** a session can run in a Vercel sandbox (`ScratchSession.host`,
+  `commands/session_host.rs`) behind the `execution::AgentHost` port, as a terminal (tmux over
+  Vercel's PTY WebSocket) or a chat (`agent_session::process::ChatProcess` over a background
+  command). Disconnect or quitting leaves it running and Start rejoins; Stop & save snapshots
+  it. The host's `Capabilities` decide which tabs and views it gets. Live tests:
+  `cargo test vercel_live -- --ignored` with a token in `~/.config/trace-dev/vercel-token`.
+  Design and findings: `docs/REMOTE_EXECUTION_PLAN.md`.
 - **Lifecycle:** moving a card transitions the tracker's issue. With Settings' auto-start on, landing in the first
   in-progress column also starts its agent. That's the only automation: agents raise their own PRs, and the
   detail view's PR actions are explicit clicks.

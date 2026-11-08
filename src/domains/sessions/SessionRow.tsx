@@ -124,6 +124,14 @@ export function SessionRow(props: SessionRowProps) {
             +{companions.length}
           </span>
         )}
+        {session.host && (
+          <span
+            className="session-cli"
+            title={`Runs in the Vercel sandbox ${session.host.sandbox}`}
+          >
+            Vercel
+          </span>
+        )}
         {depth === 0 && <CreatorChip createdBy={createdBy} />}
       </div>
       <span className="sr-where" title={overview?.branch ?? undefined}>

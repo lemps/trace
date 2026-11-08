@@ -172,3 +172,42 @@
 .setting-group .gh-folder {
   margin: 12px 0 8px;
 }
+
+/* Signed-in accounts in the GitHub dialog: one row each, actions on the right. */
+.ig-sub > .gh-accounts,
+.ig-sub > .gh-signin {
+  align-self: stretch;
+}
+.gh-accounts {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gh-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-faint);
+}
+.gh-account:last-child {
+  border-bottom: none;
+}
+.gh-account-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gh-account-login {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-0);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

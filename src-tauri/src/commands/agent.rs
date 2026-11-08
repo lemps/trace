@@ -9,7 +9,7 @@ use crate::agent_session::runtime::{self, StartRequest};
 use crate::agent_session::transport::{self, Transport};
 use crate::claude::conversations::{claude_session_ids, forget_session_id};
 use crate::claude::launch;
-use crate::claude::pty::{spawn_agent_pty, spawn_shell_pty};
+use crate::execution::SpawnSpec;
 use crate::git;
 use crate::helpers::slugify;
 use crate::state::{AppState, StartGuard};
@@ -67,10 +67,17 @@ pub(crate) fn spawn_in(
     cols: u16,
     rows: u16,
 ) -> Result<(), String> {
-    let transport = transport::resolve(transport, transport::stored(&workspace_id), &cli);
+    // This machine, or a sandbox (`session_host`). A remote agent is always a
+    // terminal, and nothing below that reads this disk applies to it.
+    let host = crate::commands::session_host::host_for(&workspace_id)?;
+    let local = host.is_local();
+    let transport = match local || host.port().capabilities().chat {
+        true => transport::resolve(transport, transport::stored(&workspace_id), &cli),
+        false => Transport::Terminal,
+    };
     // A worktree of a repo the user added needs no "trust this folder?" stop, in
     // either transport (a chat agent can later open in the terminal).
-    if cli == "claude" {
+    if cli == "claude" && local {
         crate::claude::folder_trust::trust_worktree(&cwd);
     }
     if transport == Transport::Chat {
@@ -87,6 +94,7 @@ pub(crate) fn spawn_in(
             extra_args,
             initial_prompt,
             resume_prompt,
+            remote: host.port().chat_opener(),
         };
         return runtime::start(&app, state, req);
     }
@@ -101,10 +109,15 @@ pub(crate) fn spawn_in(
     if !workspace_id.starts_with(crate::schedule::RUN_PREFIX) {
         transport::remember(&workspace_id, transport);
     }
-    let (resume_id, new_id_arg) = claude_session_ids(&workspace_id, &cli, &cwd);
+    let (resume_id, new_id_arg) = match local {
+        true => claude_session_ids(&workspace_id, &cli, &cwd),
+        false => (None, None),
+    };
     // Until this spawn's hooks report, its conversation is the one just resolved.
     crate::claude::transcript::live::forget(state, &workspace_id);
     let resuming = cli == "claude" && resume_id.is_some();
+    // Another host decides for itself whether it continues a conversation.
+    let remote_resume_prompt = if local { None } else { resume_prompt.clone() };
     let prompt = if resuming {
         resume_prompt
     } else {
@@ -128,7 +141,11 @@ pub(crate) fn spawn_in(
     };
     // trace's wiring (`claude::launch`): the render bridge for every CLI, and for
     // Claude its tools, turn hooks and the provider's endpoint + model.
-    let (model, extra_args, env_overrides) = if cli == "claude" {
+    // A remote agent gets only the provider's part: the loopback can't reach it.
+    let (model, extra_args, env_overrides) = if !local {
+        let wiring = launch::provider_wiring(model, provider.as_deref(), extra_args)?;
+        (wiring.model, wiring.extra_args, wiring.env)
+    } else if cli == "claude" {
         let wiring = launch::claude_wiring(
             &app,
             state,
@@ -145,25 +162,30 @@ pub(crate) fn spawn_in(
         let env = launch::bridge_env(&app, state, &workspace_id);
         (model, extra_args, env)
     };
-    let (session, pid) = spawn_agent_pty(
-        app,
-        workspace_id.clone(),
+    let spec = SpawnSpec {
+        workspace_id: workspace_id.clone(),
         cwd,
         cli,
         resume_id,
-        new_id_arg,
+        new_session_id: new_id_arg,
         model,
         extra_args,
         prompt,
-        env_overrides,
-        cols.max(20),
-        rows.max(4),
-    )?;
+        resume_prompt: remote_resume_prompt,
+        env: env_overrides,
+        cols: cols.max(20),
+        rows: rows.max(4),
+    };
+    let session = host.port().spawn(&app, spec).map_err(|e| e.to_string())?;
+    let pid = session.pid();
     state
         .pty_sessions
         .lock()
         .insert(workspace_id.clone(), session);
-    crate::interrupted::record_start(launch, pid);
+    // A remote agent outlives trace by itself, so it isn't "interrupted" by a quit.
+    if local {
+        crate::interrupted::record_start(launch, pid);
+    }
     if let Some(pid) = pid {
         state.child_pids.lock().insert(workspace_id, pid);
     }
@@ -267,55 +289,6 @@ pub(crate) fn issue_worktree(issue_key: &str, match_text: &str) -> Result<String
     Ok(worktree)
 }
 
-/// Start a plain shell in the issue's worktree — the "Terminal" tab, separate
-/// from the Claude agent in Chat. Keyed by `term:<issue>` so it coexists with the
-/// agent session. Ensures the worktree exists first. Idempotent.
-#[tauri::command]
-pub fn start_terminal(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    issue_key: String,
-    cols: u16,
-    rows: u16,
-) -> Result<(), String> {
-    let term_id = format!("term:{issue_key}");
-    if state.pty_sessions.lock().contains_key(&term_id) {
-        return Ok(());
-    }
-    let Some(_guard) = StartGuard::acquire(&state, &term_id) else {
-        return Ok(());
-    };
-
-    // The shell opens wherever the workspace's agent runs: a session's worktree
-    // (created on demand, using the session's own repo — not the global default),
-    // the repo root for legacy root sessions, or the issue's worktree.
-    let cwd = if crate::commands::session::is_session(&issue_key) {
-        crate::commands::session::session_cwd(&issue_key, true)?
-    } else {
-        let repo = crate::commands::repos::repo_for(&issue_key)?;
-        let worktree = crate::commands::repos::workspace_dir(&repo, &issue_key);
-        if !std::path::Path::new(&worktree).exists() {
-            let busy = git::git_busy_check(&repo);
-            if busy.starts_with("busy") {
-                return Err(format!(
-                    "Repository is {busy} — finish that git operation first."
-                ));
-            }
-            let branch = format!("workspace/{}", slugify(&issue_key));
-            let default_branch = git::get_default_branch(&repo);
-            git::create_worktree(&repo, &worktree, &branch, &default_branch)?;
-        }
-        worktree
-    };
-
-    let (session, pid) = spawn_shell_pty(app, term_id.clone(), cwd, cols.max(20), rows.max(4))?;
-    state.pty_sessions.lock().insert(term_id.clone(), session);
-    if let Some(pid) = pid {
-        state.child_pids.lock().insert(term_id, pid);
-    }
-    Ok(())
-}
-
 /// Forward keystrokes / pasted text from the xterm pane to the TUI.
 #[tauri::command]
 pub fn send_agent_input(
@@ -357,6 +330,33 @@ pub fn resize_agent(
     }
 }
 
+/// Disconnect from an agent on another host and leave it running there. Its
+/// session ends here like a stop, and starting it again joins it. A local agent
+/// can't be left running without trace, so it's refused rather than stopped.
+#[tauri::command]
+pub fn detach_agent(state: State<'_, AppState>, issue_key: String) -> Result<(), String> {
+    let mut sessions = state.pty_sessions.lock();
+    match sessions.get(&issue_key) {
+        Some(s) if s.can_detach() => {}
+        Some(_) => return Err("Only an agent running on another host can be left running.".into()),
+        None => {
+            drop(sessions);
+            // A chat agent: only a remote one can be left running.
+            return match runtime::detach(&state, &issue_key)
+                || !state.chat_agents.is_running(&issue_key)
+            {
+                true => Ok(()),
+                false => Err("Only an agent running on another host can be left running.".into()),
+            };
+        }
+    }
+    let session = sessions.remove(&issue_key);
+    drop(sessions);
+    // Dropping a remote session is what detaches it.
+    drop(session);
+    Ok(())
+}
+
 /// Stop an agent: take it out of state and kill the child (its EOF triggers the
 /// pump thread's run-state cleanup). A chat agent is asked to end; it reports
 /// its exit the same way once its process is gone.
@@ -366,7 +366,7 @@ pub fn stop_agent(state: State<'_, AppState>, issue_key: String) -> Result<(), S
     let session = state.pty_sessions.lock().remove(&issue_key);
     state.child_pids.lock().remove(&issue_key);
     if let Some(mut session) = session {
-        session.kill();
+        session.stop();
     }
     Ok(())
 }

@@ -4,6 +4,7 @@ import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { CloneFolder } from "@/domains/github/CloneFolder";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
+import { useGitHubStore } from "@/domains/github/store";
 import type { RepoDetails } from "@/domains/repos/types";
 import { repoDetails } from "@/ipc/repoSetup";
 import {
@@ -15,6 +16,7 @@ import {
   setRepoMappings,
 } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import { REPO_ACCOUNT_HINT } from "./RepoAccountSelect";
 import { RepoRow } from "./RepoRow";
 
 // The Repositories section: the configured repos plus the ticket→repo mapping
@@ -32,6 +34,13 @@ export function RepoSettings() {
   // Remote, default branch and setup per repo: slower (git per repo), so they fill in.
   const [details, setDetails] = useState<Record<string, RepoDetails>>({});
   const [browsing, setBrowsing] = useState(false);
+  const github = useGitHubStore((s) => s.status);
+  const checkGitHub = useGitHubStore((s) => s.checkStatus);
+  const githubLogins = (github?.accounts ?? []).map((a) => a.login);
+
+  useEffect(() => {
+    if (!github) void checkGitHub();
+  }, [github, checkGitHub]);
 
   const loadDetails = useCallback(
     () =>
@@ -103,9 +112,19 @@ export function RepoSettings() {
                 const d = details[path];
                 if (d) setDetails({ ...details, [path]: { ...d, setup } });
               }}
+              githubLogins={githubLogins}
+              onAccountSaved={(githubAccount) =>
+                setDetails((all) => {
+                  const d = all[path];
+                  return d ? { ...all, [path]: { ...d, githubAccount } } : all;
+                })
+              }
             />
           ))}
         </div>
+      )}
+      {repos.length > 0 && githubLogins.length > 1 && (
+        <span className="hint rp-account-hint">GitHub account: {REPO_ACCOUNT_HINT}</span>
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
         <button type="button" className="btn" onClick={addFolder}>

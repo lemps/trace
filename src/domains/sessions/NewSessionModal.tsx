@@ -2,10 +2,13 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { Modal } from "@/components/Modal";
+import { Segmented } from "@/components/Segmented";
 import { defaultTransport, useHasChat } from "@/domains/agentChat/transport";
+import { useVercelStatus } from "@/domains/vercel/store";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import type { SessionHostKind } from "./types";
 
 interface NewSessionModalProps {
   defaultCli: AgentCli;
@@ -17,7 +20,8 @@ interface NewSessionModalProps {
     repo: string | null,
     provider: AgentProvider,
     folder: string | null,
-    transport: Transport
+    transport: Transport,
+    host: SessionHostKind | null
   ) => void;
 }
 
@@ -26,10 +30,19 @@ interface NewSessionModalProps {
 const SCRATCH = "scratch";
 const FOLDER = "folder";
 const CHOOSE_FOLDER = "choose";
+const isRepoPlace = (place: string) => place !== SCRATCH && place !== FOLDER;
+
+/** "Run on": this computer (null) or a Vercel Sandbox. */
+const HOSTS: { value: SessionHostKind | "local"; label: string }[] = [
+  { value: "local", label: "This computer" },
+  { value: "vercel", label: "Vercel" },
+];
 
 // Title + agent + where it runs, for a new exploratory session. Title is optional (the
 // backend falls back to "Exploration" when blank). A repo gives it an isolated worktree;
 // it doesn't need one, and can run in a folder of the user's or an empty scratch folder.
+// With Vercel connected it can run in a Vercel Sandbox instead, which needs a repo (the
+// sandbox clones its GitHub remote) and runs Claude in a terminal.
 export function NewSessionModal({
   defaultCli,
   defaultProvider,
@@ -37,10 +50,18 @@ export function NewSessionModal({
   onCreate,
 }: NewSessionModalProps) {
   const [title, setTitle] = useState("");
-  const [cli, setCli] = useState<AgentCli>(defaultCli);
+  const vercel = useVercelStatus();
+  const [hostPick, setHostPick] = useState<SessionHostKind | "local">("local");
+  // Disconnected meanwhile: back to this computer.
+  const host = vercel && hostPick === "vercel" ? "vercel" : null;
+  const [pickedCli, setCli] = useState<AgentCli>(defaultCli);
+  // A sandbox's image has Claude Code, not Codex.
+  const cli: AgentCli = host ? "claude" : pickedCli;
   const [provider, setProvider] = useState<AgentProvider>(defaultProvider);
   const [transport, setTransport] = useState<Transport>(() => defaultTransport(defaultCli));
   const canChat = useHasChat(cli);
+  // A sandbox's agent reaches trace as a terminal only.
+  // A Vercel sandbox runs Claude as a chat too (`execution::sandbox::chat`).
   const shownAs: Transport = canChat ? transport : "terminal";
   const [repos, setRepos] = useState<string[]>([]);
   const [place, setPlace] = useState(SCRATCH);
@@ -79,20 +100,32 @@ export function NewSessionModal({
     setPlace(FOLDER);
   };
 
+  const runOn = (next: SessionHostKind | "local") => {
+    setHostPick(next);
+    // A sandbox needs a repo: move off a folder onto the first one.
+    if (next === "vercel" && !isRepoPlace(place) && repos[0]) setPlace(repos[0]);
+  };
+  const canCreate = !host || isRepoPlace(place);
+
   const submit = () => {
-    const isRepo = place !== SCRATCH && place !== FOLDER;
+    if (!canCreate) return;
+    const isRepo = isRepoPlace(place);
     onCreate(
       title.trim() || "Exploration",
       cli,
       isRepo ? place : null,
       provider,
       place === FOLDER ? folder : null,
-      shownAs
+      shownAs,
+      host
     );
   };
 
-  const note =
-    place === SCRATCH
+  const note = host
+    ? repos.length === 0
+      ? "A Vercel session needs a repository. Add one in Settings → Repositories."
+      : "Runs in a Vercel sandbox; sessions on the Hobby plan end after 45 minutes."
+    : place === SCRATCH
       ? "Runs in a new empty folder, which is deleted along with the session."
       : place === FOLDER
         ? "Runs directly in this folder. Without a worktree, there's no isolation or Files tab."
@@ -107,7 +140,7 @@ export function NewSessionModal({
           <button type="button" className="btn ghost" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn primary" onClick={submit}>
+          <button type="button" className="btn primary" disabled={!canCreate} onClick={submit}>
             Create
           </button>
         </>
@@ -127,11 +160,24 @@ export function NewSessionModal({
           }}
         />
       </label>
+      {vercel && (
+        <div className="field">
+          <span className="field-label">Run on</span>
+          <Segmented
+            label="Run on"
+            value={hostPick}
+            options={HOSTS}
+            onChange={runOn}
+            className="ns-host"
+          />
+        </div>
+      )}
       <label className="field">
         <span className="field-label">Agent</span>
         <select
           className="field-input"
           value={cli}
+          disabled={Boolean(host)}
           onChange={(e) => setCli(e.target.value as AgentCli)}
         >
           <option value="claude">Claude</option>
@@ -167,13 +213,13 @@ export function NewSessionModal({
           <option value="terminal">Terminal</option>
         </select>
       </label>
-      {!canChat && (
+      {!canChat && !host && (
         <div className="field-note">
           {cli === "codex" ? "Codex" : cli} has no chat view yet, so it runs in a terminal.
         </div>
       )}
       <label className="field">
-        <span className="field-label">Runs in</span>
+        <span className="field-label">{host ? "Repository" : "Runs in"}</span>
         <select
           className="field-input"
           value={place}
@@ -184,9 +230,10 @@ export function NewSessionModal({
               {basename(r)}
             </option>
           ))}
-          {folder && <option value={FOLDER}>{basename(folder)}</option>}
-          <option value={SCRATCH}>New empty folder</option>
-          <option value={CHOOSE_FOLDER}>Choose a folder…</option>
+          {!host && folder && <option value={FOLDER}>{basename(folder)}</option>}
+          {!host && <option value={SCRATCH}>New empty folder</option>}
+          {!host && <option value={CHOOSE_FOLDER}>Choose a folder…</option>}
+          {host && repos.length === 0 && <option value={place}>No repositories</option>}
         </select>
       </label>
       <div className="field-note">{note}</div>

@@ -45,10 +45,14 @@ interface SessionPanelsArgs {
  * "+" after the last), then after a rule Plan, Browser, Gallery, Files, Terminal, Tests
  * and Pull request, each only with something to show (Files, Tests and Pull request
  * never in a plain folder, which has no git). Files and Terminal are the
- * worktree's, whichever agent is in front.
+ * worktree's, whichever agent is in front. A session on another host (a Vercel
+ * Sandbox) has no local folder, so it has none of those four.
  */
 export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
   const place = a.session.folder ? "folder" : "worktree";
+  // Files, Terminal, Tests and Pull request read the local folder; a remote host has none.
+  const isLocal = !a.session.host;
+  const hasGit = isLocal && !a.session.folder;
   const agents = a.roster.map(
     (entry, i): PanelDescriptor => ({
       id: agentTab(entry.workspaceId),
@@ -75,10 +79,10 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       section: "workspace",
     }),
     ...viewerTabs(a.active.workspaceId, a.viewers, "workspace"),
-    ...(a.session.folder ? [] : [filesTab(a.session.id, a.workspace, "workspace")]),
-    terminalTab(a.session.id, a.workspace, "workspace"),
-    ...(a.session.folder
-      ? []
-      : [testsTab(a.session.id, a.tests, "workspace"), prTab(a.prUrls, a.pr, "workspace")]),
+    ...(hasGit ? [filesTab(a.session.id, a.workspace, "workspace")] : []),
+    ...(isLocal ? [terminalTab(a.session.id, a.workspace, "workspace")] : []),
+    ...(hasGit
+      ? [testsTab(a.session.id, a.tests, "workspace"), prTab(a.prUrls, a.pr, "workspace")]
+      : []),
   ];
 }

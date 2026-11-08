@@ -17,7 +17,7 @@ import {
   setSessionGroup,
   unarchiveSession,
 } from "@/ipc/session";
-import type { ScratchSession, SessionGroups } from "./types";
+import type { ScratchSession, SessionGroups, SessionHostKind } from "./types";
 
 // Metadata + selection only. Live runtime state (running set, output buffers) is
 // keyed by workspace id in the board store, which the app-level pty listeners
@@ -43,7 +43,8 @@ interface SessionsStore {
     cli: AgentCli,
     repo?: string | null,
     provider?: AgentProvider,
-    folder?: string | null
+    folder?: string | null,
+    host?: SessionHostKind | null
   ) => Promise<ScratchSession>;
   /** List a session created elsewhere (an agent's tool call) without opening it. */
   adopt: (session: ScratchSession) => void;
@@ -114,8 +115,17 @@ export const useSessionsStore = create<SessionsStore>((set) => ({
     const [sessions, groups] = await Promise.all([listSessions(), listSessionGroups()]);
     set({ sessions, groups, loaded: true });
   },
-  async create(title, cli, repo, provider, folder) {
-    const session = await createSession(title, cli, repo, provider, undefined, folder);
+  async create(title, cli, repo, provider, folder, host) {
+    const session = await createSession(
+      title,
+      cli,
+      repo,
+      provider,
+      undefined,
+      folder,
+      undefined,
+      host
+    );
     set((s) => {
       const recent = pushRecent(s.recent, session.id);
       saveRecent(recent);

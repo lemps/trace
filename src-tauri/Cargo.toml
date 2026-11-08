@@ -33,7 +33,11 @@ base64 = "0.22"
 tiny_http = "0.12"
 
 # Jira Cloud REST client
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+
+# Remote execution: Vercel Sandbox PTYs (and later peer traces) over WebSocket,
+# blocking so each session pumps on its own std::thread like a local PTY.
+tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 
 # Utilities
 uuid = { version = "1", features = ["v4", "serde"] }

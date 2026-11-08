@@ -25,6 +25,20 @@ export type CreatedBy =
   | { kind: "orchestrator" }
   | { kind: "schedule"; promptId: string; runId?: string | null; label: string };
 
+/** Where a session can run other than this computer. */
+export type SessionHostKind = "vercel";
+
+/**
+ * A session that runs somewhere else: today a Vercel Sandbox (`sandbox` is its
+ * name; `remote` is the repo's GitHub remote it cloned). It has no local folder,
+ * so nothing that reads the worktree (Files, Terminal, Tests, PR) applies.
+ */
+export interface SessionHost {
+  kind: SessionHostKind;
+  sandbox: string;
+  remote: string | null;
+}
+
 /** An exploratory session — an interactive agent not tied to a Jira issue. */
 export interface ScratchSession {
   id: string;
@@ -52,6 +66,8 @@ export interface ScratchSession {
   remoteControl?: boolean;
   /** Who started it; null/undefined = the user. */
   createdBy?: CreatedBy | null;
+  /** Where it runs; null/undefined = this computer. */
+  host?: SessionHost | null;
 }
 
 /** A top-level view on the Sessions page (e.g. one per repo). */

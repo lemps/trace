@@ -15,6 +15,7 @@
 //!   with edit timestamps, so the rail can show comments that change in place.
 
 pub mod account;
+pub mod accounts;
 mod api;
 pub mod checkout;
 mod checks;
@@ -22,6 +23,7 @@ pub mod clone;
 pub mod device;
 mod gh;
 pub mod links;
+pub mod pick;
 pub mod repo_list;
 pub mod repo_prs;
 pub mod thread;
