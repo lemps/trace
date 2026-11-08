@@ -17,6 +17,6 @@ export const DEFAULT_ICON_SIZE: number = ICON_SIZE.md;
  * A fixed stroke drew 0.8px at 12 and 1.07px at 16; this keeps every size at ~1.1px.
  */
 export function strokeFor(size: number): number {
-  if (!(size > 0)) return (ICON_LINE_PX * 24) / DEFAULT_ICON_SIZE;
-  return Math.round(((ICON_LINE_PX * 24) / size) * 100) / 100;
+  const px = size > 0 ? size : DEFAULT_ICON_SIZE;
+  return Math.round(((ICON_LINE_PX * 24) / px) * 100) / 100;
 }
