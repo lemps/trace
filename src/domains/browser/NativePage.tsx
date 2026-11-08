@@ -1,5 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useRef, useState } from "react";
+import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import type { BrowserPage } from "@/ipc/browser";
 import { usePageLive } from "./store";
 import { useNativeView } from "./useNativeView";
@@ -18,9 +20,9 @@ export function NativePage({ workspaceId, page }: { workspaceId: string; page: B
       {error ? (
         <div className="bw-fail">
           <p>{error}</p>
-          <button type="button" className="btn" onClick={() => void openUrl(page.url)}>
-            Open in your browser
-          </button>
+          <IconButton label="Open in your browser" onClick={() => void openUrl(page.url)}>
+            <I.External size={14} />
+          </IconButton>
         </div>
       ) : (
         <span className="bw-under">{live.url || page.url}</span>

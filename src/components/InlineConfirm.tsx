@@ -14,6 +14,10 @@ interface InlineConfirmProps {
   /** For an icon-only trigger. */
   ariaLabel?: string;
   disabled?: boolean;
+  /** Armed from elsewhere (a ⋯ menu item): it opens on Cancel / Confirm. */
+  startArmed?: boolean;
+  /** Cancelled (Cancel or Escape): the caller can unmount an armed-from-elsewhere one. */
+  onCancel?: () => void;
 }
 
 // A destructive action, confirmed in place (trace-ui §5: inline, never a dialog).
@@ -29,8 +33,14 @@ export function InlineConfirm({
   title,
   ariaLabel,
   disabled,
+  startArmed = false,
+  onCancel,
 }: InlineConfirmProps) {
-  const [armed, setArmed] = useState(false);
+  const [armed, setArmed] = useState(startArmed);
+  const cancel = () => {
+    setArmed(false);
+    onCancel?.();
+  };
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -58,11 +68,11 @@ export function InlineConfirm({
       onKeyDown={(e) => {
         if (e.key !== "Escape") return;
         e.stopPropagation();
-        setArmed(false);
+        cancel();
       }}
     >
       <span className="inline-confirm-msg">{message}</span>
-      <button type="button" className="btn" ref={cancelRef} onClick={() => setArmed(false)}>
+      <button type="button" className="btn" ref={cancelRef} onClick={cancel}>
         Cancel
       </button>
       <button

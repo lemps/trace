@@ -1,8 +1,9 @@
 import { type RefObject, useLayoutEffect, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 
 /** Room the floating button needs beside the column's text (its width and a margin). */
-const FLOAT_ROOM = 112;
+const FLOAT_ROOM = 56;
 
 interface LatestButtonProps {
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -11,7 +12,7 @@ interface LatestButtonProps {
   onJump: () => void;
 }
 
-// "Latest", for when you've scrolled up. It never covers the conversation: it
+// "Jump to latest", a round arrow for when you've scrolled up. It never covers the conversation: it
 // floats in the bottom-right corner while the column leaves room beside it (a wide
 // pane), and otherwise takes a row of its own under the conversation.
 export function LatestButton({ scrollRef, show, onJump }: LatestButtonProps) {
@@ -19,9 +20,9 @@ export function LatestButton({ scrollRef, show, onJump }: LatestButtonProps) {
   if (!show) return null;
   return (
     <div className={`ac-latest${docked ? " docked" : ""}`}>
-      <button type="button" className="btn" onClick={onJump}>
-        <I.ArrowDown size={13} /> Latest
-      </button>
+      <IconButton className="jump-latest" label="Jump to latest" onClick={onJump}>
+        <I.ArrowDown size={14} />
+      </IconButton>
     </div>
   );
 }

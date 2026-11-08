@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { StatusLight } from "@/components/StatusLight";
 import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
 import { ChatViewContext } from "@/domains/agentChat/chatContext";
@@ -124,9 +125,13 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
           </div>
         </div>
         {!following && (
-          <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
-            <I.ArrowDown size={13} /> Latest
-          </button>
+          <IconButton
+            className="jump-latest tx-latest"
+            label="Jump to latest"
+            onClick={jumpToLatest}
+          >
+            <I.ArrowDown size={14} />
+          </IconButton>
         )}
       </div>
     </ChatViewContext.Provider>

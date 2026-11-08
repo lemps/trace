@@ -280,6 +280,9 @@
   color: var(--c-review);
 }
 .key-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: 8px;
   font-size: calc(var(--text-ui) - 0.5px);
   color: var(--c-done);

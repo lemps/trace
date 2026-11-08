@@ -252,33 +252,6 @@
   color: var(--fg-2);
 }
 
-/* "Latest": in the corner beside the column when there's room, else its own row
-   under the conversation (`LatestButton`), so it never covers a message. */
-.ac-latest {
-  position: absolute;
-  right: 20px;
-  bottom: 12px;
-  z-index: 1;
-}
-.ac-latest .btn {
-  background: var(--bg-elev);
-  box-shadow: var(--shadow-pop);
-}
-.ac-latest .btn:hover {
-  background: var(--bg-3);
-}
-.ac-latest.docked {
-  position: static;
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  padding: 6px 20px;
-  border-top: 1px solid var(--border-faint);
-}
-.ac-latest.docked .btn {
-  box-shadow: none;
-}
-
 /* A message's actions (MessageRow): Copy under a reply, or under your bubble
    on the right. Quiet until the message is hovered or the button has focus. */
 .ac-msg-actions {

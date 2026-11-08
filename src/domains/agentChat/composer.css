@@ -247,12 +247,10 @@
   background: var(--bg-3);
 }
 
-/* Interrupt: a square stop beside Send, only while something runs (also Esc). */
-.btn.icon.ac-stop {
-  color: var(--fg-2);
-}
-.btn.icon.ac-stop:hover {
-  color: var(--fg-0);
+/* Send / Queue / Stop share this one square slot (`SendSlot`), so the pickers
+   beside it never move when it swaps. */
+.btn.icon.ac-send {
+  margin-left: 4px;
 }
 
 /* Slash commands, above the composer. */

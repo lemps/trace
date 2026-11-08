@@ -67,9 +67,9 @@ export function WorktreeSettings() {
         removed (their branch is deleted too).
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button type="button" className="btn" onClick={refresh} disabled={busy !== null}>
-          Refresh
-        </button>
+        <IconButton label="Refresh" onClick={refresh} disabled={busy !== null}>
+          <I.Refresh size={14} />
+        </IconButton>
         {removable.length > 0 && (
           <button
             type="button"

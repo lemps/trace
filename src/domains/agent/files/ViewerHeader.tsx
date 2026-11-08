@@ -19,8 +19,8 @@ interface ViewerHeaderProps {
 }
 
 // The Files viewer's header: the path as breadcrumbs (Breadcrumbs.tsx), what
-// changed, then the actions — copy the path, and the "Open in"
-// menu with the same items as a file link's menu in the terminal.
+// changed, then the actions — copy the path, and the "Open in…" menu (an icon and
+// a caret) with the same items as a file link's menu in the terminal.
 export function ViewerHeader({ workspaceId, path, change, onReveal, children }: ViewerHeaderProps) {
   const isGone = change?.status === "deleted";
   return (
@@ -48,11 +48,12 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
             type="button"
             className={`fx-tool${open ? " on" : ""}`}
             onClick={toggle}
+            title="Open in…"
+            aria-label="Open in…"
             aria-haspopup="menu"
             aria-expanded={open}
           >
             <I.External size={14} />
-            Open in
             <span className="fx-caret" aria-hidden="true">
               <I.Chevron size={14} />
             </span>
