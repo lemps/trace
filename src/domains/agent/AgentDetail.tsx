@@ -12,6 +12,7 @@ import { adoptIfAlive } from "@/domains/board/adopt";
 import { statusOf, useBoardStore } from "@/domains/board/store";
 import type { Issue, PullRequest } from "@/domains/issues/types";
 import { shownAsk } from "@/domains/live/light";
+import { useAgentQuiet } from "@/domains/live/quietStore";
 import { useLiveStore } from "@/domains/live/store";
 import { OrchestratorPane } from "@/domains/orchestrator/OrchestratorPane";
 import { PaneArea } from "@/domains/panes/PaneArea";
@@ -86,6 +87,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const clearOutput = useBoardStore((s) => s.clearOutput);
   const ackWaiting = useBoardStore((s) => s.ackWaiting);
   const live = useLiveStore((s) => s.info[issue.key]);
+  const quiet = useAgentQuiet(issue.key);
   const startingRef = useRef(false);
   const prs = useBoardStore((s) => s.pullRequests[issue.key] ?? EMPTY_PRS);
   const refreshIssuePrs = useBoardStore((s) => s.refreshIssuePrs);
@@ -284,6 +286,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         site={site}
         light={live?.light ?? "stopped"}
         askLabel={shownAsk(live)?.label}
+        quiet={quiet}
         running={running}
         exited={exited}
         cli={cli}
