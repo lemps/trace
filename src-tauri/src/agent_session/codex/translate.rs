@@ -9,7 +9,8 @@
 //! - `item/*` notifications → message, reasoning, tool and diff rows (`items`).
 //! - Server requests (approvals, user input) → approval and question rows
 //!   (`prompts`), answered with the request's JSON-RPC response.
-//! - `turn/*`, `thread/tokenUsage/updated` → the turn row (`turn`);
+//! - `turn/*`, `thread/tokenUsage/updated` → the turn row (`turn`) and the
+//!   context gauge (`session`);
 //!   `account/rateLimits/updated`, `warning`, `error` → `SessionInfo` and
 //!   status rows (`session`).
 
@@ -189,7 +190,7 @@ impl Translator {
             "turn/started" => self.turn_started(&p["turn"], out),
             "turn/completed" => self.turn_completed(&p["turn"], out),
             "turn/plan/updated" => self.plan(p, out),
-            "thread/tokenUsage/updated" => self.token_usage(&p["tokenUsage"]),
+            "thread/tokenUsage/updated" => self.token_usage(&p["tokenUsage"], out),
             "account/rateLimits/updated" => self.rate_limits(&p["rateLimits"], out),
             "serverRequest/resolved" => self.resolved(&p["requestId"], out),
             "error" => self.error(p, out),

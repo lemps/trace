@@ -148,6 +148,7 @@ impl Translator {
             cost_usd: cost,
         };
         self.end_turn(state, m["duration_ms"].as_u64(), Some(usage), out);
+        self.context_from_result(m, out);
     }
 
     /// Close the open turn, settling what it left open.
