@@ -89,8 +89,9 @@
   letter-spacing: -0.02em;
   color: var(--fg-0);
 }
-.page-head .desc {
-  font-size: 12.5px;
+/* A page's one-sentence subtitle, whichever head it sits in. */
+:is(.page-head, .ib-head, .fl-head, .board-header) .desc {
+  font-size: var(--text-ui);
   color: var(--fg-3);
   margin-top: 2px;
 }

@@ -66,9 +66,8 @@ export function FleetView({ onOpen }: FleetViewProps) {
       <header className="fl-head">
         <div>
           <h1>Fleet</h1>
-          <div className="fl-desc">
-            Every running agent, in the order you opened them — rows stay put when an agent changes
-            state; drag to reorder.
+          <div className="desc">
+            Every running agent in the order you opened it; drag a row to reorder.
           </div>
         </div>
         <div className="fl-filters">

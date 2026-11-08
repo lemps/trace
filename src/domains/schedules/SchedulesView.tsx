@@ -31,7 +31,7 @@ export function SchedulesView() {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Scheduled</h1>
+          <h1>Scheduled prompts</h1>
           <div className="desc">
             Prompts that run themselves on a schedule, each in its own worktree. They fire while
             trace is open.

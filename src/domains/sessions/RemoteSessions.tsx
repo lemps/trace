@@ -2,7 +2,7 @@ import { I } from "@/components/Icon";
 import type { RemoteSessionsState } from "./hooks/useRemoteSessions";
 import { relTime } from "./time";
 
-// "On Vercel": trace sessions running in Vercel sandboxes that this trace doesn't
+// "Vercel Sandbox": trace sessions running in Vercel sandboxes that this trace doesn't
 // have yet, started here before or from another computer. Join adopts one as a
 // local session (same id) and opens it. The status is Vercel's word for the
 // sandbox, not agent state, so it's plain text rather than a StatusLight.
@@ -11,14 +11,14 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
   return (
     <section className="vs-group">
       <div className="sec-head">
-        <span className="sec-name">On Vercel</span>
+        <span className="sec-name">Vercel Sandbox</span>
         <span className="count">{joinable.length}</span>
         <button
           type="button"
           className="btn ghost icon vs-refresh"
           onClick={refresh}
           disabled={loading}
-          aria-label="Refresh sessions on Vercel"
+          aria-label="Refresh sessions in Vercel Sandbox"
           title="Refresh"
         >
           <span className={`vs-ic${loading ? " spinning" : ""}`}>
@@ -29,8 +29,8 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
       {joinable.length === 0 ? (
         <div className="vs-empty">
           {loading
-            ? "Looking for sessions on Vercel…"
-            : "Sessions started on Vercel from another computer show here, ready to join."}
+            ? "Looking for sessions in Vercel Sandbox…"
+            : "Sessions started in a Vercel Sandbox from another computer show here, ready to join."}
         </div>
       ) : (
         <div className="session-list">

@@ -127,7 +127,7 @@ export function SessionRow(props: SessionRowProps) {
         {session.host && (
           <span
             className="session-cli"
-            title={`Runs in the Vercel sandbox ${session.host.sandbox}`}
+            title={`Runs in the Vercel Sandbox ${session.host.sandbox}`}
           >
             Vercel
           </span>

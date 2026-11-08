@@ -107,7 +107,7 @@
 
 /* The status light itself lives in components/status-light.css (StatusLight). */
 
-/* ============ "On Vercel": sessions to join (RemoteSessions) ============ */
+/* ============ "Vercel Sandbox": sessions to join (RemoteSessions) ============ */
 .vs-group {
   margin-top: 18px;
 }

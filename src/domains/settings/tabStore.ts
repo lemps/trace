@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type SettingsTab =
+  | "repositories"
   | "agents"
   | "notifications"
   | "assistant"
@@ -13,7 +14,7 @@ export type SettingsTab =
 
 // A tab another part of the app asks Settings to show (the cheat sheet's
 // "Customize…" opens Shortcuts). Settings takes it and clears it; otherwise it keeps
-// its own tab, starting on Agents each time it opens.
+// its own tab, starting on Repositories each time it opens.
 interface SettingsTabRequest {
   requested: SettingsTab | null;
   request: (tab: SettingsTab) => void;
