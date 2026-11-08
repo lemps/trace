@@ -212,3 +212,48 @@
   font-size: var(--text-ui);
   color: var(--fg-2);
 }
+
+/* Vercel's readiness checklist: a tick or cross, what it is, and how to fix a cross. */
+.ig-ready {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ig-ready-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--text-ui);
+}
+.ig-ready-ic {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.ig-ready-row.ok .ig-ready-ic {
+  color: var(--c-done);
+}
+.ig-ready-row.missing .ig-ready-ic {
+  color: var(--c-danger);
+}
+.ig-ready-row.checking .ig-ready-ic {
+  color: var(--fg-4);
+}
+.ig-ready-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ig-ready-label {
+  color: var(--fg-1);
+}
+.ig-ready-fix {
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
