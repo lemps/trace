@@ -7,6 +7,7 @@ import { useAgentLight } from "@/domains/live/store";
 import type { AgentCli } from "@/ipc/agent";
 import { workspaceInfo } from "@/ipc/workspace";
 import { type Block, formatDuration, toBlocks } from "./blocks";
+import { PromptBubble } from "./PromptBubble";
 import { ToolRun } from "./ToolRun";
 import { useTranscriptFeed } from "./useTranscriptFeed";
 
@@ -154,20 +155,14 @@ function BlockView({ block, workspaceId, root, isCurrent }: BlockViewProps) {
   switch (block.type) {
     case "prompt":
       return (
-        <div className="tx-prompt">
-          <div className="tx-bubble">
-            <ChatMarkdown text={block.item.text} />
-          </div>
-        </div>
+        <PromptBubble>
+          <ChatMarkdown text={block.item.text} />
+        </PromptBubble>
       );
     case "reply":
       return <Reply text={block.item.text} />;
     case "command":
-      return (
-        <div className="tx-prompt">
-          <div className="tx-bubble tx-command">{block.item.text}</div>
-        </div>
-      );
+      return <PromptBubble command>{block.item.text}</PromptBubble>;
     case "notice":
       return <div className="tx-notice">{block.item.text}</div>;
     case "turnEnd":
