@@ -60,9 +60,11 @@ export function NewSessionModal({
   const [provider, setProvider] = useState<AgentProvider>(defaultProvider);
   const [transport, setTransport] = useState<Transport>(() => defaultTransport(defaultCli));
   const canChat = useHasChat(cli);
-  // A sandbox's agent reaches trace as a terminal only.
-  // A Vercel sandbox runs Claude as a chat too (`execution::sandbox::chat`).
-  const shownAs: Transport = canChat ? transport : "terminal";
+  // A Vercel sandbox runs Claude as a chat too (`execution::sandbox::chat`), but
+  // headless: with no Claude login saved for sandboxes, only a terminal has
+  // somewhere to type /login, so that's what it gets.
+  const needsLogin = host === "vercel" && !vercel?.claude;
+  const shownAs: Transport = canChat && !needsLogin ? transport : "terminal";
   const [repos, setRepos] = useState<string[]>([]);
   const [place, setPlace] = useState(SCRATCH);
   const [folder, setFolder] = useState<string | null>(null);
@@ -206,13 +208,19 @@ export function NewSessionModal({
         <select
           className="field-input"
           value={shownAs}
-          disabled={!canChat}
+          disabled={!canChat || needsLogin}
           onChange={(e) => setTransport(e.target.value as Transport)}
         >
           <option value="chat">Chat</option>
           <option value="terminal">Terminal</option>
         </select>
       </label>
+      {needsLogin && (
+        <div className="field-note">
+          No Claude login is saved for sandboxes, so it runs in a terminal where you can log in with
+          /login. To use chat, save one in Integrations → Vercel.
+        </div>
+      )}
       {!canChat && !host && (
         <div className="field-note">
           {cli === "codex" ? "Codex" : cli} has no chat view yet, so it runs in a terminal.

@@ -1,0 +1,14 @@
+/* InlineConfirm: the message plus Cancel / Confirm that replaces a destructive
+   action's button until it's confirmed (trace-ui §5). Sits in whatever row held
+   the trigger, so it only lays itself out. */
+.inline-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.inline-confirm-msg {
+  min-width: 0;
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
