@@ -19,6 +19,7 @@ pub mod orchestrator;
 pub mod plans;
 pub mod pr;
 pub mod pr_watch;
+pub mod preflight;
 pub mod providers;
 pub mod repo_guard;
 pub mod repo_setup;
