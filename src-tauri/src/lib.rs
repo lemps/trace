@@ -10,6 +10,7 @@ pub mod browser;
 pub mod claude;
 pub mod cleanup;
 pub mod commands;
+pub mod conductor_import;
 pub mod diff_parse;
 pub mod diff_summary;
 pub mod execution;
@@ -91,6 +92,9 @@ pub fn run() {
             commands::issues::transition_issue,
             commands::issues::comment_on_issue,
             commands::issues::list_issue_comments,
+            commands::conductor_import::conductor_import_available,
+            commands::conductor_import::conductor_import_preview,
+            commands::conductor_import::conductor_import_apply,
             commands::repos::list_repos,
             commands::repos::add_repo,
             commands::repo_guard::check_repo_path,

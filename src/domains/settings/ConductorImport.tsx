@@ -1,0 +1,169 @@
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/app/toast";
+import { I } from "@/components/Icon";
+import { Modal } from "@/components/Modal";
+import {
+  type ConductorPreview,
+  type ConductorReport,
+  conductorImportApply,
+  conductorImportAvailable,
+  conductorImportPreview,
+} from "@/ipc/conductorImport";
+import { ConductorPreviewList } from "./ConductorPreviewList";
+import { ConductorSummary } from "./ConductorSummary";
+import { applyDefaults, currentDefaults } from "./conductorDefaults";
+import { initialTicks, selectedCount, type Ticks, toSelection } from "./conductorSelection";
+
+// Settings → Repositories → Import from Conductor. Shown only when Conductor's
+// database is on this computer. Four steps: quit Conductor, preview with
+// checkboxes, import, then a summary of what was skipped and why.
+
+type Step =
+  | { kind: "quit" }
+  | { kind: "loading" }
+  | { kind: "preview"; preview: ConductorPreview; ticks: Ticks }
+  | { kind: "importing" }
+  | { kind: "done"; report: ConductorReport };
+
+interface ConductorImportProps {
+  /** Repos or sessions may have been added: reload what Settings shows. */
+  onImported: () => void;
+}
+
+export function ConductorImport({ onImported }: ConductorImportProps) {
+  const [available, setAvailable] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    conductorImportAvailable()
+      .then(setAvailable)
+      .catch(() => setAvailable(false));
+  }, []);
+
+  if (!available) return null;
+  return (
+    <>
+      <button type="button" className="btn" onClick={() => setOpen(true)}>
+        <I.Upload size={13} /> Import from Conductor
+      </button>
+      {open && <ImportDialog onClose={() => setOpen(false)} onImported={onImported} />}
+    </>
+  );
+}
+
+function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const [step, setStep] = useState<Step>({ kind: "quit" });
+  const busy = step.kind === "loading" || step.kind === "importing";
+  const close = useCallback(() => {
+    if (!busy) onClose();
+  }, [busy, onClose]);
+
+  const loadPreview = async () => {
+    setStep({ kind: "loading" });
+    try {
+      const preview = await conductorImportPreview();
+      if (!preview) {
+        toast.error("Conductor's data isn't on this computer any more.");
+        onClose();
+        return;
+      }
+      setStep({ kind: "preview", preview, ticks: initialTicks(preview, currentDefaults()) });
+    } catch (err) {
+      toast.error(`Couldn't read Conductor's data: ${String(err)}`);
+      setStep({ kind: "quit" });
+    }
+  };
+
+  const runImport = async (preview: ConductorPreview, ticks: Ticks) => {
+    setStep({ kind: "importing" });
+    try {
+      const report = await conductorImportApply(toSelection(preview, ticks));
+      report.imported.push(...applyDefaults(preview.defaults, ticks.defaults));
+      setStep({ kind: "done", report });
+      onImported();
+    } catch (err) {
+      toast.error(`The import stopped: ${String(err)}`);
+      setStep({ kind: "preview", preview, ticks });
+    }
+  };
+
+  return (
+    <Modal title="Import from Conductor" onClose={close} className="ci-modal" footer={footer()}>
+      {body()}
+    </Modal>
+  );
+
+  function body() {
+    switch (step.kind) {
+      case "quit":
+        return (
+          <div className="ci-intro">
+            <p>
+              Quit Conductor before you go on. Importing a workspace moves its folder into trace,
+              which would break it in a Conductor that's still running.
+            </p>
+            <p className="ci-muted">
+              Nothing is imported yet: the next step shows what's there. Conductor's data is only
+              read, never changed.
+            </p>
+          </div>
+        );
+      case "loading":
+        return <div className="ci-wait">Reading Conductor's data…</div>;
+      case "importing":
+        return <div className="ci-wait">Importing…</div>;
+      case "preview":
+        return (
+          <ConductorPreviewList
+            preview={step.preview}
+            ticks={step.ticks}
+            onChange={(ticks) => setStep({ ...step, ticks })}
+          />
+        );
+      case "done":
+        return <ConductorSummary report={step.report} />;
+    }
+  }
+
+  function footer() {
+    switch (step.kind) {
+      case "quit":
+        return (
+          <>
+            <button type="button" className="btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="btn primary" onClick={() => void loadPreview()}>
+              Conductor is closed
+            </button>
+          </>
+        );
+      case "preview": {
+        const count = selectedCount(step.preview, step.ticks);
+        return (
+          <>
+            <button type="button" className="btn" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={count === 0}
+              onClick={() => void runImport(step.preview, step.ticks)}
+            >
+              Import {count} {count === 1 ? "item" : "items"}
+            </button>
+          </>
+        );
+      }
+      case "done":
+        return (
+          <button type="button" className="btn primary" onClick={onClose}>
+            Done
+          </button>
+        );
+      default:
+        return null;
+    }
+  }
+}

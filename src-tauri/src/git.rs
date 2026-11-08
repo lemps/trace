@@ -122,6 +122,32 @@ pub fn create_worktree(
     Ok(())
 }
 
+/// Move an existing worktree of `repo_path` from `from` to `to` (`git worktree
+/// move`), keeping its branch, commits and uncommitted changes. How trace adopts
+/// a worktree another tool made (`conductor_import::adopt`) into `.worktrees/`.
+pub fn move_worktree(repo_path: &str, from: &str, to: &str) -> Result<(), String> {
+    if Path::new(to).exists() {
+        return Err(format!("{to} already exists."));
+    }
+    exclude_worktrees_dir(repo_path);
+    if let Some(parent) = Path::new(to).parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("Couldn't make {}: {e}", parent.display()))?;
+    }
+    let out = crate::claude::discovery::command("git")
+        .args(["worktree", "move", from, to])
+        .current_dir(repo_path)
+        .output()
+        .map_err(|e| format!("Failed to move the worktree: {e}"))?;
+    if !out.status.success() {
+        return Err(format!(
+            "Git couldn't move the worktree: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(())
+}
+
 /// Keep `.worktrees/` out of the user's `git status`, since trace creates it inside
 /// their repo. Uses `info/exclude` so their tracked `.gitignore` stays untouched.
 /// Best-effort: failing here must not stop the worktree being created.
