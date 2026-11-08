@@ -1,7 +1,16 @@
 // Run: `npm test` (node's own runner; Node strips the types).
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { addAgentBlocker, hostHint, SANDBOX_NO_AGENTS } from "./sessionHost.ts";
+import {
+  addAgentBlocker,
+  hostHint,
+  hostPlace,
+  SANDBOX_NO_AGENTS,
+  sandboxFacts,
+  sandboxRepos,
+  sandboxStatusLabel,
+  timeLeft,
+} from "./sessionHost.ts";
 import type { ScratchSession } from "./types.ts";
 
 const session = (over: Partial<ScratchSession> = {}): ScratchSession => ({
@@ -40,5 +49,80 @@ describe("hostHint", () => {
   });
   it("never claims the repo root without a remote", () => {
     assert.doesNotMatch(hostHint(vercel(null)), /repo root/);
+  });
+});
+
+describe("hostPlace", () => {
+  it("names the sandbox and the repo it cloned", () => {
+    assert.equal(hostPlace(vercel("noble1911/trace")), "Vercel Sandbox · noble1911/trace");
+  });
+  it("falls back to the sandbox's name", () => {
+    assert.equal(hostPlace(vercel(null)), "Vercel Sandbox · trace-s1");
+  });
+});
+
+describe("sandboxStatusLabel", () => {
+  it("says it's the sandbox's state, not the agent's", () => {
+    assert.equal(sandboxStatusLabel("running"), "Sandbox running");
+    assert.equal(sandboxStatusLabel("STOPPED"), "Sandbox stopped");
+    assert.equal(sandboxStatusLabel(""), "Sandbox");
+  });
+});
+
+describe("sandboxRepos", () => {
+  const gh = { host: "github.com", owner: "o", name: "n" };
+  it("keeps only repos with a GitHub origin, in order", () => {
+    const repos = [
+      { path: "/a", remote: gh },
+      { path: "/b", remote: null },
+      { path: "/c", remote: { ...gh, host: "gitlab.com" } },
+      { path: "/d", remote: { ...gh, host: "GitHub.com" } },
+    ];
+    assert.deepEqual(sandboxRepos(repos), { usable: ["/a", "/d"], skipped: ["/b", "/c"] });
+  });
+});
+
+describe("timeLeft", () => {
+  it("reads in minutes, then hours", () => {
+    assert.equal(timeLeft(30_000), "under a minute");
+    assert.equal(timeLeft(32 * 60_000 + 5_000), "32 min");
+    assert.equal(timeLeft(65 * 60_000), "1 h 5 min");
+    assert.equal(timeLeft(120 * 60_000), "2 h");
+  });
+});
+
+describe("sandboxFacts", () => {
+  const now = 1_000_000_000;
+  const base = { status: "running", saved: false, stopsAt: null, savedUntil: null };
+  it("tells attached from unattended, with the time left", () => {
+    const stopsAt = now + 32 * 60_000;
+    assert.deepEqual(sandboxFacts({ ...base, stopsAt }, true, now), {
+      state: "Running",
+      detail: "Vercel stops it in 32 min.",
+    });
+    const away = sandboxFacts({ ...base, stopsAt }, false, now);
+    assert.equal(away.state, "Running unattended");
+    assert.match(away.detail, /32 min/);
+  });
+  it("says what keeps it alive when Vercel gives no time", () => {
+    assert.match(sandboxFacts(base, false, now).detail, /time limit/);
+  });
+  it("calls a stopped sandbox with a snapshot saved, and says for how long", () => {
+    const saved = { ...base, status: "stopped", saved: true, savedUntil: now + 6.5 * 86_400_000 };
+    const facts = sandboxFacts(saved, false, now);
+    assert.equal(facts.state, "Saved");
+    assert.match(facts.detail, /6 more days/);
+  });
+  it("calls it expired with no snapshot, or one past its expiry", () => {
+    const stopped = { ...base, status: "stopped" };
+    assert.equal(sandboxFacts(stopped, false, now).state, "Expired");
+    const old = { ...stopped, saved: true, savedUntil: now - 1 };
+    assert.equal(sandboxFacts(old, false, now).state, "Expired");
+  });
+  it("names the passing states and a missing sandbox", () => {
+    assert.equal(sandboxFacts({ ...base, status: "snapshotting" }, false, now).state, "Saving");
+    assert.equal(sandboxFacts({ ...base, status: "pending" }, false, now).state, "Starting");
+    assert.equal(sandboxFacts({ ...base, status: "" }, false, now).state, "No sandbox");
+    assert.equal(sandboxFacts({ ...base, status: "failed" }, false, now).state, "Sandbox failed");
   });
 });

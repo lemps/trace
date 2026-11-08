@@ -9,8 +9,10 @@ import { companionsOf } from "./agentRoster";
 import { CreatorChip } from "./CreatorChip";
 import { creatorLabel, creatorOf } from "./createdBy";
 import { sessionsDrag, setRowDragging } from "./dragState";
+import { HostChip } from "./HostChip";
 import type { SessionDiffStat } from "./hooks/useSessionDiffs";
 import type { RowOrdering } from "./SessionList";
+import { hostPlace } from "./sessionHost";
 import { TitleEditor } from "./TitleEditor";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
@@ -52,7 +54,10 @@ export function SessionRow(props: SessionRowProps) {
   const [dragging, setDragging] = useState(false);
   const companions = companionsOf(session);
   const branch = meaningfulBranch(session, overview?.branch ?? null);
-  const where = [overview ? basename(overview.repo) : null, branch].filter(Boolean).join(" · ");
+  // A sandbox session has no checkout here to read: say which sandbox and repo.
+  const where = session.host
+    ? hostPlace(session.host)
+    : [overview ? basename(overview.repo) : null, branch].filter(Boolean).join(" · ");
   const pr = overview?.pr;
   const hasDiff = diff != null && (diff.add > 0 || diff.del > 0);
 
@@ -124,17 +129,13 @@ export function SessionRow(props: SessionRowProps) {
             +{companions.length}
           </span>
         )}
-        {session.host && (
-          <span
-            className="session-cli"
-            title={`Runs in the Vercel Sandbox ${session.host.sandbox}`}
-          >
-            Vercel
-          </span>
-        )}
+        {session.host && <HostChip host={session.host} />}
         {depth === 0 && <CreatorChip createdBy={createdBy} />}
       </div>
-      <span className="sr-where" title={overview?.branch ?? undefined}>
+      <span
+        className="sr-where"
+        title={session.host ? session.host.sandbox : (overview?.branch ?? undefined)}
+      >
         {where}
       </span>
       <span className="sr-pr">
