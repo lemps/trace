@@ -74,7 +74,7 @@ const PHRASES: Record<ToolCategory, [string, string]> = {
   search: ["searched", "time"],
   web: ["fetched", "page"],
   agent: ["started", "agent"],
-  plan: ["updated", "plan"],
+  plan: ["updated", "task list"],
   other: ["used", "tool"],
 };
 
@@ -106,7 +106,7 @@ export function workSentence(items: readonly ChatItem[]): string {
   const parts = [...counts].map(([c, n]) => {
     const [verb, noun] = PHRASES[c];
     if (c === "search") return n === 1 ? "searched" : `searched ${n} times`;
-    if (c === "plan") return "updated the plan";
+    if (c === "plan") return "updated the tasks";
     return `${verb} ${n} ${noun}${n === 1 ? "" : "s"}`;
   });
   if (parts.length === 0) {
@@ -119,4 +119,9 @@ export function workSentence(items: readonly ChatItem[]): string {
       ? parts[0]
       : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
   return joined.charAt(0).toUpperCase() + joined.slice(1);
+}
+
+/** How many of a folded turn's tool calls failed, for its "N failed" mark. */
+export function failedCount(items: readonly ChatItem[]): number {
+  return items.filter((i) => i.type === "tool" && i.call.state === "failed").length;
 }
