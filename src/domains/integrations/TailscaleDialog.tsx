@@ -11,8 +11,8 @@ const DOWNLOAD_URL = "https://tailscale.com/download";
 const NEXT_STEP: Record<Exclude<TailnetState, "running">, string> = {
   notInstalled:
     "Tailscale isn't on this computer. Install it, sign in, then do the same on each computer you want to reach.",
-  stopped: "Tailscale is installed but not connected. Turn it on from its menu bar icon.",
-  needsLogin: "Tailscale needs you to sign in. Open it from the menu bar and log in.",
+  stopped: "Tailscale is installed but not connected. Turn it on from the Tailscale app.",
+  needsLogin: "Tailscale needs you to sign in. Open the Tailscale app and log in.",
 };
 
 function DeviceRow({ device }: { device: TailnetDevice }) {
@@ -43,7 +43,7 @@ export function TailscaleDialog({ onClose }: { onClose: () => void }) {
         <div className="ig-dialog-head">
           <img className="ig-logo" src={TAILSCALE.logo} alt="" />
           <div className="ig-dialog-text">
-            <div className="ig-desc">{TAILSCALE.description}</div>
+            <div className="ig-desc">{TAILSCALE.description} A preview: it shows status only.</div>
             {running && (
               <div className="ig-account">
                 {status.tailnet ? `Tailnet ${status.tailnet}` : "Connected"}
@@ -70,10 +70,6 @@ export function TailscaleDialog({ onClose }: { onClose: () => void }) {
                 same account, and it shows up here.
               </div>
             )}
-            <div className="ig-note">
-              Running sessions on another computer's trace is coming next. Each computer needs trace
-              open.
-            </div>
           </div>
         )}
         <div className="ig-form-foot">

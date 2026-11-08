@@ -37,7 +37,8 @@ interface SessionPanelsArgs {
   pr: Coming;
   prUrls: string[];
   onAddAgent: (cli: AgentCli, provider?: AgentProvider) => void;
-  addDisabled: boolean;
+  /** Why "+ agent" is off (a sandbox session, the companion cap); null = it works. */
+  addBlocked: string | null;
 }
 
 /**
@@ -64,7 +65,7 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       toolbar: <AgentViewSwitch workspaceId={entry.workspaceId} cli={entry.cli} />,
       after:
         i === a.roster.length - 1 ? (
-          <AddAgentMenu onAdd={a.onAddAgent} disabled={a.addDisabled} />
+          <AddAgentMenu onAdd={a.onAddAgent} blocked={a.addBlocked} />
         ) : undefined,
       render: () => <SessionAgentTab key={entry.workspaceId} session={a.session} entry={entry} />,
     })

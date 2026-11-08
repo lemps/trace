@@ -21,12 +21,12 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   text-align: center;
 }
 .orch-chat-intro .t {
   color: var(--fg-1);
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   font-weight: 500;
 }
 .orch-quick {
@@ -37,7 +37,7 @@
 }
 .orch-quick button {
   padding: 7px 10px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-1);
   background: var(--bg-2);
   border: 1px solid var(--border-faint);
@@ -57,14 +57,14 @@
   gap: 4px;
 }
 .msg .who {
-  font-size: 10px;
+  font-size: calc(var(--text-label) - 0.5px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--fg-4);
+  color: var(--fg-3);
   font-weight: 600;
 }
 .msg .body {
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   line-height: 1.55;
   color: var(--fg-1);
   word-break: break-word;
@@ -79,20 +79,20 @@
    and smaller, tuned for the Files preview. */
 .msg .md {
   color: var(--fg-1);
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
 }
 .orch-tool,
 .orch-typing {
   display: inline-block;
   margin-left: 6px;
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   font-style: italic;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .orch-chat-error {
   margin: 0 14px 8px;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--c-review);
   background: var(--c-review-bg);
   border: 1px solid var(--border-faint);
@@ -111,7 +111,7 @@
   max-height: 120px;
   min-height: 36px;
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   font-family: inherit;
   color: var(--fg-0);
   background: var(--bg-2);
@@ -147,7 +147,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10.5px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
@@ -155,7 +155,7 @@
   margin-bottom: 6px;
 }
 .orch-confirm-body {
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   line-height: 1.45;
   color: var(--fg-0);
   word-break: break-word;
@@ -168,7 +168,7 @@
 }
 .orch-confirm-actions button {
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   border-radius: var(--radius-sm);
 }
 .oc-cancel {
@@ -201,7 +201,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   line-height: 1.4;
   color: var(--fg-0);
   word-break: break-word;
@@ -214,14 +214,14 @@
 }
 .orch-action-foot button {
   padding: 4px 11px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   border-radius: var(--radius-sm);
 }
 .orch-action-result {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-2);
 }
 .orch-action-result.muted {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }

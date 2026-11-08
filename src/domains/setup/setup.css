@@ -1,0 +1,211 @@
+/* ============ First run + setup checks (domains/setup) ============ */
+.modal.su-modal {
+  width: 600px;
+  max-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+}
+.su-modal .modal-body {
+  overflow-y: auto;
+  min-height: 0;
+}
+/* "Skip setup" sits apart, on the left; Back and Next/Finish stay right. */
+.su-modal .su-skip {
+  margin-right: auto;
+}
+
+.su-label {
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.su-intro,
+.su-note {
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+  line-height: 1.5;
+}
+.su-note {
+  color: var(--fg-3);
+  font-size: var(--text-meta);
+}
+
+/* Step indicator: numbered, each one a way to jump straight to it. */
+.su-steps {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.su-steps button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h-sm);
+  padding: 0 10px 0 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+.su-steps button:hover {
+  color: var(--fg-1);
+  background: var(--bg-3);
+}
+.su-steps .on button {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+.su-step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+.su-steps .on .su-step-n {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+}
+.su-steps .done .su-step-n {
+  background: var(--bg-3);
+}
+
+/* Preflight list. Pass/fail isn't agent state, so no green: a pass is quiet
+   grey, a required failure is danger red, a missing optional tool stays grey. */
+.su-checks {
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  padding: 10px 12px;
+}
+.su-checks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--control-h);
+}
+.su-pending {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+  padding-top: 4px;
+}
+.su-check-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.su-check {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.su-check-ic {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--fg-3);
+}
+.su-check.bad .su-check-ic {
+  color: var(--c-danger);
+}
+.su-check-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.su-check-title {
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.su-check.ok .su-check-title {
+  color: var(--fg-2);
+}
+.su-optional {
+  font-size: var(--text-label);
+  color: var(--fg-3);
+  border: 1px solid var(--border-faint);
+  border-radius: 999px;
+  padding: 0 6px;
+}
+.su-check-detail {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+  overflow-wrap: anywhere;
+}
+.su-check-detail.mono {
+  font-family: var(--font-mono);
+}
+.su-fix {
+  margin-top: 2px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  font-size: var(--text-meta);
+  color: var(--fg-1);
+  line-height: 1.5;
+  user-select: text;
+}
+
+/* Settings rows inside the modal: tighter than on the Settings page. */
+.su-rows .setting-row {
+  padding: 12px 0;
+}
+
+/* Connect step: one row per service, each opening Integrations. */
+.su-services {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.su-service {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  text-align: left;
+  color: var(--fg-3);
+}
+.su-service:hover {
+  background: var(--bg-3);
+  border-color: var(--border);
+  color: var(--fg-1);
+}
+.su-logo {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+}
+.su-service-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.su-service-name {
+  font-size: var(--text-ui);
+  color: var(--fg-0);
+}
+.su-service-desc {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}

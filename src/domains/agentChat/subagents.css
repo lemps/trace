@@ -249,9 +249,6 @@
 .ac-working-subs {
   color: var(--fg-3);
 }
-.ac-head-stop {
-  flex-shrink: 0;
-}
 /* "Open beside" on a subagent card: square, beside Stop. */
 .btn.icon.ac-agent-beside {
   width: var(--control-h-sm);

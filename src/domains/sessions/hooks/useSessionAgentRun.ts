@@ -3,6 +3,7 @@ import { agentArgs } from "@/domains/agent/defaults";
 import type { Transport } from "@/ipc/agent";
 import { startSession, startSessionAgent } from "@/ipc/session";
 import type { RosterEntry } from "../agentRoster";
+import { hostHint } from "../sessionHost";
 import type { ScratchSession } from "../types";
 import { type AgentRun, useAgentRun } from "./useAgentRun";
 
@@ -25,6 +26,8 @@ export function useSessionAgentRun(session: ScratchSession, entry: RosterEntry):
 
 /** What the start overlay says about where this agent will work. */
 export function startHint(session: ScratchSession, entry: RosterEntry): string {
+  // Checked first: a sandbox session has no local folder or worktree at all.
+  if (session.host) return hostHint(session.host);
   if (session.folder)
     return "The agent runs directly in this session's folder, with no git worktree.";
   if (entry.companion) {

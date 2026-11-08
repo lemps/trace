@@ -1,4 +1,5 @@
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import { agentMenuLabel } from "./providerLabel";
 
 /** One launchable agent: a CLI and (for Claude) the model provider behind it. */
 export interface AgentOption {
@@ -9,17 +10,24 @@ export interface AgentOption {
 
 /**
  * Every agent trace can launch, in menu order. Shared by the ticket header's
- * split Start button and a session's "+ agent" menu so the two never drift.
+ * split Start button and a session's "+ agent" menu so the two never drift;
+ * the words come from providerLabel's one table.
  */
-export const AGENT_OPTIONS: AgentOption[] = [
-  { cli: "claude", provider: "anthropic", label: "Claude" },
-  { cli: "claude", provider: "moonshot", label: "Claude · Kimi (Moonshot)" },
-  { cli: "claude", provider: "wafer", label: "Claude · Kimi (Wafer)" },
-  { cli: "claude", provider: "wafer-fast", label: "Claude · Kimi Fast (Wafer)" },
-  { cli: "claude", provider: "deepseek", label: "Claude · DeepSeek Flash" },
-  { cli: "claude", provider: "deepseek-pro", label: "Claude · DeepSeek Pro" },
-  { cli: "codex", provider: "anthropic", label: "Codex" },
+const LAUNCHABLE: [AgentCli, AgentProvider][] = [
+  ["claude", "anthropic"],
+  ["claude", "moonshot"],
+  ["claude", "wafer"],
+  ["claude", "wafer-fast"],
+  ["claude", "deepseek"],
+  ["claude", "deepseek-pro"],
+  ["codex", "anthropic"],
 ];
+
+export const AGENT_OPTIONS: AgentOption[] = LAUNCHABLE.map(([cli, provider]) => ({
+  cli,
+  provider,
+  label: agentMenuLabel(cli, provider),
+}));
 
 /** Whether an option is the current cli+provider pick (codex has no provider). */
 export function isChosen(o: AgentOption, cli: AgentCli, provider: AgentProvider): boolean {

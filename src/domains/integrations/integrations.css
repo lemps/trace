@@ -55,6 +55,22 @@
   font-weight: 600;
   color: var(--fg-0);
 }
+/* "Preview": early, partial support. Not a state, so no state colour. */
+.ig-preview {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-xs);
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  vertical-align: middle;
+}
 .ig-desc {
   font-size: var(--text-ui);
   line-height: 1.5;

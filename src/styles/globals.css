@@ -7,13 +7,13 @@
 /* Modal content + forms (.field) — shared by login, settings, modals */
 .modal h2 {
   margin: 0 0 4px;
-  font-size: 16px;
+  font-size: calc(var(--text-detail-title) + 1px);
   font-weight: 600;
   color: var(--fg-0);
 }
 .modal .desc {
   color: var(--fg-3);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   margin-bottom: 16px;
 }
 .field {
@@ -22,7 +22,7 @@
   gap: 6px;
 }
 .field label {
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
   letter-spacing: 0.04em;
 }
@@ -33,7 +33,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   color: var(--fg-0);
 }
 .field textarea {
@@ -46,14 +46,14 @@
   border-color: var(--border-strong);
 }
 .field .hint {
-  font-size: 11.5px;
-  color: var(--fg-4);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
 }
 
 /* Tooltip-ish */
 .kbd {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: calc(var(--text-label) - 0.5px);
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -89,8 +89,9 @@
   letter-spacing: -0.02em;
   color: var(--fg-0);
 }
-.page-head .desc {
-  font-size: 12.5px;
+/* A page's one-sentence subtitle, whichever head it sits in. */
+:is(.page-head, .ib-head, .fl-head, .board-header) .desc {
+  font-size: var(--text-ui);
   color: var(--fg-3);
   margin-top: 2px;
 }
@@ -113,12 +114,12 @@
   gap: 2px;
   padding: 0 24px;
   border-bottom: 1px solid var(--border-faint);
-  height: 38px;
+  height: calc(var(--control-h) + 8px);
 }
 .tab-bar button {
   height: 100%;
   padding: 0 12px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-3);
   border-bottom: 1px solid transparent;
   margin-bottom: -1px;
@@ -132,7 +133,7 @@
 }
 .tab-bar .count {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
   padding: 1px 5px;
   border: 1px solid var(--border-faint);
@@ -167,7 +168,7 @@
   border-bottom: 1px solid var(--border-faint);
 }
 .modal-title {
-  font-size: 14px;
+  font-size: calc(var(--text-body) + 0.5px);
   font-weight: 600;
   color: var(--fg-0);
 }
@@ -192,30 +193,31 @@
   border-top: 1px solid var(--border-faint);
 }
 .field-label {
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-2);
 }
+/* Form inputs sit a step taller than buttons (34px at the default density). */
 .field-input {
-  height: 34px;
+  height: calc(var(--control-h) + 4px);
   padding: 0 10px;
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--fg-0);
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
 }
 .field-input:focus {
   border-color: var(--c-accent);
 }
 .field-note {
-  font-size: 11.5px;
-  color: var(--fg-4);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
   line-height: 1.5;
 }
 
 .link-btn {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -246,10 +248,10 @@
 }
 .empty-state .title {
   color: var(--fg-1);
-  font-size: 14px;
+  font-size: calc(var(--text-body) + 0.5px);
   font-weight: 500;
 }
 .empty-state .hint {
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   line-height: 1.5;
 }

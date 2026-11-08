@@ -21,7 +21,7 @@ pub mod checkout;
 mod checks;
 pub mod clone;
 pub mod device;
-mod gh;
+pub(crate) mod gh;
 pub mod links;
 pub mod pick;
 pub mod repo_list;

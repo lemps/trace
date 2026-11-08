@@ -5,5 +5,5 @@ import vercelLogo from "./logos/vercel.svg";
 export const VERCEL = {
   name: "Vercel",
   logo: vercelLogo,
-  description: "Run sessions in Vercel Sandboxes, and join ones started from another computer.",
+  description: "Run sessions in a Vercel Sandbox, and join ones started from another computer.",
 };

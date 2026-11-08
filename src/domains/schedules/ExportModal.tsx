@@ -56,7 +56,7 @@ export function ExportModal({ prompts, onClose }: ExportModalProps) {
       className="share-modal"
       footer={
         <>
-          <button type="button" className="btn ghost" onClick={onClose}>
+          <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
           <button

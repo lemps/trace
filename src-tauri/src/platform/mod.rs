@@ -6,11 +6,14 @@
 //! everywhere.
 
 pub mod acl;
+pub mod install_hints;
 pub mod paths;
 pub mod ports;
 pub mod process;
 #[cfg(test)]
 pub mod test_links;
+#[cfg(test)]
+pub mod test_process;
 
 /// The operating system this build runs on. Every port is implemented for it.
 pub struct Os;

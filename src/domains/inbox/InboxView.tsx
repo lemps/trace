@@ -90,7 +90,9 @@ export function InboxView({ onOpen }: InboxViewProps) {
       <section className="ib-list" aria-label="Agents">
         <div className="ib-head">
           <h1>Inbox</h1>
-          <span className="ib-dim">across the board, sessions &amp; schedules</span>
+          <div className="desc">
+            Agents that need you, from the board, sessions and scheduled prompts.
+          </div>
         </div>
         <div className="ib-tabs" role="tablist">
           {TABS.map((t) => (

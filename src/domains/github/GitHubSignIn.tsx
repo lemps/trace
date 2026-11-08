@@ -97,7 +97,7 @@ export function GitHubSignIn({ onSignedIn, onCancel }: GitHubSignInProps) {
           disabled={!canSubmit}
           onClick={submit}
         >
-          <I.Bolt size={13} /> {signingIn ? "Checking…" : "Sign in with token"}
+          <I.Plug size={13} /> {signingIn ? "Checking…" : "Sign in with token"}
         </button>
       </div>
     </div>

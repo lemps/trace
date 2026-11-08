@@ -48,7 +48,7 @@ export function VercelDialog({ onClose }: { onClose: () => void }) {
                   Cancel
                 </button>
                 <button type="button" className="btn danger" onClick={confirmDisconnect}>
-                  Disconnect and delete token
+                  Disconnect Vercel and delete its token
                 </button>
               </>
             ) : (

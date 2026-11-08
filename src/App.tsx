@@ -36,6 +36,7 @@ import { SessionDetail } from "@/domains/sessions/SessionDetail";
 import { SessionsView } from "@/domains/sessions/SessionsView";
 import { useSessionsStore } from "@/domains/sessions/store";
 import { SettingsView } from "@/domains/settings/SettingsView";
+import { SetupFlow } from "@/domains/setup/SetupFlow";
 import { pinnedPages } from "@/domains/sidebar/items";
 import { useSidebarStore } from "@/domains/sidebar/store";
 import { setDockBadge } from "@/ipc/notify";
@@ -168,6 +169,7 @@ export function App() {
         </ErrorBoundary>
       )}
       <InterruptedAgents />
+      <SetupFlow onNav={handleNav} />
       <RepoConfirm />
       <CheatSheet onNav={handleNav} />
       <Toaster />
