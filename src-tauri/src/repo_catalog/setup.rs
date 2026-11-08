@@ -96,7 +96,8 @@ pub fn after_worktree_created(repo: &str, worktree: &str) {
     pending().push(worktree.clone());
     std::thread::spawn(move || {
         emit(&repo, &worktree, "running", None);
-        let env = crate::claude::env::build_effective_cli_env(&HashMap::new());
+        let mut env = crate::claude::env::build_effective_cli_env(&HashMap::new());
+        env.extend(conductor_env(&repo, &worktree, &setup));
         match run_steps(Path::new(&repo), Path::new(&worktree), &setup, &env) {
             Ok(()) => emit(&repo, &worktree, "done", None),
             Err(failure) => emit(&repo, &worktree, "failed", Some(failure)),
@@ -104,6 +105,27 @@ pub fn after_worktree_created(repo: &str, worktree: &str) {
         pending().retain(|w| w != &worktree);
         SETTLED.notify_all();
     });
+}
+
+/// The variables Conductor gave its setup scripts, so a setup imported from it
+/// (`conductor_import`) runs unchanged. Only set when a command mentions one.
+/// `CONDUCTOR_PORT` is a port free right now, as Conductor's per-workspace one was.
+fn conductor_env(repo: &str, worktree: &str, setup: &SetupConfig) -> HashMap<String, String> {
+    if !setup.commands.iter().any(|c| c.contains("CONDUCTOR_")) {
+        return HashMap::new();
+    }
+    let mut env = HashMap::from([
+        ("CONDUCTOR_ROOT_PATH".to_string(), repo.to_string()),
+        ("CONDUCTOR_WORKSPACE_PATH".to_string(), worktree.to_string()),
+        (
+            "CONDUCTOR_WORKSPACE_NAME".to_string(),
+            crate::platform::paths::basename(worktree),
+        ),
+    ]);
+    if let Ok(port) = std::net::TcpListener::bind("127.0.0.1:0").and_then(|l| l.local_addr()) {
+        env.insert("CONDUCTOR_PORT".to_string(), port.port().to_string());
+    }
+    env
 }
 
 fn emit(repo: &str, worktree: &str, state: &'static str, failure: Option<StepFailure>) {
@@ -279,6 +301,23 @@ mod tests {
             .unwrap_or_default();
         let lp = std::fs::read_to_string(wt.join("lp.txt")).unwrap_or_default();
         assert_eq!(lp.trim(), expected, "core.longpaths reached git");
+    }
+
+    #[test]
+    fn conductor_variables_only_for_setups_that_use_them() {
+        let mut setup = SetupConfig {
+            copy_files: vec![],
+            commands: vec!["pnpm i".into()],
+        };
+        assert!(conductor_env("/r", "/r/.worktrees/lima", &setup).is_empty());
+        setup
+            .commands
+            .push("ln -sf \"$CONDUCTOR_ROOT_PATH/.env\" .env".into());
+        let env = conductor_env("/r", "/r/.worktrees/lima", &setup);
+        assert_eq!(env["CONDUCTOR_ROOT_PATH"], "/r");
+        assert_eq!(env["CONDUCTOR_WORKSPACE_PATH"], "/r/.worktrees/lima");
+        assert_eq!(env["CONDUCTOR_WORKSPACE_NAME"], "lima");
+        assert!(env["CONDUCTOR_PORT"].parse::<u16>().is_ok());
     }
 
     #[test]

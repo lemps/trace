@@ -49,6 +49,13 @@ dirs = "5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# Settings → Repositories → Import from Conductor: reads a copy of its SQLite
+# database (bundled, so Windows and Linux build without a system libsqlite),
+# its `settings.toml` layers, and stages the copy in a private temp dir.
+rusqlite = { version = "0.32", features = ["bundled"] }
+toml = "0.9"
+tempfile = "3"
+
 [target.'cfg(unix)'.dependencies]
 # Process signals
 libc = "0.2"

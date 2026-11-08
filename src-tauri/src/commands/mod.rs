@@ -7,6 +7,7 @@ pub mod agent_chat;
 pub mod agent_tools;
 pub mod browser;
 pub mod cleanup;
+pub mod conductor_import;
 pub mod diff;
 pub mod editor;
 pub mod files;
