@@ -83,6 +83,8 @@
   color: var(--fg-3);
   white-space: nowrap;
 }
+/* Rename and Archive (IconButton xs): quiet until the row is hovered, holds focus or
+   has its menu open; always there without a hovering pointer. */
 .sr-actions {
   display: inline-flex;
   justify-content: flex-end;
@@ -91,16 +93,19 @@
   transition: opacity 0.12s ease;
 }
 .session-row:hover .sr-actions,
-.session-row:focus-within .sr-actions {
+.session-row:focus-within .sr-actions,
+.session-row.menu-open .sr-actions {
   opacity: 1;
 }
-.sr-actions button {
-  display: inline-flex;
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--fg-4);
+@media (hover: none) {
+  .sr-actions {
+    opacity: 1;
+  }
 }
-.sr-actions button:hover {
+.sr-actions .btn.icon {
+  color: var(--fg-3);
+}
+.sr-actions .btn.icon:hover:not(:disabled) {
   color: var(--fg-0);
   background: var(--bg-3);
 }

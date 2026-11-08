@@ -1,8 +1,10 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { DragEvent, MouseEvent } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
+import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { epicColor } from "@/domains/board/epicColor";
 import { useBoardStore } from "@/domains/board/store";
 import { useIssuesStore } from "@/domains/issues/store";
@@ -11,6 +13,7 @@ import { jiraBrowseUrl } from "@/domains/issues/url";
 import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { useNow } from "@/hooks/useNow";
+import { cardMenu } from "./cardMenu";
 import { useDensity } from "./density";
 
 interface CardProps {
@@ -28,6 +31,7 @@ function prStateClass(state: string): string {
 
 // The card outer is a `div role="button"` (rather than a real `<button>`) so we can
 // nest a real `<button>` for the PR pill without breaking HTML's no-nested-interactives rule.
+// Right-click (or the context-menu key) lists everything the card offers (`cardMenu`).
 export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
   const firstPr = prs && prs.length > 0 ? prs[0] : null;
   const live = useLiveStore((s) => s.info[issue.key]);
@@ -44,6 +48,8 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
     e.stopPropagation();
     kickoff(issue.key);
   };
+  const canStart = !live && issue.statusCategory !== "done";
+  const { menu, openAt, close } = useContextMenuAt<null>();
 
   const open = () => onOpen(issue.key);
   const onCardKey = (e: { key: string }) => {
@@ -63,101 +69,121 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
   };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: needs to host a nested <button> for the PR pill (HTML forbids nested interactives) — keyboard activation handled
-    <div
-      className={`card light-${light} density-${density}`}
-      draggable
-      role="button"
-      tabIndex={0}
-      onDragStart={(e) => onDragStart(e, issue.key)}
-      onClick={open}
-      onKeyDown={onCardKey}
-    >
-      <div className="row">
-        <span className={`priority ${issue.priority}`} />
-        <span className="ticket-id">{issue.key}</span>
-        <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-          {live ? (
-            <StatusLight
-              light={light}
-              variant="pill"
-              label={shownAsk(live)?.label}
-              age={ageLabel(live.since, now * 1000)}
-            />
-          ) : (
-            issue.statusCategory !== "done" && (
+    <>
+      {/* biome-ignore lint/a11y/useSemanticElements: needs to host a nested <button> for the PR pill (HTML forbids nested interactives) — keyboard activation handled */}
+      <div
+        className={`card light-${light} density-${density}`}
+        draggable
+        role="button"
+        tabIndex={0}
+        onDragStart={(e) => onDragStart(e, issue.key)}
+        onClick={open}
+        onKeyDown={onCardKey}
+        onContextMenu={openAt(null)}
+      >
+        <div className="row">
+          <span className={`priority ${issue.priority}`} />
+          <span className="ticket-id">{issue.key}</span>
+          <span
+            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {live ? (
+              <StatusLight
+                light={light}
+                variant="pill"
+                label={shownAsk(live)?.label}
+                age={ageLabel(live.since, now * 1000)}
+              />
+            ) : (
+              canStart && (
+                <button
+                  type="button"
+                  className="card-go"
+                  onClick={onKickoff}
+                  title={`Start an agent on ${issue.key} with the ticket brief`}
+                >
+                  <I.Play size={12} /> Start
+                </button>
+              )
+            )}
+            <AgentAvatar assignee={issue.assignee} />
+          </span>
+        </div>
+
+        {issue.epic && density !== "compact" && (
+          <div className="epic-line">
+            {epicUrl ? (
               <button
                 type="button"
-                className="card-go"
-                onClick={onKickoff}
-                title={`Start an agent on ${issue.key} with the ticket brief`}
+                className="epic-chip"
+                style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
+                onClick={onEpicClick}
+                title={`${issue.epicKey ?? ""} · ${issue.epic} — opens in Jira`}
               >
-                <I.Play size={12} /> Start
+                <I.Layers size={12} />
+                <span className="epic-name">{issue.epic}</span>
               </button>
-            )
-          )}
-          <AgentAvatar assignee={issue.assignee} />
-        </span>
+            ) : (
+              <span
+                className="epic-chip"
+                style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
+                title={issue.epic}
+              >
+                <I.Layers size={12} />
+                <span className="epic-name">{issue.epic}</span>
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="title">{issue.summary}</div>
+
+        {live?.lastMessage && density !== "compact" && (
+          <div className="card-quote" title={live.lastMessage}>
+            {live.lastMessage}
+          </div>
+        )}
+
+        {density !== "compact" && (
+          <div className="meta">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <I.Ticket size={12} /> {issue.issueType}
+            </span>
+            {issue.labels.slice(0, 2).map((label) => (
+              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <span className="dot-sep">·</span>
+                {label}
+              </span>
+            ))}
+            {firstPr && (
+              <button
+                type="button"
+                className={`pr-pill ${prStateClass(firstPr.state)}`}
+                style={{ marginLeft: "auto", cursor: "pointer" }}
+                onClick={onPrClick}
+                title={`${firstPr.title || `PR #${firstPr.number}`} — opens on GitHub`}
+              >
+                <I.GitPR size={12} /> #{firstPr.number}
+              </button>
+            )}
+          </div>
+        )}
       </div>
-
-      {issue.epic && density !== "compact" && (
-        <div className="epic-line">
-          {epicUrl ? (
-            <button
-              type="button"
-              className="epic-chip"
-              style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
-              onClick={onEpicClick}
-              title={`${issue.epicKey ?? ""} · ${issue.epic} — opens in Jira`}
-            >
-              <I.Layers size={12} />
-              <span className="epic-name">{issue.epic}</span>
-            </button>
-          ) : (
-            <span
-              className="epic-chip"
-              style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
-              title={issue.epic}
-            >
-              <I.Layers size={12} />
-              <span className="epic-name">{issue.epic}</span>
-            </span>
-          )}
-        </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={close}
+          sections={cardMenu({
+            issueKey: issue.key,
+            onStart: canStart ? () => kickoff(issue.key) : undefined,
+            hasAgent: Boolean(live),
+            pr: firstPr,
+            epic: epicUrl && issue.epicKey ? { key: issue.epicKey, url: epicUrl } : undefined,
+            onOpen: open,
+          })}
+        />
       )}
-
-      <div className="title">{issue.summary}</div>
-
-      {live?.lastMessage && density !== "compact" && (
-        <div className="card-quote" title={live.lastMessage}>
-          {live.lastMessage}
-        </div>
-      )}
-
-      {density !== "compact" && (
-        <div className="meta">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <I.Ticket size={12} /> {issue.issueType}
-          </span>
-          {issue.labels.slice(0, 2).map((label) => (
-            <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span className="dot-sep">·</span>
-              {label}
-            </span>
-          ))}
-          {firstPr && (
-            <button
-              type="button"
-              className={`pr-pill ${prStateClass(firstPr.state)}`}
-              style={{ marginLeft: "auto", cursor: "pointer" }}
-              onClick={onPrClick}
-              title={`${firstPr.title || `PR #${firstPr.number}`} — opens on GitHub`}
-            >
-              <I.GitPR size={12} /> #{firstPr.number}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
