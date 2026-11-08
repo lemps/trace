@@ -136,10 +136,7 @@ mod tests {
         assert_eq!(s.tailnet.as_deref(), Some("dev@example.com"));
         let me = s.device.expect("this device");
         assert_eq!(me.ip.as_deref(), Some("100.64.0.1"));
-        assert_eq!(
-            me.dns_name.as_deref(),
-            Some("devs-macbook.tail1234.ts.net")
-        );
+        assert_eq!(me.dns_name.as_deref(), Some("devs-macbook.tail1234.ts.net"));
         let names: Vec<&str> = s.peers.iter().map(|p| p.name.as_str()).collect();
         assert_eq!(names, ["mac-mini", "zed-box"]);
     }
