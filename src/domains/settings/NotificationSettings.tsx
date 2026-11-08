@@ -1,5 +1,7 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
+import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { Switch } from "@/components/Switch";
 import {
   notifyOnWaiting,
@@ -135,9 +137,9 @@ export function NotificationSettings() {
                 ))}
               </optgroup>
             </select>
-            <button type="button" className="btn" onClick={() => preview(sound)}>
-              Play
-            </button>
+            <IconButton label="Play the sound" onClick={() => preview(sound)}>
+              <I.Play size={14} />
+            </IconButton>
             <button type="button" className="btn ghost" onClick={() => void pickFile()}>
               Choose a file…
             </button>

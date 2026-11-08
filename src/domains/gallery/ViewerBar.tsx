@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { Segmented } from "@/components/Segmented";
@@ -30,10 +31,10 @@ interface ViewerBarProps {
 
 type Mode = "single" | Compare["mode"];
 
-const MODES: { value: Mode; label: string }[] = [
-  { value: "single", label: "One" },
-  { value: "side", label: "Side by side" },
-  { value: "swipe", label: "Swipe" },
+const MODES: { value: Mode; label: ReactNode; name: string }[] = [
+  { value: "single", label: <I.Square size={14} />, name: "One image" },
+  { value: "side", label: <I.Compare size={14} />, name: "Side by side" },
+  { value: "swipe", label: <I.MoveHorizontal size={14} />, name: "Swipe" },
 ];
 
 // The viewer's header: which image (and against which), Fit / 1:1 and the zoom,
@@ -55,6 +56,7 @@ export function ViewerBar(p: ViewerBarProps) {
       <div className="gv-actions">
         <Segmented
           label="Compare"
+          className="gv-modes"
           value={p.compare?.mode ?? "single"}
           options={p.count > 1 ? MODES : MODES.slice(0, 1)}
           onChange={(m) => p.onCompare(m === "single" ? null : m)}

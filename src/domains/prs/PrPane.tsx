@@ -2,6 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import type { PrThread } from "@/ipc/prWatch";
 import { PrChecks } from "./PrChecks";
 import { PrConversation } from "./PrConversation";
@@ -37,21 +38,15 @@ function PrHeader({ pr }: { pr: PrThread }) {
           {pr.title} <span className="prp-num">#{pr.number}</span>
         </h2>
         <div className="prp-actions">
-          <button type="button" className="btn" onClick={() => void openUrl(pr.url)}>
-            <I.External size={14} /> Open on GitHub
-          </button>
-          <button type="button" className="btn" onClick={() => void openUrl(`${pr.url}/files`)}>
-            <I.FileDiff size={14} /> Files on GitHub
-          </button>
-          <button
-            type="button"
-            className="btn icon"
-            onClick={() => copyLink(pr.url)}
-            title="Copy the PR's link"
-            aria-label="Copy the PR's link"
-          >
+          <IconButton label="Open on GitHub" onClick={() => void openUrl(pr.url)}>
+            <I.External size={14} />
+          </IconButton>
+          <IconButton label="Files on GitHub" onClick={() => void openUrl(`${pr.url}/files`)}>
+            <I.FileDiff size={14} />
+          </IconButton>
+          <IconButton label="Copy the PR's link" onClick={() => copyLink(pr.url)}>
             <I.Copy size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
       <div className="prp-meta">
