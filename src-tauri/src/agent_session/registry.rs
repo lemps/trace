@@ -206,6 +206,10 @@ impl ChatAgents {
     pub fn note_info(&self, workspace_id: &str, mut info: SessionInfo) -> SessionInfo {
         let mut infos = self.infos.lock();
         if let Some(prev) = infos.get(workspace_id) {
+            // A restart resuming the same conversation still holds its context;
+            // asked before the id below is carried over.
+            let same_conversation =
+                info.conversation_id.is_some() && info.conversation_id == prev.conversation_id;
             if info.model.is_none() {
                 info.model = prev.model.clone();
             }
@@ -217,6 +221,9 @@ impl ChatAgents {
             }
             if info.limits.is_empty() {
                 info.limits = prev.limits.clone();
+            }
+            if info.context.is_none() && same_conversation {
+                info.context = prev.context;
             }
         }
         infos.insert(workspace_id.to_string(), info.clone());

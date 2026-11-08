@@ -10,10 +10,12 @@
 //!   MultiEdit or Write adds a diff row.
 //! - `control_request` `can_use_tool` → an approval or question row (`prompts`).
 //! - `result` → the turn row, with usage and cost; `system`/`rate_limit_event` →
-//!   `SessionInfo`. See `turn` for the turn's lifecycle.
+//!   `SessionInfo`. See `turn` for the turn's lifecycle. Usage also fills the
+//!   context gauge (`context`).
 //! - Task/Agent calls and `system` `task_*` lines → a subagent on the call's
 //!   row, its own rows carrying `parentCallId` (`subagents`).
 
+mod context;
 mod session;
 mod subagents;
 mod turn;
@@ -60,6 +62,7 @@ pub struct Translator {
     pending: HashMap<String, Pending>,
     /// `total_cost_usd` so far: it's cumulative, a turn's cost is the difference.
     cost_so_far: f64,
+    context: context::ContextState,
 }
 
 struct PendingCall {
@@ -99,6 +102,7 @@ impl Translator {
             tasks: HashMap::new(),
             pending: HashMap::new(),
             cost_so_far: 0.0,
+            context: context::ContextState::default(),
         }
     }
 
@@ -194,6 +198,7 @@ impl Translator {
         // A subagent's text never streams: its `assistant` lines are the only copy.
         let streamed = self.streamed.contains(mid);
         let blocks = msg["content"].as_array().cloned().unwrap_or_default();
+        self.context_from_assistant(m, out);
         for (i, block) in blocks.iter().enumerate() {
             let turn = self.row_turn(parent.as_deref(), out);
             match str_at(block, "type") {

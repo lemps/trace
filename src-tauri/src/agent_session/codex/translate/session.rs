@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use super::{error_text, str_at, Out, Translator};
 use crate::agent_session::journal::{JournalBody, Status, Tone};
-use crate::agent_session::{LimitWindow, SessionInfo};
+use crate::agent_session::{ContextUsage, LimitWindow, SessionInfo};
 
 impl Translator {
     /// `account/rateLimits/updated`: the primary and secondary windows, named by
@@ -38,8 +38,11 @@ impl Translator {
 
     /// `thread/tokenUsage/updated`: `last` is one model request's usage, so the
     /// open turn's usage is their sum. (`total` is the thread's, resumed history
-    /// included.)
-    pub(super) fn token_usage(&mut self, usage: &Value) {
+    /// included.) `last` against `modelContextWindow` is how full the context is.
+    pub(super) fn token_usage(&mut self, usage: &Value, out: &mut Vec<Out>) {
+        if let Some(context) = context_usage(usage) {
+            self.set_info(out, |i| i.context = Some(context));
+        }
         let Some(turn) = self.turn.as_mut() else {
             return;
         };
@@ -110,6 +113,19 @@ impl Translator {
     }
 }
 
+/// The context gauge from a token-usage update: the latest request's tokens
+/// (input, cached included, plus output, which the next request reads back)
+/// against the model's window. `None` when Codex doesn't give the window.
+fn context_usage(usage: &Value) -> Option<ContextUsage> {
+    let window = usage["modelContextWindow"].as_u64().filter(|w| *w > 0)?;
+    let used = usage["last"]["totalTokens"].as_u64()?;
+    Some(ContextUsage {
+        used,
+        window,
+        estimated: false,
+    })
+}
+
 /// A window's name from its length, or its slot when Codex doesn't say.
 fn window_name(minutes: Option<u64>, slot: &str) -> String {
     match minutes {
@@ -125,7 +141,10 @@ fn window_name(minutes: Option<u64>, slot: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::window_name;
+    use serde_json::json;
+
+    use super::{context_usage, window_name};
+    use crate::agent_session::ContextUsage;
 
     #[test]
     fn windows_are_named_by_length() {
@@ -133,5 +152,23 @@ mod tests {
         assert_eq!(window_name(Some(10080), "secondary"), "seven_day");
         assert_eq!(window_name(Some(120), "primary"), "2_hour");
         assert_eq!(window_name(None, "secondary"), "secondary");
+    }
+
+    #[test]
+    fn the_context_is_the_latest_requests_tokens_against_the_window() {
+        let usage = json!({
+            "total": {"totalTokens": 27873},
+            "last": {"totalTokens": 13978, "inputTokens": 13919, "outputTokens": 59},
+            "modelContextWindow": 258400,
+        });
+        let context = ContextUsage {
+            used: 13978,
+            window: 258400,
+            estimated: false,
+        };
+        assert_eq!(context_usage(&usage), Some(context));
+        // No window, no gauge.
+        let bare = json!({"last": {"totalTokens": 10}});
+        assert_eq!(context_usage(&bare), None);
     }
 }

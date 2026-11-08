@@ -115,3 +115,12 @@ fn a_running_sub_agent_can_be_interrupted_on_its_own() {
         r.run.info.conversation_id.clone().unwrap()
     );
 }
+
+#[test]
+fn the_context_gauge_is_the_main_threads() {
+    let r = run();
+    let context = r.run.info.context.expect("a context from the token counts");
+    // The main thread's last request; its sub-agents' (15,935) never land here.
+    assert_eq!((context.used, context.window), (22384, 258400));
+    assert!(!context.estimated);
+}

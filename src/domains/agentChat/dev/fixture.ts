@@ -210,4 +210,5 @@ export const FIXTURE_INFO: SessionInfo = {
     { name: "five_hour", utilization: 0.42, resetsAt: Math.floor(T0 / 1000) + 2 * 3600 },
     { name: "seven_day", utilization: 0.81, resetsAt: Math.floor(T0 / 1000) + 3 * 86400 },
   ],
+  context: { used: 342_000, window: 1_000_000, estimated: false },
 };

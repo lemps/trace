@@ -81,6 +81,10 @@ pub struct SessionInfo {
     /// Usage-limit windows, as the agent reports them (e.g. "seven_day" → 0.31).
     #[serde(default)]
     pub limits: Vec<LimitWindow>,
+    /// How full the main conversation's context window is, once a model call
+    /// has reported it. Subagents' calls never move it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextUsage>,
 }
 
 impl SessionInfo {
@@ -102,6 +106,16 @@ pub struct LimitWindow {
     /// Unix seconds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resets_at: Option<u64>,
+}
+
+/// Tokens in the agent's context window, from its latest model call.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ContextUsage {
+    pub used: u64,
+    pub window: u64,
+    /// The window is guessed from the model id: the agent hasn't said it yet.
+    pub estimated: bool,
 }
 
 /// Where an adapter sends what it learns. The runtime implements it: it persists
