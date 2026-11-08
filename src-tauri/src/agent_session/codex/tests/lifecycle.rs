@@ -51,7 +51,7 @@ fn a_saved_thread_resumes_and_an_unsaved_one_starts_fresh() {
 fn a_message_before_the_thread_waits_and_one_during_a_turn_steers() {
     let mut r = Replay::new(settings(None, None, None), None);
     r.unsent.clear();
-    let early = r.run.take(r.tr.send("first", text("first")));
+    let early = r.run.take(r.tr.send("first", &[], text("first")));
     assert!(
         early.is_empty(),
         "nothing goes before the thread: {early:?}"
@@ -65,7 +65,10 @@ fn a_message_before_the_thread_waits_and_one_during_a_turn_steers() {
     );
     assert_eq!(sent[2]["params"]["input"], json!(text("first")));
     // A second message while turn/start hasn't answered waits for its turn id.
-    assert!(r.run.take(r.tr.send("second", text("second"))).is_empty());
+    assert!(r
+        .run
+        .take(r.tr.send("second", &[], text("second")))
+        .is_empty());
     let started = json!({"id": 2, "result": {"turn": {"id": "t1", "status": "inProgress"}}});
     r.feed(&started.to_string());
     let sent: Vec<Value> = r.unsent.drain(..).collect();
@@ -89,7 +92,7 @@ fn an_interrupt_before_codex_names_the_turn_is_sent_once_it_does() {
     r.feed(INIT_OK);
     r.feed(&thread_ok(1));
     r.unsent.clear();
-    r.run.take(r.tr.send("go", text("go")));
+    r.run.take(r.tr.send("go", &[], text("go")));
     assert!(r.run.take(r.tr.interrupt()).is_empty());
     let started = json!({"id": 2, "result": {"turn": {"id": "t1"}}});
     r.feed(&started.to_string());
@@ -169,9 +172,9 @@ fn a_steer_refused_mid_turn_waits_for_the_next_turn() {
     r.feed(INIT_OK);
     r.feed(&thread_ok(1));
     r.unsent.clear();
-    r.run.take(r.tr.send("one", text("one")));
+    r.run.take(r.tr.send("one", &[], text("one")));
     r.feed(r#"{"id":2,"result":{"turn":{"id":"t1"}}}"#);
-    let sent = r.run.take(r.tr.send("two", text("two")));
+    let sent = r.run.take(r.tr.send("two", &[], text("two")));
     assert_eq!(methods(&sent), ["turn/steer"]);
     r.feed(r#"{"id":3,"error":{"code":-32600,"message":"turn is finishing"}}"#);
     assert!(

@@ -1,12 +1,13 @@
 //! Files attached to a chat message. A file picked from disk is sent by its own
 //! path; one pasted or dropped into the composer arrives as bytes with no path,
 //! so it's saved here first (user-only, under the app dir) and sent by that path.
-//! The adapters (`claude::content`, `codex::input`) inline pictures and name the rest.
+//! The adapters (`claude::content`, `codex::input`) inline pictures and name the rest;
+//! the chat draws pictures from `preview`.
 
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use super::UserMessage;
+pub mod preview;
 
 /// Largest pasted or dropped file kept. Bigger ones are better picked from disk.
 pub const MAX_BYTES: usize = 25 * 1024 * 1024;
@@ -100,48 +101,23 @@ pub fn existing(paths: &[String]) -> Vec<String> {
         .collect()
 }
 
-/// The message as the chat shows it: its text, then the attached files' names,
-/// so the bubble records what went with it (the agent gets the files themselves).
-pub fn shown_text(message: &UserMessage) -> String {
-    if message.attachments.is_empty() {
-        return message.text.clone();
-    }
-    let names: Vec<String> = message
-        .attachments
-        .iter()
-        .map(|p| {
-            let name = Path::new(p)
-                .file_name()
-                .map_or_else(|| p.clone(), |n| n.to_string_lossy().into_owned());
-            format!("`{}`", display_name(&name))
-        })
-        .collect();
-    let list = format!("Attached: {}", names.join(", "));
-    if message.text.trim().is_empty() {
-        list
-    } else {
-        format!("{}\n\n{list}", message.text)
-    }
-}
-
-/// A saved attachment's name without the unique prefix `save` gave it.
-fn display_name(name: &str) -> &str {
-    match name.split_once('-') {
-        Some((prefix, rest))
-            if prefix.len() == 8
-                && prefix.chars().all(|c| c.is_ascii_hexdigit())
-                && !rest.is_empty() =>
-        {
-            rest
-        }
-        _ => name,
+/// The MIME type of a picture the agents take inline (png, jpg, gif, webp), by
+/// extension; `None` for anything else, which is sent by name.
+pub fn image_media_type(path: &Path) -> Option<&'static str> {
+    let ext = path.extension()?.to_str()?.to_ascii_lowercase();
+    match ext.as_str() {
+        "png" => Some("image/png"),
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "gif" => Some("image/gif"),
+        "webp" => Some("image/webp"),
+        _ => None,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{existing, safe_name, shown_text};
-    use crate::agent_session::UserMessage;
+    use super::{existing, image_media_type, safe_name};
+    use std::path::Path;
 
     #[test]
     fn keeps_a_plain_name_and_its_extension() {
@@ -156,23 +132,12 @@ mod tests {
     }
 
     #[test]
-    fn names_the_attachments_under_the_text() {
-        let message = UserMessage {
-            text: "Look".into(),
-            attachments: vec![
-                "/x/attachments/0a1b2c3d-image.png".into(),
-                "/repo/notes-v2.txt".into(),
-            ],
-        };
-        assert_eq!(
-            shown_text(&message),
-            "Look\n\nAttached: `image.png`, `notes-v2.txt`"
-        );
-        let bare = UserMessage {
-            text: " ".into(),
-            attachments: vec!["/repo/a.md".into()],
-        };
-        assert_eq!(shown_text(&bare), "Attached: `a.md`");
+    fn knows_the_pictures_agents_take_inline() {
+        assert_eq!(image_media_type(Path::new("/a/b.PNG")), Some("image/png"));
+        assert_eq!(image_media_type(Path::new("x.jpg")), Some("image/jpeg"));
+        assert_eq!(image_media_type(Path::new("x.webp")), Some("image/webp"));
+        assert_eq!(image_media_type(Path::new("x.svg")), None);
+        assert_eq!(image_media_type(Path::new("png")), None);
     }
 
     #[test]

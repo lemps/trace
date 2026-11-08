@@ -39,14 +39,7 @@ pub fn user_content(message: &UserMessage) -> Value {
 }
 
 fn image_block(path: &Path) -> Option<Value> {
-    let ext = path.extension()?.to_str()?.to_ascii_lowercase();
-    let media = match ext.as_str() {
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        _ => return None,
-    };
+    let media = crate::agent_session::attachments::image_media_type(path)?;
     if std::fs::metadata(path).ok()?.len() > MAX_IMAGE_BYTES {
         return None;
     }

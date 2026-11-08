@@ -360,3 +360,18 @@ fn other_control_requests_are_refused_so_claude_doesnt_wait() {
     assert_eq!(replies[0]["response"]["subtype"], "error");
     assert_eq!(replies[0]["response"]["request_id"], "r1");
 }
+
+#[test]
+fn a_user_row_keeps_its_attachments_beside_the_text() {
+    let mut tr = Translator::new(0, || 0);
+    let mut run = Run::default();
+    let files = vec!["/tmp/a.png".to_string(), "/tmp/notes.txt".to_string()];
+    run.take(tr.send("Look", &files, json!("Look")));
+    let user = run.bodies().into_iter().find_map(|b| match b {
+        JournalBody::Message(m) if m.role == Role::User => Some(m.clone()),
+        _ => None,
+    });
+    let user = user.unwrap();
+    assert_eq!(user.text, "Look");
+    assert_eq!(user.attachments, files);
+}

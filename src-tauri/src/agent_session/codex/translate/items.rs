@@ -96,6 +96,7 @@ impl Translator {
             text: s.text.clone(),
             streaming: true,
             parent_call_id: s.parent.clone(),
+            attachments: Vec::new(),
         });
         let row_id = s.row_id.clone();
         out.push(Out::Row(self.book.put(&row_id, Some(&turn), body)));

@@ -63,6 +63,10 @@ pub struct Message {
     /// Set when a subagent said it: the call that started that subagent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent_call_id: Option<String>,
+    /// A user message's attached files, as absolute paths: the bubble draws them
+    /// under the text. Older rows named them in `text` instead ("Attached: …").
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]

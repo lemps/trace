@@ -336,10 +336,11 @@ fn run(
                 }
                 continue;
             }
-            Cmd::Send(message) => {
-                let text = crate::agent_session::attachments::shown_text(&message);
-                tr.send(&text, content::user_content(&message))
-            }
+            Cmd::Send(message) => tr.send(
+                &message.text,
+                &message.attachments,
+                content::user_content(&message),
+            ),
             Cmd::Answer(request_id, answer) => tr
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
