@@ -61,7 +61,7 @@ export function SessionRunButton({
           Leave running
         </button>
         <button type="button" className="btn" onClick={stopAndSave} title={STOP_AND_SAVE}>
-          <I.X size={13} /> Stop &amp; save
+          <I.Stop size={13} /> Stop &amp; save
         </button>
       </>
     );
@@ -69,7 +69,7 @@ export function SessionRunButton({
   if (running) {
     return (
       <button type="button" className="btn" onClick={onStop}>
-        <I.X size={13} /> Stop agent
+        <I.Stop size={13} /> Stop agent
       </button>
     );
   }

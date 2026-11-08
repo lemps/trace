@@ -147,7 +147,7 @@ export function DetailHeader({
         <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         {running ? (
           <button type="button" className="btn" onClick={onStop}>
-            <I.X size={13} /> Stop agent
+            <I.Stop size={13} /> Stop agent
           </button>
         ) : exited ? (
           <RestartChip agentName={agentLabel(cli, provider)} onRestart={onStart} />
