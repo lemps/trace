@@ -148,7 +148,12 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   only paused; the session ones (`sessionTools.ts`) start a standalone session in a chosen repo —
   optionally with Claude Code's Remote Control (`--remote-control`, persisted on the session so every
   start keeps it) — type into it, slash commands included, and read its screen; `update_user` (`updateTool.ts`) puts a one-line progress note beside the calling agent on
-  the Fleet page until its next prompt. Agents are top-level
+  the Fleet page until its next prompt. `moreTools.ts` adds `interrupt_session` / `stop_session`
+  (only for sessions the caller started, or their descendants, by `createdBy`: `ownership.ts`),
+  `get_session_changes` (the Files tab's diff, capped), `get_session_pr` (the PR watcher's cache),
+  `read_activity`, and `add_repo` / `clone_repo`, which wait on a confirm card the user answers
+  (`RepoConfirm`, `confirmQueue.ts`). Codex agents get the same endpoint as `-c` overrides
+  (`agent_tools/codex.rs`). Agents are top-level
   Claude sessions: inherited Claude Code session markers (`claude::env::INHERITED_SESSION_ENV`) are
   stripped, or a trace started from a Claude session would hand its agents transcript saving off.
 - **Interrupted agents:** `interrupted.rs` keeps `running-agents.json` (what each live agent was spawned

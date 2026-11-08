@@ -17,6 +17,7 @@ import { Toaster } from "@/components/Toaster";
 import { ActivityView } from "@/domains/activity/ActivityView";
 import { useActivityFeed } from "@/domains/activity/hooks/useActivityFeed";
 import { AgentDetail } from "@/domains/agent/AgentDetail";
+import { RepoConfirm } from "@/domains/agentTools/RepoConfirm";
 import { Board } from "@/domains/board/Board";
 import { useBoardAutoRefresh } from "@/domains/board/hooks/useBoardAutoRefresh";
 import { useBoardStore } from "@/domains/board/store";
@@ -167,6 +168,7 @@ export function App() {
         </ErrorBoundary>
       )}
       <InterruptedAgents />
+      <RepoConfirm />
       <CheatSheet onNav={handleNav} />
       <Toaster />
     </div>

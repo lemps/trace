@@ -13,7 +13,9 @@ import type { AgentCli } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { createSession, startSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
+import { flag, str } from "./args";
 import { creatorFromCaller } from "./callerOrigin";
+import { cachedPrLine } from "./prCache";
 
 // Standalone-session tools for trace's agents: open a session in one of trace's
 // repos (optionally with Remote Control, so it can be driven from claude.ai/code),
@@ -42,7 +44,7 @@ export const SESSION_TOOLS: Anthropic.Tool[] = [
   {
     name: "list_sessions",
     description:
-      "List trace's standalone sessions (not ticket agents): id, title, repo, agent state (working / needs you / ready / stopped) and whether Remote Control is on.",
+      "List trace's standalone sessions (not ticket agents): id, title, repo, agent state (working / needs you / ready / stopped), whether Remote Control is on, and its pull request (number, state, checks) when trace has already seen one; get_session_pr looks one up.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
@@ -112,18 +114,6 @@ export function isSessionTool(name: string): boolean {
   return SESSION_TOOL_NAMES.has(name);
 }
 
-function str(input: unknown, key: string): string {
-  if (input && typeof input === "object" && key in input) {
-    const v = (input as Record<string, unknown>)[key];
-    if (typeof v === "string") return v.trim();
-  }
-  return "";
-}
-
-function bool(input: unknown, key: string): boolean {
-  return !!input && typeof input === "object" && (input as Record<string, unknown>)[key] === true;
-}
-
 /** Match a repo by path or folder name; an unknown or ambiguous one names the choices. */
 async function resolveRepo(wanted: string): Promise<string | null> {
   const repos = await listRepos();
@@ -141,7 +131,7 @@ async function resolveRepo(wanted: string): Promise<string | null> {
   );
 }
 
-function findSession(ref: string): ScratchSession {
+export function findSession(ref: string): ScratchSession {
   const active = useSessionsStore.getState().sessions.filter((s) => !s.archivedAt);
   const byId = active.find((s) => s.id === ref);
   if (byId) return byId;
@@ -210,7 +200,7 @@ async function launch(session: ScratchSession, prompt: string) {
 
 async function start(input: unknown, caller: string): Promise<string> {
   const title = str(input, "title") || "Exploration";
-  const remote = bool(input, "remote_control");
+  const remote = flag(input, "remote_control");
   const cli: AgentCli = remote ? "claude" : str(input, "cli") === "codex" ? "codex" : agentCli();
   const repo = await resolveRepo(str(input, "repo"));
   const createdBy = await creatorFromCaller(caller);
@@ -268,7 +258,8 @@ async function list(): Promise<string> {
     .map((s) => {
       const repo = s.folder ? basename(s.folder) : s.repo ? basename(s.repo) : "default repo";
       const rc = s.remoteControl ? " · Remote Control" : "";
-      return `- ${s.id} "${s.title}" · ${repo} · ${s.cli} · ${stateOf(s.id)}${rc}`;
+      const pr = cachedPrLine(s.id);
+      return `- ${s.id} "${s.title}" · ${repo} · ${s.cli} · ${stateOf(s.id)}${rc}${pr ? ` · ${pr}` : ""}`;
     })
     .join("\n");
 }

@@ -1,6 +1,7 @@
 //! What trace adds to every agent it starts, whichever transport hosts it: the
 //! render bridge's coordinates, and for Claude its own tools (`--mcp-config`), the
-//! turn hooks (`--settings`) and a third-party provider's endpoint and model.
+//! turn hooks (`--settings`) and a third-party provider's endpoint and model; for
+//! Codex its tools as `-c` overrides (`codex_wiring`).
 //! Shared by the terminal (`commands::agent::spawn_in`) and the chat transport
 //! (`agent_session::claude`), so the two can't drift apart.
 
@@ -89,6 +90,32 @@ pub fn claude_wiring(
         extra_args,
         env,
     })
+}
+
+/// What trace adds to a Codex agent, either transport: [`bridge_env`], and its
+/// tools as `-c` overrides with the token in the env (`agent_tools::codex`).
+/// trace's flags go first, so the user's own `-c` flags still win.
+pub fn codex_wiring(
+    app: &AppHandle,
+    state: &AppState,
+    workspace_id: &str,
+    model: Option<String>,
+    extra_args: Vec<String>,
+) -> Wiring {
+    let mut env = bridge_env(app, state, workspace_id);
+    let tools = state
+        .tool_server
+        .get_or_init(|| crate::agent_tools::server::start(app.clone()).unwrap_or_default());
+    let theirs = crate::agent_tools::codex::user_has_instructions();
+    let instructions = (!theirs).then_some(crate::agent_tools::rpc::INSTRUCTIONS);
+    let (mut args, tool_env) = crate::agent_tools::codex::wiring(tools, workspace_id, instructions);
+    env.extend(tool_env);
+    args.extend(extra_args);
+    Wiring {
+        model,
+        extra_args: args,
+        env,
+    }
 }
 
 /// The model to run on a provider's endpoint. The Settings default targets

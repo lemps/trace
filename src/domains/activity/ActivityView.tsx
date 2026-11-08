@@ -21,6 +21,9 @@ const ICON: Record<ActivityKind, IconFn> = {
   "checks-failed": I.X,
   "checks-passed": I.Beaker,
   "workspace-removed": I.Archive,
+  "agent-interrupted": I.Terminal,
+  "agent-stopped": I.Terminal,
+  "repo-added": I.Folder,
   other: I.Activity,
 };
 

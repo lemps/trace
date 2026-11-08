@@ -83,6 +83,7 @@ pub fn run() {
             commands::issues::list_issue_comments,
             commands::repos::list_repos,
             commands::repos::add_repo,
+            commands::repo_guard::check_repo_path,
             commands::repos::remove_repo,
             commands::repos::issue_repo,
             commands::repos::set_issue_repo,

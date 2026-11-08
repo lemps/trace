@@ -193,8 +193,12 @@ agent, JSON-RPC over stdio (no `jsonrpc` field on the wire), threaded like the C
 - Settings → Agents flags are the TUI's, which app-server doesn't take: `-m`, `-a`, `-s`,
   `--full-auto`, `--yolo` become the thread's `model` / `approvalPolicy` / `sandbox`; `-c`,
   `--enable`, `--disable` go to app-server; anything else is dropped with a warning row. With no
-  flags the user's `config.toml` decides, as for a terminal Codex. trace's MCP tools and hooks
-  aren't wired for Codex yet; the render bridge env is.
+  flags the user's `config.toml` decides, as for a terminal Codex. trace's MCP tools come as
+  `-c mcp_servers.trace.*` overrides, the same for the TUI (`claude::launch::codex_wiring`,
+  `agent_tools::codex`): a streamable-HTTP `url`, the `X-Trace-Workspace` header, the token in the
+  agent's env (`bearer_token_env_var`, never in args or `config.toml`), approval mode `approve`
+  and a 200 s tool timeout. The server's instructions go in as `developer_instructions` unless the
+  user's `config.toml` sets its own. Hooks aren't wired for Codex yet; the render bridge env is.
 - A message is `turn/start` (text, pictures as `localImage`, other files named by path), or
   `turn/steer` into the running turn; before the thread is up it waits. Interrupt is
   `turn/interrupt`, sent once Codex has named the turn.

@@ -14,6 +14,7 @@
 //! Every agent is given the endpoint by `spawn_in` (`mcp_config_arg`), with the
 //! per-app token in a header — the same trust model as the render bridge.
 
+pub mod codex;
 pub mod rpc;
 pub mod server;
 
