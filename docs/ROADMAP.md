@@ -50,7 +50,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [~] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
       model/effort pills; half-typed terminal text carries over to chat. *Started:* the chat
       transport's composer has `/` commands and attachments (picked, pasted or dropped; pictures
-      go as images, other files by path: `agent_session/attachments.rs`).
+      go as images, other files by path: `agent_session/attachments.rs`), drafts kept per
+      workspace, and saved prompts run as `/name` (Settings → Agents;
+      [#62](https://github.com/noble1911/trace/pull/62)). Not yet: `@` mentions, model/effort pills.
 - [~] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
       The Inbox has these today, but a chat view doesn't. *Started:* the chat transport
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
@@ -59,6 +61,12 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
+- [x] **Import from Conductor:** Settings → Repositories brings over repos with their setup
+      scripts, live workspaces (worktree and conversation) and defaults, never Conductor's secrets
+      ([#63](https://github.com/noble1911/trace/pull/63)). Next: its custom prompts as saved prompts.
+- [x] **First run and preflight:** checks for git, claude and a signed-in gh with fixes, and a
+      three-step setup for new users; Settings → Run setup again
+      ([#61](https://github.com/noble1911/trace/pull/61)). Not yet: a base branch picker.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
 - [x] **Default view setting:** choose chat or CLI globally or per agent. Settings → Agents →
       Shows as (Chat by default; brands without a chat adapter stay Terminal), overridden per
