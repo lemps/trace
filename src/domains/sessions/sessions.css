@@ -32,6 +32,13 @@
   margin-left: 10px;
   vertical-align: baseline;
 }
+/* What a sandbox's state means, under it in a session's Details (SandboxSection). */
+.sandbox-note {
+  margin-top: 4px;
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
 /* Archived sessions — collapsible recycle bin */
 .archive-bin {
   margin-top: 22px;

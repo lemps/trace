@@ -325,6 +325,7 @@ export function SessionDetail({
         turnIds={turnIds}
         hasPr={prUrls.length > 0}
         running={run.running}
+        host={session.host}
       />
       {quickOpen}
     </div>

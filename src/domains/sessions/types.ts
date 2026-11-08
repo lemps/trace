@@ -31,7 +31,8 @@ export type SessionHostKind = "vercel";
 /**
  * A session that runs somewhere else: today a Vercel Sandbox (`sandbox` is its
  * name; `remote` is the repo's GitHub remote it cloned). It has no local folder,
- * so nothing that reads the worktree (Files, Terminal, Tests, PR) applies.
+ * so nothing that reads the worktree (Files, Terminal, Tests) applies; its PRs are
+ * found on GitHub from its branch.
  */
 export interface SessionHost {
   kind: SessionHostKind;
