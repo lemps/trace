@@ -351,6 +351,11 @@ fn run(
             Cmd::Stop => {
                 if !stopping {
                     stopping = true;
+                    if let Some(note) = process.stopping_note() {
+                        for out in tr.notice(note, Tone::Info) {
+                            deliver(out, sink.as_ref(), process.as_mut(), &mut paced);
+                        }
+                    }
                     // Closing stdin ends a headless Claude; the kill makes sure.
                     process.close_stdin();
                     process.kill();

@@ -137,6 +137,9 @@ fn still_ours(app: &AppHandle, workspace_id: &str, run_id: u64) -> bool {
         })
 }
 
+/// Shown the moment Stop & save is pressed, while Vercel snapshots the sandbox.
+const SAVING: &str = "\r\n\x1b[2mSaving the sandbox, a few seconds…\x1b[0m\r\n";
+
 /// How a session that got going came to an end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Ended {
@@ -193,6 +196,8 @@ fn pump<P: SandboxProvider>(
                 Ok(Cmd::Resize(cols, rows)) => pty.send_resize(cols, rows),
                 Ok(Cmd::Stop) => {
                     pty.close();
+                    // The save takes seconds: say so straight away.
+                    pty_output::record(app, &spec.workspace_id, SAVING.as_bytes());
                     return provider.stop(session_id).map(|()| Ended::Stopped);
                 }
                 Err(TryRecvError::Empty) => break,

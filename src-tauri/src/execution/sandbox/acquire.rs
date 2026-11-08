@@ -23,7 +23,7 @@ pub(super) fn sandbox_session<P: SandboxProvider>(
     target: &SandboxTarget,
     say: &dyn Fn(&str),
 ) -> Result<(String, Got), String> {
-    let existing = provider.find(&target.sandbox)?;
+    let existing = settled(provider, target, say)?;
     if let Some(info) = &existing {
         if let (true, Some(id)) = (info.is_running(), info.session_id.clone()) {
             say(&format!("Joining its {} sandbox…", provider.label()));
@@ -53,4 +53,45 @@ pub(super) fn sandbox_session<P: SandboxProvider>(
         .session_id
         .ok_or("The sandbox started without a session.")?;
     Ok((id, Got::Created))
+}
+
+/// How long to wait for a sandbox mid-change (saving after a stop, starting).
+const SETTLE_WAIT: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// The session's sandbox once it isn't mid-change: a Start pressed while it's
+/// still being saved after a Stop waits for the save rather than tripping on it.
+fn settled<P: SandboxProvider>(
+    provider: &P,
+    target: &SandboxTarget,
+    say: &dyn Fn(&str),
+) -> Result<Option<SandboxInfo>, String> {
+    let deadline = std::time::Instant::now() + SETTLE_WAIT;
+    let mut told = false;
+    loop {
+        let info = provider.find(&target.sandbox)?;
+        let busy = info.as_ref().is_some_and(|i| changing(&i.status));
+        if !busy || std::time::Instant::now() > deadline {
+            return Ok(info);
+        }
+        if !std::mem::replace(&mut told, true) {
+            say("Waiting for its last save to finish…");
+        }
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    }
+}
+
+/// A status a sandbox passes through on its way to running or stopped.
+fn changing(status: &str) -> bool {
+    matches!(status, "stopping" | "snapshotting" | "pending" | "starting")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::changing;
+
+    #[test]
+    fn only_passing_states_are_waited_out() {
+        assert!(changing("stopping") && changing("snapshotting"));
+        assert!(!changing("running") && !changing("stopped") && !changing("failed"));
+    }
 }

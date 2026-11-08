@@ -266,7 +266,7 @@ export function SessionDetail({
             exited={exited}
             remote={Boolean(session.host)}
             onStart={() => void run.start()}
-            onStop={() => void run.stop()}
+            onStop={() => run.stop()}
             onDisconnect={disconnect}
           />
           <PopMenu
