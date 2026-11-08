@@ -248,3 +248,37 @@
 .ac-latest.docked .btn {
   box-shadow: none;
 }
+
+/* A message's actions (MessageRow): Copy under a reply, or under your bubble
+   on the right. Quiet until the message is hovered or the button has focus. */
+.ac-msg-actions {
+  display: flex;
+  height: var(--control-h-xs);
+  margin: 2px 0 -6px;
+}
+.ac-msg.mine .ac-msg-actions {
+  justify-content: flex-end;
+}
+.ac-msg-copy {
+  display: grid;
+  place-items: center;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  border-radius: var(--radius-sm);
+  color: var(--fg-3);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.ac-msg:hover .ac-msg-copy,
+.ac-msg-copy:focus-visible,
+.ac-msg-copy[aria-label="Copied"] {
+  opacity: 1;
+}
+.ac-msg-copy:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
+}
+.ac-msg-copy:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -1px;
+}
