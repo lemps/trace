@@ -80,7 +80,8 @@ impl Translator {
                 }
                 None => {
                     turn.starting = true;
-                    let params = json!({"threadId": thread, "input": input});
+                    let mut params = json!({"threadId": thread, "input": input});
+                    self.overrides.merge_into(&mut params);
                     out.push(self.request(Call::TurnStart, "turn/start", params));
                     return;
                 }

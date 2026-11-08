@@ -153,6 +153,8 @@ pub fn run() {
             commands::agent_chat::interrupt_chat_agent,
             commands::agent_chat::stop_chat_subagent,
             commands::agent_chat::load_journal,
+            commands::agent_options::agent_options,
+            commands::agent_options::set_agent_option,
             commands::pr::raise_pr,
             commands::pr::merge_pr,
             commands::pr_watch::workspace_prs,

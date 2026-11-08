@@ -23,11 +23,23 @@ impl Translator {
                     .unwrap_or_default();
                 let model = str_at(m, "model").map(str::to_string);
                 let session = str_at(m, "session_id").map(str::to_string);
+                let mode = str_at(m, "permissionMode").map(str::to_string);
+                // Only some hosts name it (not headless 2.1.319).
+                let effort = str_at(m, "effort").map(str::to_string);
                 self.set_info(out, |info| {
                     info.model = model.or(info.model.take());
                     info.conversation_id = session.or(info.conversation_id.take());
                     info.slash_commands = commands;
+                    info.permission_mode = mode.or(info.permission_mode.take());
+                    info.effort = effort.or(info.effort.take());
                 });
+            }
+            // A mode change (ours, or Claude leaving plan mode by itself).
+            Some("status") => {
+                if let Some(mode) = str_at(m, "permissionMode") {
+                    let mode = mode.to_string();
+                    self.set_info(out, |i| i.permission_mode = Some(mode));
+                }
             }
             Some(sub @ ("task_started" | "task_progress" | "task_notification")) => {
                 self.task_event(m, sub, out);

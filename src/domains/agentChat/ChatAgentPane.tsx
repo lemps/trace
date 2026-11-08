@@ -123,6 +123,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
           onInterrupt={interrupt}
           toMain={tab !== "main"}
           slashCommands={info?.slashCommands ?? []}
+          running={!stopped}
         />
       </div>
     </ChatViewContext.Provider>

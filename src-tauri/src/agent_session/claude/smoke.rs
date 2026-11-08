@@ -61,6 +61,7 @@ fn a_real_claude_turn_approval_and_interrupt() {
         extra_args: vec![],
         env: vec![],
         next_seq: 0,
+        options: Default::default(),
     };
     let mut agent = ClaudeAdapter::launch(spec, Arc::new(Collect(Mutex::new(tx)))).unwrap();
     let say = |text: &str| UserMessage {

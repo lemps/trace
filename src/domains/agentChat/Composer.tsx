@@ -11,6 +11,7 @@ import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { KeyHint } from "@/components/KeyHint";
 import { isShortcut, useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
+import { AgentOptionPickers } from "./AgentOptionPickers";
 import { AttachmentChips } from "./AttachmentChips";
 import { useChatActions } from "./actions";
 import { useComposerFill } from "./composerFill";
@@ -33,6 +34,8 @@ interface ComposerProps {
   /** A subagent's tab is showing; messages still go to the main agent. */
   toMain: boolean;
   slashCommands: readonly string[];
+  /** The agent is up: an option picked goes to it, not to its next start. */
+  running: boolean;
 }
 
 /** A drag carries files from the desktop (not a pane tab or a card). */
@@ -54,6 +57,7 @@ export function Composer({
   onInterrupt,
   toMain,
   slashCommands,
+  running,
 }: ComposerProps) {
   const actions = useChatActions();
   const text = useDraftText(workspaceId);
@@ -195,6 +199,7 @@ export function Composer({
           >
             <I.Paperclip size={14} />
           </button>
+          <AgentOptionPickers workspaceId={workspaceId} running={running} />
           {working && (
             <button
               type="button"

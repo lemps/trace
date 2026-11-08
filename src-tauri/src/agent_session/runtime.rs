@@ -37,6 +37,8 @@ struct Sink {
     workspace_id: String,
     path: PathBuf,
     instance: u64,
+    /// A third-party provider, which pins the model: stamped on every info.
+    provider: Option<String>,
 }
 
 impl JournalSink for Sink {
@@ -58,7 +60,8 @@ impl JournalSink for Sink {
         let _ = self.app.emit("agent-journal", event);
     }
 
-    fn info(&self, info: SessionInfo) {
+    fn info(&self, mut info: SessionInfo) {
+        info.provider = self.provider.clone();
         let state = self.app.state::<AppState>();
         let was_working = state
             .chat_agents
@@ -201,11 +204,14 @@ fn launch(
     instance: u64,
     resume: Option<String>,
 ) -> Result<Box<dyn super::AgentAdapter>, String> {
+    // The workspace's picked options (`options`); a provider still pins its model.
+    let options = super::options::store::stored(&req.workspace_id);
+    let picked_model = options.model.clone().or(req.model);
     // trace's loopback (tools, hooks, render bridge) can't reach another host:
     // an agent there gets only its provider's endpoint and model.
     let wiring = match &req.remote {
         Some(_) => crate::claude::launch::provider_wiring(
-            req.model,
+            picked_model.clone(),
             req.provider.as_deref(),
             req.extra_args,
         )?,
@@ -214,7 +220,7 @@ fn launch(
             state,
             &req.cli,
             &req.workspace_id,
-            req.model,
+            picked_model,
             req.provider.as_deref(),
             req.extra_args,
         )?,
@@ -234,12 +240,16 @@ fn launch(
         extra_args: wiring.extra_args,
         env: wiring.env.into_iter().collect(),
         next_seq: store::next_seq(&rows),
+        options: options.clone(),
     };
     let sink = Arc::new(Sink {
         app: app.clone(),
         workspace_id: req.workspace_id.clone(),
         path,
         instance,
+        provider: req
+            .provider
+            .filter(|p| crate::commands::providers::spec(p).is_some()),
     });
     let adapter = brands::launch(&req.cli, spec, sink.clone(), req.remote)?;
     // The view knows it's a chat agent, and its model, before the first turn.
@@ -248,6 +258,8 @@ fn launch(
         model,
         conversation_id: resume,
         busy: false,
+        effort: options.effort,
+        permission_mode: options.permission_mode,
         ..SessionInfo::default()
     });
     Ok(adapter)
@@ -355,6 +367,7 @@ pub fn load(state: &AppState, workspace_id: &str) -> Result<Vec<JournalRow>, Str
 pub fn forget(workspace_id: &str) {
     crate::helpers::persist::remove(&store::journal_path(workspace_id));
     super::transport::forget(workspace_id);
+    super::options::store::forget(workspace_id);
     crate::plans::forget(workspace_id);
     // Its live Browser pages close with the file.
     crate::browser::forget(workspace_id);
@@ -368,6 +381,7 @@ pub fn transfer(from: &str, to: &str) {
         let _ = std::fs::rename(&src, &dst);
     }
     super::transport::transfer(from, to);
+    super::options::store::transfer(from, to);
     crate::plans::transfer(from, to);
     crate::browser::transfer(from, to);
     crate::gallery::store::transfer(from, to);

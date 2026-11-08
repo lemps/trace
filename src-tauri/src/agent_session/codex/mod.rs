@@ -26,6 +26,7 @@ use std::sync::Arc;
 use super::claude::book::now_ms;
 use super::claude::deliver::Pacer;
 use super::journal::{Answer, Tone};
+use super::options::AgentOptions;
 use super::{AgentAdapter, JournalSink, LaunchSpec, UserMessage};
 use crate::claude::discovery::find_cli_with_env;
 use crate::claude::env::build_effective_cli_env;
@@ -45,6 +46,8 @@ enum Cmd {
     Interrupt,
     /// Interrupt the sub-agent spawned by this call.
     StopSubagent(String),
+    /// Changed options, for the next `turn/start` on.
+    SetOptions(AgentOptions),
     Stop,
 }
 
@@ -90,6 +93,7 @@ impl CodexAdapter {
             .or_else(|| threads::saved(&spec.workspace_id));
         let mut tr = Translator::new(spec.next_seq, now_ms, split.settings, resume);
         let mut first = tr.start();
+        first.extend(tr.set_options(&spec.options));
         if !split.ignored.is_empty() {
             let text = format!(
                 "Not passed to codex app-server (no such option there): {}",
@@ -131,6 +135,11 @@ impl AgentAdapter for CodexAdapter {
 
     fn stop_subagent(&mut self, call_id: &str) -> Result<(), String> {
         self.queue(Cmd::StopSubagent(call_id.to_string()))
+    }
+
+    fn set_options(&mut self, changes: &AgentOptions) -> Result<bool, String> {
+        self.queue(Cmd::SetOptions(changes.clone()))?;
+        Ok(true)
     }
 
     fn stop(&mut self) {
@@ -213,6 +222,7 @@ fn run(rx: Receiver<Cmd>, mut agent: Agent, mut tr: Translator, first: Vec<Out>)
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
             Cmd::Interrupt => tr.interrupt(),
+            Cmd::SetOptions(changes) => tr.set_options(&changes),
             Cmd::StopSubagent(call_id) => tr
                 .stop_subagent(&call_id)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),

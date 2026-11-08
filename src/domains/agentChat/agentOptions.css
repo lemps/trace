@@ -1,0 +1,73 @@
+/* The composer bar's model, effort and mode pickers (`AgentOptionPickers`). */
+
+.ac-opts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ac-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--control-h-sm);
+  max-width: 150px;
+  padding: 0 6px 0 8px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
+.ac-opt:hover:not(:disabled) {
+  color: var(--fg-0);
+  border-color: var(--border);
+  background: var(--bg-2);
+}
+.ac-opt[aria-expanded="true"] {
+  color: var(--fg-0);
+  border-color: var(--border-strong);
+}
+.ac-opt:disabled {
+  color: var(--fg-3);
+  cursor: default;
+}
+.ac-opt:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+
+.ac-opt-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Points up: the menu opens above the composer. */
+.ac-opt-chev {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--fg-3);
+  transform: rotate(-90deg);
+}
+.ac-opt:disabled .ac-opt-chev {
+  visibility: hidden;
+}
+
+/* Plan mode changes nothing until you approve: say so at a glance, in the brand accent. */
+.ac-opt.plan {
+  color: var(--c-accent);
+  border-color: color-mix(in oklch, var(--c-accent) 45%, transparent);
+  background: var(--c-accent-bg);
+}
+.ac-opt.plan .ac-opt-chev {
+  color: inherit;
+}
+
+/* The composer sits at the bottom of the pane: its menus open upwards. */
+.ac-opts .pop-menu-pop {
+  top: auto;
+  bottom: calc(100% + 6px);
+}

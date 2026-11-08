@@ -39,6 +39,7 @@ import "@/domains/transcript/transcript.css";
 import "@/domains/agentChat/chat.css";
 import "@/domains/agentChat/cards.css";
 import "@/domains/agentChat/composer.css";
+import "@/domains/agentChat/agentOptions.css";
 import "@/domains/agentChat/attachments.css";
 import "@/domains/agentChat/subagents.css";
 import "@/domains/agentChat/transport.css";

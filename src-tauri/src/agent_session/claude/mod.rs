@@ -11,6 +11,7 @@ mod content;
 pub(crate) mod deliver;
 mod handback;
 mod prompts;
+mod spawn;
 pub(crate) mod tools;
 pub mod translate;
 
@@ -22,35 +23,18 @@ mod smoke;
 mod tests;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::io::{BufRead, BufReader, Read};
-use std::process::{Child, Stdio};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 
 use super::journal::{Answer, Tone};
+use super::options::AgentOptions;
 use super::process::{ChatProcess, LocalProcess, RemoteLaunch, RemoteOpener};
 use super::{AgentAdapter, JournalSink, LaunchSpec, UserMessage};
-use crate::claude::conversations::claude_session_ids;
-use crate::claude::discovery::find_cli_with_env;
-use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
-use crate::platform::ports::ToolLocator;
-use crate::platform::Os;
 use deliver::{deliver, exit_reason, Pacer};
+use spawn::{extra_args, spawn, stream_args};
 use translate::{Out, Translator};
-
-/// The flags that make `claude` a structured, long-lived peer rather than a TUI.
-const STREAM_FLAGS: [&str; 9] = [
-    "-p",
-    "--input-format",
-    "stream-json",
-    "--output-format",
-    "stream-json",
-    "--verbose",
-    "--include-partial-messages",
-    "--permission-prompt-tool",
-    "stdio",
-];
 
 /// How many stderr lines to keep for saying why Claude exited.
 const STDERR_TAIL: usize = 5;
@@ -64,6 +48,8 @@ enum Cmd {
     Interrupt,
     /// `stop_task` for the subagent started by this call.
     StopSubagent(String),
+    /// Changed options, sent as control requests.
+    SetOptions(AgentOptions),
     Stop,
     /// Let go and leave it running (a remote agent).
     Detach,
@@ -93,7 +79,8 @@ impl ClaudeAdapter {
         let pid = spawned.process.pid().unwrap_or_default();
         let (tx, rx) = channel();
         pump(spawned.stdout, spawned.stderr, &tx);
-        let translator = Translator::new(spec.next_seq, book::now_ms);
+        let mut translator = Translator::new(spec.next_seq, book::now_ms);
+        translator.seed_options(&spec.options);
         let process = spawned.process;
         std::thread::spawn(move || run(rx, process, translator, sink, 0));
         Ok(Self {
@@ -110,7 +97,9 @@ impl ClaudeAdapter {
         let (tx, rx) = channel();
         let out_tx = tx.clone();
         std::thread::spawn(move || {
-            let tr = RefCell::new(Translator::new(spec.next_seq, book::now_ms));
+            let mut translator = Translator::new(spec.next_seq, book::now_ms);
+            translator.seed_options(&spec.options);
+            let tr = RefCell::new(translator);
             let say = |text: &str| {
                 for out in tr.borrow_mut().notice(text, Tone::Info) {
                     if let Out::Row(row) = out {
@@ -121,7 +110,7 @@ impl ClaudeAdapter {
             let launch = RemoteLaunch {
                 workspace_id: spec.workspace_id.clone(),
                 args: stream_args(&spec),
-                extra_args: spec.extra_args.clone(),
+                extra_args: extra_args(&spec),
                 initial_prompt: None,
                 resume_prompt: None,
                 env: spec.env.clone(),
@@ -182,6 +171,11 @@ impl AgentAdapter for ClaudeAdapter {
         self.queue(Cmd::StopSubagent(call_id.to_string()))
     }
 
+    fn set_options(&mut self, changes: &AgentOptions) -> Result<bool, String> {
+        self.queue(Cmd::SetOptions(changes.clone()))?;
+        Ok(true)
+    }
+
     fn stop(&mut self) {
         let _ = self.tx.send(Cmd::Stop);
     }
@@ -204,16 +198,6 @@ impl Drop for ClaudeAdapter {
     }
 }
 
-/// The flags every chat `claude` gets before its conversation flag, wherever
-/// it runs: the stream-json protocol and the model.
-fn stream_args(spec: &LaunchSpec) -> Vec<String> {
-    let mut args: Vec<String> = STREAM_FLAGS.iter().map(|f| f.to_string()).collect();
-    if let Some(model) = &spec.model {
-        args.extend(["--model".to_string(), model.clone()]);
-    }
-    args
-}
-
 /// Read the agent's output on two threads, stdout lines (then its end) and
 /// stderr lines, into the agent's own thread.
 fn pump(stdout: Box<dyn Read + Send>, stderr: Option<Box<dyn Read + Send>>, tx: &Sender<Cmd>) {
@@ -231,45 +215,6 @@ fn pump(stdout: Box<dyn Read + Send>, stderr: Option<Box<dyn Read + Send>>, tx: 
         let err_tx = tx.clone();
         std::thread::spawn(move || pump_stderr(stderr, err_tx));
     }
-}
-
-/// The `claude` process, through `platform::process` like every spawn.
-fn spawn(spec: &LaunchSpec) -> Result<Child, String> {
-    let overrides: HashMap<String, String> = spec.env.iter().cloned().collect();
-    let env = build_effective_cli_env(&overrides);
-    let cli =
-        find_cli_with_env("claude", Some(&env)).ok_or("Could not find the `claude` CLI on PATH")?;
-    let cwd = spec.cwd.to_string_lossy().into_owned();
-    let (resume, fresh) = match &spec.resume {
-        Some(id) => (Some(id.clone()), None),
-        None => claude_session_ids(&spec.workspace_id, "claude", &cwd),
-    };
-    // An npm install is a `.cmd` shim on Windows: run it the way a PTY does.
-    let argv = Os::pty_invocation(&cli);
-    let (program, lead) = argv
-        .split_first()
-        .ok_or("No way to run the `claude` CLI.")?;
-    let mut cmd = crate::platform::process::command(program);
-    cmd.args(lead).args(stream_args(spec));
-    match (resume, fresh) {
-        (Some(id), _) => cmd.args(["--resume", &id]),
-        (None, Some(id)) => cmd.args(["--session-id", &id]),
-        (None, None) => &mut cmd,
-    };
-    cmd.args(&spec.extra_args);
-    // A clean env, minus prefixes that would defeat `--model` alias resolution.
-    cmd.env_clear();
-    cmd.envs(env.iter().filter(|(key, _)| {
-        !MODEL_OVERRIDE_ENV_PREFIXES
-            .iter()
-            .any(|prefix| key.starts_with(prefix))
-    }));
-    cmd.current_dir(&spec.cwd)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    cmd.spawn()
-        .map_err(|e| format!("Couldn't start claude: {e}"))
 }
 
 fn pump_stderr(stderr: impl Read, tx: Sender<Cmd>) {
@@ -345,6 +290,7 @@ fn run(
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),
             Cmd::Interrupt => tr.interrupt().map(Out::Reply).into_iter().collect(),
+            Cmd::SetOptions(changes) => tr.set_options(&changes),
             Cmd::StopSubagent(call_id) => match tr.stop_subagent(&call_id) {
                 Ok(reply) => vec![Out::Reply(reply)],
                 Err(e) => tr.notice(&e, Tone::Warning),

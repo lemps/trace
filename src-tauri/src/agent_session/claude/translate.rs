@@ -16,6 +16,7 @@
 //!   row, its own rows carrying `parentCallId` (`subagents`).
 
 mod context;
+mod options;
 mod session;
 mod subagents;
 mod turn;
@@ -63,6 +64,8 @@ pub struct Translator {
     /// `total_cost_usd` so far: it's cumulative, a turn's cost is the difference.
     cost_so_far: f64,
     context: context::ContextState,
+    /// Option changes sent, until Claude answers (`options`).
+    options: options::OptionRequests,
 }
 
 struct PendingCall {
@@ -103,6 +106,7 @@ impl Translator {
             pending: HashMap::new(),
             cost_so_far: 0.0,
             context: context::ContextState::default(),
+            options: options::OptionRequests::default(),
         }
     }
 
@@ -122,13 +126,7 @@ impl Translator {
                     self.cancel_prompt(id, &mut out);
                 }
             }
-            Some("control_response") => {
-                let r = &m["response"];
-                if str_at(r, "subtype") == Some("error") {
-                    let text = str_at(r, "error").unwrap_or("Claude refused a request.");
-                    self.status(text, Tone::Warning, &mut out);
-                }
-            }
+            Some("control_response") => self.control_response(&m, &mut out),
             Some("result") => self.result(&m, &mut out),
             Some("system") => self.system(&m, &mut out),
             Some("rate_limit_event") => self.rate_limits(&m["rate_limit_info"], &mut out),

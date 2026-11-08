@@ -4,6 +4,7 @@
 pub mod activity;
 pub mod agent;
 pub mod agent_chat;
+pub mod agent_options;
 pub mod agent_tools;
 pub mod browser;
 pub mod cleanup;
