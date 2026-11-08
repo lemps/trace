@@ -204,7 +204,10 @@ fn run(rx: Receiver<Cmd>, mut agent: Agent, mut tr: Translator, first: Vec<Out>)
                 }
                 continue;
             }
-            Cmd::Send(message) => tr.send(&message.text, input::user_input(&message)),
+            Cmd::Send(message) => tr.send(
+                &crate::agent_session::attachments::shown_text(&message),
+                input::user_input(&message),
+            ),
             Cmd::Answer(request_id, answer) => tr
                 .answer(&request_id, answer)
                 .unwrap_or_else(|e| tr.notice(&e, Tone::Warning)),

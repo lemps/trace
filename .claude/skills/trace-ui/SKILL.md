@@ -88,7 +88,7 @@ Diff `+`/`−` use `--state-ready` / `--c-danger`.
 ```
 ┌──────┬───────────────────────────────────────────┬─────────────┬──┐
 │ rail │ topbar / page or detail                    │ side panel  │  │
-│ 56px │                                            │ PRs | Orch. │  │
+│ 56px │                                            │ Det. | Orch.│  │
 │ ⌂    │                                            │  — or —     │▕ │ ← folded strip,
 │ ◉ ── ┼─▶ recents flyout (rest on Sessions)        │             │  │   vertical label
 │      │                                            │             │  │
@@ -106,8 +106,8 @@ Diff `+`/`−` use `--state-ready` / `--c-danger`.
 
   | Where | Views |
   |---|---|
-  | Session | Pull requests (once it has one) · Orchestrator |
-  | Ticket | Details (PRs, workspace, ticket) · Orchestrator |
+  | Session | Details (once it has a PR or started sessions) · Orchestrator |
+  | Ticket | Details (next step, workspace, ticket) · Orchestrator |
   | Board, Sessions page | Orchestrator (`app/PagePanel`) |
   | Inbox, Fleet, others | none — they have their own detail area, or don't need it |
 

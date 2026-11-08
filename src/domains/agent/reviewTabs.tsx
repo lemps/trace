@@ -1,7 +1,7 @@
 import { I } from "@/components/Icon";
 import { type Coming, comingFields, useComing } from "@/domains/panes/coming";
 import type { PanelDescriptor } from "@/domains/panes/types";
-import { PrRailSection } from "@/domains/prs/PrRailSection";
+import { PrPane } from "@/domains/prs/PrPane";
 import { TestsPane } from "./TestsPane";
 import { useTestsStore } from "./testsStore";
 
@@ -59,8 +59,8 @@ export function prTab(prUrls: string[], pr: Coming, section?: string): PanelDesc
     section,
     ...comingFields(pr, false),
     render: () => (
-      <div className="tab-pane pr-tab">
-        <PrRailSection urls={prUrls} />
+      <div className="tab-pane">
+        <PrPane urls={prUrls} />
       </div>
     ),
   };

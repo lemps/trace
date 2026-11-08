@@ -333,6 +333,12 @@ export const I = {
       <path d="M12 3v12" />
     </Base>
   ),
+  /** Attach files to a message. */
+  Paperclip: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+    </Base>
+  ),
   Keyboard: (p: IconProps) => (
     <Base {...p}>
       <rect x="2" y="6" width="20" height="12" rx="2" />

@@ -8,6 +8,7 @@ import { ChatList } from "./ChatList";
 import { ChatTabs } from "./ChatTabs";
 import { Composer } from "./Composer";
 import { type ChatView, ChatViewContext } from "./chatContext";
+import { showSubagentTab, useClosedOf } from "./closedTabs";
 import { useAgentWorking, useChat, useSubagents } from "./hooks/useChat";
 import { useChatKeys } from "./hooks/useChatKeys";
 import { useJournalFeed } from "./hooks/useJournalFeed";
@@ -56,15 +57,22 @@ export function ChatAgentPane({
   const working = useAgentWorking(workspaceId) && !stopped;
   const running = subagents.filter((s) => s.status === "running").length;
   const stored = useAgentChatStore((s) => s.tab[workspaceId] ?? "main");
+  // Tabs the user closed (`closedTabs.ts`) are off the strip; their cards reopen them.
+  const closed = useClosedOf(workspaceId);
+  const tabbed = useMemo(
+    () => subagents.filter((s) => !closed.includes(s.callId)),
+    [subagents, closed]
+  );
   // A subagent open in a pane of its own isn't also a tab here: picking it goes there.
   const inPanes = useSubagentsInPanes(workspaceId, subagents);
-  const listed = subagents.some((s) => s.callId === stored) && !inPanes.has(stored);
+  const listed = tabbed.some((s) => s.callId === stored) && !inPanes.has(stored);
   const tab = listed ? stored : "main";
   const setTab = (t: string) => {
     if (t !== "main" && inPanes.has(t)) openSubagentBeside(workspaceId, t);
+    else if (t !== "main") showSubagentTab(workspaceId, t);
     else useAgentChatStore.getState().setTab(workspaceId, t);
   };
-  const steppable = subagents.filter((s) => !inPanes.has(s.callId));
+  const steppable = tabbed.filter((s) => !inPanes.has(s.callId));
   const root = useWorkspaceRoot(workspaceId);
   const view = useMemo<ChatView>(
     () => ({ workspaceId, root, expandAll }),
@@ -83,8 +91,8 @@ export function ChatAgentPane({
     <ChatViewContext.Provider value={view}>
       <div className="ac-pane" ref={paneRef}>
         <ChatHeader info={info} turns={turns} onStop={live ? onStop : undefined} />
-        {subagents.length > 0 && (
-          <ChatTabs subagents={subagents} inPanes={inPanes} active={tab} onPick={setTab} />
+        {tabbed.length > 0 && (
+          <ChatTabs subagents={tabbed} inPanes={inPanes} active={tab} onPick={setTab} />
         )}
         {/* Main stays mounted under a subagent's tab, so it keeps its place. */}
         <div className="ac-main" hidden={tab !== "main"}>

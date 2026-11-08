@@ -12,7 +12,14 @@ export function QueueList({ workspaceId }: { workspaceId: string }) {
     <div className="ac-queue">
       <div className="ac-queue-label">Queued · sent in order as each turn ends</div>
       {queue.map((q, i) => (
-        <QueuedRow key={q.id} workspaceId={workspaceId} id={q.id} text={q.text} n={i + 1} />
+        <QueuedRow
+          key={q.id}
+          workspaceId={workspaceId}
+          id={q.id}
+          text={q.text}
+          files={q.attachments.length}
+          n={i + 1}
+        />
       ))}
     </div>
   );
@@ -22,10 +29,12 @@ interface QueuedRowProps {
   workspaceId: string;
   id: string;
   text: string;
+  /** How many files go with it. */
+  files: number;
   n: number;
 }
 
-function QueuedRow({ workspaceId, id, text, n }: QueuedRowProps) {
+function QueuedRow({ workspaceId, id, text, files, n }: QueuedRowProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const { editQueued, removeQueued } = useAgentChatStore.getState();
   const save = () => {
@@ -36,7 +45,14 @@ function QueuedRow({ workspaceId, id, text, n }: QueuedRowProps) {
     <div className="ac-queued">
       <span className="ac-queued-n">{n}</span>
       {draft === null ? (
-        <span className="ac-queued-text">{text}</span>
+        <span className="ac-queued-text">
+          {text}
+          {files > 0 && (
+            <span className="ac-queued-files">
+              <I.Paperclip size={11} /> {files}
+            </span>
+          )}
+        </span>
       ) : (
         <textarea
           className="ac-queued-edit"

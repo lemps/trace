@@ -12,7 +12,9 @@
 //! - `store`: the journal file; `settle`: rows a vanished process left open.
 //! - `transport`: whether each workspace runs as a chat or in the terminal.
 //! - `claude`, `codex`: the adapters; `brands` picks one by its CLI.
+//! - `attachments`: files sent with a message (pasted ones saved to disk first).
 
+pub mod attachments;
 pub mod brands;
 pub mod claude;
 pub mod codex;

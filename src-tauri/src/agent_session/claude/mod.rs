@@ -337,7 +337,7 @@ fn run(
                 continue;
             }
             Cmd::Send(message) => {
-                let text = message.text.clone();
+                let text = crate::agent_session::attachments::shown_text(&message);
                 tr.send(&text, content::user_content(&message))
             }
             Cmd::Answer(request_id, answer) => tr

@@ -3,16 +3,20 @@
 //! Two sources, because neither is complete on its own:
 //! - **The worktree's branch.** `gh pr list --head <branch>` finds a PR however
 //!   it was raised — but misses one an agent opened from a branch it created.
-//! - **The conversation.** Claude's JSONL log (`claude::conversations`) holds
-//!   every `gh pr create` output and every URL the agent printed, long after
-//!   the TUI repainted them away. Codex keeps no such log; the branch still works.
+//! - **The conversation.** Claude's JSONL log (`claude::conversations`) records
+//!   each PR the agent created, long after the TUI repainted it away. Only
+//!   creations count: a log is full of PR links the agent merely *saw* (a doc
+//!   it read, `gh pr list`, a URL it was handed), and those aren't its PRs.
+//!   Codex keeps no such log; the branch still works.
 
+use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use regex::Regex;
+use serde_json::Value;
 
-/// Most PRs surfaced per workspace — a conversation that reviews dozens of PRs
-/// shouldn't turn the rail into a list of them.
+/// Most PRs surfaced per workspace — an agent that raises a stack of PRs
+/// shouldn't turn the tab into a list of them.
 const MAX_PRS: usize = 6;
 
 fn pr_url_re() -> &'static Regex {
@@ -51,9 +55,28 @@ pub fn urls_in(text: &str) -> Vec<String> {
     seen.into_iter().map(|(u, _)| u).collect()
 }
 
+/// PRs a Claude conversation created, newest first: the ones Claude Code itself
+/// linked to it (a `pr-link` record, written when a `gh pr create` in the
+/// conversation prints a PR). Every other URL in the log is a mention, not this
+/// conversation's PR.
+pub fn created_in(log: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut found: Vec<String> = log
+        .lines()
+        // Logs run to megabytes: only parse the lines that can be a record.
+        .filter(|line| line.contains("\"pr-link\""))
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .filter(|entry| entry["type"] == "pr-link")
+        .filter_map(|entry| entry["prUrl"].as_str().and_then(|u| urls_in(u).pop()))
+        .collect();
+    found.reverse();
+    found.retain(|u| seen.insert(u.clone()));
+    found
+}
+
 /// PRs for a workspace running in `cwd` whose Claude conversations are
 /// `conversation_ids`: the branch's own PRs first (unambiguously this
-/// workspace's), then conversation mentions, newest first.
+/// workspace's), then the ones its conversations created, newest first.
 pub fn discover(cwd: &str, conversation_ids: &[String]) -> Vec<String> {
     let mut out = branch_prs(cwd);
     for id in conversation_ids {
@@ -63,7 +86,7 @@ pub fn discover(cwd: &str, conversation_ids: &[String]) -> Vec<String> {
         let Ok(raw) = std::fs::read_to_string(path) else {
             continue;
         };
-        for url in urls_in(&raw) {
+        for url in created_in(&raw) {
             if !out.contains(&url) {
                 out.push(url);
             }
@@ -143,7 +166,31 @@ fn git_stdout(cwd: &str, tool: &str, args: &[&str]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_pr_url, remote_owner, urls_in};
+    use super::{created_in, parse_pr_url, remote_owner, urls_in};
+
+    #[test]
+    fn counts_only_the_prs_a_conversation_created() {
+        let log = [
+            // A doc the agent read links shipped PRs: mentions, not its own.
+            r#"{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"read1","content":"shipped ([#11](https://github.com/acme/web/pull/11))"}]}}"#,
+            r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Like https://github.com/acme/web/pull/13"}]}}"#,
+            // Output that quotes a record isn't one.
+            r#"{"type":"user","message":{"content":[{"type":"tool_result","content":"{\"type\":\"pr-link\",\"prUrl\":\"https://github.com/acme/web/pull/14\"}"}]}}"#,
+            // Claude Code's own records of the PRs it raised (one repeated).
+            r#"{"type":"pr-link","prNumber":20,"prUrl":"https://github.com/acme/web/pull/20"}"#,
+            r#"{"type":"pr-link","prNumber":21,"prUrl":"https://github.com/acme/web/pull/21"}"#,
+            r#"{"type":"pr-link","prNumber":20,"prUrl":"https://github.com/acme/web/pull/20"}"#,
+            r#"not json "pr-link" https://github.com/acme/web/pull/99"#,
+        ]
+        .join("\n");
+        assert_eq!(
+            created_in(&log),
+            vec![
+                "https://github.com/acme/web/pull/20",
+                "https://github.com/acme/web/pull/21",
+            ]
+        );
+    }
 
     #[test]
     fn reads_the_owner_from_any_github_remote_form() {

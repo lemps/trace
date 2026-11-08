@@ -145,6 +145,11 @@
 .ac-composer:focus-within {
   border-color: var(--border-strong);
 }
+/* Files dragged over the box: the accent marks where they'll land. */
+.ac-composer.dropping {
+  border-color: var(--c-accent);
+  background: color-mix(in oklch, var(--c-accent) 6%, var(--bg-1));
+}
 .ac-input {
   resize: none;
   padding: 10px 12px 4px;
@@ -154,7 +159,10 @@
   font: inherit;
   font-size: var(--text-body);
   line-height: 1.5;
-  max-height: 260px;
+  /* Sized to its text by Composer, so the whole message shows; only a paste
+     taller than most of the window scrolls, keeping the conversation in view. */
+  max-height: 75vh;
+  overflow-y: auto;
 }
 .ac-input:focus {
   outline: none;
@@ -168,6 +176,61 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 6px 8px 8px 12px;
+}
+
+/* Attach: the bar's one control on the left. */
+.btn.icon.ac-attach {
+  margin-right: auto;
+  color: var(--fg-2);
+}
+.btn.icon.ac-attach:hover {
+  color: var(--fg-0);
+}
+
+/* Files going with the next message, above its text. */
+.ac-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px 0;
+}
+.ac-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  height: var(--control-h-xs);
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.ac-attachment.saving {
+  padding-right: 8px;
+  color: var(--fg-3);
+  font-family: inherit;
+}
+.ac-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-attachment-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
+}
+.ac-attachment-x:hover {
+  color: var(--fg-0);
+  background: var(--bg-3);
 }
 
 /* Interrupt: a square stop beside Send, only while something runs (also Esc). */
@@ -256,4 +319,13 @@
 .ac-queued-btn.btn.icon {
   width: var(--control-h-sm);
   height: var(--control-h-sm);
+}
+.ac-queued-files {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
 }

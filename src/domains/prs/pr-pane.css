@@ -1,112 +1,138 @@
-/* ============ PR section in the detail rail (PrRailSection) ============ */
+/* ============ The Pull request tab (PrPane, `prp-`) ============
+   A centred reading column, as wide as the chat's: the PR picker (when the
+   workspace raised several), its header, then its checks and conversation. */
 
-.pr-rail {
+.prp {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.pr-rail > .label {
-  margin-bottom: 0;
-}
-.pr-picker {
-  margin-top: 0;
-}
-.pr-rail-row.active {
-  background: var(--bg-2);
-}
-.pr-row-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--fg-3);
+  gap: 20px;
+  max-width: var(--chat-col, 820px);
+  margin: 0 auto;
+  padding: 6px 0 24px;
 }
 
-/* Summary card */
-.pr-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-0);
-}
-.pr-summary-title {
-  text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--fg-0);
-  line-height: 1.35;
-}
-.pr-summary-title:hover {
-  color: var(--c-review);
-}
-.pr-summary-title .num {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--fg-3);
-}
-.pr-summary-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11.5px;
-  color: var(--fg-3);
-}
-.pr-summary-meta .branch {
-  min-width: 0;
-  flex: 1;
-  font-family: var(--font-mono);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pr-summary-meta .diffstat {
-  font-family: var(--font-mono);
-}
-.pr-summary-meta .add {
-  color: var(--c-done);
-  font-weight: 500;
-}
-.pr-summary-meta .del {
-  color: var(--c-danger);
-  font-weight: 500;
-}
-.pr-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.pr-status .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.pr-status.ok,
-.pr-status.approved {
-  color: var(--c-done);
-}
-.pr-status.fail,
-.pr-status.changes {
-  color: var(--c-danger);
-}
-.pr-status.pending,
-.pr-status.review {
-  color: var(--c-warn);
-}
-.pr-summary-links {
+/* Several PRs: one chip each. */
+.prp-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.pr-summary-foot {
-  font-size: 11px;
-  color: var(--fg-4);
+.prp-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-2);
+  font-size: var(--text-ui);
+}
+.prp-pick:hover {
+  color: var(--fg-0);
+  border-color: var(--border-strong);
+}
+.prp-pick.on {
+  color: var(--fg-0);
+  border-color: var(--c-accent);
+  background: color-mix(in oklch, var(--c-accent) 8%, transparent);
+}
+.prp-pick-ref {
+  font-family: var(--font-mono);
+}
+
+/* Header: title and actions, then a line of facts. */
+.prp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-faint);
+}
+.prp-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.prp-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-detail-title);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--fg-0);
+  overflow-wrap: anywhere;
+}
+.prp-num {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--fg-3);
+}
+.prp-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.prp-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.prp-branch {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}
+.prp-diffstat {
+  font-family: var(--font-mono);
+}
+.prp-diffstat .add {
+  color: var(--state-ready);
+  font-weight: 500;
+}
+.prp-diffstat .del {
+  color: var(--c-danger);
+  font-weight: 500;
+}
+.prp-by {
+  margin-left: auto;
+}
+/* The review decision, outlined like the state beside it. */
+.pr-pill.approved {
+  color: var(--c-done);
+  border-color: var(--c-done-border);
+}
+.pr-pill.changes {
+  color: var(--c-danger);
+  border-color: var(--c-danger-border);
+}
+.pr-pill.review {
+  color: var(--fg-2);
+}
+
+/* Checks, Conversation. */
+.prp-section .label {
+  margin-bottom: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.prp-note {
+  padding: 24px 0;
+  text-align: center;
+  font-size: var(--text-ui);
+  color: var(--fg-3);
 }
 
 /* Conversation */
@@ -119,9 +145,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.pr-convo-head .label {
-  margin-bottom: 0;
 }
 .pr-convo-head .count {
   font-size: 11px;
@@ -242,7 +265,7 @@
   overflow-wrap: anywhere;
 }
 .pr-entry-body .md {
-  font-size: 12px;
+  font-size: var(--text-ui);
   line-height: 1.5;
 }
 .pr-entry-body.clamped .md {

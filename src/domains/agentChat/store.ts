@@ -11,6 +11,8 @@ import type { JournalRow, SessionInfo, Transport } from "./types";
 export interface QueuedMessage {
   id: string;
   text: string;
+  /** Absolute paths of files sent with it. */
+  attachments: string[];
 }
 
 interface AgentChatState {
@@ -36,7 +38,7 @@ interface AgentChatState {
   setTransport: (workspaceId: string, transport: Transport) => void;
   setBrands: (brands: string[]) => void;
   markLoaded: (workspaceId: string) => void;
-  enqueue: (workspaceId: string, text: string) => void;
+  enqueue: (workspaceId: string, text: string, attachments?: string[]) => void;
   editQueued: (workspaceId: string, id: string, text: string) => void;
   removeQueued: (workspaceId: string, id: string) => void;
   /** Put a message that failed to send back at the front of the queue, and pause it. */
@@ -89,10 +91,11 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
     ),
   setBrands: (brands) => set({ brands }),
   markLoaded: (workspaceId) => set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } })),
-  enqueue: (workspaceId, text) =>
+  enqueue: (workspaceId, text, attachments = []) =>
     set((s) => {
       nextQueued += 1;
-      const queue = [...(s.queues[workspaceId] ?? []), { id: `q${nextQueued}`, text }];
+      const queued = { id: `q${nextQueued}`, text, attachments };
+      const queue = [...(s.queues[workspaceId] ?? []), queued];
       return { queues: { ...s.queues, [workspaceId]: queue } };
     }),
   editQueued: (workspaceId, id, text) =>
