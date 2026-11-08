@@ -5,8 +5,10 @@ import type { AgentAsk, AgentTurn } from "@/ipc/events";
 import { askFrom, askFromTool } from "./ask";
 import { lightOf } from "./light";
 import { loadOpenedAt, saveOpenedAt } from "./prefs";
+import { noteHeard, watchQuiet } from "./quietStore";
 import { useLiveStore } from "./store";
 import type { LiveInfo } from "./types";
+import { watchUnread } from "./unreadStore";
 
 // Keeps `useLiveStore` in step with the board store's raw agent signals and the
 // hooks' turn events. The board store import is circular by design (it reaches
@@ -109,6 +111,7 @@ export function restoreLive(
 /** A hook-reported turn: remember what the agent asks for, or what it said. */
 export function noteLiveTurn(turn: AgentTurn): void {
   if (!isAgent(turn.workspaceId)) return;
+  noteHeard(turn.workspaceId);
   if (turn.event === "needsInput") {
     // The PermissionRequest hook fires first and says far more; the generic
     // Notification that follows mustn't overwrite it.
@@ -127,6 +130,7 @@ export function noteLiveTurn(turn: AgentTurn): void {
 /** A permission dialog is about to show: what it's for (`claude::permission_ask`). */
 export function noteLiveAsk(event: AgentAsk): void {
   if (!isAgent(event.workspaceId)) return;
+  noteHeard(event.workspaceId);
   patchAndRecompute(event.workspaceId, { ask: askFromTool(event) });
 }
 
@@ -147,8 +151,14 @@ export function clearAsk(workspaceId: string): void {
   patchAndRecompute(workspaceId, { ask: null });
 }
 
-/** Mount once (App): derive lights now and whenever the board's signals change. */
+/**
+ * Mount once (App): derive lights now and whenever the board's signals change,
+ * keep "new since you looked" in step with them (`unreadStore.ts`), and watch
+ * working agents for going quiet (`quietStore.ts`).
+ */
 export function useLiveSync(): void {
+  useEffect(() => watchUnread(), []);
+  useEffect(() => watchQuiet(), []);
   useEffect(() => {
     recompute(useBoardStore.getState());
     return useBoardStore.subscribe((s, prev) => {

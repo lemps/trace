@@ -1,0 +1,38 @@
+/* Compact density changes the chat's layout, not just its scale (as Slack's and
+   Discord's compact modes do): tighter gaps between messages, the Thought row a
+   one-line meta note, and your messages full width instead of a bubble on the
+   right. Keyed off `data-density` (domains/appearance/apply.ts); the default and
+   Comfortable keep chat.css's layout as it is. Imported after the chat's other
+   sheets, so these win at equal specificity. */
+
+/* Tighter gaps: between turns, and between the pieces of a turn. */
+:root[data-density="compact"] .tx-col.ac-col,
+:root[data-density="compact"] .ac-turn {
+  gap: 6px;
+}
+:root[data-density="compact"] .ac-col .tx-prompt {
+  margin-top: 2px;
+}
+:root[data-density="compact"] .ac-msg-actions {
+  margin-bottom: -4px;
+}
+
+/* The Thought row inline: a meta-sized line at the row height of an xs control,
+   and its text, unfolded, in the flow rather than an indented block. */
+:root[data-density="compact"] .ac-thought-head {
+  height: var(--control-h-xs);
+  gap: 6px;
+  font-size: var(--text-meta);
+}
+:root[data-density="compact"] .ac-thought-body {
+  margin-left: 0;
+  padding: 0 0 2px 10px;
+}
+
+/* Your message full width: the bubble fills the column, so a long prompt reads
+   like the replies around it. Its hover bar stays at the right edge. */
+:root[data-density="compact"] .ac-col .tx-bubble {
+  flex: 1;
+  max-width: none;
+  padding: 6px 10px;
+}

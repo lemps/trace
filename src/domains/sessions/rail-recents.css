@@ -101,6 +101,11 @@
 .rr-row.active .rr-title {
   color: var(--fg-0);
 }
+/* New since you looked: weight, not colour (amber and a count mean Needs you). */
+.rr-row.unread .rr-title {
+  font-weight: 650;
+  color: var(--fg-0);
+}
 .rr-time {
   font-family: var(--font-mono);
   font-size: var(--text-label);
