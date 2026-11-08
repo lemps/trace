@@ -15,15 +15,15 @@
   min-height: 0;
   display: flex;
 }
+/* Inside an AutoSidebar, which draws its edge. */
 .gl-sets {
-  flex: 0 0 220px;
-  min-width: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 8px;
-  border-right: 1px solid var(--border-faint);
+  padding: 8px;
 }
 .gl-set {
   display: flex;

@@ -1,56 +1,64 @@
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { I } from "@/components/Icon";
+import { Markdown } from "@/components/Markdown";
 import type { Issue } from "@/domains/issues/types";
+import { jiraBrowseUrl } from "@/domains/issues/url";
+import { TicketComments } from "./ticket/TicketComments";
+import { TicketProps } from "./ticket/TicketProps";
 
-// The "Ticket" tab — the linked issue's fields.
-export function TicketPane({ issue }: { issue: Issue }) {
-  const paragraphs = (issue.description ?? "").split(/\n{2,}/).filter((p) => p.trim());
-  // Key by content + occurrence count: descriptions can repeat a line (e.g. a
-  // "---" separator), and duplicate keys make React silently drop paragraphs.
-  const seen = new Map<string, number>();
-  const keyed = paragraphs.map((text) => {
-    const n = seen.get(text) ?? 0;
-    seen.set(text, n + 1);
-    return { text, key: `${n}:${text}` };
-  });
+interface TicketPaneProps {
+  issue: Issue;
+  /** The Jira site, for links to the ticket and its epic. */
+  site: string | null;
+}
+
+// The "Ticket" tab: the issue as a document to read. Its key and type, title and
+// fields, then the description and the discussion as the tracker has them (Jira's
+// rich text arrives as Markdown, `jira::adf`). Where the agent is and its PRs stay
+// in the Details panel.
+export function TicketPane({ issue, site }: TicketPaneProps) {
+  const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
+  const epicUrl = issue.epicKey ? jiraBrowseUrl(site, issue.epicKey) : undefined;
+  const description = issue.description?.trim();
 
   return (
-    <div className="tab-pane">
-      <div className="ticket-section">
-        <h2>{issue.summary}</h2>
-        {issue.labels.length > 0 && (
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-            {issue.labels.map((l) => (
-              <span key={l} className="tag">
-                {l}
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="ticket-desc">
-          {keyed.length > 0 ? (
-            keyed.map(({ text, key }) => <p key={key}>{text}</p>)
+    <div className="tk">
+      <article className="tk-doc">
+        <div className="tk-meta">
+          <I.Ticket size={13} />
+          {issueUrl ? (
+            <button
+              type="button"
+              className="tk-key"
+              onClick={() => void openUrl(issueUrl)}
+              title={`Open ${issue.key} in the tracker`}
+            >
+              {issue.key}
+              <I.External size={11} />
+            </button>
           ) : (
-            <p style={{ color: "var(--fg-3)" }}>No description.</p>
+            <span className="tk-key">{issue.key}</span>
           )}
+          <span className="tk-dot" aria-hidden>
+            ·
+          </span>
+          <span>{issue.issueType}</span>
         </div>
-        <div className="ticket-grid">
-          <div>
-            <div className="k">Type</div>
-            <div className="v">{issue.issueType}</div>
-          </div>
-          <div>
-            <div className="k">Status</div>
-            <div className="v">{issue.statusName}</div>
-          </div>
-          <div>
-            <div className="k">Reporter</div>
-            <div className="v">{issue.reporter ?? "—"}</div>
-          </div>
-          <div>
-            <div className="k">Priority</div>
-            <div className="v">{issue.priority.toUpperCase()}</div>
-          </div>
-        </div>
-      </div>
+        <h1 className="tk-title">{issue.summary}</h1>
+
+        <TicketProps issue={issue} epicUrl={epicUrl} />
+
+        <section className="tk-section" aria-label="Description">
+          <h2 className="tk-label">Description</h2>
+          {description ? (
+            <Markdown text={description} className="tk-desc" />
+          ) : (
+            <div className="tk-empty">No description.</div>
+          )}
+        </section>
+
+        <TicketComments issue={issue} />
+      </article>
     </div>
   );
 }

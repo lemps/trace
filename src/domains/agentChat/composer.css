@@ -170,6 +170,14 @@
   padding: 6px 8px 8px 12px;
 }
 
+/* Interrupt: a square stop beside Send, only while something runs (also Esc). */
+.btn.icon.ac-stop {
+  color: var(--fg-2);
+}
+.btn.icon.ac-stop:hover {
+  color: var(--fg-0);
+}
+
 /* Slash commands, above the composer. */
 .ac-slash {
   position: absolute;

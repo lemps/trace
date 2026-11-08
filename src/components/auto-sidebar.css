@@ -1,0 +1,106 @@
+/* ============ AutoSidebar (components/AutoSidebar) ============
+   Folded: a strip naming the list. Open: the list slides out over the pane, so what
+   the pane shows keeps its width. Pinned: the list sits beside the pane instead. */
+
+.as {
+  position: relative;
+  z-index: 5;
+  flex: none;
+  display: flex;
+  width: var(--side-w-closed);
+}
+.as.pinned {
+  width: auto;
+  /* However wide it was left, the pane keeps room to read. */
+  max-width: calc(100% - 240px);
+}
+
+.as-strip.sp-strip {
+  flex: 1;
+  padding: 10px 0;
+  border-right: 1px solid var(--border-faint);
+}
+.as-strip-item {
+  cursor: default;
+}
+.as.open .as-strip-item {
+  color: var(--fg-0);
+}
+
+.as-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--as-w);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border-faint);
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  transform: translateX(-12px);
+  pointer-events: none;
+  transition:
+    opacity 0.14s ease-out,
+    transform 0.14s ease-out;
+}
+.as.open .as-panel {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.as.pinned .as-panel {
+  position: static;
+  flex: 0 1 var(--as-w);
+  width: auto;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  box-shadow: none;
+  background: transparent;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .as-panel {
+    transition: none;
+  }
+}
+
+.as-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(var(--control-h-sm) + 12px);
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--border-faint);
+}
+.as-title {
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.as-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-3);
+}
+.as-pin {
+  margin-left: auto;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  color: var(--fg-3);
+}
+.as-pin.on {
+  color: var(--c-accent);
+}
+.as-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

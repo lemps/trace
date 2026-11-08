@@ -2,6 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { buildBoardContext } from "@/domains/orchestrator/context";
 import { runWriteTool, WRITE_TOOL_NAMES, WRITE_TOOLS } from "@/domains/orchestrator/mutations";
 import { READ_TOOLS, runReadTool } from "@/domains/orchestrator/tools";
+import { offTools, tabOfTool, useTabSettings } from "@/domains/panes/tabSettings";
 import type { McpTool } from "@/ipc/agentTools";
 import { isMoreTool, MORE_TOOLS, runMoreTool } from "./moreTools";
 import { PUBLISH_DOCUMENT, runPublishDocument } from "./publishTool";
@@ -39,9 +40,10 @@ const TOOLS: Anthropic.Tool[] = [
   ...VIEWER_TOOLS,
 ];
 
-/** The tool definitions in MCP's shape. */
+/** The tool definitions in MCP's shape, less those of tabs turned off in Settings → Tabs. */
 export function mcpTools(): McpTool[] {
-  return TOOLS.map((t) => ({
+  const off = offTools(useTabSettings.getState().off);
+  return TOOLS.filter((t) => !off.has(t.name)).map((t) => ({
     name: t.name,
     description: t.description ?? "",
     inputSchema: t.input_schema,
@@ -50,6 +52,11 @@ export function mcpTools(): McpTool[] {
 
 /** Run one tool for the agent `caller` (its workspace id). Returns the text for the model. */
 export async function runAgentTool(name: string, input: unknown, caller: string): Promise<string> {
+  // An agent started before its tab was turned off still has the tool: say why it's gone.
+  const tab = tabOfTool(name);
+  if (tab && offTools(useTabSettings.getState().off).has(name)) {
+    throw new Error(`The ${tab.label} tab is turned off in trace's Settings → Tabs.`);
+  }
   if (name === GET_BOARD.name) return buildBoardContext();
   if (name === UPDATE_USER.name) return runUpdateUser(input, caller);
   if (name === PUBLISH_DOCUMENT.name) return runPublishDocument(input, caller);

@@ -1,15 +1,8 @@
 import type { GallerySet, Listing } from "../../ipc/gallery.ts";
 
-// The Gallery tab's pure rules: when the tab shows, how a set and an image are
-// described, when a re-listing changed anything, and stepping through images.
-
-/**
- * Whether the Gallery tab is in the tab row: the workspace has a set, or the user
- * opened it empty from the pane menu (`revealed`) and hasn't closed it yet.
- */
-export function galleryTabVisible(sets: number, revealed: boolean): boolean {
-  return sets > 0 || revealed;
-}
+// The Gallery tab's pure rules: how a set and an image are described, when a
+// re-listing changed anything, and stepping through images. When the tab shows is
+// the tabs rule's (panes/coming.ts).
 
 /** "812 B", "14.2 KB", "3.1 MB". */
 export function formatSize(bytes: number): string {

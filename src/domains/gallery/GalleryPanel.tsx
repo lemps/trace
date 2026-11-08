@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { AutoSidebar } from "@/components/AutoSidebar";
+import { I } from "@/components/Icon";
 import { GalleryEmpty } from "./GalleryEmpty";
 import { ImageGrid } from "./ImageGrid";
 import { ImageViewer } from "./ImageViewer";
@@ -6,8 +8,9 @@ import { SetHeader } from "./SetHeader";
 import { SetList } from "./SetList";
 import { useGallerySets, useGalleryStore, useListing } from "./store";
 
-// The Gallery tab: the sets of images agents showed here, newest first, beside the
-// one in view as a grid of thumbnails. A thumbnail opens the full-size viewer
+// The Gallery tab: the sets of images agents showed here, newest first (folding
+// away while not pointed at: AutoSidebar), beside the one in view as a grid of
+// thumbnails. A thumbnail opens the full-size viewer
 // (zoom, pan, compare). The set in view re-lists itself every few seconds, so new
 // and removed files show up. Opening the tab marks its news seen.
 export function GalleryPanel({ workspaceId }: { workspaceId: string }) {
@@ -25,14 +28,16 @@ export function GalleryPanel({ workspaceId }: { workspaceId: string }) {
   if (!current) {
     return (
       <div className="gl-pane">
-        <GalleryEmpty />
+        <GalleryEmpty workspaceId={workspaceId} />
       </div>
     );
   }
   return (
     <div className="gl-pane">
       <div className="gl-split">
-        <SetList sets={sets} selected={current.id} onSelect={(id) => pick(workspaceId, id)} />
+        <AutoSidebar id="gallery" label="Sets" icon={I.Images} count={sets.length} width={232}>
+          <SetList sets={sets} selected={current.id} onSelect={(id) => pick(workspaceId, id)} />
+        </AutoSidebar>
         <SetBody key={current.id} workspaceId={workspaceId} setId={current.id} />
       </div>
     </div>

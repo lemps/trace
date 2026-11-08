@@ -1,15 +1,14 @@
 import { I } from "@/components/Icon";
+import { comingFields } from "@/domains/panes/coming";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { PlanPanel } from "./PlanPanel";
-import { type PlanTabState, usePlanStore } from "./store";
+import type { PlanTabState } from "./store";
 
 /**
  * The Plan tab's id. It was the HTML tab's, and stays "html" so layouts saved
  * with that tab in them put Plan in its place.
  */
 export const PLAN_TAB = "html";
-
-export const PLAN_MENU_HINT = "Appears when the agent writes a plan in plan mode, or publishes one";
 
 interface PlanTabArgs {
   workspaceId: string;
@@ -22,13 +21,11 @@ interface PlanTabArgs {
 }
 
 /**
- * The Plan tab as a panel. Like a subagent's tab it's only there with something
- * to show (a document or a task list), and it carries a dot while a new document
- * is unseen. The pane menu always lists it; opened from there empty, it explains
- * itself and closes again with its ×.
+ * The Plan tab as a panel, under the tabs rule (.claude/rules/tabs.md): there with a
+ * document or a task list, hidden by its ×, back with the next document. It carries
+ * a dot while a new document is unseen. It can't open empty: a plan comes from the agent.
  */
 export function planTab(a: PlanTabArgs): PanelDescriptor {
-  const reveal = (on: boolean) => usePlanStore.getState().reveal(a.workspaceId, on);
   return {
     id: PLAN_TAB,
     label: "Plan",
@@ -40,10 +37,7 @@ export function planTab(a: PlanTabArgs): PanelDescriptor {
       <span className="count">{a.state.count}</span>
     ) : undefined,
     section: a.section,
-    hidden: !a.state.visible,
-    menuHint: PLAN_MENU_HINT,
-    onReveal: () => reveal(true),
-    onClose: a.state.peeking ? () => reveal(false) : undefined,
+    ...comingFields(a.state.coming, false),
     render: () => <PlanPanel workspaceId={a.workspaceId} agentTab={a.agentTab} />,
   };
 }

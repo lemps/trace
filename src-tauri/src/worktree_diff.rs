@@ -27,6 +27,10 @@ pub struct DiffSummary {
     /// The ref we diffed against, e.g. `origin/main`.
     pub base: String,
     pub files: Vec<FileSummary>,
+    /// Read from the workspace's own worktree. False when it has none yet (an
+    /// unstarted ticket) and the main checkout was read instead: those changes
+    /// aren't the workspace's, so its Files tab doesn't show for them.
+    pub own_worktree: bool,
 }
 
 fn base_ref(repo: &str) -> String {
@@ -121,7 +125,12 @@ pub fn summary(issue_key: &str) -> Result<DiffSummary, String> {
             old_path: None,
         });
     }
-    Ok(DiffSummary { base, files })
+    let own_worktree = worktree != repo;
+    Ok(DiffSummary {
+        base,
+        files,
+        own_worktree,
+    })
 }
 
 pub fn file_diff(issue_key: &str, path: &str, old_path: Option<&str>) -> Result<FileDiff, String> {

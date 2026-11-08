@@ -177,6 +177,7 @@ the same from the keyboard.
 - [ ] Navigation is in the rail, context in the right-edge `SidePanel`, one side panel at most.
 - [ ] Icon-only buttons have `aria-label`; hover-only actions have another path.
 - [ ] Empty and error states say something useful.
+- [ ] A workspace tab that comes and goes follows `.claude/rules/tabs.md` (`panes/coming.ts`): × hides, never deletes.
 - [ ] `npx tsc --noEmit` and `npx @biomejs/biome check src` pass.
 
 Legacy to migrate when you touch it (don't copy): raw `font-size` px values,

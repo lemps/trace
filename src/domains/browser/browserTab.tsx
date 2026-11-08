@@ -1,20 +1,16 @@
 import { I } from "@/components/Icon";
+import { comingFields } from "@/domains/panes/coming";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { BrowserPanel } from "./BrowserPanel";
-import { type BrowserTabState, useBrowserStore } from "./store";
-
-export const BROWSER_TAB = "browser";
-
-export const BROWSER_MENU_HINT =
-  "Appears when the agent opens a page, such as its dev server. Pick it to open one yourself";
+import { BROWSER_TAB } from "./browserTabId";
+import type { BrowserTabState } from "./store";
 
 /**
- * The Browser tab as a panel. Like Plan it's only there with something to show (a
- * page), with a dot while an agent's page is unseen. The pane menu always lists it;
- * opened from there empty, it offers an address bar and closes again with its ×.
+ * The Browser tab as a panel, under the tabs rule (.claude/rules/tabs.md): there with
+ * a page, hidden by its ×, back with the next page; a dot while an agent's page is
+ * unseen. It opens empty, with an address bar.
  */
 export function browserTab(ws: string, state: BrowserTabState, section?: string): PanelDescriptor {
-  const reveal = (on: boolean) => useBrowserStore.getState().reveal(ws, on);
   return {
     id: BROWSER_TAB,
     label: "Browser",
@@ -26,10 +22,7 @@ export function browserTab(ws: string, state: BrowserTabState, section?: string)
       <span className="count">{state.count}</span>
     ) : undefined,
     section,
-    hidden: !state.visible,
-    menuHint: BROWSER_MENU_HINT,
-    onReveal: () => reveal(true),
-    onClose: state.peeking ? () => reveal(false) : undefined,
+    ...comingFields(state.coming, true),
     render: () => <BrowserPanel workspaceId={ws} />,
   };
 }

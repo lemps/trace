@@ -40,12 +40,9 @@ export interface PlanContent {
   tasks: TaskList | null;
 }
 
-/**
- * Whether the Plan tab is in the tab row: it has a document or a task list, or the
- * user opened it empty from the pane menu (`revealed`) and hasn't closed it yet.
- */
-export function planTabVisible(content: PlanContent, revealed: boolean): boolean {
-  return content.docs > 0 || (content.tasks?.items.length ?? 0) > 0 || revealed;
+/** Whether the Plan tab has content: a document or a task list (panes/coming.ts shows it). */
+export function planHasContent(content: PlanContent): boolean {
+  return content.docs > 0 || (content.tasks?.items.length ?? 0) > 0;
 }
 
 /** Whether a document arrived after the user last looked (`seenAt`, ms; null = never). */

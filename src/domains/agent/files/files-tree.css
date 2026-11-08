@@ -17,13 +17,6 @@
 }
 
 /* ---- Sidebar ---- */
-.fx-side-wrap {
-  flex: none;
-  display: flex;
-  min-width: 0;
-  /* However wide it was left, the viewer keeps room to read. */
-  max-width: calc(100% - 240px);
-}
 .fx-side {
   flex: 1;
   min-width: 0;
@@ -169,12 +162,6 @@
 }
 
 /* Folded: a strip like the right-hand side panel's, naming what it holds. */
-.fx-strip.sp-strip {
-  flex: none;
-  width: var(--side-w-closed);
-  border-right: 1px solid var(--border-faint);
-}
-
 /* ---- The divider: a plain 1px rule at rest, with a wider grab area ---- */
 .fx-divider {
   flex: none;

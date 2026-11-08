@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { create } from "zustand";
+import { type Coming, useComing } from "@/domains/panes/coming";
 import { loadPlanDocs, type PlanDoc, removePlanDoc, type TaskList } from "@/ipc/plans";
-import { hasUnseen, newestAt, planTabVisible } from "./model";
+import { hasUnseen, newestAt, planHasContent } from "./model";
 
 // Each workspace's Plan tab in the renderer: its documents and task list as the
 // backend has them (`plans`), when the user last looked, and whether they opened
@@ -39,14 +40,11 @@ interface PlanStore {
   loaded: Record<string, boolean>;
   /** Newest document time the user has seen, per workspace. */
   seen: Record<string, number>;
-  /** Opened empty from the pane menu, until closed. */
-  revealed: Record<string, boolean>;
   ensure: (workspaceId: string) => void;
   reload: (workspaceId: string) => Promise<void>;
   setTasks: (workspaceId: string, tasks: TaskList) => void;
   remove: (workspaceId: string, id: string, allVersions: boolean) => Promise<void>;
   markSeen: (workspaceId: string) => void;
-  reveal: (workspaceId: string, on: boolean) => void;
 }
 
 export const usePlanStore = create<PlanStore>((set, get) => ({
@@ -54,7 +52,6 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   tasks: {},
   loaded: {},
   seen: loadSeen(),
-  revealed: {},
   ensure(workspaceId) {
     if (get().loaded[workspaceId]) return;
     set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } }));
@@ -77,8 +74,6 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   async remove(workspaceId, id, allVersions) {
     await removePlanDoc(workspaceId, id, allVersions);
     await get().reload(workspaceId);
-    // The last one gone: the tab goes too, as it came.
-    if ((get().docs[workspaceId] ?? NO_DOCS).length === 0) get().reveal(workspaceId, false);
   },
   markSeen(workspaceId) {
     const at = newestAt(get().docs[workspaceId] ?? NO_DOCS);
@@ -86,9 +81,6 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     const seen = { ...get().seen, [workspaceId]: at };
     saveSeen(seen);
     set({ seen });
-  },
-  reveal(workspaceId, on) {
-    set((s) => ({ revealed: { ...s.revealed, [workspaceId]: on } }));
   },
 }));
 
@@ -103,11 +95,9 @@ export function usePlanTasks(workspaceId: string): TaskList | null {
   return usePlanStore((s) => s.tasks[workspaceId] ?? null);
 }
 
-/** What the tab row needs: whether Plan shows, and whether it has news. */
+/** What the tab row needs: whether Plan shows (the tabs rule), and whether it has news. */
 export interface PlanTabState {
-  visible: boolean;
-  /** Shown only because the user opened it empty: its tab closes it again. */
-  peeking: boolean;
+  coming: Coming;
   unseen: boolean;
   count: number;
 }
@@ -115,13 +105,12 @@ export interface PlanTabState {
 export function usePlanTab(workspaceId: string): PlanTabState {
   const docs = usePlanDocs(workspaceId);
   const tasks = usePlanTasks(workspaceId);
-  const revealed = usePlanStore((s) => s.revealed[workspaceId] ?? false);
   const seenAt = usePlanStore((s) => s.seen[workspaceId] ?? null);
-  const content = { docs: docs.length, tasks };
-  const filled = planTabVisible(content, false);
+  const content = planHasContent({ docs: docs.length, tasks });
+  // A new document brings a hidden tab back; the task list ticking along doesn't.
+  const signature = `${docs.length}:${newestAt(docs)}:${tasks ? "tasks" : ""}`;
   return {
-    visible: planTabVisible(content, revealed),
-    peeking: revealed && !filled,
+    coming: useComing("html", workspaceId, content, signature),
     unseen: hasUnseen(docs, seenAt),
     count: new Set(docs.map((d) => d.series)).size,
   };

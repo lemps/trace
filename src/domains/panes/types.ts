@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { IconProps } from "@/components/Icon";
 
 /**
- * One tab-like view a detail can show in a pane: an agent's chat, HTML, Files, a
+ * One tab-like view a detail can show in a pane: an agent's chat, Plan, Files, a
  * shell, a ticket's tests — or, through `registerPanelKind`, a view another domain
  * owns (a subagent's conversation). The layout only places it; what it shows is
  * `render`'s business.
@@ -33,12 +33,17 @@ export interface PanelDescriptor {
    */
   hidden?: boolean;
   /**
-   * For a tab that comes and goes: the pane menu always lists it, greyed out with
-   * this hint while hidden, and picking it then calls `onReveal` and shows it.
+   * A tab that comes and goes (`panes/coming.ts`, .claude/rules/tabs.md): the pane
+   * menu's Tabs list always has it, marked by whether it has content.
    */
-  menuHint?: string;
+  comes?: boolean;
+  /** It has content, shown or hidden (the menu's filled mark). */
+  filled?: boolean;
+  /** It can show with nothing in it (a shell, a blank page); else the menu can't pick it empty. */
+  opensEmpty?: boolean;
+  /** Shows it while hidden: picked from the pane menu. */
   onReveal?: () => void;
-  /** Closable for now (shown empty after a reveal): its × calls this. */
+  /** Its ×: for a coming tab, hides it (nothing is deleted). */
   onClose?: () => void;
   /**
    * The content. It stays mounted while the tab is shown — moving it to another pane

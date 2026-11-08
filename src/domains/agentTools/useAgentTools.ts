@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTabSettings } from "@/domains/panes/tabSettings";
 import { agentToolResult, setAgentTools } from "@/ipc/agentTools";
 import { onAgentToolCall } from "@/ipc/events";
 import { mcpTools, runAgentTool } from "./registry";
@@ -9,8 +10,13 @@ import { mcpTools, runAgentTool } from "./registry";
  * can come from any agent whatever view is showing.
  */
 export function useAgentTools(): void {
+  // Turning a tab off or on in Settings changes what's offered (to agents started after).
+  const off = useTabSettings((s) => s.off);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-register when tabs change
   useEffect(() => {
     void setAgentTools(mcpTools());
+  }, [off]);
+  useEffect(() => {
     // Same late-registration guard as useAppEvents: under StrictMode a listener
     // that resolves after cleanup must unlisten at once, or every call runs twice.
     let cancelled = false;

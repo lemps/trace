@@ -6,6 +6,7 @@ export type SettingsTab =
   | "assistant"
   | "appearance"
   | "sidebar"
+  | "tabs"
   | "shortcuts"
   | "worktrees"
   | "updates";

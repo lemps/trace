@@ -9,16 +9,19 @@ import { useHasExited } from "@/domains/agent/exitedStore";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
 import { RestartChip } from "@/domains/agent/RestartChip";
+import { usePrTab, useTestsTab } from "@/domains/agent/reviewTabs";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
 import { useViewerTabs } from "@/domains/agent/viewerTabs";
+import { useWorkspaceTabs } from "@/domains/agent/workspaceTabs";
 import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
 import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { focusedGroup } from "@/domains/panes/model";
 import { PaneArea } from "@/domains/panes/PaneArea";
-import { layoutItems } from "@/domains/panes/paneMenu";
+import { comingTabs, layoutItems } from "@/domains/panes/paneMenu";
+import { isTabOn, useOnTabs, useTabSettings } from "@/domains/panes/tabSettings";
 import { type Panes, usePanes } from "@/domains/panes/usePanes";
 import { usePlanTab } from "@/domains/plans/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
@@ -95,22 +98,34 @@ export function SessionDetail({
   const waiting = agentActivity[active.workspaceId] === "waiting";
   const plan = usePlanTab(active.workspaceId);
   const viewers = useViewerTabs(active.workspaceId);
+  // A plain folder has no git, so nothing for Files to show.
+  const hasFiles = !session.folder;
+  const filesOn = useTabSettings((s) => isTabOn(s.off, "files"));
+  const workspace = useWorkspaceTabs(session.id, hasFiles && filesOn);
+  const tests = useTestsTab(session.id);
+  const pr = usePrTab(session.id, prUrls);
 
   // Viewing a waiting agent acknowledges it — see AgentDetail.
   useEffect(() => {
     if (waiting) ackWaiting(active.workspaceId);
   }, [waiting, active.workspaceId, ackWaiting]);
 
-  const panels = sessionPanels({
-    session,
-    roster,
-    active,
-    live,
-    plan,
-    viewers,
-    onAddAgent: (cli, provider) => onAddAgent(cli, provider),
-    addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
-  });
+  const panels = useOnTabs(
+    sessionPanels({
+      session,
+      roster,
+      active,
+      live,
+      plan,
+      viewers,
+      workspace,
+      tests,
+      pr,
+      prUrls,
+      onAddAgent: (cli, provider) => onAddAgent(cli, provider),
+      addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
+    })
+  );
   const owners = useMemo(
     () => Object.fromEntries(turnIds.map((id) => [id, agentTab(id)])),
     [turnIds]
@@ -126,10 +141,8 @@ export function SessionDetail({
     panes.select(agentTab(workspaceId));
   };
   // ⌘1… = each tab in its natural order, wherever it is; Esc goes back.
-  // A plain folder has no git, so nothing for Files to show.
-  const hasFiles = !session.folder;
   const exited = useHasExited(active.workspaceId);
-  const quickOpen = useQuickOpen(session.id, hasFiles, () => panes.select("files"));
+  const quickOpen = useQuickOpen(session.id, hasFiles, () => panes.reveal("files"));
   useDetailKeys(
     onBack,
     panels.filter((p) => !p.hidden).map((p) => p.id),
@@ -268,6 +281,7 @@ export function SessionDetail({
                     : []),
                 ],
               },
+              { title: "Tabs", items: comingTabs(panes) },
               { title: "Layout", items: layoutItems(panes) },
             ]}
           />

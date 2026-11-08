@@ -13,7 +13,6 @@ interface ChatListProps {
   since: number | null;
   /** Subagents still running. */
   subagents: number;
-  onInterrupt: () => void;
 }
 
 /** Turns drawn at first, and added per "Show earlier". */
@@ -23,7 +22,7 @@ const PAGE = 30;
 // bottom and stays put while you read further up. Long conversations stay
 // cheap: only the latest turns mount (older ones a click away), finished turns
 // are folded and memoised, and off-screen turns skip layout (content-visibility).
-export function ChatList({ turns, working, since, subagents, onInterrupt }: ChatListProps) {
+export function ChatList({ turns, working, since, subagents }: ChatListProps) {
   const { scrollRef, following, onScroll, jumpToLatest } = useFollowScroll(turns, working);
   const [limit, setLimit] = useState(PAGE);
   const hidden = Math.max(0, turns.length - limit);
@@ -51,7 +50,7 @@ export function ChatList({ turns, working, since, subagents, onInterrupt }: Chat
           {shown.map((turn) => (
             <TurnView key={turn.id} turn={turn} />
           ))}
-          {working && <WorkingRow since={since} subagents={subagents} onInterrupt={onInterrupt} />}
+          {working && <WorkingRow since={since} subagents={subagents} />}
         </div>
       </div>
       <LatestButton scrollRef={scrollRef} show={!following} onJump={jumpToLatest} />

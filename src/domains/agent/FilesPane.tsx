@@ -1,7 +1,7 @@
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { AutoSidebar } from "@/components/AutoSidebar";
 import { I } from "@/components/Icon";
 import { useQuickOpenStore } from "@/domains/quickOpen/store";
-import { usePersistedFlag } from "@/hooks/usePersistedFlag";
 import { currentOs } from "@/platform/os";
 import { basename, worktreeRelative } from "@/platform/paths";
 import { FileView, LoadingDiff } from "./FileView";
@@ -24,7 +24,8 @@ export function FilesPane({ workspaceId }: { workspaceId: string }) {
 
 function FilesBody({ workspaceId }: { workspaceId: string }) {
   const [view, patch] = useFilesView(workspaceId);
-  const [sideOpen, toggleSide] = usePersistedFlag("trace.filesSidebarOpen", true);
+  // Bumped to show the folded list for a moment: a file revealed in the tree.
+  const [peek, setPeek] = useState(0);
   const width = useSidebarWidth((s) => s.width);
   const data = useFilesData(workspaceId, view.mode, view.selected);
   const { summary } = data;
@@ -49,20 +50,29 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
     if (!pick || !summaryKnown) return;
     const path = toTreePath(worktreeRelative(pick.path, currentOs));
     patch({ selected: path });
-    if (!sideOpen) toggleSide();
+    setPeek((n) => n + 1);
     reveal(path, false);
     clearPick(workspaceId);
-  }, [pick, summaryKnown, workspaceId, clearPick, patch, reveal, sideOpen, toggleSide]);
+  }, [pick, summaryKnown, workspaceId, clearPick, patch, reveal]);
 
   const showInTree = (path: string, isDir: boolean) => {
-    if (!sideOpen) toggleSide();
+    setPeek((n) => n + 1);
     reveal(path, isDir);
   };
 
   const count = summary ? summary.files.length : null;
-  const sidebar = sideOpen ? (
-    <>
-      <div className="fx-side-wrap" style={{ width }}>
+  const sidebar = (
+    <AutoSidebar
+      id="files"
+      label={t.mode === "changes" ? "Changes" : "All files"}
+      icon={I.Folder}
+      count={count}
+      width={width}
+      head={false}
+      peek={peek}
+      after={<SidebarDivider />}
+    >
+      {(pin) => (
         <FilesSidebar
           workspaceId={workspaceId}
           mode={t.mode}
@@ -83,25 +93,10 @@ function FilesBody({ workspaceId }: { workspaceId: string }) {
           onToggle={t.toggle}
           onOpen={(f) => patch({ selected: f.path })}
           onRefresh={data.refresh}
-          onHide={toggleSide}
+          pin={pin}
         />
-      </div>
-      <SidebarDivider />
-    </>
-  ) : (
-    <div className="fx-strip sp-strip">
-      <button
-        type="button"
-        className="sp-strip-item"
-        onClick={toggleSide}
-        aria-label="Show the file list"
-        title="Show the file list"
-      >
-        <I.SidebarLeft size={14} />
-        <span className="sp-strip-label">{t.mode === "changes" ? "Changes" : "All files"}</span>
-        {count != null && count > 0 && <span className="sp-count">{count}</span>}
-      </button>
-    </div>
+      )}
+    </AutoSidebar>
   );
 
   let viewer: ReactNode;

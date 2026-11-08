@@ -1,7 +1,5 @@
 import { I } from "@/components/Icon";
-import { KeyHint } from "@/components/KeyHint";
 import { StatusLight } from "@/components/StatusLight";
-import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { formatDuration, usageFacts } from "./format";
 import { useNow } from "./hooks/useNow";
 import type { ChatTurn } from "./projection";
@@ -49,21 +47,11 @@ export function TurnFooter({ turn }: { turn: ChatTurn }) {
 }
 
 /**
- * The agent is at work: the working light, how long the turn has run, how many
- * subagents are still going, and the way to stop it all (also Esc).
+ * The agent is at work: the working light, how long the turn has run and how many
+ * subagents are still going. Stopping it is the composer's (and Esc's).
  */
-export function WorkingRow({
-  since,
-  subagents,
-  onInterrupt,
-}: {
-  since: number | null;
-  subagents: number;
-  onInterrupt: () => void;
-}) {
+export function WorkingRow({ since, subagents }: { since: number | null; subagents: number }) {
   const now = useNow(true);
-  const title = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and every subagent; the agent stays up`;
-  const keys = useAriaKeys("chatInterrupt");
   const age = since && now > since ? formatDuration(now - since) : undefined;
   const others = subagents > 0 ? `${subagents} ${subagents === 1 ? "subagent" : "subagents"}` : "";
   // Between turns only subagents are left working.
@@ -72,15 +60,6 @@ export function WorkingRow({
     <div className="ac-working">
       <StatusLight light="working" variant="word" label={label} age={age} />
       {since !== null && others && <span className="ac-working-subs">· {others}</span>}
-      <button
-        type="button"
-        className="btn ac-working-stop"
-        onClick={onInterrupt}
-        title={title}
-        aria-keyshortcuts={keys}
-      >
-        <I.X size={13} /> Interrupt <KeyHint id="chatInterrupt" />
-      </button>
     </div>
   );
 }

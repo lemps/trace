@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { GallerySet, Listing } from "../../ipc/gallery.ts";
-import {
-  formatSize,
-  galleryTabVisible,
-  listingKey,
-  listingNotes,
-  stepIndex,
-  whereLabel,
-} from "./model.ts";
+import { formatSize, listingKey, listingNotes, stepIndex, whereLabel } from "./model.ts";
 
 const listing = (paths: string[], extra: Partial<Listing> = {}): Listing => ({
   images: paths.map((p) => ({ path: p, name: p, rel: p, size: 10, modified: 1 })),
@@ -16,14 +9,6 @@ const listing = (paths: string[], extra: Partial<Listing> = {}): Listing => ({
   truncated: false,
   missing: [],
   ...extra,
-});
-
-describe("Gallery tab visibility", () => {
-  it("shows only with a set, or while opened empty from the pane menu", () => {
-    assert.equal(galleryTabVisible(0, false), false);
-    assert.equal(galleryTabVisible(2, false), true);
-    assert.equal(galleryTabVisible(0, true), true);
-  });
 });
 
 describe("Gallery model", () => {

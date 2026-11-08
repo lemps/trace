@@ -1,0 +1,221 @@
+/* ============ The Ticket tab (domains/agent/TicketPane) ============
+   The issue as a document: a centred reading column, its fields in one quiet
+   block, then the description and the discussion. */
+
+.tk {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.tk-doc {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 28px 48px;
+}
+
+/* Key · type, over the title. */
+.tk-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.tk-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}
+button.tk-key {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+button.tk-key svg {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+button.tk-key:hover,
+button.tk-key:focus-visible {
+  color: var(--c-accent);
+}
+button.tk-key:hover svg,
+button.tk-key:focus-visible svg {
+  opacity: 1;
+}
+.tk-dot {
+  color: var(--fg-4);
+}
+.tk-title {
+  margin: 8px 0 18px;
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  color: var(--fg-0);
+}
+
+/* Fields: label / value pairs, as many to a row as fit. */
+.tk-props {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px 24px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.tk-prop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: var(--control-h-sm);
+}
+.tk-prop.wide {
+  grid-column: 1 / -1;
+}
+.tk-prop dt {
+  flex-shrink: 0;
+  width: 68px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.tk-prop dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.tk-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tk-none {
+  color: var(--fg-3);
+}
+/* The board card's priority bar, so a priority reads the same everywhere. */
+.tk-priority {
+  width: 4px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--fg-4);
+}
+.tk-priority.p0 {
+  background: var(--c-danger);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--c-danger) 50%, transparent);
+}
+.tk-priority.p1 {
+  background: var(--c-warn);
+}
+.tk-priority.p2 {
+  background: var(--fg-3);
+}
+.tk-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tk-chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-xs);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--fg-2);
+}
+
+/* Sections: a label, then their content. */
+.tk-section {
+  margin-top: 28px;
+}
+.tk-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.tk-count {
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  color: var(--fg-3);
+}
+.tk-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+.tk-empty .btn {
+  margin-left: auto;
+}
+.tk-desc {
+  color: var(--fg-1);
+}
+
+/* The discussion: an avatar, then who and when over what they said. */
+.tk-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tk-comment {
+  display: flex;
+  gap: 12px;
+}
+.tk-comment-main {
+  flex: 1;
+  min-width: 0;
+}
+.tk-comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.tk-comment-author {
+  font-size: var(--text-ui);
+  font-weight: 500;
+  color: var(--fg-0);
+}
+.tk-comment-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.tk-comment-body {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.tk-comment-body > :last-child {
+  margin-bottom: 0;
+}

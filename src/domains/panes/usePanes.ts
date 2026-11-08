@@ -12,7 +12,7 @@ export interface Panes {
   layout: PaneLayout;
   /** Every panel in the layout, fixed and optional, by id (hidden ones too). */
   panels: Map<string, PanelDescriptor>;
-  /** Show a hidden tab (`PanelDescriptor.onReveal`) and select it. */
+  /** Select a tab, first showing it (`PanelDescriptor.onReveal`) if it's hidden. */
   reveal: (tab: string) => void;
   /** Whether the user has arranged this workspace (Reset layout has something to undo). */
   arranged: boolean;
@@ -92,7 +92,8 @@ export function usePanes(
   const select = useCallback((tab: string) => apply((l) => selectTab(l, tab)), [apply]);
   const reveal = useCallback(
     (tab: string) => {
-      panelsRef.current.get(tab)?.onReveal?.();
+      const panel = panelsRef.current.get(tab);
+      if (panel?.hidden) panel.onReveal?.();
       select(tab);
     },
     [select]

@@ -102,6 +102,7 @@ Detailed rules live in `.claude/rules/` — read the one relevant to your change
 - `.claude/rules/providers.md` — provider abstraction, Pylon specifics, adding providers
 - `.claude/rules/jira.md` — Jira auth, board→columns / sprint→cards mapping, transitions
 - `.claude/rules/agents.md` — PTY runner, worktrees, lifecycle ↔ actions, security
+- `.claude/rules/tabs.md` — the one rule every workspace tab that comes and goes follows (`panes/coming.ts`)
 
 UI changes of any kind: load the **`trace-ui` skill** (`.claude/skills/trace-ui/SKILL.md`) first — control
 sizes, which control to use, where panels go, how agent state is drawn — and run its checklist.

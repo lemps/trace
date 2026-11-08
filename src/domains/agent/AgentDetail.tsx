@@ -15,7 +15,8 @@ import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { OrchestratorPane } from "@/domains/orchestrator/OrchestratorPane";
 import { PaneArea } from "@/domains/panes/PaneArea";
-import { layoutItems } from "@/domains/panes/paneMenu";
+import { comingTabs, layoutItems } from "@/domains/panes/paneMenu";
+import { isTabOn, useOnTabs, useTabSettings } from "@/domains/panes/tabSettings";
 import { usePanes } from "@/domains/panes/usePanes";
 import { usePlanTab } from "@/domains/plans/store";
 import { discoverPrs, usePrWatch } from "@/domains/prs/hooks/usePrWatch";
@@ -39,10 +40,12 @@ import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaul
 import { useHasExited } from "./exitedStore";
 import { launchIssueAgent } from "./launch";
 import { agentLabel } from "./providerLabel";
+import { usePrTab, useTestsTab } from "./reviewTabs";
 import { StartPrompt } from "./StartPrompt";
 import { TICKET_CHAT_TAB, ticketPanels } from "./ticketPanels";
 import { useDetailKeys } from "./useDetailKeys";
 import { useViewerTabs } from "./viewerTabs";
+import { useWorkspaceTabs } from "./workspaceTabs";
 
 interface AgentDetailProps {
   issue: Issue;
@@ -74,6 +77,8 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   // Selecting a primitive (length) keeps this referentially stable across renders.
   const plan = usePlanTab(issue.key);
   const viewers = useViewerTabs(issue.key);
+  const filesOn = useTabSettings((s) => isTabOn(s.off, "files"));
+  const workspace = useWorkspaceTabs(issue.key, filesOn);
   const status = useBoardStore((s) =>
     statusOf(s.runningAgents.has(issue.key), s.agentActivity[issue.key])
   );
@@ -252,14 +257,29 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       )}
     </ChatSurface>
   );
-  const panels = ticketPanels({ issue, cli, chat, plan, viewers, prUrls });
+  const tests = useTestsTab(issue.key);
+  const pr = usePrTab(issue.key, prUrls);
+  const panels = useOnTabs(
+    ticketPanels({
+      issue,
+      site,
+      cli,
+      chat,
+      plan,
+      viewers,
+      workspace,
+      tests,
+      pr,
+      prUrls,
+    })
+  );
   const panes = usePanes(`ticket:${issue.key}`, panels, { [issue.key]: TICKET_CHAT_TAB });
   useDetailKeys(
     onBack,
     panels.filter((p) => !p.hidden).map((p) => p.id),
     panes.select
   );
-  const quickOpen = useQuickOpen(issue.key, true, () => panes.select("files"));
+  const quickOpen = useQuickOpen(issue.key, true, () => panes.reveal("files"));
 
   return (
     <div className="detail">
@@ -285,6 +305,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         transport={nextTransport ?? ranOn}
         onChooseTransport={setNextTransport}
         agentItems={agentItems}
+        tabItems={comingTabs(panes)}
         layoutItems={layoutItems(panes)}
       />
 

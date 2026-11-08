@@ -100,7 +100,6 @@ export function ChatAgentPane({
                   : null
               }
               subagents={running}
-              onInterrupt={interrupt}
             />
           )}
         </div>
