@@ -25,3 +25,15 @@
   flex-shrink: 0;
   height: 100%;
 }
+/* Its trigger (`TabMore`): a down chevron and a mono "+3". */
+.tab-more {
+  gap: 4px;
+}
+.tab-more > svg {
+  flex-shrink: 0;
+  transform: rotate(90deg);
+}
+.tab-more-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}

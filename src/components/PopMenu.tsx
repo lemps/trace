@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useDismiss } from "@/hooks/useDismiss";
 import { I } from "./Icon";
+import { IconButton } from "./IconButton";
 
 export interface MenuItem {
   label: ReactNode;
@@ -79,9 +80,9 @@ export function PopMenu({ trigger, sections, align = "right" }: PopMenuProps) {
 /** The ⋯ overflow trigger for `PopMenu` — occasional actions live behind it. */
 export function MoreTrigger({ toggle, label }: { toggle: () => void; label: string }) {
   return (
-    <button type="button" className="btn icon" onClick={toggle} title={label} aria-label={label}>
+    <IconButton label={label} aria-haspopup="menu" onClick={toggle}>
       <I.More size={14} />
-    </button>
+    </IconButton>
   );
 }
 
