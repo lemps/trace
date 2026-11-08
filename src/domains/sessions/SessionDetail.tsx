@@ -34,6 +34,7 @@ import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
 import { SessionRunButton } from "./SessionRunButton";
+import { addAgentBlocker } from "./sessionHost";
 import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
@@ -130,7 +131,7 @@ export function SessionDetail({
       pr,
       prUrls,
       onAddAgent: (cli, provider) => onAddAgent(cli, provider),
-      addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
+      addBlocked: addAgentBlocker(session, MAX_COMPANIONS),
     })
   );
   const owners = useMemo(
