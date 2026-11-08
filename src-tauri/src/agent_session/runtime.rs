@@ -316,14 +316,12 @@ pub fn load(state: &AppState, workspace_id: &str) -> Result<Vec<JournalRow>, Str
 
 /// The workspace is gone for good: its journal and transport go with it.
 pub fn forget(workspace_id: &str) {
-    let path = store::journal_path(workspace_id);
-    let _ = std::fs::remove_file(&path);
-    // `persist`'s lock file beside it.
-    let mut lock = path.into_os_string();
-    lock.push(".lock");
-    let _ = std::fs::remove_file(lock);
+    crate::helpers::persist::remove(&store::journal_path(workspace_id));
     super::transport::forget(workspace_id);
     crate::plans::forget(workspace_id);
+    // Its live Browser pages close with the file.
+    crate::browser::forget(workspace_id);
+    crate::gallery::store::forget(workspace_id);
 }
 
 /// A session's conversation now belongs to an issue: so do its journal and transport.
@@ -334,4 +332,6 @@ pub fn transfer(from: &str, to: &str) {
     }
     super::transport::transfer(from, to);
     crate::plans::transfer(from, to);
+    crate::browser::transfer(from, to);
+    crate::gallery::store::transfer(from, to);
 }

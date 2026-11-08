@@ -21,6 +21,7 @@ import {
   onPtyOutput,
 } from "@/ipc/events";
 import { onPlanDoc, onPlanTasks } from "@/ipc/plans";
+import { useViewerEvents } from "./useViewerEvents";
 
 /**
  * App-level backend listeners. We capture pty-output here (not in PtyTerminal)
@@ -32,6 +33,7 @@ export function useAppEvents(): void {
   const appendOutput = useBoardStore((s) => s.appendOutput);
   useLiveSync();
   useAgentTools();
+  useViewerEvents();
 
   useEffect(() => {
     // These listeners register asynchronously (Tauri's `listen` returns a

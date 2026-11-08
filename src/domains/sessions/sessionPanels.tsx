@@ -3,6 +3,7 @@ import { StatusLight } from "@/components/StatusLight";
 import { AgentViewSwitch } from "@/domains/agent/AgentViewSwitch";
 import { FilesPane } from "@/domains/agent/FilesPane";
 import { TerminalPane } from "@/domains/agent/TerminalPane";
+import { type ViewerTabsState, viewerTabs } from "@/domains/agent/viewerTabs";
 import type { LiveInfo } from "@/domains/live/types";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { planTab } from "@/domains/plans/planTab";
@@ -26,13 +27,16 @@ interface SessionPanelsArgs {
   active: RosterEntry;
   live: Record<string, LiveInfo>;
   plan: PlanTabState;
+  /** Browser and Gallery: what the agent in front showed the user. */
+  viewers: ViewerTabsState;
   onAddAgent: (cli: AgentCli, provider?: AgentProvider) => void;
   addDisabled: boolean;
 }
 
 /**
  * A session's tabs, in their natural order: one per agent (a status dot each, the
- * "+" after the last), then Plan (only with something to show), Files (only with git) and Terminal
+ * "+" after the last), then Plan, Browser and Gallery (each only with something to show), Files
+ * (only with git) and Terminal
  * after a rule.
  * Files and Terminal are the worktree's, whichever agent is in front.
  */
@@ -63,6 +67,7 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       agentLabel: a.active.label,
       section: "workspace",
     }),
+    ...viewerTabs(a.active.workspaceId, a.viewers, "workspace"),
     ...(a.session.folder
       ? []
       : [

@@ -60,9 +60,34 @@ pub fn claude_project_slug(cwd: &str) -> String {
         .collect()
 }
 
+/// A canonical path as people read it: Windows' `\\?\` verbatim prefix (which
+/// `std::fs::canonicalize` adds) dropped, so `\\?\C:\pics` is `C:\pics` and
+/// `\\?\UNC\host\share` is `\\host\share`.
+pub fn plain(path: &str) -> String {
+    plain_on(path, WINDOWS)
+}
+
+fn plain_on(path: &str, windows: bool) -> String {
+    if !windows {
+        return path.to_string();
+    }
+    if let Some(rest) = path.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{rest}");
+    }
+    path.strip_prefix(r"\\?\").unwrap_or(path).to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn plain_drops_the_verbatim_prefix_on_windows() {
+        assert_eq!(plain_on(r"\\?\C:\pics\a.png", true), r"C:\pics\a.png");
+        assert_eq!(plain_on(r"\\?\UNC\host\share\x", true), r"\\host\share\x");
+        assert_eq!(plain_on(r"C:\pics", true), r"C:\pics");
+        assert_eq!(plain_on(r"\\?\odd", false), r"\\?\odd");
+    }
 
     #[test]
     fn forward_only_rewrites_on_windows() {

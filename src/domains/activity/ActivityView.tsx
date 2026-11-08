@@ -24,6 +24,8 @@ const ICON: Record<ActivityKind, IconFn> = {
   "agent-interrupted": I.Terminal,
   "agent-stopped": I.Terminal,
   "repo-added": I.Folder,
+  "page-opened": I.Globe,
+  "images-shown": I.Images,
   other: I.Activity,
 };
 

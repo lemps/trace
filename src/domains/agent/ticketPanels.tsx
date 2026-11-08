@@ -11,6 +11,7 @@ import { FilesPane } from "./FilesPane";
 import { TerminalPane } from "./TerminalPane";
 import { TestsPane } from "./TestsPane";
 import { TicketPane } from "./TicketPane";
+import { type ViewerTabsState, viewerTabs } from "./viewerTabs";
 
 /** The ticket agent's tab id; subagent panels open beside it. */
 export const TICKET_CHAT_TAB = "chat";
@@ -21,11 +22,12 @@ interface TicketPanelsArgs {
   /** The agent's own view: its chat, or its terminal under the start prompt. */
   chat: ReactNode;
   plan: PlanTabState;
+  viewers: ViewerTabsState;
   prUrls: string[];
 }
 
 /** A ticket's tabs, in their natural order (⌘1–7, counting only those shown). */
-export function ticketPanels({ issue, cli, chat, plan, prUrls }: TicketPanelsArgs) {
+export function ticketPanels({ issue, cli, chat, plan, viewers, prUrls }: TicketPanelsArgs) {
   const panels: PanelDescriptor[] = [
     {
       id: TICKET_CHAT_TAB,
@@ -35,6 +37,7 @@ export function ticketPanels({ issue, cli, chat, plan, prUrls }: TicketPanelsArg
       render: () => chat,
     },
     planTab({ workspaceId: issue.key, agentTab: TICKET_CHAT_TAB, state: plan }),
+    ...viewerTabs(issue.key, viewers),
     { id: "ticket", label: "Ticket", icon: I.Ticket, render: () => <TicketPane issue={issue} /> },
     {
       id: "files",

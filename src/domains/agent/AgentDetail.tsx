@@ -42,6 +42,7 @@ import { agentLabel } from "./providerLabel";
 import { StartPrompt } from "./StartPrompt";
 import { TICKET_CHAT_TAB, ticketPanels } from "./ticketPanels";
 import { useDetailKeys } from "./useDetailKeys";
+import { useViewerTabs } from "./viewerTabs";
 
 interface AgentDetailProps {
   issue: Issue;
@@ -72,6 +73,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const exited = useHasExited(issue.key);
   // Selecting a primitive (length) keeps this referentially stable across renders.
   const plan = usePlanTab(issue.key);
+  const viewers = useViewerTabs(issue.key);
   const status = useBoardStore((s) =>
     statusOf(s.runningAgents.has(issue.key), s.agentActivity[issue.key])
   );
@@ -250,7 +252,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       )}
     </ChatSurface>
   );
-  const panels = ticketPanels({ issue, cli, chat, plan, prUrls });
+  const panels = ticketPanels({ issue, cli, chat, plan, viewers, prUrls });
   const panes = usePanes(`ticket:${issue.key}`, panels, { [issue.key]: TICKET_CHAT_TAB });
   useDetailKeys(
     onBack,

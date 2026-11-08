@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
-  "windows": ["main"],
+  "description": "Capability for trace's own webview only. It names the webview, not the window: the Browser tab's pages are child webviews of the main window and must get nothing.",
+  "webviews": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-set-badge-count",

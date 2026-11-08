@@ -72,6 +72,13 @@ fn owner_only() -> OpenOptions {
     Os::owner_only_options()
 }
 
+/// Delete `path` and the lock file [`update`] leaves beside it (best-effort: a file
+/// that's already gone is fine).
+pub fn remove(path: &Path) {
+    let _ = fs::remove_file(path);
+    let _ = fs::remove_file(sibling(path, ".lock"));
+}
+
 /// [`write_atomic`] for a JSON value.
 pub fn write_json<T: Serialize>(path: &Path, style: Style, value: &T) -> Result<(), String> {
     write_atomic(path, &to_bytes(value, style)?)

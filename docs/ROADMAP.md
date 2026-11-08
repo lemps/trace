@@ -95,14 +95,18 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 - [x] **Split panes:** a detail's tabs (agents, HTML, Files, terminals) side by side or stacked,
       resizable, remembered per workspace (`domains/panes`). A browser pane comes with the browser.
 - [ ] **Embedded browser with Design Mode:** click an element to send its HTML, styles and selector
-      to the agent.
+      to the agent. The browser itself has started: the Browser tab shows pages an agent opens with
+      `open_browser` (or you do) in an isolated native webview laid over its pane (`domains/browser`,
+      `src-tauri/src/browser/`). Design Mode is still to come.
 - [x] **Worktree setup hooks:** run commands like `npm install` or restoring `.env` after a worktree
       is created. Per repo, in Settings → Repositories; suggested from lockfiles after a clone.
       ([#11](https://github.com/noble1911/trace/pull/11))
 - [x] **Scheduled run prechecks:** a shell command decides whether a scheduled run goes ahead.
 - [x] **Quick Open:** fuzzy file search within a worktree (⌘P / Ctrl+Shift+P); results open in
       the Files tab or your editor.
-- [ ] **File previews:** images, PDFs and Markdown next to the agent.
+- [ ] **File previews:** images, PDFs and Markdown next to the agent. Images have started: the
+      Gallery tab shows folders of images an agent points you at with `show_images`, with a
+      full-size viewer and side-by-side compare (`domains/gallery`, `src-tauri/src/gallery/`).
 - [ ] **Dictation:** speak into the prompt or terminal.
 - [x] **Terminal extras:** find in scrollback (⌘F / Ctrl+Shift+F), a menu on links and file paths
       (Open, Copy, Open in editor) and on right-click, and Copy Context (the selection or last 100
