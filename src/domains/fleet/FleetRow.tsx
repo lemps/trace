@@ -3,6 +3,7 @@ import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
+import { useAgentQuiet } from "@/domains/live/quietStore";
 
 /** A PR as the fleet shows it — from Jira dev-status (tickets) or `gh` (sessions). */
 export interface FleetPr {
@@ -40,6 +41,7 @@ const clock = (t: number) =>
 export function FleetRow(props: FleetRowProps) {
   const { entry, now, where, diff, pr, dropAbove, isDragging, dragProps } = props;
   const { info } = entry;
+  const quiet = useAgentQuiet(entry.id);
   const ask = shownAsk(info);
   const latest = ask?.label ?? info.update ?? info.lastMessage ?? "";
   return (
@@ -59,7 +61,7 @@ export function FleetRow(props: FleetRowProps) {
         <span className="fl-grip" title="Drag to reorder">
           <I.Grip size={14} />
         </span>
-        <StatusLight light={info.light} variant="word" />
+        <StatusLight light={info.light} quiet={quiet} variant="word" />
         <span className="fl-agent">
           <span className="fl-title">{entry.title}</span>
           <span className="fl-sub">{entry.subtitle}</span>

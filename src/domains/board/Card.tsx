@@ -11,6 +11,7 @@ import { useIssuesStore } from "@/domains/issues/store";
 import type { Issue, PullRequest } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import { ageLabel, shownAsk } from "@/domains/live/light";
+import { useAgentQuiet } from "@/domains/live/quietStore";
 import { useLiveStore } from "@/domains/live/store";
 import { useNow } from "@/hooks/useNow";
 import { cardMenu } from "./cardMenu";
@@ -36,6 +37,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
   const firstPr = prs && prs.length > 0 ? prs[0] : null;
   const live = useLiveStore((s) => s.info[issue.key]);
   const light = live?.light ?? "stopped";
+  const quiet = useAgentQuiet(issue.key);
   const density = useDensity((s) => s.density);
   // Ages tick while an agent runs; an idle card has none to keep fresh.
   const now = useNow(live ? 30_000 : null);
@@ -90,6 +92,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
             {live ? (
               <StatusLight
                 light={light}
+                quiet={quiet}
                 variant="pill"
                 label={shownAsk(live)?.label}
                 age={ageLabel(live.since, now * 1000)}

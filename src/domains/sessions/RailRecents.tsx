@@ -1,7 +1,9 @@
 import { StatusLight } from "@/components/StatusLight";
+import { groupQuiet } from "@/domains/live/quiet";
+import { useQuietStore } from "@/domains/live/quietStore";
 import { useLiveStore } from "@/domains/live/store";
 import { useUnreadStore } from "@/domains/live/unreadStore";
-import { sessionLight } from "./agentRoster";
+import { agentWorkspaceIds, sessionLight } from "./agentRoster";
 import { useSessionsStore } from "./store";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
@@ -21,6 +23,7 @@ export function RailRecents() {
   const select = useSessionsStore((s) => s.select);
   const live = useLiveStore((s) => s.info);
   const unread = useUnreadStore((s) => s.ids);
+  const quiet = useQuietStore((s) => s.ids);
 
   const items = recent
     .map((id) => sessions.find((s) => s.id === id))
@@ -35,6 +38,12 @@ export function RailRecents() {
         {items.map((s) => {
           const { light, detail } = sessionLight(s, live);
           const isUnread = unread.includes(s.id);
+          const isQuiet = groupQuiet(
+            agentWorkspaceIds(s).map((id) => ({
+              light: live[id]?.light ?? "stopped",
+              quiet: quiet.includes(id),
+            }))
+          );
           return (
             <button
               key={s.id}
@@ -43,7 +52,7 @@ export function RailRecents() {
               aria-description={isUnread ? "New since you looked" : undefined}
               onClick={() => select(s.id)}
             >
-              <StatusLight light={light} title={detail} />
+              <StatusLight light={light} quiet={isQuiet} title={isQuiet ? undefined : detail} />
               <span className="rr-title">{s.title}</span>
               <span className="rr-time">{relTime(s.createdAt)}</span>
             </button>

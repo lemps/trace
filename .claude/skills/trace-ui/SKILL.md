@@ -115,6 +115,7 @@ never colour alone**:
 | working | `--state-working` (blue) | spinner | **Working** |
 | ready | `--state-ready` (green) | solid dot | **Ready** |
 | stopped | `--state-stopped` (grey) | hollow ring | **Stopped** |
+| working, quiet (a look, not a state: `quiet` prop, `live/quietStore`) | `--state-stopped` (grey) | still dashed ring | **No recent update** — nothing heard for `QUIET_AFTER_MS` (10m); not while background tasks run |
 
 Variants: `dot` (tabs, compact lists), `word` (list rows), `pill` (cards, rows,
 inbox), `pill` + `size="lg"` (detail headers). Never draw agent state with ad-hoc

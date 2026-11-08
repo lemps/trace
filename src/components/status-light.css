@@ -27,6 +27,12 @@
   border-top-color: var(--state-working);
   animation: light-spin 0.9s linear infinite;
 }
+/* No recent update: still Working, but not heard from in a while. A still,
+   dashed grey ring — neither the blue spinner (it may be stale) nor amber (it
+   isn't asking for anything). */
+.light-dot.quiet {
+  border: 1.5px dashed var(--state-stopped);
+}
 @keyframes light-blink {
   50% {
     opacity: 0.35;
@@ -107,6 +113,11 @@
 .light-pill.ready {
   background: var(--state-ready-bg);
   border-color: transparent;
+}
+/* Quiet keeps the word at --fg-3 (the base colour) and dashes the pill's outline. */
+.light-pill.quiet {
+  border-style: dashed;
+  border-color: var(--state-stopped);
 }
 
 /* In a header beside buttons: the same height and corners as they have, so the
