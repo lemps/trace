@@ -111,7 +111,7 @@ export function QuickOpen({ workspaceId, onClose, onView }: QuickOpenProps) {
       }
     >
       <div className="qo-input">
-        <I.Search size={13} />
+        <I.Search size={14} />
         <input
           // biome-ignore lint/a11y/noAutofocus: the picker exists to be typed into
           autoFocus
@@ -149,7 +149,7 @@ export function QuickOpen({ workspaceId, onClose, onView }: QuickOpenProps) {
               onClick={(e) => (e.shiftKey ? edit(hit) : view(hit))}
               title={hit.path}
             >
-              <I.File size={13} />
+              <I.File size={14} />
               <Highlighted path={hit.path} positions={hit.positions} />
             </button>
           ))

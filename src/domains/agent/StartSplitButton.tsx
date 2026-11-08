@@ -31,7 +31,7 @@ export function StartSplitButton({
   return (
     <div className="split-btn">
       <button type="button" className="btn primary" onClick={onStart}>
-        <I.Play size={13} /> Start {agentLabel(cli, provider)}
+        <I.Play size={14} /> Start {agentLabel(cli, provider)}
       </button>
       <PopMenu
         trigger={({ toggle }) => (

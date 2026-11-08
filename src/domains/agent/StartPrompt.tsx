@@ -82,7 +82,7 @@ export function StartPrompt({
           onClick={onStart}
           disabled={noRepos}
         >
-          <I.Play size={13} /> {exited ? "Restart" : "Start"} {agentName}
+          <I.Play size={14} /> {exited ? "Restart" : "Start"} {agentName}
         </button>
         <button
           type="button"

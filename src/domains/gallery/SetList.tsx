@@ -22,7 +22,7 @@ export function SetList({ sets, selected, onSelect }: SetListProps) {
           onClick={() => onSelect(set.id)}
         >
           <span className="gl-set-title">
-            <I.Images size={13} />
+            <I.Images size={14} />
             <span className="gl-set-name">{set.title}</span>
           </span>
           <span className="gl-set-where">{whereLabel(set)}</span>

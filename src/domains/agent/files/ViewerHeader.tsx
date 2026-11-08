@@ -54,7 +54,7 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
             <I.External size={14} />
             Open in
             <span className="fx-caret" aria-hidden="true">
-              <I.Chevron size={13} />
+              <I.Chevron size={14} />
             </span>
           </button>
         )}

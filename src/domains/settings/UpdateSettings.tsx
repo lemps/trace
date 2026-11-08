@@ -58,7 +58,7 @@ export function UpdateSettings() {
       <SettingRow label={update ? `v${update.version} available` : "App version"} hint={hint}>
         {phase === "available" && update ? (
           <button type="button" className="btn primary" onClick={() => void install()}>
-            <I.Download size={13} /> Install &amp; restart
+            <I.Download size={14} /> Install &amp; restart
           </button>
         ) : (
           <button

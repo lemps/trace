@@ -111,7 +111,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
             <div className="ac-stopped-in">
               <span>The agent isn't running. Start it to carry on this conversation.</span>
               <button type="button" className="btn primary" onClick={onStart}>
-                <I.Play size={13} /> Start
+                <I.Play size={14} /> Start
               </button>
             </div>
           </div>
@@ -154,7 +154,7 @@ function Empty({
           : "Nothing here yet. Your messages and the agent's work will show up here."}
         {stopped && onStart && (
           <button type="button" className="btn primary" onClick={onStart}>
-            <I.Play size={13} /> Start
+            <I.Play size={14} /> Start
           </button>
         )}
       </div>

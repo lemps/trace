@@ -77,7 +77,7 @@ export function WorktreeSettings() {
             onClick={() => void removeMerged()}
             disabled={busy !== null}
           >
-            <I.Trash size={13} /> Remove {removable.length} merged
+            <I.Trash size={14} /> Remove {removable.length} merged
           </button>
         )}
       </div>

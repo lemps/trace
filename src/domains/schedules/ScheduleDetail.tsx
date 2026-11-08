@@ -59,7 +59,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
           <I.Back size={14} /> Scheduled
         </button>
         <span className="session-avatar">
-          <I.Clock size={18} />
+          <I.Clock size={16} />
         </span>
         <div>
           <span className="id">
@@ -77,7 +77,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
             />
           </span>
           <button type="button" className="btn" onClick={onEdit}>
-            <I.Pencil size={13} /> Edit
+            <I.Pencil size={14} /> Edit
           </button>
           <button
             type="button"
@@ -86,11 +86,11 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
             onBlur={() => setConfirmDelete(false)}
             title="Delete this prompt, its run history, and its worktree"
           >
-            <I.Trash size={13} /> {confirmDelete ? "Confirm delete" : "Delete"}
+            <I.Trash size={14} /> {confirmDelete ? "Confirm delete" : "Delete"}
           </button>
           {live ? (
             <button type="button" className="btn" onClick={() => void stopRun(live.id).catch(fail)}>
-              <I.Stop size={13} /> Stop run
+              <I.Stop size={14} /> Stop run
             </button>
           ) : (
             <button
@@ -98,7 +98,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
               className="btn primary"
               onClick={() => void runNow(prompt.id).catch(fail)}
             >
-              <I.Play size={13} /> Run now
+              <I.Play size={14} /> Run now
             </button>
           )}
         </div>

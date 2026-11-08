@@ -81,7 +81,7 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
               className="btn"
               onClick={() => void stopRun(run.id).catch((e) => toast.error(String(e)))}
             >
-              <I.Stop size={13} /> Stop
+              <I.Stop size={14} /> Stop
             </button>
           )}
           {!live && run.claudeSessionId && (
@@ -91,7 +91,7 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
               onClick={onContinue}
               title="Open this run's conversation as a session in the prompt's worktree"
             >
-              <I.Chat size={13} /> Continue as session
+              <I.Chat size={14} /> Continue as session
             </button>
           )}
         </div>

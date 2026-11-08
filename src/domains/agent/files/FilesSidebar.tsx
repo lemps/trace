@@ -77,7 +77,7 @@ export function FilesSidebar(p: FilesSidebarProps) {
       </div>
       <div className="fx-tools">
         <label className="fx-filter">
-          <I.Filter size={13} />
+          <I.Filter size={14} />
           <input
             value={p.filter}
             placeholder={isChanges ? "Filter changes" : "Filter files"}

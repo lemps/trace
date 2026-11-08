@@ -81,7 +81,7 @@ export function FindBar({ term, request, onClose }: FindBarProps) {
 
   return (
     <search className="term-find" aria-label="Find in terminal">
-      <I.Search size={13} />
+      <I.Search size={14} />
       <input
         ref={inputRef}
         className="term-find-input"

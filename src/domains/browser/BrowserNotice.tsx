@@ -17,7 +17,7 @@ export function BrowserNotice({ pageId }: { pageId: string }) {
     <>
       {host && (
         <div className="bw-notice" role="status">
-          <I.Globe size={13} />
+          <I.Globe size={14} />
           <span className="bw-notice-text">
             The agent opened <span className="bw-host">{host}</span>
           </span>
@@ -28,7 +28,7 @@ export function BrowserNotice({ pageId }: { pageId: string }) {
       )}
       {blocked && (
         <div className="bw-notice" role="status">
-          <I.Globe size={13} />
+          <I.Globe size={14} />
           <span className="bw-notice-text">{blocked.reason}</span>
           {canOpen && (
             <button type="button" className="btn ghost" onClick={() => void openUrl(blocked.url)}>

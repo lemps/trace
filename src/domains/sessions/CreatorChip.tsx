@@ -22,7 +22,7 @@ export function CreatorChip({ createdBy, variant = "row" }: CreatorChipProps) {
   if (createdBy.kind === "orchestrator") {
     return (
       <span className={className} title="Started by the orchestrator">
-        <I.StartedBy size={11} /> {lead} {label}
+        <I.StartedBy size={12} /> {lead} {label}
       </span>
     );
   }
@@ -38,7 +38,7 @@ export function CreatorChip({ createdBy, variant = "row" }: CreatorChipProps) {
       onKeyDown={(e) => e.stopPropagation()}
       title={`Started by ${creatorKind(createdBy).toLowerCase()} “${label}” — open it`}
     >
-      <I.StartedBy size={11} /> {lead} <span className="creator-name">{label}</span>
+      <I.StartedBy size={12} /> {lead} <span className="creator-name">{label}</span>
     </button>
   );
 }

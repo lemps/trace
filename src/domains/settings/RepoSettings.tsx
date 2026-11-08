@@ -130,10 +130,10 @@ export function RepoSettings() {
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
         <button type="button" className="btn" onClick={addFolder}>
-          <I.Plus size={13} /> Add repository
+          <I.Plus size={14} /> Add repository
         </button>
         <button type="button" className="btn" onClick={() => setBrowsing(true)}>
-          <I.Download size={13} /> Clone from GitHub
+          <I.Download size={14} /> Clone from GitHub
         </button>
         <ConductorImport
           onImported={() => {

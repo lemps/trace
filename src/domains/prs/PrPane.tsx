@@ -38,10 +38,10 @@ function PrHeader({ pr }: { pr: PrThread }) {
         </h2>
         <div className="prp-actions">
           <button type="button" className="btn" onClick={() => void openUrl(pr.url)}>
-            <I.GitPR size={13} /> Open on GitHub
+            <I.External size={14} /> Open on GitHub
           </button>
           <button type="button" className="btn" onClick={() => void openUrl(`${pr.url}/files`)}>
-            <I.Code size={13} /> Files on GitHub
+            <I.FileDiff size={14} /> Files on GitHub
           </button>
           <button
             type="button"
@@ -50,7 +50,7 @@ function PrHeader({ pr }: { pr: PrThread }) {
             title="Copy the PR's link"
             aria-label="Copy the PR's link"
           >
-            <I.Copy size={13} />
+            <I.Copy size={14} />
           </button>
         </div>
       </div>

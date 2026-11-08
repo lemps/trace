@@ -50,7 +50,7 @@ function QueuedRow({ workspaceId, id, text, files, n }: QueuedRowProps) {
           {text}
           {files > 0 && (
             <span className="ac-queued-files">
-              <I.Paperclip size={11} /> {files}
+              <I.Paperclip size={12} /> {files}
             </span>
           )}
         </span>

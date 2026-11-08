@@ -184,7 +184,7 @@ export function SessionsView() {
                 style={{ marginTop: 6 }}
                 onClick={() => setCreating(true)}
               >
-                <I.Plus size={13} /> New session
+                <I.Plus size={14} /> New session
               </button>
             </div>
           </div>

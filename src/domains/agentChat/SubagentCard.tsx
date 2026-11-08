@@ -38,7 +38,7 @@ function CardBody({ item }: { item: ToolItem }) {
           onClick={open}
           title="Open its conversation in a tab"
         >
-          <I.Sparkles size={13} />
+          <I.Sparkles size={14} />
           {thread.agentType && <span className="ac-agent-type">{thread.agentType}</span>}
           <span className="ac-agent-desc">
             {thread.description ?? (thread.agentType ? "" : thread.label)}
@@ -66,7 +66,7 @@ function CardBody({ item }: { item: ToolItem }) {
         </IconButton>
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
-            <I.Stop size={13} /> Stop subagent
+            <I.Stop size={14} /> Stop subagent
           </button>
         )}
       </div>

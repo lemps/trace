@@ -70,7 +70,7 @@ function TableCopy({ node }: { node: TableHast }) {
             title="More ways to copy"
             onClick={toggle}
           >
-            <I.Chevron size={10} />
+            <I.Chevron size={12} />
           </button>
         )}
         sections={[

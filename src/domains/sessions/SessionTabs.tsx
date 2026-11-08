@@ -96,7 +96,7 @@ export function SessionTabs({
           title="New tab"
           aria-label="New tab"
         >
-          <I.Plus size={13} />
+          <I.Plus size={14} />
         </button>
       )}
       {activeTab &&

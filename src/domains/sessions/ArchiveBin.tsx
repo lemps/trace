@@ -39,8 +39,8 @@ export function ArchiveBin({
       }}
     >
       <button type="button" className="archive-head" onClick={onToggle}>
-        <I.Chevron size={13} style={{ transform: open ? "rotate(90deg)" : "none" }} />
-        <I.Archive size={13} />
+        <I.Chevron size={14} style={{ transform: open ? "rotate(90deg)" : "none" }} />
+        <I.Archive size={14} />
         Archived
         <span className="count">{archived.length}</span>
       </button>
