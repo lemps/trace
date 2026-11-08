@@ -56,6 +56,25 @@ export function sandboxRepos(repos: RepoOrigin[]): { usable: string[]; skipped: 
   };
 }
 
+const HOBBY = "Runs in a Vercel Sandbox; on the Hobby plan a sandbox ends after 45 minutes.";
+
+/**
+ * New Session's note when it runs in a sandbox, given the repo names it can and
+ * can't use (null while they're read): why some repos aren't in the list.
+ */
+export function sandboxRepoNote(repos: { usable: string[]; skipped: string[] } | null): string {
+  if (!repos) return "Checking which of your repositories are on GitHub…";
+  const { usable, skipped } = repos;
+  if (usable.length === 0 && skipped.length === 0) {
+    return "A Vercel Sandbox session needs a repository. Add one in Settings → Repositories.";
+  }
+  if (usable.length === 0) {
+    return "A Vercel Sandbox clones its repository from GitHub, and none of yours has a GitHub origin. Clone one in Integrations → GitHub, or set a GitHub remote as origin.";
+  }
+  if (skipped.length === 0) return HOBBY;
+  return `${HOBBY} Not listed, as a sandbox clones from GitHub and they have no GitHub origin: ${skipped.join(", ")}.`;
+}
+
 /** A session's sandbox as the backend reports it (`commands/sandbox_state.rs`). */
 export interface SandboxStateLike {
   /** Vercel's word; empty when there's no sandbox. */

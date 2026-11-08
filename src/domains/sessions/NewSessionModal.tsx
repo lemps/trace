@@ -8,6 +8,8 @@ import { useVercelStatus } from "@/domains/vercel/store";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import { useSandboxRepos } from "./hooks/useSandboxRepos";
+import { sandboxRepoNote } from "./sessionHost";
 import type { SessionHostKind } from "./types";
 
 interface NewSessionModalProps {
@@ -41,8 +43,8 @@ const HOSTS: { value: SessionHostKind | "local"; label: string }[] = [
 // Title + agent + where it runs, for a new exploratory session. Title is optional (the
 // backend falls back to "Exploration" when blank). A repo gives it an isolated worktree;
 // it doesn't need one, and can run in a folder of the user's or an empty scratch folder.
-// With Vercel connected it can run in a Vercel Sandbox instead, which needs a repo (the
-// sandbox clones its GitHub remote) and runs Claude in a terminal.
+// With Vercel connected it can run in a Vercel Sandbox instead, which needs a repo with a
+// GitHub origin (the sandbox clones it) and runs Claude as a chat or in a terminal.
 export function NewSessionModal({
   defaultCli,
   defaultProvider,
@@ -68,6 +70,9 @@ export function NewSessionModal({
   const [repos, setRepos] = useState<string[]>([]);
   const [place, setPlace] = useState(SCRATCH);
   const [folder, setFolder] = useState<string | null>(null);
+  // A sandbox clones the repo's GitHub origin, so only those repos are offered for one.
+  const sandbox = useSandboxRepos(host === "vercel");
+  const choices = host ? (sandbox?.usable ?? []) : repos;
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus the title field on open (without the lint-flagged autoFocus attribute).
@@ -102,12 +107,12 @@ export function NewSessionModal({
     setPlace(FOLDER);
   };
 
-  const runOn = (next: SessionHostKind | "local") => {
-    setHostPick(next);
-    // A sandbox needs a repo: move off a folder onto the first one.
-    if (next === "vercel" && !isRepoPlace(place) && repos[0]) setPlace(repos[0]);
-  };
-  const canCreate = !host || isRepoPlace(place);
+  // A sandbox needs a GitHub repo: move off a folder, or a repo it can't clone, onto one.
+  const firstUsable = sandbox?.usable[0];
+  useEffect(() => {
+    if (host && firstUsable && !sandbox?.usable.includes(place)) setPlace(firstUsable);
+  }, [host, firstUsable, sandbox, place]);
+  const canCreate = host ? choices.includes(place) : true;
 
   const submit = () => {
     if (!canCreate) return;
@@ -124,9 +129,9 @@ export function NewSessionModal({
   };
 
   const note = host
-    ? repos.length === 0
-      ? "A Vercel Sandbox session needs a repository. Add one in Settings → Repositories."
-      : "Runs in a Vercel Sandbox; on the Hobby plan a sandbox ends after 45 minutes."
+    ? sandboxRepoNote(
+        sandbox && { usable: sandbox.usable, skipped: sandbox.skipped.map((r) => basename(r)) }
+      )
     : place === SCRATCH
       ? "Runs in a new empty folder, which is deleted along with the session."
       : place === FOLDER
@@ -169,7 +174,7 @@ export function NewSessionModal({
             label="Run on"
             value={hostPick}
             options={HOSTS}
-            onChange={runOn}
+            onChange={setHostPick}
             className="ns-host"
           />
         </div>
@@ -233,7 +238,7 @@ export function NewSessionModal({
           value={place}
           onChange={(e) => void choosePlace(e.target.value)}
         >
-          {repos.map((r) => (
+          {choices.map((r) => (
             <option key={r} value={r}>
               {basename(r)}
             </option>
@@ -241,7 +246,9 @@ export function NewSessionModal({
           {!host && folder && <option value={FOLDER}>{basename(folder)}</option>}
           {!host && <option value={SCRATCH}>New empty folder</option>}
           {!host && <option value={CHOOSE_FOLDER}>Choose a folder…</option>}
-          {host && repos.length === 0 && <option value={place}>No repositories</option>}
+          {host && choices.length === 0 && (
+            <option value={place}>{sandbox ? "No GitHub repositories" : "Checking…"}</option>
+          )}
         </select>
       </label>
       <div className="field-note">{note}</div>

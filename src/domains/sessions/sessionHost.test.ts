@@ -7,6 +7,7 @@ import {
   hostPlace,
   SANDBOX_NO_AGENTS,
   sandboxFacts,
+  sandboxRepoNote,
   sandboxRepos,
   sandboxStatusLabel,
   timeLeft,
@@ -79,6 +80,20 @@ describe("sandboxRepos", () => {
       { path: "/d", remote: { ...gh, host: "GitHub.com" } },
     ];
     assert.deepEqual(sandboxRepos(repos), { usable: ["/a", "/d"], skipped: ["/b", "/c"] });
+  });
+});
+
+describe("sandboxRepoNote", () => {
+  it("names the repos left out, and why", () => {
+    const note = sandboxRepoNote({ usable: ["web"], skipped: ["notes", "infra"] });
+    assert.match(note, /no GitHub origin: notes, infra\.$/);
+  });
+  it("says how to get a repo when none can run", () => {
+    assert.match(sandboxRepoNote({ usable: [], skipped: ["notes"] }), /none of yours/);
+    assert.match(sandboxRepoNote({ usable: [], skipped: [] }), /Settings → Repositories/);
+  });
+  it("says it's still checking", () => {
+    assert.match(sandboxRepoNote(null), /Checking/);
   });
 });
 
