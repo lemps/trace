@@ -59,6 +59,7 @@ import "@/domains/integrations/integrations.css";
 import "@/domains/github/github.css";
 import "@/domains/repos/repos.css";
 import "@/domains/settings/settings.css";
+import "@/domains/settings/saved-prompts.css";
 import "@/domains/settings/shortcuts.css";
 import "@/domains/settings/sidebar.css";
 import "@/domains/settings/cleanup.css";

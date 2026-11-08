@@ -1,0 +1,99 @@
+/* Settings → Agents → Saved prompts (`SavedPromptsSettings`). */
+.sp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+}
+.sp-row-name {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-0);
+}
+.sp-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp-row-title {
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.sp-row-body,
+.sp-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-row-body {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.sp-row-ask {
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.sp-empty {
+  padding: 20px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+  text-align: center;
+}
+
+.sp-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+}
+.sp-editor-row {
+  display: flex;
+  gap: 12px;
+}
+.sp-name {
+  flex: 0 0 180px;
+}
+.sp-title {
+  flex: 1;
+  min-width: 0;
+}
+/* The name's leading `/`, inside the box like the composer shows it. */
+.sp-name-input {
+  position: relative;
+}
+.sp-name-input > span {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+  pointer-events: none;
+}
+.field .sp-name-input input {
+  width: 100%;
+  padding-left: 20px;
+  font-family: var(--font-mono);
+}
+.sp-editor-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

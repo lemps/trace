@@ -6,6 +6,7 @@ import { AutoCleanupSettings } from "./AutoCleanupSettings";
 import { BuddySettings } from "./BuddySettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
+import { SavedPromptsSettings } from "./SavedPromptsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SidebarSettings } from "./SidebarSettings";
 import { TabsSettings } from "./TabsSettings";
@@ -64,6 +65,7 @@ export function SettingsView() {
             <>
               <RepoSettings />
               <AgentDefaultsSettings />
+              <SavedPromptsSettings />
             </>
           )}
           {tab === "notifications" && <NotificationSettings />}
