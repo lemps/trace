@@ -125,6 +125,16 @@ pub(crate) fn sandbox_cwd(host: &SessionHost) -> String {
     }
 }
 
+/// The PRs of a session in a sandbox: its branch's, on its GitHub repo, since
+/// there's no checkout here to ask. None when `workspace_id` isn't one.
+pub(crate) fn remote_prs(workspace_id: &str) -> Option<Vec<String>> {
+    let session = crate::commands::session::owning_session(workspace_id)?;
+    let SessionHost::Vercel { remote, .. } = session.host.as_ref()?;
+    let remote = remote.as_deref().and_then(github_remote)?;
+    let branch = crate::execution::sandbox::host::session_branch(&session.id);
+    Some(crate::github::links::repo_branch_prs(&remote, &branch))
+}
+
 /// `owner/name` as a GitHub repo.
 fn github_remote(full_name: &str) -> Option<RemoteRepo> {
     let (owner, name) = full_name.rsplit_once('/')?;

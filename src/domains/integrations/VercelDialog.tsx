@@ -4,11 +4,13 @@ import { Modal } from "@/components/Modal";
 import { useVercelStore } from "@/domains/vercel/store";
 import { ClaudeLogin } from "./ClaudeLogin";
 import { VercelForm } from "./ConnectForms";
+import { VercelReadiness } from "./VercelReadiness";
 import { VERCEL } from "./vercel";
 
 // Vercel's details: connect with a token, then see whose it is (user, team and the
-// project trace keeps its sandboxes in), pick the Claude login sandboxes get, and
-// disconnect (which deletes the token).
+// project trace keeps its sandboxes in), what's still missing for a sandbox session
+// (the checklist), pick the Claude login sandboxes get, and disconnect (which deletes
+// the token).
 export function VercelDialog({ onClose }: { onClose: () => void }) {
   const status = useVercelStore((s) => s.status);
   const disconnect = useVercelStore((s) => s.disconnect);
@@ -39,6 +41,7 @@ export function VercelDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         {!status && <VercelForm />}
+        <VercelReadiness vercel={status} />
         {status && <ClaudeLogin />}
         {status && (
           <div className="ig-form-foot">

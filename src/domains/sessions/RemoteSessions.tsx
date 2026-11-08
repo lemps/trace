@@ -1,11 +1,13 @@
 import { I } from "@/components/Icon";
 import type { RemoteSessionsState } from "./hooks/useRemoteSessions";
+import { sandboxStatusLabel } from "./sessionHost";
 import { relTime } from "./time";
 
 // "Vercel Sandbox": trace sessions running in Vercel sandboxes that this trace doesn't
 // have yet, started here before or from another computer. Join adopts one as a
 // local session (same id) and opens it. The status is Vercel's word for the
-// sandbox, not agent state, so it's plain text rather than a StatusLight.
+// sandbox, not agent state, so it's plain text ("Sandbox running") rather than a
+// StatusLight, said as the sandbox's so it can't be read as the agent's.
 export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
   const { joinable, loading, joining, refresh, join } = remote;
   return (
@@ -40,7 +42,7 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
               <span className="vs-where" title={r.sandbox}>
                 {r.repo ?? r.sandbox}
               </span>
-              <span className="vs-status">{r.status}</span>
+              <span className="vs-status">{sandboxStatusLabel(r.status)}</span>
               <span className="sr-time">{relTime(r.createdAt / 1000)}</span>
               <button
                 type="button"

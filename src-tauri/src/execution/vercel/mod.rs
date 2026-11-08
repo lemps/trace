@@ -49,13 +49,30 @@ fn info(sandbox: &Value, session: Option<&Value>) -> SandboxInfo {
         .and_then(|s| s["id"].as_str())
         .or_else(|| sandbox["currentSessionId"].as_str())
         .map(str::to_string);
+    let status = sandbox["status"].as_str().unwrap_or_default().to_string();
+    let saved = sandbox["currentSnapshotId"]
+        .as_str()
+        .is_some_and(|id| !id.is_empty());
+    // A run stops `timeout` ms after it started; extending the timeout moves it on.
+    let stops_at = session
+        .filter(|s| s["status"] == "running")
+        .and_then(|s| Some(s["startedAt"].as_u64()? + s["timeout"].as_u64()?));
+    // A snapshot is kept `snapshotExpiration` ms from when the sandbox stopped.
+    let saved_until = (saved && status == "stopped")
+        .then(|| {
+            Some(sandbox["statusUpdatedAt"].as_u64()? + sandbox["snapshotExpiration"].as_u64()?)
+        })
+        .flatten();
     SandboxInfo {
         name: sandbox["name"].as_str().unwrap_or_default().to_string(),
-        status: sandbox["status"].as_str().unwrap_or_default().to_string(),
+        status,
         session_id,
         labels,
         created_at: sandbox["createdAt"].as_u64().unwrap_or_default(),
         persistent: sandbox["persistent"].as_bool().unwrap_or(false),
+        saved,
+        stops_at,
+        saved_until,
     }
 }
 
@@ -264,5 +281,38 @@ mod tests {
             Some(&json!({ "id": "new" })),
         );
         assert_eq!(i.session_id.as_deref(), Some("new"));
+    }
+
+    #[test]
+    fn a_running_sandbox_says_when_it_stops() {
+        let i = info(
+            &json!({ "status": "running", "currentSnapshotId": "snap_old" }),
+            Some(&json!({ "status": "running", "startedAt": 1_000u64, "timeout": 2_700_000u64 })),
+        );
+        assert_eq!(i.stops_at, Some(2_701_000));
+        assert_eq!(
+            i.saved_until, None,
+            "a running sandbox's snapshot isn't the save"
+        );
+        // A list has no session, so no stop time.
+        assert_eq!(info(&json!({ "status": "running" }), None).stops_at, None);
+    }
+
+    #[test]
+    fn a_stopped_sandbox_says_until_when_its_snapshot_is_kept() {
+        let stopped = json!({
+            "status": "stopped", "currentSnapshotId": "snap_1",
+            "statusUpdatedAt": 5_000u64, "snapshotExpiration": 604_800_000u64,
+        });
+        let i = info(
+            &stopped,
+            Some(&json!({ "status": "stopped", "timeout": 1u64 })),
+        );
+        assert!(i.saved);
+        assert_eq!(i.stops_at, None);
+        assert_eq!(i.saved_until, Some(604_805_000));
+        let unsaved = info(&json!({ "status": "stopped" }), None);
+        assert!(!unsaved.saved);
+        assert_eq!(unsaved.saved_until, None);
     }
 }

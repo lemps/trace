@@ -66,6 +66,23 @@ export function listRemoteSessions(): Promise<RemoteSandboxSession[]> {
   return invoke("list_remote_sessions");
 }
 
+/** A session's sandbox as Vercel reports it now (`commands/sandbox_state.rs`). */
+export interface SandboxState {
+  /** Vercel's word: "running", "stopped", "snapshotting", …; empty when there's none. */
+  status: string;
+  /** It has a snapshot Start resumes from. */
+  saved: boolean;
+  /** Epoch ms when Vercel stops the current run, when it says. */
+  stopsAt: number | null;
+  /** Epoch ms when the snapshot expires, when it says. */
+  savedUntil: number | null;
+}
+
+/** Null when the session runs on this computer. */
+export function sandboxState(workspaceId: string): Promise<SandboxState | null> {
+  return invoke("sandbox_state", { workspaceId });
+}
+
 /** Adopt one as a local session with the same id. */
 export function joinRemoteSession(workspaceId: string): Promise<ScratchSession> {
   return invoke("join_remote_session", { workspaceId });

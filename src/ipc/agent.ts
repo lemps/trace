@@ -88,7 +88,7 @@ export function ptySnapshot(workspaceId: string): Promise<PtySnapshot | null> {
 
 /** Stop a workspace's agent, terminal or chat. A chat agent's exit follows shortly. */
 /** What an agent's host can do besides its screen (`execution::Capabilities`).
- * Everything on this computer; on a Vercel sandbox, the terminal only. */
+ * Everything on this computer; on a Vercel sandbox, the terminal and the chat only. */
 export interface AgentCapabilities {
   turnHooks: boolean;
   transcript: boolean;

@@ -20,6 +20,12 @@ use crate::repo_catalog::model::RemoteRepo;
 /// minutes whatever is asked; keep-alive (`session`) extends paid plans.
 pub const SANDBOX_TIMEOUT: Duration = Duration::from_secs(45 * 60);
 
+/// The branch a sandbox session works on, like a local session's worktree:
+/// `workspace/<slug>`. Its PRs are found by it (`github::links::repo_branch_prs`).
+pub fn session_branch(workspace_id: &str) -> String {
+    format!("workspace/{}", slugify(workspace_id))
+}
+
 /// Which sandbox, and what goes in it.
 #[derive(Debug, Clone)]
 pub struct SandboxTarget {
@@ -218,7 +224,7 @@ pub fn ready<P: SandboxProvider>(
             script::clone_argv(&target.remote, dir),
             &clone_env,
         )?;
-        let branch = format!("workspace/{}", slugify(&target.workspace_id));
+        let branch = session_branch(&target.workspace_id);
         ready.run(
             provider,
             "Checking out the session's branch",
