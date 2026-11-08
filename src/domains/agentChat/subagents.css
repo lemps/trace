@@ -51,18 +51,27 @@
 .ac-tab > svg {
   flex-shrink: 0;
 }
-/* A finished subagent's close, tucked against its tab (as a pane tab's is). */
-.ac-tab-close {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+/* A finished subagent's close (`IconButton` xs), tucked against its tab (as a pane
+   tab's is). It keeps its slot but is clear until the tab is hovered or focused, so
+   labels never shift; always there without a hovering pointer. */
+.btn.icon.ac-tab-close {
   margin: 0 4px 0 -8px;
-  border-radius: var(--radius-sm);
   color: var(--fg-3);
+  opacity: 0;
+  transition: opacity 0.12s;
 }
-.ac-tab-close:hover {
+.ac-tab:hover + .ac-tab-close,
+.ac-tab:focus-visible + .ac-tab-close,
+.ac-tab-close:hover,
+.ac-tab-close:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .btn.icon.ac-tab-close {
+    opacity: 1;
+  }
+}
+.btn.icon.ac-tab-close:hover:not(:disabled) {
   color: var(--fg-0);
   background: var(--bg-3);
 }
