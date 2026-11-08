@@ -67,7 +67,7 @@ function Summary({ pr }: { pr: PrThread }) {
   );
 }
 
-// The rail's "Pull requests" section: every PR the workspace raised (found by
+// The Pull request tab's content: every PR the workspace raised (found by
 // `usePrWatch` — branch + conversation, not just whatever scrolled past in the
 // terminal), the selected one's status and links, then its live conversation.
 export function PrRailSection({ urls }: { urls: string[] }) {

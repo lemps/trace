@@ -318,14 +318,15 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
           <PaneArea panes={panes} />
         </div>
       </div>
-      {/* PRs, workspace, ticket — docked on the right edge, folding to a strip. */}
+      {/* Next step, workspace, ticket — docked on the right edge, folding to a strip. */}
       <SidePanel
         views={[
           {
             id: "context",
             label: "Details",
-            count: prUrls.length,
-            content: <ContextRail issue={issue} site={site} prUrls={prUrls} running={running} />,
+            content: (
+              <ContextRail issue={issue} site={site} hasPr={prUrls.length > 0} running={running} />
+            ),
           },
           { id: "orchestrator", label: "Orchestrator", content: <OrchestratorPane /> },
         ]}
