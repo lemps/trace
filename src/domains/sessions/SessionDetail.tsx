@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/app/toast";
-import { BackButton } from "@/components/BackButton";
-import { I } from "@/components/Icon";
-import { MoreTrigger, PopMenu } from "@/components/PopMenu";
-import { StatusLight } from "@/components/StatusLight";
-import { editorItems } from "@/domains/agent/editorItems";
 import { useHasExited } from "@/domains/agent/exitedStore";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
@@ -15,7 +10,6 @@ import { useViewerTabs } from "@/domains/agent/viewerTabs";
 import { useWorkspaceTabs } from "@/domains/agent/workspaceTabs";
 import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
 import { useBoardStore } from "@/domains/board/store";
-import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { focusedGroup } from "@/domains/panes/model";
 import { PaneArea } from "@/domains/panes/PaneArea";
@@ -26,20 +20,14 @@ import { usePlanTab } from "@/domains/plans/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import { type AgentCli, type AgentProvider, detachAgent } from "@/ipc/agent";
-import type { WorkspaceInfo } from "@/ipc/workspace";
-import { basename } from "@/platform/paths";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
-import { CreatorChip } from "./CreatorChip";
-import { creatorOf } from "./createdBy";
-import { HostChip } from "./HostChip";
 import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
+import { SessionHeader } from "./SessionHeader";
 import { SessionPanel } from "./SessionPanel";
-import { SessionRunButton } from "./SessionRunButton";
-import { addAgentBlocker, hostPlace } from "./sessionHost";
+import { addAgentBlocker } from "./sessionHost";
 import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
-import { TitleEditor } from "./TitleEditor";
 import type { ScratchSession } from "./types";
 
 // Full-screen detail for one exploratory session. Reuses the agent detail shell
@@ -49,14 +37,9 @@ import type { ScratchSession } from "./types";
 // A session can host several agents in ONE worktree (see `agentRoster`): the agent
 // it was created with, plus companions added here. Each gets its own tab, PTY and
 // conversation, so work claude started can be continued by codex on the same code.
-// The tabs can be arranged side by side in panes (`domains/panes`); the header acts on
-// the agent last in focus.
-
-/** The header's "where": repo · branch here, or the sandbox and its repo on Vercel. */
-function where(info: WorkspaceInfo | null, session: ScratchSession): string {
-  if (info) return [basename(info.repo), info.branch].filter(Boolean).join(" · ");
-  return session.host ? hostPlace(session.host) : "\u00a0";
-}
+// The tabs can be arranged side by side in panes (`domains/panes`); the header
+// (`SessionHeader`) acts on the agent last in focus. A failed start is a toast
+// (`useAgentRun`), not a line here.
 
 export function SessionDetail({
   session,
@@ -68,10 +51,7 @@ export function SessionDetail({
   /** The page Back returns to ("Inbox", "Sessions", …). */
   backLabel: string;
 }) {
-  const [confirmRemove, setConfirmRemove] = useState(false);
-  const [renaming, setRenaming] = useState(false);
   const [linking, setLinking] = useState(false);
-  const rename = useSessionsStore((s) => s.rename);
   const linkToIssue = useSessionsStore((s) => s.linkToIssue);
   const addAgent = useSessionsStore((s) => s.addAgent);
   const removeAgent = useSessionsStore((s) => s.removeAgent);
@@ -145,9 +125,6 @@ export function SessionDetail({
   );
   const panes = usePanes(`session:${session.id}`, panels, owners);
   useFollowAgent(panes, roster, selectedAgent, selectAgent);
-  // Arming "remove" is for the agent in view; another taking the header disarms it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run when the agent changes
-  useEffect(() => setConfirmRemove(false), [active.workspaceId]);
 
   const showAgent = (workspaceId: string) => {
     selectAgent(workspaceId);
@@ -175,9 +152,8 @@ export function SessionDetail({
   };
 
   const onRemoveAgent = () => {
-    // Reached from the header's confirm button (the ⋯ menu only arms it):
+    // Reached from the header's inline confirm (the ⋯ menu only arms it):
     // removing an agent kills its PTY and forgets its conversation.
-    setConfirmRemove(false);
     const removed = active.workspaceId;
     selectAgent(session.id);
     void removeAgent(session.id, removed)
@@ -205,113 +181,20 @@ export function SessionDetail({
 
   return (
     <div className="detail">
-      <div className="detail-top">
-        <BackButton label={backLabel} onBack={onBack} />
-        <span className="session-avatar">
-          <I.Sparkles size={16} />
-        </span>
-        <div>
-          <span className="id" title={info?.cwd ?? session.host?.sandbox}>
-            {where(info, session)}
-          </span>
-          <CreatorChip createdBy={creatorOf(session)} variant="detail" />
-          {session.host && <HostChip host={session.host} />}
-          {renaming ? (
-            <TitleEditor
-              initial={session.title}
-              onSave={(title) => void rename(session.id, title)}
-              onClose={() => setRenaming(false)}
-            />
-          ) : (
-            <div className="ttl">
-              {session.title}
-              <button
-                type="button"
-                className="ttl-edit"
-                onClick={() => setRenaming(true)}
-                aria-label="Rename session"
-                title="Rename"
-              >
-                <I.Pencil size={12} />
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="right">
-          {/* The viewed agent's real state — "working" only mid-turn, not whenever its PTY lives. */}
-          {run.running && (
-            <StatusLight
-              light={live[active.workspaceId]?.light ?? "stopped"}
-              label={shownAsk(live[active.workspaceId])?.label}
-              variant="pill"
-              size="lg"
-            />
-          )}
-          {confirmRemove && (
-            <>
-              <button type="button" className="btn" onClick={() => setConfirmRemove(false)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn danger"
-                onClick={onRemoveAgent}
-                title="Stops this agent and forgets its conversation; the worktree stays"
-              >
-                <I.Trash size={14} /> Confirm remove {active.label}
-              </button>
-            </>
-          )}
-          <SessionRunButton
-            agentName={active.label}
-            running={run.running}
-            exited={exited}
-            remote={Boolean(session.host)}
-            onStart={() => void run.start()}
-            onStop={() => run.stop()}
-            onDisconnect={disconnect}
-          />
-          <PopMenu
-            trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
-            sections={[
-              // A remote host's files aren't on this computer to open.
-              ...(session.host
-                ? []
-                : [
-                    {
-                      title: session.folder ? "Folder" : "Worktree",
-                      items: editorItems(session.id),
-                    },
-                  ]),
-              { title: active.label, items: agentItems },
-              {
-                title: "Session",
-                items: [
-                  ...(session.worktree
-                    ? [{ label: "Link to ticket…", onSelect: () => setLinking(true) }]
-                    : []),
-                  ...(active.companion
-                    ? [
-                        {
-                          label: `Remove ${active.label} agent…`,
-                          danger: true,
-                          onSelect: () => setConfirmRemove(true),
-                        },
-                      ]
-                    : []),
-                ],
-              },
-              { title: "Layout", items: layoutItems(panes) },
-            ]}
-          />
-        </div>
-      </div>
-
-      {run.error && (
-        <div style={{ padding: "8px 20px", color: "var(--c-danger)", fontSize: 12.5 }}>
-          {run.error}
-        </div>
-      )}
+      <SessionHeader
+        session={session}
+        backLabel={backLabel}
+        onBack={onBack}
+        info={info}
+        active={active}
+        run={run}
+        exited={exited}
+        onDisconnect={disconnect}
+        agentItems={agentItems}
+        layoutItems={layoutItems(panes)}
+        onLink={() => setLinking(true)}
+        onRemoveAgent={onRemoveAgent}
+      />
 
       <div className="detail-body">
         <div className="detail-left">

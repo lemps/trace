@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { I } from "@/components/Icon";
 import {
   type OrchBackend,
   type OrchSpeed,
@@ -28,7 +29,7 @@ export function AssistantSettings() {
       .catch(() => setSaved(false));
   }, []);
 
-  // Let the "Saved ✓" confirmation fade on its own rather than lingering.
+  // Let the "Saved" confirmation fade on its own rather than lingering.
   useEffect(() => {
     if (!justSaved) return;
     const t = setTimeout(() => setJustSaved(false), 2000);
@@ -116,7 +117,11 @@ export function AssistantSettings() {
               Remove key
             </button>
           )}
-          {justSaved && <span className="key-status">Saved ✓</span>}
+          {justSaved && (
+            <span className="key-status">
+              <I.Check size={12} /> Saved
+            </span>
+          )}
         </div>
       )}
     </section>

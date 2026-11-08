@@ -40,6 +40,12 @@
 .test-suite.fail .name {
   color: var(--c-danger);
 }
+.test-suite .stat .ok,
+.test-suite .stat .fail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .test-suite.pass .stat .ok {
   color: var(--c-done);
 }

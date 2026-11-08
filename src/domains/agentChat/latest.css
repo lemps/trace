@@ -1,0 +1,31 @@
+/* "Jump to latest": a round icon pill (`LatestButton`, the Transcript view) for when
+   you've scrolled up. In the corner beside the column when there's room, else its
+   own row under the conversation, so it never covers a message. */
+.btn.icon.jump-latest {
+  border-radius: 999px;
+  color: var(--fg-1);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-pop);
+}
+.btn.icon.jump-latest:hover:not(:disabled) {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+
+.ac-latest {
+  position: absolute;
+  right: 20px;
+  bottom: 12px;
+  z-index: 1;
+}
+.ac-latest.docked {
+  position: static;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding: 6px 20px;
+  border-top: 1px solid var(--border-faint);
+}
+.ac-latest.docked .jump-latest {
+  box-shadow: none;
+}

@@ -51,14 +51,14 @@ export function ArchiveBin({
               <span className={`session-cli ${s.cli}`}>{s.cli}</span>
               <span className="archive-title">{s.title}</span>
               <span className="archive-when">archived {relTime(s.archivedAt ?? 0)}</span>
-              <button
-                type="button"
-                className="archive-action"
+              <IconButton
+                size="xs"
+                className="ghost archive-restore"
                 onClick={() => onRestore(s.id)}
-                title="Restore"
+                label="Restore"
               >
-                <I.ArchiveRestore size={12} /> Restore
-              </button>
+                <I.ArchiveRestore size={12} />
+              </IconButton>
               <IconButton
                 size="xs"
                 className="ghost archive-delete"

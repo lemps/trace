@@ -48,9 +48,13 @@ export function TestsPane({ workspaceId }: { workspaceId: string }) {
             <span className="name">{run.command}</span>
             <span className="stat">
               {run.passed ? (
-                <span className="ok">✓ passed</span>
+                <span className="ok">
+                  <I.Check size={12} /> passed
+                </span>
               ) : (
-                <span className="fail">✗ exit {run.exitCode}</span>
+                <span className="fail">
+                  <I.X size={12} /> exit {run.exitCode}
+                </span>
               )}
             </span>
             <span className="duration">{secs(run.durationMs)}</span>

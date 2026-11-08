@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { BackButton } from "@/components/BackButton";
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import type { MenuItem } from "@/components/PopMenu";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
@@ -58,12 +59,21 @@ interface PrActionProps {
 }
 
 // The header's PR button follows the PR's real state: merge an open one, view a
-// finished one, and only offer "Raise PR" when the workspace has none at all.
+// finished one, and only offer "Raise PR" when the workspace has none at all. Raise
+// PR drops to its icon when the header is narrow (`header-fit.css`); Merge #N and a
+// PR's number keep their words. Busy, each says its verb in the same width.
 function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
   if (openPr && isLive(openPr.state)) {
     return (
-      <button type="button" className="btn success" onClick={onMergePr} disabled={busy === "merge"}>
-        <I.GitMerge size={14} /> {busy === "merge" ? "Merging…" : `Merge #${openPr.number}`}
+      <button
+        type="button"
+        className="btn success"
+        onClick={onMergePr}
+        disabled={busy === "merge"}
+        aria-busy={busy === "merge"}
+      >
+        <I.GitMerge size={14} />
+        <BusyLabel busy={busy === "merge"} idle={`Merge #${openPr.number}`} working="Merging…" />
       </button>
     );
   }
@@ -82,19 +92,23 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
   return (
     <button
       type="button"
-      className="btn"
+      className="btn fit"
       onClick={onRaisePr}
       disabled={busy === "raise"}
-      title="Push branch and open a pull request via gh"
+      aria-busy={busy === "raise"}
+      title="Raise PR: push the branch and open a pull request with gh"
     >
-      <I.GitPR size={14} /> {busy === "raise" ? "Raising…" : "Raise PR"}
+      <I.GitPR size={14} />
+      <span className="fit-label">
+        <BusyLabel busy={busy === "raise"} idle="Raise PR" working="Raising…" />
+      </span>
     </button>
   );
 }
 
-// The agent workspace top bar: issue identity, live agent status, and the
-// PR / session / rail actions. Purely presentational — all state lives in
-// AgentDetail.
+// The agent workspace top bar: issue identity, then status → the run control
+// (Start / Stop) → the PR action → ⋯. Stop and Raise PR drop to icons when the
+// header is narrow. Purely presentational — all state lives in AgentDetail.
 export function DetailHeader({
   issue,
   site,
@@ -144,10 +158,10 @@ export function DetailHeader({
       </div>
       <div className="right">
         {running && <StatusLight light={light} label={askLabel} variant="pill" size="lg" />}
-        <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         {running ? (
-          <button type="button" className="btn" onClick={onStop}>
-            <I.Stop size={14} /> Stop agent
+          <button type="button" className="btn fit" onClick={onStop} title="Stop the agent">
+            <I.Stop size={14} />
+            <span className="fit-label">Stop</span>
           </button>
         ) : exited ? (
           <RestartChip agentName={agentLabel(cli, provider)} onRestart={onStart} />
@@ -164,6 +178,7 @@ export function DetailHeader({
             onChooseTransport={onChooseTransport}
           />
         )}
+        <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         <PopMenu
           trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
           sections={[

@@ -47,6 +47,14 @@
   gap: 8px;
   flex-shrink: 0;
 }
+/* One / Side by side / Swipe: an icon segmented control, each option named. */
+.seg.gv-modes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-sm);
+  padding: 0;
+}
 .gv-stage {
   position: relative;
   flex: 1;

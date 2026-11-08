@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { useBrowserStore, usePageLive } from "./store";
 
 // Quiet bars over the page. One says which host an agent's page is on when it isn't
@@ -21,9 +22,9 @@ export function BrowserNotice({ pageId }: { pageId: string }) {
           <span className="bw-notice-text">
             The agent opened <span className="bw-host">{host}</span>
           </span>
-          <button type="button" className="btn ghost" onClick={() => dismiss(pageId)}>
-            Dismiss
-          </button>
+          <IconButton size="sm" className="ghost" label="Dismiss" onClick={() => dismiss(pageId)}>
+            <I.X size={14} />
+          </IconButton>
         </div>
       )}
       {blocked && (
@@ -31,13 +32,23 @@ export function BrowserNotice({ pageId }: { pageId: string }) {
           <I.Globe size={14} />
           <span className="bw-notice-text">{blocked.reason}</span>
           {canOpen && (
-            <button type="button" className="btn ghost" onClick={() => void openUrl(blocked.url)}>
-              Open in your browser
-            </button>
+            <IconButton
+              size="sm"
+              className="ghost"
+              label="Open in your browser"
+              onClick={() => void openUrl(blocked.url)}
+            >
+              <I.External size={14} />
+            </IconButton>
           )}
-          <button type="button" className="btn ghost" onClick={() => clearBlocked(pageId)}>
-            Dismiss
-          </button>
+          <IconButton
+            size="sm"
+            className="ghost"
+            label="Dismiss"
+            onClick={() => clearBlocked(pageId)}
+          >
+            <I.X size={14} />
+          </IconButton>
         </div>
       )}
     </>

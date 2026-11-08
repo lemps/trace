@@ -9,8 +9,7 @@ import {
 } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
-import { KeyHint } from "@/components/KeyHint";
-import { isShortcut, useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
+import { isShortcut } from "@/platform/shortcuts";
 import { AgentOptionPickers } from "./AgentOptionPickers";
 import { AttachmentChips } from "./AttachmentChips";
 import { useChatActions } from "./actions";
@@ -19,6 +18,7 @@ import { useDrafts, useDraftText } from "./drafts";
 import { useAttachments } from "./hooks/useAttachments";
 import { useSlash } from "./hooks/useSlash";
 import { QueueList } from "./QueueList";
+import { SendSlot } from "./SendSlot";
 import { SlashMenu } from "./SlashMenu";
 import { keepExisting } from "./sendFiles";
 import { expandSaved } from "./slash";
@@ -48,8 +48,9 @@ const carriesFiles = (e: DragEvent) => e.dataTransfer.types.includes("Files");
 // hears it, wherever focus is). Typing `/` lists the agent's slash commands and the
 // user's saved prompts; `/name` + Enter puts a saved prompt's text in the box. What's
 // typed and attached is the workspace's draft (`drafts.ts`): it waits, across closing
-// the detail and restarts, until it's sent. The keys are in the buttons' tooltips and
-// the cheat sheet, not spelled out under the box.
+// the detail and restarts, until it's sent. Send, Queue and Stop share one slot
+// (`SendSlot`). The keys are in the buttons' tooltips and the cheat sheet, not spelled
+// out under the box.
 export function Composer({
   workspaceId,
   busy,
@@ -87,13 +88,11 @@ export function Composer({
     inputRef.current?.focus();
   }, [pending, workspaceId]);
   const matches = slash.matches;
-  const interruptTitle = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and its subagents`;
-  const interruptKeys = useAriaKeys("chatInterrupt");
-  const sendTitle = useTitleWithHint(busy ? "Queue the message" : "Send the message", "chatSend");
   const slashHint = slash.entries.length > 0 ? ", / for commands" : "";
 
   const attached = files.paths;
-  const canSend = (text.trim() !== "" || attached.length > 0) && !files.saving;
+  const hasDraft = text.trim() !== "" || attached.length > 0 || files.saving;
+  const canSend = hasDraft && !files.saving;
   const deliver = (message: string, attachments: string[]) => {
     if (message === "" && attachments.length === 0) return;
     const { queues, sending, enqueue, setSending } = useAgentChatStore.getState();
@@ -200,28 +199,14 @@ export function Composer({
             <I.Paperclip size={14} />
           </button>
           <AgentOptionPickers workspaceId={workspaceId} running={running} />
-          {working && (
-            <button
-              type="button"
-              className="btn icon ac-stop"
-              onClick={onInterrupt}
-              title={interruptTitle}
-              aria-label="Interrupt"
-              aria-keyshortcuts={interruptKeys}
-            >
-              <I.Stop size={12} />
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn primary"
-            disabled={!canSend}
-            onClick={submit}
-            title={sendTitle}
-            aria-label={busy ? "Queue the message" : "Send the message"}
-          >
-            <I.Send size={13} /> {busy ? "Queue" : "Send"} <KeyHint id="chatSend" />
-          </button>
+          <SendSlot
+            busy={busy}
+            working={working}
+            hasDraft={hasDraft}
+            canSend={canSend}
+            onSend={submit}
+            onStop={onInterrupt}
+          />
         </div>
       </div>
     </div>
