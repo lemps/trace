@@ -1,6 +1,7 @@
 //! Jira Cloud provider. Columns come from the user's board configuration and
 //! cards from their active sprint. See `.claude/rules/jira.md`.
 
+pub mod adf;
 pub mod auth;
 pub mod board;
 pub mod client;

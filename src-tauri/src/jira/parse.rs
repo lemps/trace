@@ -6,6 +6,7 @@
 
 use serde_json::Value;
 
+use super::adf;
 use crate::issues::models::{initial_of, Assignee, Issue, IssueComment, IssueUser};
 
 pub fn str_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a str> {
@@ -27,40 +28,13 @@ fn map_priority(name: &str) -> String {
     .to_string()
 }
 
-/// Flatten an Atlassian Document Format (ADF) node tree to plain text.
-pub fn adf_to_text(node: &Value) -> String {
-    fn walk(node: &Value, out: &mut String) {
-        match node.get("type").and_then(Value::as_str) {
-            Some("text") => {
-                if let Some(t) = node.get("text").and_then(Value::as_str) {
-                    out.push_str(t);
-                }
-            }
-            Some("hardBreak") => out.push('\n'),
-            _ => {}
-        }
-        if let Some(content) = node.get("content").and_then(Value::as_array) {
-            for child in content {
-                walk(child, out);
-            }
-            // Block-level nodes end with a newline so paragraphs separate.
-            if matches!(
-                node.get("type").and_then(Value::as_str),
-                Some("paragraph") | Some("heading") | Some("listItem") | Some("blockquote")
-            ) {
-                out.push('\n');
-            }
-        }
-    }
-    let mut out = String::new();
-    walk(node, &mut out);
-    out.trim().to_string()
-}
-
 /// Convert one raw comment Value (`GET /issue/{id}/comment`) into the shared
-/// shape. Bodies are ADF, flattened with the same `adf_to_text` as descriptions.
+/// shape. Bodies are ADF, as Markdown like descriptions (`adf`).
 pub fn parse_comment(v: &Value) -> Option<IssueComment> {
-    let body = v.get("body").filter(|b| !b.is_null()).map(adf_to_text)?;
+    let body = v
+        .get("body")
+        .filter(|b| !b.is_null())
+        .map(adf::to_markdown)?;
     if body.is_empty() {
         return None;
     }
@@ -120,7 +94,7 @@ pub fn parse_issue(v: &Value) -> Option<Issue> {
     let description = fields
         .get("description")
         .filter(|d| !d.is_null())
-        .map(adf_to_text)
+        .map(adf::to_markdown)
         .filter(|s| !s.is_empty());
 
     let priority_name = str_at(fields, &["priority", "name"]).unwrap_or("Medium");
@@ -204,7 +178,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_comment_flattens_adf_body() {
+    fn parse_comment_reads_adf_body_as_markdown() {
         let v = serde_json::json!({
             "author": { "displayName": "Ada" },
             "created": "2026-07-30T14:02:00.000+0000",
@@ -219,7 +193,7 @@ mod tests {
         let c = parse_comment(&v).expect("comment should parse");
         assert_eq!(c.author, "Ada");
         assert!(!c.is_internal);
-        assert_eq!(c.body, "First line\nSecond line");
+        assert_eq!(c.body, "First line\n\nSecond line");
     }
 
     #[test]
