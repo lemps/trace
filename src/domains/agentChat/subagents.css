@@ -51,6 +51,21 @@
 .ac-tab > svg {
   flex-shrink: 0;
 }
+/* A finished subagent's close, tucked against its tab (as a pane tab's is). */
+.ac-tab-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0 4px 0 -8px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-3);
+}
+.ac-tab-close:hover {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
 .ac-tab.more {
   color: var(--fg-2);
 }
