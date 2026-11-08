@@ -2,9 +2,9 @@
 
 This review covered trace's buttons, copy, appearance, tabs and chat output, against claude-orchestrator (the previous app), Orca and Conductor. It also includes an importer for teammates leaving Conductor. Five read-only reviews of trace's code fed it, plus comparisons with those apps and a study of Conductor's data on disk. The findings below were checked against the code before batching.
 
-The agreed batches shipped as #58–#68. Their manual test checklist was kept in the Plan tab.
-
 ## Status
+
+The agreed batches shipped as #58–#68, then #70–#72 closed most of the remaining items, and the design-language batches (#73–#79) finished the consistency work.
 
 **Shipped**
 
@@ -15,14 +15,19 @@ The agreed batches shipped as #58–#68. Their manual test checklist was kept in
 | §1 Bugs | Show all / Copy on long tool output | #59 |
 | §2 Consistency | One name per action (Stop, Leave running, Disconnect, Vercel Sandbox/Join, Hide tab, Files on GitHub, PR states as words, Scheduled prompts); one `button.css`; readable text off `--fg-4`; Plug icon for connect; a shared Spinner; Tailscale shown as Preview | #60 |
 | §2 Consistency | Chat state drawn with `StatusLight`; one glyph table for tools; one meaning each for Bolt and Download; "Tasks"; subagent action names; Stop only in the header | #59 |
-| §3 Appearance | Density tokens, so Compact and Comfortable change the whole app | #60 |
+| §2 Consistency | One meaning per glyph app-wide; the icon size scale; small icon-button tiers; `IconButton`; one tab-bar style; `InlineConfirm` everywhere; raw radii to tokens (incl. `.add-agent-btn`) | #73, #75, #77 |
+| §3 Appearance | Density tokens, so Compact and Comfortable change the whole app; a compact chat layout | #60, #78 |
 | §4 Chat output | Failure count in a folded turn; tall code blocks capped; Insight callouts; sent prompts fold | #59 |
-| §4 Chat output | Copy on messages and tables | #66 |
+| §4 Chat output | Copy on messages and tables; a message hover bar with right-click | #66, #76 |
 | §4 Chat output | Attachment thumbnails | #68 |
 | §4 Chat output | Context gauge | #67 |
 | §5 Composer | Drafts per workspace; saved prompts | #62 |
+| §5 Composer | Model, effort and permission pickers for chat agents (live where the CLI allows, otherwise from the next start) | #72 |
+| §5 Composer | Send / Queue / Stop as one slot | #74 |
+| §6 Remote sessions | A Vercel readiness checklist; location in the header and row; its own host chip; "Sandbox running/stopped"; sandbox state and time left in Details; the PR tab for sandbox sessions; no switch to chat without a login; stale comments fixed | #71 |
 | §7 First run | Preflight checks; a three-step first run for new users | #61 |
 | §8 Conductor | Import from Conductor: repos, setup, live workspaces, defaults | #63 |
+| §8 Conductor | Custom prompts imported as saved prompts | #70 |
 | Also | The PR tab redesigned as a centred page; PRs only shown in their tab; a session lists only PRs it raised; chat attachments; the chat box grows to fit; closable subagent tabs; the chat agent resumes after a restart; Plan documents centred | #48–#51, #57, #65 |
 
 **Not started** (open; candidates for later work)
@@ -31,11 +36,11 @@ The agreed batches shipped as #58–#68. Their manual test checklist was kept in
 |---|---|
 | §3 Appearance | System mode choosing a dark and a light theme; Code theme as its own group, plus syntax highlighting in Files; more accents; Mermaid following the theme; avatar hues outside the state colours; applying the scheme to Claude Code's own theme |
 | §4 Chat output | Find in chat; an amber "Needs you" jump; one shared tool-row component (partly done in #59); a per-turn diff rollup |
-| §5 Composer | Model, effort and permission pickers (needs backend support); `@` file mentions; slash command descriptions; saved prompts that run on start, and agent tools for them |
-| §6 Remote sessions | A Vercel readiness checklist; sandbox state in the header; location in the header and row; its own host chip; prefixed sandbox status; the PR tab for host sessions; switching a session to chat when it has no login |
+| §5 Composer | `@` file mentions; slash command descriptions; saved prompts that run on start, and agent tools for them; pickers for terminal agents; a Codex model list and Codex plan mode |
+| §6 Remote sessions | A PR the agent raises from a branch it named itself isn't found (its log stays in the sandbox); confirm time left on paid plans against a live sandbox |
 | §7 First run | A base branch picker in New session |
-| §8 Conductor | Custom prompts imported as saved prompts; archived notes as Plan documents; extra chats as companion agents |
-| Upkeep | `schedules.css` is 502 lines and needs a split; `composer.css` (374) and `markdown.css` (358) are near the cap; `.status-pill` and `.add-agent-btn` are off the three heights; `.key-btn` uses amber |
+| §8 Conductor | Archived notes as Plan documents; extra chats as companion agents; editable prompt titles |
+| Upkeep | `schedules.css` is 502 lines and needs a split; `composer.css` (368) and `markdown.css` (355) are near the cap; `.status-pill` (24px) is off the three heights; `.key-btn` uses amber `--c-prog` |
 
 The design-language follow-up (buttons, icons, symbols over words) is in [`2026-11-design-language.md`](2026-11-design-language.md). It shipped as #73–#78.
 
