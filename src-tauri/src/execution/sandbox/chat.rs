@@ -255,6 +255,10 @@ impl<P: SandboxProvider> ChatProcess for SandboxChat<P> {
         None
     }
 
+    fn stopping_note(&self) -> Option<&'static str> {
+        Some("Stopping Claude and saving the sandbox, a few seconds…")
+    }
+
     /// Leave Claude running in the sandbox, noting how far this trace has read.
     fn detach(&mut self, consumed: u64) -> bool {
         chat_offsets::write(&self.workspace_id, &self.command, consumed);

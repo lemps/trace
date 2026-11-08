@@ -41,6 +41,11 @@ pub trait ChatProcess: Send {
     /// Note how much of its stdout has become journal rows, now and then, so a
     /// rejoin after a crash skips most of it.
     fn checkpoint(&mut self, _consumed: u64) {}
+    /// What to tell the user while it stops, when that takes a while (saving a
+    /// sandbox). None for a stop that's quick.
+    fn stopping_note(&self) -> Option<&'static str> {
+        None
+    }
 }
 
 /// A started process and its output, ready for an adapter to pump.

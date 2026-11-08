@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
 import { RestartChip } from "@/domains/agent/RestartChip";
 
@@ -9,7 +10,7 @@ interface SessionRunButtonProps {
   /** It runs in a Vercel sandbox, where leaving it and stopping it differ. */
   remote: boolean;
   onStart: () => void;
-  onStop: () => void;
+  onStop: () => void | Promise<void>;
   /** Leave a remote agent working and let go of it. */
   onDisconnect: () => void;
 }
@@ -36,13 +37,32 @@ export function SessionRunButton({
   onStop,
   onDisconnect,
 }: SessionRunButtonProps) {
+  // Saving a sandbox takes seconds; the button says so until the agent's gone.
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!running) setSaving(false);
+  }, [running]);
+  const stopAndSave = () => {
+    setSaving(true);
+    void Promise.resolve(onStop()).catch(() => setSaving(false));
+  };
+  if (running && remote && saving) {
+    return (
+      <button type="button" className="btn" disabled aria-busy="true" title={STOP_AND_SAVE}>
+        <span className="vs-ic spinning">
+          <I.Refresh size={13} />
+        </span>{" "}
+        Saving…
+      </button>
+    );
+  }
   if (running && remote) {
     return (
       <>
         <button type="button" className="btn" onClick={onDisconnect} title={DISCONNECT}>
           Disconnect
         </button>
-        <button type="button" className="btn" onClick={onStop} title={STOP_AND_SAVE}>
+        <button type="button" className="btn" onClick={stopAndSave} title={STOP_AND_SAVE}>
           <I.X size={13} /> Stop &amp; save
         </button>
       </>
