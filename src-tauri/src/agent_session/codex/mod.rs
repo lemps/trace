@@ -205,7 +205,8 @@ fn run(rx: Receiver<Cmd>, mut agent: Agent, mut tr: Translator, first: Vec<Out>)
                 continue;
             }
             Cmd::Send(message) => tr.send(
-                &crate::agent_session::attachments::shown_text(&message),
+                &message.text,
+                &message.attachments,
                 input::user_input(&message),
             ),
             Cmd::Answer(request_id, answer) => tr

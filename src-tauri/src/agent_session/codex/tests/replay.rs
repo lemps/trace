@@ -164,7 +164,7 @@ impl Replay {
                 Some("turn/start" | "turn/steer") => {
                     let input = expected["params"]["input"].as_array().unwrap().clone();
                     let text = input[0]["text"].as_str().unwrap().to_string();
-                    self.tr.send(&text, input)
+                    self.tr.send(&text, &[], input)
                 }
                 Some("turn/interrupt") => self.tr.interrupt(),
                 None => {

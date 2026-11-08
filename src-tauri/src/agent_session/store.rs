@@ -129,6 +129,7 @@ mod tests {
                 text: text.into(),
                 streaming: false,
                 parent_call_id: None,
+                attachments: Vec::new(),
             }),
         }
     }

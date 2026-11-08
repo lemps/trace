@@ -15,10 +15,11 @@ export function MessageRow({ message }: { message: Message }) {
     case "user":
       return (
         <div className="ac-msg mine">
-          <PromptBubble>
-            <ChatMarkdown text={message.text} />
+          {/* A message of only files has no text to draw or copy. */}
+          <PromptBubble attachments={message.attachments}>
+            {message.text.trim() && <ChatMarkdown text={message.text} />}
           </PromptBubble>
-          <MessageActions text={message.text} />
+          {message.text.trim() && <MessageActions text={message.text} />}
         </div>
       );
     case "assistant":

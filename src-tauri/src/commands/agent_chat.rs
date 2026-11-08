@@ -5,6 +5,7 @@
 
 use tauri::State;
 
+use crate::agent_session::attachments::preview::{self, PreviewError};
 use crate::agent_session::journal::{Answer, JournalRow};
 use crate::agent_session::runtime::{self, ChatAgentState};
 use crate::agent_session::transport::Transport;
@@ -67,6 +68,16 @@ pub async fn save_chat_attachment(request: tauri::ipc::Request<'_>) -> Result<St
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// An attached picture as a `data:` URL, for the composer's chips and a sent
+/// message's strip (the webview can't load local paths). Only pictures, only
+/// regular files, capped; read off the main thread.
+#[tauri::command]
+pub async fn attachment_preview(path: String) -> Result<String, PreviewError> {
+    tauri::async_runtime::spawn_blocking(move || preview::data_url(&path))
+        .await
+        .map_err(|_| PreviewError::Missing)?
 }
 
 /// Answer an approval or question row by its `requestId`.

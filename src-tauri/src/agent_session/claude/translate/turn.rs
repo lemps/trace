@@ -33,15 +33,18 @@ impl Translator {
         id
     }
 
-    /// A user turn: its row, and `content` as the stream-json line Claude reads.
-    /// A message sent while a turn runs joins it; Claude queues it.
-    pub fn send(&mut self, text: &str, content: Value) -> Vec<Out> {
+    /// A user turn: its row (the text, with its `attachments` drawn under it), and
+    /// `content` as the stream-json line Claude reads. A message sent while a
+    /// turn runs joins it; Claude queues it.
+    pub fn send(&mut self, text: &str, attachments: &[String], content: Value) -> Vec<Out> {
         let mut out = Vec::new();
         let turn = self.turn_id(&mut out);
         let id = format!("user:{}", self.book.next_seq());
-        let row = self
-            .book
-            .put(&id, Some(&turn), message(Role::User, text, false));
+        let mut body = message(Role::User, text, false);
+        if let JournalBody::Message(m) = &mut body {
+            m.attachments = attachments.to_vec();
+        }
+        let row = self.book.put(&id, Some(&turn), body);
         out.push(Out::Row(row));
         self.book.retire(&id);
         out.push(Out::Reply(json!({

@@ -95,7 +95,7 @@ pub fn replay_until(tr: &mut Translator, run: &mut Run, fixture: &str, until: Op
         let replies = match sent["type"].as_str() {
             Some("user") => {
                 let text = sent["message"]["content"].as_str().unwrap();
-                run.take(tr.send(text, Value::String(text.to_string())))
+                run.take(tr.send(text, &[], Value::String(text.to_string())))
             }
             Some("control_response") => {
                 let request_id = sent["response"]["request_id"].as_str().unwrap();

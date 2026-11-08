@@ -36,9 +36,9 @@ impl Translator {
         id
     }
 
-    /// A user turn: its row, and `input` (Codex's `UserInput` items) on its way
-    /// as soon as there's a thread to take it.
-    pub fn send(&mut self, text: &str, input: Vec<Value>) -> Vec<Out> {
+    /// A user turn: its row (the text, with its `attachments` drawn under it), and
+    /// `input` (Codex's `UserInput` items) on its way as soon as there's a thread.
+    pub fn send(&mut self, text: &str, attachments: &[String], input: Vec<Value>) -> Vec<Out> {
         let mut out = Vec::new();
         let turn = self.turn_id(&mut out);
         let id = format!("user:{}", self.book.next_seq());
@@ -47,6 +47,7 @@ impl Translator {
             text: text.to_string(),
             streaming: false,
             parent_call_id: None,
+            attachments: attachments.to_vec(),
         });
         out.push(Out::Row(self.book.put(&id, Some(&turn), body)));
         self.book.retire(&id);
@@ -308,6 +309,7 @@ pub(super) fn message(s: &super::Stream) -> JournalBody {
         text: s.text.clone(),
         streaming: false,
         parent_call_id: s.parent.clone(),
+        attachments: Vec::new(),
     })
 }
 

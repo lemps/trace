@@ -146,6 +146,7 @@ pub fn run() {
             commands::agent_chat::set_agent_transport,
             commands::agent_chat::send_chat_message,
             commands::agent_chat::save_chat_attachment,
+            commands::agent_chat::attachment_preview,
             commands::composer::existing_attachments,
             commands::agent_chat::answer_chat_prompt,
             commands::agent_chat::interrupt_chat_agent,

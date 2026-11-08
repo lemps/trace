@@ -34,6 +34,11 @@ export interface Message {
   streaming: boolean;
   /** Set when a subagent said it: the call that started that subagent. */
   parentCallId?: string;
+  /**
+   * A user message's attached files (absolute paths), drawn under its text.
+   * Older rows named them in `text` instead.
+   */
+  attachments?: string[];
 }
 
 export type ToolState = "running" | "completed" | "failed";

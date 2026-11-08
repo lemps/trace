@@ -372,5 +372,6 @@ fn message(role: Role, text: &str, streaming: bool) -> JournalBody {
         text: text.to_string(),
         streaming,
         parent_call_id: None,
+        attachments: Vec::new(),
     })
 }
