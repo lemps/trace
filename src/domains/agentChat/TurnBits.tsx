@@ -6,7 +6,7 @@ import type { ChatTurn } from "./projection";
 import type { Status } from "./types";
 
 // The small rows around a turn's content: notices, the footer a finished turn
-// ends with, and the live "Working…" line.
+// ends with, and the live Working line.
 
 export function StatusRow({ status }: { status: Status }) {
   if (status.tone === "info") return <div className="tx-notice">{status.text}</div>;
@@ -15,7 +15,7 @@ export function StatusRow({ status }: { status: Status }) {
       className={`ac-status ${status.tone}`}
       role={status.tone === "error" ? "alert" : undefined}
     >
-      {status.tone === "error" ? <I.X size={13} /> : <I.Bolt size={13} />}
+      {status.tone === "error" ? <I.X size={13} /> : <I.Alert size={13} />}
       <span>{status.text}</span>
     </div>
   );
@@ -54,12 +54,11 @@ export function WorkingRow({ since, subagents }: { since: number | null; subagen
   const now = useNow(true);
   const age = since && now > since ? formatDuration(now - since) : undefined;
   const others = subagents > 0 ? `${subagents} ${subagents === 1 ? "subagent" : "subagents"}` : "";
-  // Between turns only subagents are left working.
-  const label = since === null && others ? `${others} working…` : "Working…";
+  // Between turns only subagents are left working: no turn time, just how many.
   return (
     <div className="ac-working">
-      <StatusLight light="working" variant="word" label={label} age={age} />
-      {since !== null && others && <span className="ac-working-subs">· {others}</span>}
+      <StatusLight light="working" variant="word" age={age} />
+      {others && <span className="ac-working-subs">· {others}</span>}
     </div>
   );
 }

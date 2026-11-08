@@ -101,8 +101,10 @@
 .ac-md .tx-file {
   vertical-align: baseline;
 }
-/* (Not after a code block: it would sit on a line of its own inside the box.) */
-.ac-reply.streaming .md > :last-child:not(.md-code)::after {
+/* (Not after a code block: it would sit on a line of its own inside the box.
+   In an Insight card being written, after the card's last block.) */
+.ac-reply.streaming .md > :last-child:not(.md-code):not(.md-insight)::after,
+.ac-reply.streaming .md > .md-insight:last-child > :last-child:not(.md-code)::after {
   content: "▍";
   margin-left: 2px;
   color: var(--fg-3);

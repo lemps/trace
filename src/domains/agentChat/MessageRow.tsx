@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { PromptBubble } from "@/domains/transcript/PromptBubble";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useDisclosure } from "./hooks/useDisclosure";
 import type { Message } from "./types";
@@ -11,11 +12,9 @@ export function MessageRow({ message }: { message: Message }) {
   switch (message.role) {
     case "user":
       return (
-        <div className="tx-prompt">
-          <div className="tx-bubble">
-            <ChatMarkdown text={message.text} />
-          </div>
-        </div>
+        <PromptBubble>
+          <ChatMarkdown text={message.text} />
+        </PromptBubble>
       );
     case "assistant":
       return (
