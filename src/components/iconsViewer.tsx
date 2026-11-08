@@ -1,7 +1,7 @@
 import { Base, type IconProps } from "./iconBase";
 
 // The Browser and Gallery tabs' glyphs, and the panes' (a sidebar's pin), part of
-// `I` (Icon.tsx), kept here so that file stays under the size cap.
+// `I` (Icon.tsx).
 
 export const VIEWER_ICONS = {
   /** Keep a sidebar open (AutoSidebar). */
@@ -19,22 +19,12 @@ export const VIEWER_ICONS = {
       <path d="M2 12h20" />
     </Base>
   ),
-  Forward: (p: IconProps) => (
-    <Base {...p}>
-      <path d="m9 18 6-6-6-6" />
-    </Base>
-  ),
-  /** Open outside trace (external-link). */
+  /** Open outside trace (external-link): in the browser, on GitHub, in an editor. */
   External: (p: IconProps) => (
     <Base {...p}>
       <path d="M15 3h6v6" />
       <path d="M10 14 21 3" />
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-    </Base>
-  ),
-  Stop: (p: IconProps) => (
-    <Base {...p}>
-      <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </Base>
   ),
   /** The Gallery tab (images). */
@@ -46,11 +36,25 @@ export const VIEWER_ICONS = {
       <rect width="16" height="16" x="6" y="2" rx="2" />
     </Base>
   ),
+  /** One image at a time (the Gallery viewer's single mode). */
+  Square: (p: IconProps) => (
+    <Base {...p}>
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+    </Base>
+  ),
   /** Two images side by side (columns). */
   Compare: (p: IconProps) => (
     <Base {...p}>
       <rect width="18" height="18" x="3" y="3" rx="2" />
       <path d="M12 3v18" />
+    </Base>
+  ),
+  /** Swipe between two images. */
+  MoveHorizontal: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m18 8 4 4-4 4" />
+      <path d="M2 12h20" />
+      <path d="m6 8-4 4 4 4" />
     </Base>
   ),
 };
