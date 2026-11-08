@@ -193,7 +193,7 @@
   color: var(--fg-3);
   padding: 1px 5px;
   border: 1px solid var(--border-faint);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .detail-tab.active .count {
   color: var(--fg-1);
@@ -340,7 +340,7 @@
   background: var(--bg-2);
   border: 1px solid var(--border-faint);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .amsg .toolcall .ok {
   color: var(--c-done);

@@ -112,6 +112,9 @@
   --accent-h: 290;
   --accent-sat: 1;
 
+  /* Corners: `xs` inline chips in text (kbd, counts, code, tags), `sm` controls,
+     the default for cards, `lg` columns and panels. Only state pills are 999px. */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 14px;
