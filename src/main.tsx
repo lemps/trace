@@ -44,7 +44,7 @@ import "@/domains/browser/browser.css";
 import "@/domains/gallery/gallery.css";
 import "@/domains/gallery/viewer.css";
 import "@/domains/prs/prs.css";
-import "@/domains/prs/rail.css";
+import "@/domains/prs/pr-pane.css";
 import "@/domains/prs/checks.css";
 import "@/domains/prs/github-md.css";
 import "@/domains/sessions/sessions.css";
