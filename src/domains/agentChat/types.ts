@@ -187,6 +187,19 @@ export interface SessionInfo {
   limits: LimitWindow[];
   /** How full the main conversation's context window is; absent before a model call. */
   context?: ContextUsage;
+  /** The reasoning effort in effect, when known (the agent's own name for it). */
+  effort?: string;
+  /** The permission mode in effect (Claude Code's names), when known. */
+  permissionMode?: string;
+  /** A third-party provider behind the agent, which pins its model. */
+  provider?: string;
+}
+
+/** A workspace's picked agent options (`agent_session::options`); unset = Settings' default. */
+export interface AgentOptions {
+  model?: string;
+  effort?: string;
+  permissionMode?: string;
 }
 
 /** Tokens in the agent's context window, from its latest model call. */

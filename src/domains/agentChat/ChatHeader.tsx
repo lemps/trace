@@ -3,8 +3,9 @@ import { formatCost, limitLabel, resetsIn } from "./format";
 import type { ChatTurn } from "./projection";
 import type { LimitWindow, SessionInfo } from "./types";
 
-// The chat's fact strip: which agent and model, the session's cost so far, how
-// full the context window is, and the usage-limit windows the agent reports (how full, and when each resets).
+// The chat's fact strip: which agent and model (picked in the composer,
+// `AgentOptionPickers`), the session's cost so far, how full the context window
+// is, and the usage-limit windows the agent reports (how full, and when each resets).
 // Stopping the agent is the detail header's; interrupting a turn, the composer's.
 
 interface ChatHeaderProps {
@@ -25,7 +26,14 @@ export function ChatHeader({ info, turns }: ChatHeaderProps) {
   return (
     <div className="ac-head">
       <span className="ac-head-agent">{info?.agent ?? "Agent"}</span>
-      {info?.model && <span className="ac-head-model">{info.model}</span>}
+      {info?.model && (
+        <span
+          className="ac-head-model"
+          title="The model in use. Change it from the composer's model picker."
+        >
+          {info.model}
+        </span>
+      )}
       {hasCost && (
         <span className="ac-head-fact" title="Cost of this conversation so far">
           {formatCost(cost)}
