@@ -196,6 +196,28 @@ pub fn open(
     page.clone()
 }
 
+/// Drop `path` and `persist`'s lock file beside it.
+fn remove_with_lock(path: PathBuf) {
+    let _ = std::fs::remove_file(&path);
+    let mut lock = path.into_os_string();
+    lock.push(".lock");
+    let _ = std::fs::remove_file(lock);
+}
+
+/// A deleted workspace's file goes with it.
+pub fn forget(workspace_id: &str) {
+    remove_with_lock(browser_path(workspace_id));
+}
+
+/// A session's conversation now belongs to an issue: so does this file, unless the
+/// issue already has one (which is kept).
+pub fn transfer(from: &str, to: &str) {
+    let (src, dst) = (browser_path(from), browser_path(to));
+    if src.exists() && !dst.exists() {
+        let _ = std::fs::rename(&src, &dst);
+    }
+}
+
 #[cfg(test)]
 #[path = "store_tests.rs"]
 mod tests;

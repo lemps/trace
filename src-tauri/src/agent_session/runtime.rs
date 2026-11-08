@@ -324,6 +324,8 @@ pub fn forget(workspace_id: &str) {
     let _ = std::fs::remove_file(lock);
     super::transport::forget(workspace_id);
     crate::plans::forget(workspace_id);
+    crate::browser::store::forget(workspace_id);
+    crate::gallery::store::forget(workspace_id);
 }
 
 /// A session's conversation now belongs to an issue: so do its journal and transport.
@@ -334,4 +336,6 @@ pub fn transfer(from: &str, to: &str) {
     }
     super::transport::transfer(from, to);
     crate::plans::transfer(from, to);
+    crate::browser::store::transfer(from, to);
+    crate::gallery::store::transfer(from, to);
 }
