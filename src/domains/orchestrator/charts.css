@@ -11,7 +11,7 @@
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--fg-4);
+  color: var(--fg-3);
   font-weight: 600;
   margin-bottom: 10px;
 }
@@ -19,7 +19,7 @@
   margin: 8px 0;
   font-size: 12px;
   font-style: italic;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* Donut — a conic-gradient ring with a punched-out center label. */
@@ -133,7 +133,7 @@
 .chart-vbar-label {
   max-width: 100%;
   font-size: 9.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

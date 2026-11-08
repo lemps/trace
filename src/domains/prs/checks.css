@@ -100,14 +100,14 @@
 }
 .chk-sub {
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .chk-time {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   white-space: nowrap;
 }
 .chk-row.running .chk-time {

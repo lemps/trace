@@ -140,7 +140,7 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
   margin-right: 2px;
 }
 .type-filter .tf-chip {
@@ -176,7 +176,7 @@
 .type-filter .tf-count {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .type-filter .tf-chip.active .tf-count {
   color: var(--fg-2);
@@ -264,7 +264,7 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
   padding: 2px 2px 0;
 }
 .zone-cards {
@@ -293,7 +293,7 @@
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   padding: 20px 12px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   font-size: 12px;
   text-align: center;
 }
@@ -331,7 +331,7 @@
   min-width: 0;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

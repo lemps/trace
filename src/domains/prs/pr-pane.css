@@ -148,7 +148,7 @@
 }
 .pr-convo-head .count {
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   font-family: var(--font-mono);
 }
 .pr-convo-head .pr-link-btn {
@@ -226,7 +226,7 @@
 }
 .pr-entry-when {
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   white-space: nowrap;
 }
 .pr-flag {

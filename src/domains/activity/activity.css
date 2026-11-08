@@ -62,7 +62,7 @@
 .act-row .time {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   padding-top: 2px;
   text-align: right;
 }

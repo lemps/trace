@@ -80,7 +80,7 @@
   text-align: right;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   white-space: nowrap;
 }
 .sr-actions {

@@ -71,7 +71,7 @@
 .archive-row .archive-when {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .archive-action {
   display: inline-flex;
@@ -157,7 +157,7 @@
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 400;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sec-actions {
   display: inline-flex;
@@ -265,7 +265,7 @@
 .link-ticket-row .st {
   flex-shrink: 0;
   font-size: 10.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

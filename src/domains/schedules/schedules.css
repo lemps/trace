@@ -74,7 +74,7 @@
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sched-row-col .v {
   display: flex;
@@ -85,7 +85,7 @@
   color: var(--fg-1);
 }
 .sched-row-col .ago {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sched-row-actions {
   display: flex;
@@ -283,7 +283,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sched-section-head .count {
   font-family: var(--font-mono);
@@ -352,7 +352,7 @@
 .sched-run-meta {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .sched-viewer {
@@ -439,7 +439,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
 }
@@ -456,7 +456,7 @@
 .sched-log-when {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sched-log-body {
   min-width: 0;
@@ -477,14 +477,14 @@
 }
 .sched-log-entry.notice .sched-log-text {
   border-style: dashed;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .sched-log-tool {
   display: flex;
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -299,7 +299,7 @@
 }
 .amsg .time {
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
   font-family: var(--font-mono);
 }
 .amsg .body p {

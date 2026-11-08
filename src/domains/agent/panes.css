@@ -32,7 +32,7 @@
 .test-suite .duration {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .test-suite.fail {
   border-color: color-mix(in oklch, var(--c-danger) 30%, transparent);
@@ -79,6 +79,6 @@
 /* Muted one-liner for empty/error states (PR sections, etc.). */
 .pr-muted {
   font-size: 12.5px;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
