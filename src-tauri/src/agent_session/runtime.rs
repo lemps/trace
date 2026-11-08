@@ -49,6 +49,8 @@ impl JournalSink for Sink {
                 eprintln!("trace: {e}");
             }
         }
+        // Plan mode and task lists become the Plan tab's documents (`plans`).
+        crate::plans::on_row(&self.app, &self.workspace_id, &row);
         let event = JournalEvent {
             workspace_id: &self.workspace_id,
             rows: vec![row],
@@ -321,6 +323,7 @@ pub fn forget(workspace_id: &str) {
     lock.push(".lock");
     let _ = std::fs::remove_file(lock);
     super::transport::forget(workspace_id);
+    crate::plans::forget(workspace_id);
 }
 
 /// A session's conversation now belongs to an issue: so do its journal and transport.
@@ -330,4 +333,5 @@ pub fn transfer(from: &str, to: &str) {
         let _ = std::fs::rename(&src, &dst);
     }
     super::transport::transfer(from, to);
+    crate::plans::transfer(from, to);
 }

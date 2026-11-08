@@ -73,7 +73,7 @@ export function ContextMenu({ x, y, sections, onClose }: ContextMenuProps) {
               key={item.id ?? (typeof item.label === "string" ? item.label : j)}
               type="button"
               role="menuitem"
-              className={`pop-menu-item${item.danger ? " danger" : ""}`}
+              className={`pop-menu-item${item.danger ? " danger" : ""}${item.muted ? " muted" : ""}`}
               disabled={item.disabled}
               title={item.title}
               onClick={() => {

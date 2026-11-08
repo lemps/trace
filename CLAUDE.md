@@ -54,6 +54,7 @@ src/
     ├── repos/              # the repo model (remote + checkouts) and its worktree setup editor
     ├── board/              # Board, Column, Card, filters; store also tracks agent run-state + PTY buffers
     ├── agent/              # AgentDetail + tabs (chat/ticket/files/terminal/tests/PR), xterm registry, defaults
+    ├── plans/              # the Plan tab: plans and published documents, versions, task list, export
     ├── sessions/           # exploratory (non-Jira) Claude sessions
     ├── schedules/          # scheduled prompts: list, form, run history + run viewer
     ├── prs/                # pull-request list view
@@ -84,6 +85,7 @@ src-tauri/src/
 ├── pylon/                  # Pylon provider: auth, client, models, board  (Pylon REST)
 ├── schedule/               # scheduled prompts: cron/timing, runner loop, run lifecycle, hooks, transcripts
 ├── agent_tools/            # trace's own tools served to its agents over loopback MCP (renderer runs them)
+├── plans/                  # the Plan tab's documents: capture (plan mode, transcripts), versions, store
 ├── repo_catalog/           # per-repo remote, checkouts, default branch + worktree setup hooks
 ├── interrupted.rs          # ledger of live agents; ones cut off by quit/update/crash are offered back
 └── commands/               # thin wrappers: agent, session, schedules, issues, activity, pr, diff, tests, repos, editor

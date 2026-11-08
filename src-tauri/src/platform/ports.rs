@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 
 use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
 
 /// Starting and stopping processes.
 pub trait ProcessHost {
@@ -156,4 +157,14 @@ pub type Launcher = (&'static str, &'static [&'static str]);
 pub trait EditorLauncher {
     /// What to try for `editor`, best first.
     fn launchers(editor: Editor) -> Vec<Launcher>;
+}
+
+/// Saving the app's page, with its print styles, as a PDF (the Plan tab's export).
+pub trait PdfPrinter {
+    /// Whether the webview can write a PDF itself. Where it can't, the renderer opens
+    /// the print dialog instead, which offers saving as PDF.
+    fn prints_to_pdf() -> bool;
+
+    /// Start printing `webview`'s page to `path`; the receiver gets the outcome.
+    fn print_to_pdf(webview: &tauri::Webview, path: &Path) -> Receiver<Result<(), String>>;
 }

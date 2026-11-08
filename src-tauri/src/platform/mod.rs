@@ -23,3 +23,5 @@ mod unix;
 mod windows;
 #[cfg(windows)]
 mod windows_job;
+#[cfg(windows)]
+mod windows_pdf;

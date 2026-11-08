@@ -4,14 +4,16 @@ import { resolvePanel, useOpenRequests, usePanelKindsVersion } from "./registry"
 import { useShownPanels } from "./shown";
 import { storedLayout, usePaneLayoutStore } from "./store";
 import type { PanelDescriptor } from "./types";
-import { normalizeLayout, type TabCatalog } from "./validate";
+import { hideTabs, normalizeLayout, type TabCatalog } from "./validate";
 
 /** What the pane area and its keys need: the fitted layout, its panels, and how to change it. */
 export interface Panes {
   scope: string;
   layout: PaneLayout;
-  /** Every panel in the layout, fixed and optional, by id. */
+  /** Every panel in the layout, fixed and optional, by id (hidden ones too). */
   panels: Map<string, PanelDescriptor>;
+  /** Show a hidden tab (`PanelDescriptor.onReveal`) and select it. */
+  reveal: (tab: string) => void;
   /** Whether the user has arranged this workspace (Reset layout has something to undo). */
   arranged: boolean;
   /** Apply a layout operation to the current layout and remember the result. */
@@ -38,6 +40,10 @@ export function usePanes(
   const resetScope = usePaneLayoutStore((s) => s.reset);
 
   const fixedIds = fixed.map((p) => p.id).join("\n");
+  const hiddenIds = fixed
+    .filter((p) => p.hidden)
+    .map((p) => p.id)
+    .join("\n");
   const ownerKey = Object.keys(owners).join("\n");
   // Optional panels re-resolve when their kind's data changes (a subagent appears).
   const kindsVersion = usePanelKindsVersion();
@@ -48,16 +54,22 @@ export function usePanes(
     const known = new Set(ids);
     return {
       fixed: ids,
+      hidden: new Set(hiddenIds ? hiddenIds.split("\n") : []),
       isOptional: (tab) => {
         if (known.has(tab)) return false;
         const found = resolvePanel(tab);
         return found !== null && hosted.has(found.owner);
       },
     };
-  }, [fixedIds, ownerKey, kindsVersion]);
-  const layout = useMemo(() => normalizeLayout(saved, catalog), [saved, catalog]);
+  }, [fixedIds, hiddenIds, ownerKey, kindsVersion]);
+  // Operations act on the whole layout, hidden tabs and all, so they keep their
+  // places; what's drawn (and counted, and published) is the layout without them.
+  const full = useMemo(() => normalizeLayout(saved, catalog), [saved, catalog]);
+  const layout = useMemo(() => hideTabs(full, catalog.hidden ?? new Set()), [full, catalog]);
 
   const panels = new Map(fixed.map((p) => [p.id, p]));
+  const panelsRef = useRef(panels);
+  panelsRef.current = panels;
   for (const tab of allTabs(layout)) {
     if (panels.has(tab)) continue;
     const found = resolvePanel(tab);
@@ -78,12 +90,19 @@ export function usePanes(
     [save]
   );
   const select = useCallback((tab: string) => apply((l) => selectTab(l, tab)), [apply]);
+  const reveal = useCallback(
+    (tab: string) => {
+      panelsRef.current.get(tab)?.onReveal?.();
+      select(tab);
+    },
+    [select]
+  );
   const reset = useCallback(() => resetScope(latest.current.scope), [resetScope]);
 
   useOpenRequestsFor(owners, catalog, apply);
   usePublishShown(scope, allTabs(layout).join("\n"));
 
-  return { scope, layout, panels, arranged, apply, select, reset };
+  return { scope, layout, panels, arranged, apply, select, reveal, reset };
 }
 
 /** Open the optional panels `openPanel` asked for that belong to an agent here. */

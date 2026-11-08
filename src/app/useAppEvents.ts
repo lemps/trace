@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "@/app/toast";
 import { noteRunState } from "@/domains/agent/exitedStore";
-import { useRichOutputStore } from "@/domains/agent/richOutputStore";
 import { ensureChatListeners } from "@/domains/agentChat/hooks/useJournalFeed";
 import { syncChatActivity } from "@/domains/agentChat/liveBridge";
 import { hydrateChatState, isChatAgent, loadChatBrands } from "@/domains/agentChat/transport";
@@ -11,6 +10,7 @@ import { useBoardStore } from "@/domains/board/store";
 import { askIsOver, noteAgentTurn } from "@/domains/board/waitingNotify";
 import { userActed } from "@/domains/live/answer";
 import { clearLiveUpdate, noteLiveAsk, noteLiveTurn, useLiveSync } from "@/domains/live/sync";
+import { usePlanStore } from "@/domains/plans/store";
 import { useSessionsStore } from "@/domains/sessions/store";
 import {
   onAgentAnswered,
@@ -19,8 +19,8 @@ import {
   onAgentRunState,
   onAgentTurn,
   onPtyOutput,
-  onRichHtml,
 } from "@/ipc/events";
+import { onPlanDoc, onPlanTasks } from "@/ipc/plans";
 
 /**
  * App-level backend listeners. We capture pty-output here (not in PtyTerminal)
@@ -72,9 +72,15 @@ export function useAppEvents(): void {
         .catch(() => {});
     });
     keep(onPtyOutput((p) => appendOutput(p.workspaceId, p.data, p.seq)));
-    // HTML the agent emits via `trace-render` (out-of-band, bypassing the PTY) —
-    // pushed to the rich-output store; the panel renders it in a sandboxed iframe.
-    keep(onRichHtml((p) => useRichOutputStore.getState().push(p.issueKey, p.html)));
+    // The Plan tab's documents land backend-side (plan mode, trace-render,
+    // publish_document); a workspace already shown reloads to pick them up.
+    keep(
+      onPlanDoc((p) => {
+        const plans = usePlanStore.getState();
+        if (plans.loaded[p.workspaceId]) void plans.reload(p.workspaceId);
+      })
+    );
+    keep(onPlanTasks((p) => usePlanStore.getState().setTasks(p.workspaceId, p.tasks)));
     // Claude agents' hook-reported turns: tells "busy with background work" from
     // "needs you" (the quiet timer alone can't), and says what the agent asks.
     // What a permission dialog is really for — a question, a plan, a command.
@@ -99,12 +105,10 @@ export function useAppEvents(): void {
     };
   }, [setAgentRunning, appendOutput]);
 
-  // Load persisted HTML cards once so the HTML tab survives reloads/restarts.
-  // Sessions too: Inbox, Fleet, notifications and resumed agents open sessions
+  // Load sessions once: Inbox, Fleet, notifications and resumed agents open sessions
   // by workspace id, which fell through to "not on the current board" until the
   // Sessions view had happened to load them.
   useEffect(() => {
-    void useRichOutputStore.getState().hydrate();
     if (!useSessionsStore.getState().loaded) {
       useSessionsStore
         .getState()

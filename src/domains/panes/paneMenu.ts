@@ -82,7 +82,33 @@ export function paneMenu(
   if (groups > 1 && !narrow) {
     items.push({ label: "Close pane", onSelect: run((l) => closeGroup(l, home.id)) });
   }
-  return [{ title: label, items }, { items: layoutItems(panes, after) }];
+  return [
+    { title: label, items },
+    { title: "Tabs", items: comingTabs(panes, after) },
+    { items: layoutItems(panes, after) },
+  ];
+}
+
+/**
+ * Tabs that come and go (Plan, while it has nothing to show), always listed so
+ * they can be found: greyed with what would fill them while hidden, and opened
+ * (empty, until closed) by picking them.
+ */
+export function comingTabs(panes: Panes, after?: () => void): MenuItem[] {
+  return [...panes.panels.values()]
+    .filter((p) => p.menuHint !== undefined)
+    .map((p) => ({
+      id: `tab:${p.id}`,
+      label: p.label,
+      muted: p.hidden,
+      detail: p.hidden ? p.menuHint : undefined,
+      title: p.hidden ? undefined : `Show ${p.label}`,
+      onSelect: () => {
+        if (p.hidden) panes.reveal(p.id);
+        else panes.select(p.id);
+        after?.();
+      },
+    }));
 }
 
 /** Reset layout: in every pane menu, and in the detail header's ⋯. */

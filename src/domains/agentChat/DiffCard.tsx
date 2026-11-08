@@ -48,7 +48,8 @@ export function DiffCard({ diff }: { diff: FileDiff }) {
   );
 }
 
-function DiffLines({ lines }: { lines: DiffLine[] }) {
+/** A diff's lines in the Files tab's colours, long ones drawn in part until asked. */
+export function DiffLines({ lines }: { lines: DiffLine[] }) {
   const [all, setAll] = useState(false);
   const shown = all ? lines : lines.slice(0, FIRST_LINES);
   return (

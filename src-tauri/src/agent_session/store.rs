@@ -18,7 +18,7 @@ pub fn journal_path(workspace_id: &str) -> PathBuf {
 /// A file name for any workspace id. Ids like `sched:<id>` hold characters a
 /// Windows file name can't, so anything but `[A-Za-z0-9_-]` becomes `_`, and a
 /// hash of the real id keeps two ids that map alike apart.
-fn file_stem(workspace_id: &str) -> String {
+pub(crate) fn file_stem(workspace_id: &str) -> String {
     let safe: String = workspace_id
         .chars()
         .map(|c| {

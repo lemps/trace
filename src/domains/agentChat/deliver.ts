@@ -1,5 +1,7 @@
 import { submitLine } from "@/domains/agent/submitLine";
+import { sendAgentInput } from "@/ipc/agent";
 import { loadJournal, sendChatMessage } from "@/ipc/agentChat";
+import { useComposerFill } from "./composerFill";
 import { useAgentChatStore } from "./store";
 import { summarizeTool } from "./toolSummary";
 import { knownTransport } from "./transport";
@@ -16,6 +18,27 @@ export async function sendToAgent(workspaceId: string, text: string): Promise<vo
   }
   // Enter goes separately, or a long message lands as an unsent paste.
   await submitLine(workspaceId, text);
+}
+
+const ESC = String.fromCharCode(27);
+
+/**
+ * Put `text` where the user is about to write to the agent, without sending it: a
+ * chat agent's composer, or a terminal agent's prompt (as a paste, so its lines
+ * stay in one message and no Enter goes with it).
+ */
+export async function fillAgentInput(
+  workspaceId: string,
+  text: string
+): Promise<"chat" | "terminal"> {
+  if ((await knownTransport(workspaceId)) === "chat") {
+    useComposerFill.getState().fill(workspaceId, text);
+    return "chat";
+  }
+  // No escape bytes of its own: one could end the paste early and type the rest.
+  const safe = text.split(ESC).join("");
+  await sendAgentInput(workspaceId, `\x1b[200~${safe}\x1b[201~`);
+  return "terminal";
 }
 
 /** Whether the workspace's agent runs as a chat (asking the backend if not known yet). */

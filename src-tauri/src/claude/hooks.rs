@@ -192,6 +192,14 @@ pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
     // A chat agent's prompts are journal rows answered over stream-json; the
     // dialog events below are for a TUI, which an Inbox answers with keystrokes.
     let state = app.state::<crate::state::AppState>();
+    // A terminal agent's plans and task list come from its transcript, read as
+    // its dialogs open and close and its turns end (a chat agent's, from rows).
+    if !state.chat_agents.is_running(ws) && matches!(name, "permission" | "answered" | "stop") {
+        if name == "permission" {
+            crate::plans::transcript::on_permission(app, ws, payload);
+        }
+        crate::plans::transcript::scan(app, ws, name == "stop");
+    }
     if state.chat_agents.is_running(ws) && matches!(name, "permission" | "answered" | "needs-input")
     {
         return;

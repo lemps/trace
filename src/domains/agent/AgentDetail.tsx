@@ -17,6 +17,7 @@ import { OrchestratorPane } from "@/domains/orchestrator/OrchestratorPane";
 import { PaneArea } from "@/domains/panes/PaneArea";
 import { layoutItems } from "@/domains/panes/paneMenu";
 import { usePanes } from "@/domains/panes/usePanes";
+import { usePlanTab } from "@/domains/plans/store";
 import { discoverPrs, usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { primaryPr } from "@/domains/prs/primaryPr";
 import { canonicalPrUrl } from "@/domains/prs/prUrl";
@@ -38,7 +39,6 @@ import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaul
 import { useHasExited } from "./exitedStore";
 import { launchIssueAgent } from "./launch";
 import { agentLabel } from "./providerLabel";
-import { useRichOutputStore } from "./richOutputStore";
 import { StartPrompt } from "./StartPrompt";
 import { TICKET_CHAT_TAB, ticketPanels } from "./ticketPanels";
 import { useDetailKeys } from "./useDetailKeys";
@@ -71,7 +71,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const running = useBoardStore((s) => s.runningAgents.has(issue.key));
   const exited = useHasExited(issue.key);
   // Selecting a primitive (length) keeps this referentially stable across renders.
-  const htmlCount = useRichOutputStore((s) => s.blocks[issue.key]?.length ?? 0);
+  const plan = usePlanTab(issue.key);
   const status = useBoardStore((s) =>
     statusOf(s.runningAgents.has(issue.key), s.agentActivity[issue.key])
   );
@@ -250,11 +250,11 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       )}
     </ChatSurface>
   );
-  const panels = ticketPanels({ issue, cli, chat, htmlCount, prUrls });
+  const panels = ticketPanels({ issue, cli, chat, plan, prUrls });
   const panes = usePanes(`ticket:${issue.key}`, panels, { [issue.key]: TICKET_CHAT_TAB });
   useDetailKeys(
     onBack,
-    panels.map((p) => p.id),
+    panels.filter((p) => !p.hidden).map((p) => p.id),
     panes.select
   );
   const quickOpen = useQuickOpen(issue.key, true, () => panes.select("files"));

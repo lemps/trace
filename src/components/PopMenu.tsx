@@ -11,6 +11,10 @@ export interface MenuItem {
   checked?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  /** Greyed but still pickable: a tab with nothing in it yet, which opens empty. */
+  muted?: boolean;
+  /** A second, quieter line under the label. */
+  detail?: string;
   /** A shortcut's current binding (`useHint`), shown at the item's end. */
   hint?: string;
   /** Why it's disabled, or more about what it does. */
@@ -53,7 +57,7 @@ export function PopMenu({ trigger, sections, align = "right" }: PopMenuProps) {
                   key={item.id ?? (typeof item.label === "string" ? item.label : j)}
                   type="button"
                   role="menuitem"
-                  className={`pop-menu-item${item.danger ? " danger" : ""}`}
+                  className={`pop-menu-item${item.danger ? " danger" : ""}${item.muted ? " muted" : ""}`}
                   disabled={item.disabled}
                   title={item.title}
                   onClick={() => {
@@ -86,7 +90,16 @@ export function MenuItemBody({ item }: { item: MenuItem }) {
   return (
     <>
       <span className="check">{item.checked && <I.Check size={12} />}</span>
-      {item.hint ? <span className="pop-menu-label">{item.label}</span> : item.label}
+      {item.detail ? (
+        <span className="pop-menu-label">
+          {item.label}
+          <span className="pop-menu-detail">{item.detail}</span>
+        </span>
+      ) : item.hint ? (
+        <span className="pop-menu-label">{item.label}</span>
+      ) : (
+        item.label
+      )}
       {item.hint && <span className="kbd">{item.hint}</span>}
     </>
   );

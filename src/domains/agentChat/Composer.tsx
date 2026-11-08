@@ -1,9 +1,10 @@
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { KeyHint } from "@/components/KeyHint";
 import { isShortcut, useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { useChatActions } from "./actions";
+import { useComposerFill } from "./composerFill";
 import { QueueList } from "./QueueList";
 import { SlashMenu, slashMatches } from "./SlashMenu";
 import { useAgentChatStore } from "./store";
@@ -40,6 +41,16 @@ export function Composer({
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
   const [menuClosed, setMenuClosed] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Text put here from elsewhere (the Plan tab), to edit and send yourself.
+  const pending = useComposerFill((s) => s.pending[workspaceId]);
+  useEffect(() => {
+    if (pending === undefined) return;
+    const text = useComposerFill.getState().take(workspaceId);
+    if (!text) return;
+    setText((was) => (was.trim() ? `${was}\n\n${text}` : text));
+    inputRef.current?.focus();
+  }, [pending, workspaceId]);
   const matches = menuClosed ? null : slashMatches(text, slashCommands);
   const interruptTitle = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and its subagents`;
   const interruptKeys = useAriaKeys("chatInterrupt");
@@ -102,6 +113,7 @@ export function Composer({
       <div className="ac-composer">
         {matches && <SlashMenu matches={matches} active={active} onPick={pick} />}
         <textarea
+          ref={inputRef}
           className="ac-input"
           aria-label="Message the agent"
           placeholder={
