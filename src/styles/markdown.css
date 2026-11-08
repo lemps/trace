@@ -211,7 +211,15 @@
 
 /* GFM tables — separate borders + overflow clip so rounded corners render
    correctly in WebKit (border-collapse drops border-radius there). A wide
-   table scrolls inside its own box instead of widening the column. */
+   table scrolls inside its own box instead of widening the column. A table
+   sits in `.md-table` (markdown/CopyableTable), the same width, which holds
+   its copy control. */
+.md .md-table {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 calc(var(--md-gap) * 1.5);
+}
 .md table {
   display: block;
   width: max-content;
@@ -249,6 +257,69 @@
 }
 .md tbody tr:hover {
   background: var(--bg-1);
+}
+
+.md .md-table > table {
+  margin: 0;
+}
+
+/* A table's copy control: a small split button floating over the head row's
+   right end, so it never widens the table. Quiet until the table is hovered
+   or the control has focus (Tab reaches it); kept off paper. */
+.md-table-copy {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: inline-flex;
+  height: var(--control-h-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.md-table:hover .md-table-copy,
+.md-table-copy:focus-within {
+  opacity: 1;
+}
+.md-table-copy .pop-menu {
+  align-self: stretch;
+}
+.md-table-copy-main,
+.md-table-copy-caret {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: inherit;
+}
+.md-table-copy-main {
+  width: calc(var(--control-h-xs) - 2px);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+.md-table-copy-caret {
+  width: 14px;
+  border-left: 1px solid var(--border-faint);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.md-table-copy-caret svg {
+  transform: rotate(90deg);
+}
+.md-table-copy-main:hover,
+.md-table-copy-caret:hover,
+.md-table-copy-caret[aria-expanded="true"] {
+  background: var(--bg-2);
+  color: var(--fg-0);
+}
+.md-table-copy-main:focus-visible,
+.md-table-copy-caret:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -1px;
+}
+@media print {
+  .md-table-copy {
+    display: none;
+  }
 }
 
 /* GFM task lists */
