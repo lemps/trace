@@ -45,8 +45,10 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
       edit diffs, todos, results), slash commands and turn ends, tailed from Claude Code's own
       JSONL (`claude/transcript/`); file links open in an editor. Not yet: visuals, thinking,
       subagent sections, codex.
-- [ ] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
-      model/effort pills; half-typed terminal text carries over to chat.
+- [~] **Chat composer that drives the terminal:** `/` commands, `@` file mentions, attachments and
+      model/effort pills; half-typed terminal text carries over to chat. *Started:* the chat
+      transport's composer has `/` commands and attachments (picked, pasted or dropped; pictures
+      go as images, other files by path: `agent_session/attachments.rs`).
 - [~] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
       The Inbox has these today, but a chat view doesn't. *Started:* the chat transport
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and

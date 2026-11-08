@@ -47,6 +47,28 @@ pub fn send_chat_message(
     runtime::send(&state, &workspace_id, message)
 }
 
+/// Save a file pasted or dropped into the composer (raw bytes, its name in the
+/// `x-file-name` header) and return the path to attach. Picked files need no
+/// saving: they're attached by their own path.
+#[tauri::command]
+pub async fn save_chat_attachment(request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected the file's bytes.".to_string());
+    };
+    let name = request
+        .headers()
+        .get("x-file-name")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("attachment")
+        .to_string();
+    let bytes = bytes.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::agent_session::attachments::save(&name, &bytes)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Answer an approval or question row by its `requestId`.
 #[tauri::command]
 pub fn answer_chat_prompt(
