@@ -6,6 +6,7 @@ import { IconButton } from "@/components/IconButton";
 import { StatusLight } from "@/components/StatusLight";
 import { useContextMenuAt } from "@/components/useContextMenuAt";
 import type { AgentLight } from "@/domains/live/types";
+import { useSessionUnread } from "@/domains/live/unreadStore";
 import type { SessionOverview } from "@/ipc/workspace";
 import { basename } from "@/platform/paths";
 import { companionsOf } from "./agentRoster";
@@ -50,10 +51,12 @@ interface SessionRowProps {
 // Rename/archive appear on hover or focus; right-click lists everything the row
 // offers (`sessionRowMenu`). The row drags up and down its list, into
 // other sections, tabs and the bin. One an agent started says who, and links to it;
-// sorted by "Started by", it sits indented under its parent instead.
+// sorted by "Started by", it sits indented under its parent instead. Its title is
+// bold while it has a finished turn you haven't opened (`live/unreadStore`).
 export function SessionRow(props: SessionRowProps) {
   const { session, light, lightDetail, overview, diff, onOpen, onArchive, onRename } = props;
   const { depth, dropMark, onKeyDown } = props.ordering;
+  const unread = useSessionUnread(session.id);
   const createdBy = creatorOf(session);
   const [renaming, setRenaming] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -84,8 +87,9 @@ export function SessionRow(props: SessionRowProps) {
     <>
       {/* biome-ignore lint/a11y/useSemanticElements: hosts nested buttons; HTML forbids nested interactives */}
       <div
-        className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}${menu ? " menu-open" : ""}`}
+        className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}${menu ? " menu-open" : ""}${unread ? " unread" : ""}`}
         data-sid={session.id}
+        aria-description={unread ? "New since you looked" : undefined}
         role="button"
         tabIndex={0}
         draggable={!renaming}

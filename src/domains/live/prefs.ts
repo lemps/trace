@@ -1,9 +1,11 @@
 // What the live-agent lists remember across launches: when each running agent
-// was opened (so opened order survives a restart that re-adopts its PTY) and
-// the user's dragged order. Best-effort — blocked storage just forgets.
+// was opened (so opened order survives a restart that re-adopts its PTY), the
+// user's dragged order, and which sessions have news since the user last opened
+// them. Best-effort — blocked storage just forgets.
 
 const OPENED_KEY = "trace.agentOpenedAt";
 const ORDER_KEY = "trace.agentOrder";
+const UNREAD_KEY = "trace.unreadSessions";
 
 function read(key: string): unknown {
   try {
@@ -43,4 +45,14 @@ export function loadManualOrder(): string[] | null {
 
 export function saveManualOrder(order: string[] | null) {
   write(ORDER_KEY, order);
+}
+
+/** Session ids with a finished turn the user hasn't opened since (`unreadSync.ts`). */
+export function loadUnread(): string[] {
+  const v = read(UNREAD_KEY);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+export function saveUnread(ids: readonly string[]) {
+  write(UNREAD_KEY, ids.length === 0 ? null : ids);
 }

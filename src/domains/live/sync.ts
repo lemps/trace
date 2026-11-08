@@ -7,6 +7,7 @@ import { lightOf } from "./light";
 import { loadOpenedAt, saveOpenedAt } from "./prefs";
 import { useLiveStore } from "./store";
 import type { LiveInfo } from "./types";
+import { watchUnread } from "./unreadStore";
 
 // Keeps `useLiveStore` in step with the board store's raw agent signals and the
 // hooks' turn events. The board store import is circular by design (it reaches
@@ -147,8 +148,12 @@ export function clearAsk(workspaceId: string): void {
   patchAndRecompute(workspaceId, { ask: null });
 }
 
-/** Mount once (App): derive lights now and whenever the board's signals change. */
+/**
+ * Mount once (App): derive lights now and whenever the board's signals change,
+ * and keep "new since you looked" in step with them (`unreadStore.ts`).
+ */
 export function useLiveSync(): void {
+  useEffect(() => watchUnread(), []);
   useEffect(() => {
     recompute(useBoardStore.getState());
     return useBoardStore.subscribe((s, prev) => {
