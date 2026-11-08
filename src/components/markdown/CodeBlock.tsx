@@ -1,6 +1,8 @@
-import { memo, type ReactNode, useMemo, useState } from "react";
+import { memo, type ReactNode, useMemo } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { type HastNode, highlightCode, useHighlighter } from "./highlight";
+import { useCopied } from "./useCopied";
 
 // A fenced code block: the language and a copy button in a quiet head, the
 // code highlighted in the code theme (styles/code-themes.css). Memoised on its
@@ -20,24 +22,31 @@ function render(nodes: readonly HastNode[]): ReactNode[] {
   });
 }
 
-/** Copies `text`, then shows a check for a moment. Also on tool output (`transcript/ToolOutput`). */
-export function CopyButton({ text, label = "Copy code" }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+interface CopyButtonProps {
+  text: string;
+  label?: string;
+  /** Its look: the code block's head by default; a chat message has its own. */
+  className?: string;
+}
+
+/** Copies `text`, then shows a check for a moment. Also on tool output and chat messages. */
+export function CopyButton({
+  text,
+  label = "Copy code",
+  className = "md-code-copy",
+}: CopyButtonProps) {
+  const [copied, flash] = useCopied();
   const copy = () => {
-    void navigator.clipboard.writeText(text).then(
-      () => {
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1200);
-      },
-      () => {}
-    );
+    void navigator.clipboard
+      .writeText(text)
+      .then(flash, () => toast.error("Couldn't copy to the clipboard"));
   };
   return (
     <button
       type="button"
-      className="md-code-copy"
+      className={className}
       aria-label={copied ? "Copied" : label}
-      title={copied ? "Copied" : "Copy"}
+      title={copied ? "Copied" : label}
       onClick={copy}
     >
       {copied ? <I.Check size={12} /> : <I.Copy size={12} />}
