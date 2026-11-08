@@ -73,7 +73,7 @@
   background: color-mix(in srgb, currentColor 12%, transparent);
   border: 1px solid color-mix(in oklch, var(--c-review) 30%, transparent);
   border-color: color-mix(in srgb, currentColor 32%, transparent);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
 }
 .epic-chip svg {
@@ -247,7 +247,7 @@ button.epic-chip:hover {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   padding: 1px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--border);
 }
 .pr-pill.open {
@@ -336,7 +336,7 @@ button.epic-chip:hover {
   gap: 4px;
   height: var(--control-h-xs);
   padding: 0 7px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);

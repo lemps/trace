@@ -208,7 +208,7 @@
   font-size: calc(var(--text-label) - 1px);
   font-weight: 500;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   border: 1px solid var(--border);
   color: var(--fg-3);
   text-transform: uppercase;
@@ -255,7 +255,7 @@
 .pr-tag {
   font-size: calc(var(--text-label) - 0.5px);
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--bg-2);
   color: var(--fg-3);
 }
