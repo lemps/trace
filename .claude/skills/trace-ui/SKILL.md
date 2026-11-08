@@ -273,6 +273,6 @@ borrowing one:
 - [ ] `npx tsc --noEmit` and `npx @biomejs/biome check src` pass.
 
 Legacy to migrate when you touch it (don't copy): raw `font-size` px values,
-inline `oklch(... / alpha)` literals, `.thinking`/`.waiting`, `--c-prog`/`--c-warn`
-for agent state, and raw radii in `app/shell.css`, `board/card.css`,
-`panes/pane-layout.css`, `prs/pr-pane.css` and `agentChat/composer.css`.
+inline `oklch(... / alpha)` literals, `.thinking`/`.waiting`, and `--c-prog`/`--c-warn`
+for agent state. Raw radii left on purpose: 1–3px drop lines and bars, miniature
+previews, and avatars (their corners scale with their size).
