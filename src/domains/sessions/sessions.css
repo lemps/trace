@@ -306,8 +306,3 @@
   opacity: 0.4;
   cursor: default;
 }
-/* The header's "Confirm remove" (armed from the ⋯ menu). */
-.btn.danger {
-  color: var(--c-danger);
-  border-color: color-mix(in oklch, var(--c-danger) 50%, transparent);
-}

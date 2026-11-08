@@ -77,13 +77,6 @@
   color: var(--c-accent);
 }
 
-/* Square icon-only header button (the ⋯ trigger). */
-.btn.icon {
-  width: var(--control-h);
-  padding: 0;
-  justify-content: center;
-}
-
 /* Split button: the action, plus a caret that opens its choices. */
 .split-btn {
   display: inline-flex;

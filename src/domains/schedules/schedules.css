@@ -94,10 +94,6 @@
   flex-shrink: 0;
   cursor: default;
 }
-.sched-row-actions .btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
 
 /* Finished-run status: a dot + label, colored per outcome. */
 .run-badge {

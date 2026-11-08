@@ -1,0 +1,83 @@
+/* The one button (.btn) and its variants — see .claude/skills/trace-ui §1.
+   Every variant's hover is `:not(:disabled)`, so a disabled button (Raising…,
+   Merging…, Saving…) never looks live. Imported once, early, in main.tsx. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h);
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  border: 1px solid var(--border);
+  color: var(--fg-1);
+  background: var(--bg-2);
+}
+.btn:hover:not(:disabled) {
+  background: var(--bg-3);
+  border-color: var(--border-strong);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--fg-0);
+  color: var(--bg-0);
+  border-color: var(--fg-0);
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--fg-1);
+}
+
+/* Dense in-content toolbars only, never in a header beside bordered buttons. */
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-2);
+}
+.btn.ghost:hover:not(:disabled) {
+  color: var(--fg-1);
+  background: var(--bg-2);
+}
+
+/* Merge. */
+.btn.success {
+  background: color-mix(in oklch, var(--c-done) 15%, transparent);
+  color: var(--c-done);
+  border-color: var(--c-done-border);
+}
+.btn.success:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--c-done) 22%, transparent);
+}
+
+/* Destructive: Confirm remove, Disconnect, Delete. */
+.btn.danger {
+  color: var(--c-danger);
+  border-color: color-mix(in oklch, var(--c-danger) 50%, transparent);
+}
+.btn.danger:hover:not(:disabled) {
+  background: var(--c-danger-bg);
+  border-color: var(--c-danger);
+}
+
+/* Answering an agent that needs you. */
+.btn.primary-needs {
+  background: var(--state-needs);
+  border-color: transparent;
+  color: var(--on-needs);
+  font-weight: 600;
+}
+.btn.primary-needs:hover:not(:disabled) {
+  /* A step toward the text colour: lighter on dark themes, darker on light. */
+  background: color-mix(in oklch, var(--state-needs) 85%, var(--fg-0));
+}
+
+/* Square icon-only button (the ⋯ trigger); always has an aria-label. */
+.btn.icon {
+  width: var(--control-h);
+  padding: 0;
+  justify-content: center;
+}

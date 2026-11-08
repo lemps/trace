@@ -11,12 +11,6 @@
   overflow-y: auto;
   min-height: 0;
 }
-.share-modal .btn:disabled,
-.page-head .btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
 .share-note {
   margin: 0 0 12px;
   font-size: 12.5px;
