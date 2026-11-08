@@ -90,6 +90,16 @@ fn sweep(dir: &Path) {
     }
 }
 
+/// The `paths` that are still files: a composer draft can outlive what it attached
+/// (`sweep` removes old pastes, and a picked file can be moved or deleted).
+pub fn existing(paths: &[String]) -> Vec<String> {
+    paths
+        .iter()
+        .filter(|p| Path::new(p.as_str()).is_file())
+        .cloned()
+        .collect()
+}
+
 /// The message as the chat shows it: its text, then the attached files' names,
 /// so the bubble records what went with it (the agent gets the files themselves).
 pub fn shown_text(message: &UserMessage) -> String {
@@ -130,7 +140,7 @@ fn display_name(name: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{safe_name, shown_text};
+    use super::{existing, safe_name, shown_text};
     use crate::agent_session::UserMessage;
 
     #[test]
@@ -163,5 +173,17 @@ mod tests {
             attachments: vec!["/repo/a.md".into()],
         };
         assert_eq!(shown_text(&bare), "Attached: `a.md`");
+    }
+
+    #[test]
+    fn keeps_only_paths_that_are_files() {
+        let file = std::env::temp_dir().join(format!("trace-att-{}", crate::helpers::new_id()));
+        std::fs::write(&file, b"x").unwrap();
+        let file_str = file.to_string_lossy().into_owned();
+        let dir = std::env::temp_dir().to_string_lossy().into_owned();
+        let gone = format!("{file_str}-gone");
+        let kept = existing(&[gone, file_str.clone(), dir]);
+        let _ = std::fs::remove_file(&file);
+        assert_eq!(kept, vec![file_str]);
     }
 }
