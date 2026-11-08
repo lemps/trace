@@ -26,6 +26,7 @@ const DEFAULT_CUTOFF_KANBAN: &str = "-2w";
 const DEFAULT_CUTOFF_TEAM_MANAGED: &str = "-14d";
 
 /// The board settings that decide what it shows, beyond its saved filter.
+#[derive(Clone)]
 pub struct BoardSettings {
     /// "hide completed issues older than", as JQL-ready relative time ("-1w").
     /// `None` = show every completed issue ("Never mind, show all", and Scrum).

@@ -3,13 +3,17 @@
 //! are the issues from a rolling 30-day window (`GET /issues` is time-bounded
 //! to 30 days per call — this matches the "current work" scope of a sprint).
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::time::Duration;
 
 use serde_json::{json, Value};
 
 use super::client;
 use super::models::{parse_comment, parse_issue, state_category, state_name, BASE_STATES};
 use super::PylonConnection;
+use crate::helpers::ttl_cache::TtlCache;
 use crate::issues::models::{
     BoardColumn, BoardData, BoardSummary, ColumnStatus, Issue, IssueComment,
 };
@@ -32,9 +36,38 @@ pub fn virtual_boards() -> Vec<BoardSummary> {
     }]
 }
 
+/// id → (display name, avatar).
+type UserNames = HashMap<String, (String, Option<String>)>;
+
+/// The organisation's users change rarely; every board load needed them.
+static USERS: TtlCache<UserNames> = TtlCache::new(Duration::from_secs(30 * 60));
+
+/// Which account a cached value belongs to. Pylon's API address is shared by a
+/// region's organisations, so the key also carries a hash of the token (never
+/// the token itself, which stays out of anything kept or compared).
+fn account_key(conn: &PylonConnection) -> String {
+    let mut h = DefaultHasher::new();
+    conn.token.hash(&mut h);
+    format!("{}|{:x}", conn.base_url, h.finish())
+}
+
+/// Every user's name and avatar, cached for the account (see `USERS`).
+async fn user_names(conn: &PylonConnection) -> UserNames {
+    let key = account_key(conn);
+    if let Some(names) = USERS.get(&key) {
+        return names;
+    }
+    let names = fetch_user_names(conn).await;
+    // An empty answer is a failed read: try again next time rather than keep it.
+    if !names.is_empty() {
+        USERS.put(key, names.clone());
+    }
+    names
+}
+
 /// id → (display name, avatar) for every user, so assignees (id-only on
 /// issues) can be labelled. Best effort: falls back to the email's local part.
-async fn fetch_user_names(conn: &PylonConnection) -> HashMap<String, (String, Option<String>)> {
+async fn fetch_user_names(conn: &PylonConnection) -> UserNames {
     let mut map = HashMap::new();
     if let Ok(v) = client::get(conn, "/users").await {
         for u in client::data(&v).as_array().cloned().unwrap_or_default() {
@@ -157,17 +190,24 @@ pub async fn get_board(conn: &PylonConnection, board_id: &str) -> Result<BoardDa
     if board_id != OPEN_BOARD_ID {
         return Err(format!("Unknown Pylon board: {board_id}"));
     }
-    let (raw, user_names) = {
-        // Users are best-effort; issues are required.
-        let users = fetch_user_names(conn).await;
-        (fetch_issues(conn).await?, users)
-    };
+    #[cfg(debug_assertions)]
+    let started = std::time::Instant::now();
+    // Side by side: users are best-effort (and cached); issues are required.
+    let (raw, user_names) = tokio::join!(fetch_issues(conn), user_names(conn));
+    let raw = raw?;
     let issues: Vec<Issue> = raw
         .iter()
         .filter(|v| visible(v))
         .filter_map(|v| parse_issue(v, &user_names))
         .collect();
     let columns = build_columns(&issues);
+    // Dev builds time each load, to see what a board costs.
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "[trace] pylon board: {} issues in {} ms",
+        issues.len(),
+        started.elapsed().as_millis()
+    );
     Ok(BoardData {
         board_id: board_id.to_string(),
         board_name: "Pylon Issues".to_string(),

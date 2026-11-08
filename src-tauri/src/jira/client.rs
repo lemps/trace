@@ -5,11 +5,9 @@ use serde_json::Value;
 
 use super::JiraConnection;
 
-fn http() -> Result<reqwest::Client, String> {
-    reqwest::Client::builder()
-        .user_agent("trace/0.1")
-        .build()
-        .map_err(|e| format!("Failed to build HTTP client: {e}"))
+/// The shared client: one per app, so requests reuse its open connections.
+fn http() -> Result<&'static reqwest::Client, String> {
+    crate::helpers::http::client()
 }
 
 /// GET `path` (absolute from the site root, e.g. `/rest/api/3/myself`) and parse JSON.
