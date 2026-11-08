@@ -1,6 +1,8 @@
 //! Small shared helpers used across modules.
 
+pub mod http;
 pub mod persist;
+pub mod ttl_cache;
 
 use std::path::{Component, Path, PathBuf};
 

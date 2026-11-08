@@ -8,6 +8,7 @@ import type { BoardData, ColumnStatus, ProviderKind, PullRequest } from "@/domai
 import { useSessionsStore } from "@/domains/sessions/store";
 import { getBoard, getIssuePullRequests, transitionIssue } from "@/ipc/issues";
 import { noteAgentGone } from "./adopt";
+import { boardSnapshot, forgetBoards, lookUpPrs, rememberBoard } from "./boardCache";
 import { isStartOfWork } from "./columns";
 import {
   type BoardFilter,
@@ -136,40 +137,40 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   async loadBoard(boardKey) {
     const option = boardOptionFor(boardKey);
     if (!option) return;
-    // Refreshing keeps the cards up; a different board mustn't show the old one's meanwhile.
-    const kept = get().boardKey === boardKey ? get().data : null;
+    // Refreshing keeps the cards and badges up; a board shown earlier this run comes
+    // back as it was while it reloads (`boardCache`); another board's never shows.
+    const same = get().boardKey === boardKey;
+    const snapshot = boardSnapshot(boardKey);
     set({
       boardKey,
       provider: option.provider,
-      data: kept,
+      data: same ? get().data : (snapshot?.data ?? null),
       loading: true,
       error: null,
-      pullRequests: {},
+      pullRequests: same ? get().pullRequests : (snapshot?.pullRequests ?? {}),
     });
     try {
       const data = await getBoard(option.provider, option.boardId);
       // The user switched board (or disconnected) while this was loading.
       if (get().boardKey !== boardKey) return;
       set({ data, loading: false });
+      rememberBoard(boardKey, data, get().pullRequests);
       // Keeps the titles of running agents' tickets once this board is off screen.
       const { runningAgents } = get();
       rememberIssues(
         boardKey,
         data.issues.filter((i) => runningAgents.has(i.key))
       );
-      // Fan out PR lookups in the background — cards render immediately and pop
-      // a badge in as each issue's dev-status response lands. Failures are silent
-      // (no GitHub-for-Jira integration → no badge, not an error). Only Jira has
-      // a dev-status integration; other providers would all return empty.
+      // PR lookups in the background, a few at a time (`boardCache`): cards render
+      // at once and a badge pops in as each issue's dev-status answer lands. Only
+      // Jira has a dev-status integration; other providers would all return empty.
       if (option.provider === "jira") {
-        for (const issue of data.issues) {
-          getIssuePullRequests(option.provider, issue.id)
-            .then((prs) => {
-              if (prs.length === 0 || get().boardKey !== boardKey) return;
-              set((s) => ({ pullRequests: { ...s.pullRequests, [issue.key]: prs } }));
-            })
-            .catch(() => {});
-        }
+        void lookUpPrs(data.issues, (key, prs) => {
+          if (get().boardKey !== boardKey) return;
+          if (prs.length === 0 && !get().pullRequests[key]) return;
+          set((s) => ({ pullRequests: { ...s.pullRequests, [key]: prs } }));
+          rememberBoard(boardKey, data, get().pullRequests);
+        });
       }
     } catch (err) {
       if (get().boardKey === boardKey) set({ loading: false, error: String(err) });
@@ -177,6 +178,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   },
 
   clearBoard() {
+    forgetBoards();
     set({
       boardKey: null,
       provider: null,
@@ -371,23 +373,26 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     if (!data) return;
     // Only Jira has linked-PR data to refresh.
     if (provider !== "jira") return;
-    for (const issue of data.issues) {
-      // Cache-bust only issues whose known PRs are still in a live state —
-      // those are the ones Jira's cache can hold wrong in a way that matters.
-      // Merged/declined are final; issues with no PRs stay on the cheap path.
-      const fresh =
+    // Every issue (a deliberate catch-up), still a few at a time. Cache-bust only
+    // issues whose known PRs are live — those are the ones Jira's cache can hold
+    // wrong in a way that matters; merged/declined are final.
+    const issues = data.issues.map((issue) => ({
+      id: issue.id,
+      key: issue.key,
+      fresh:
         pullRequests[issue.key]?.some((pr) => pr.state !== "merged" && pr.state !== "declined") ??
-        false;
-      getIssuePullRequests("jira", issue.id, fresh)
-        .then((prs) => {
-          set((s) => {
-            // Skip no-op updates, but do clear an entry whose PRs vanished.
-            if (prs.length === 0 && !s.pullRequests[issue.key]) return {};
-            return { pullRequests: { ...s.pullRequests, [issue.key]: prs } };
-          });
-        })
-        .catch(() => {});
-    }
+        false,
+    }));
+    void lookUpPrs(
+      issues,
+      (key, prs) =>
+        set((s) => {
+          // Skip no-op updates, but do clear an entry whose PRs vanished.
+          if (prs.length === 0 && !s.pullRequests[key]) return {};
+          return { pullRequests: { ...s.pullRequests, [key]: prs } };
+        }),
+      true
+    );
   },
 }));
 

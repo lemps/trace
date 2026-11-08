@@ -4,6 +4,7 @@
 pub mod adf;
 pub mod auth;
 pub mod board;
+pub mod board_cache;
 pub mod client;
 pub mod comments;
 pub mod dev;

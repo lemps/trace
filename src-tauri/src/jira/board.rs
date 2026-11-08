@@ -6,10 +6,10 @@ use serde_json::{json, Value};
 
 use std::collections::HashMap;
 
-use super::client;
 use super::parse::parse_issue;
-use super::scope::{self, BoardSettings};
+use super::scope;
 use super::JiraConnection;
+use super::{board_cache, client};
 use crate::issues::models::{BoardColumn, BoardData, BoardSummary, ColumnStatus, Issue};
 
 /// An available workflow transition (each carries its target status). Internal —
@@ -67,18 +67,21 @@ pub async fn list_boards(conn: &JiraConnection) -> Result<Vec<BoardSummary>, Str
     Ok(out)
 }
 
-struct BoardConfig {
-    columns: Vec<BoardColumn>,
+pub(super) struct BoardConfig {
+    pub(super) columns: Vec<BoardColumn>,
     /// The board's saved filter id — used to scope the issue search to exactly
     /// what this board shows (without the Agile view's epic exclusion).
-    filter_id: Option<String>,
+    pub(super) filter_id: Option<String>,
     /// A Kanban board's sub-filter: which of the filter's issues reach the board
     /// at all (typically unreleased versions).
-    sub_query: Option<String>,
+    pub(super) sub_query: Option<String>,
 }
 
 /// The board's configured columns (in order, with their status ids) and filter id.
-async fn board_config(conn: &JiraConnection, board_id: i64) -> Result<BoardConfig, String> {
+pub(super) async fn board_config(
+    conn: &JiraConnection,
+    board_id: i64,
+) -> Result<BoardConfig, String> {
     let path = format!("/rest/agile/1.0/board/{board_id}/configuration");
     let v = client::get(conn, &path).await?;
     let columns = v
@@ -129,7 +132,7 @@ async fn board_config(conn: &JiraConnection, board_id: i64) -> Result<BoardConfi
 /// id → (display name, category key) for every status in the instance, so a
 /// column's statuses (which arrive as bare ids) can be labelled — including
 /// empty ones. Best effort: returns whatever it can, names fall back to the id.
-async fn fetch_status_meta(conn: &JiraConnection) -> HashMap<String, (String, String)> {
+pub(super) async fn fetch_status_meta(conn: &JiraConnection) -> HashMap<String, (String, String)> {
     let mut map = HashMap::new();
     if let Ok(v) = client::get(conn, "/rest/api/3/status").await {
         if let Some(arr) = v.as_array() {
@@ -153,7 +156,7 @@ async fn fetch_status_meta(conn: &JiraConnection) -> HashMap<String, (String, St
 
 /// The JQL of the board's saved filter, with any trailing `ORDER BY` stripped so
 /// we can safely AND it with our own clauses.
-async fn board_filter_jql(conn: &JiraConnection, filter_id: &str) -> Option<String> {
+pub(super) async fn board_filter_jql(conn: &JiraConnection, filter_id: &str) -> Option<String> {
     let path = format!("/rest/api/3/filter/{filter_id}");
     let v = client::get(conn, &path).await.ok()?;
     let jql = v.get("jql")?.as_str()?;
@@ -207,48 +210,30 @@ async fn fetch_board_issues(conn: &JiraConnection, scope_jql: &str) -> Result<Ve
 }
 
 /// Assemble the board: its columns, and the issues it shows, grouped into those
-/// columns by status.
+/// columns by status. What the board is comes from `board_cache` (a few minutes
+/// old at most); its issues are searched afresh, while the site's statuses load
+/// alongside.
 pub async fn get_board(conn: &JiraConnection, board_id: i64) -> Result<BoardData, String> {
-    let config = board_config(conn, board_id).await?;
-
-    // The board's own endpoint carries its name and type — no need to re-list
-    // every board just to resolve one.
-    let board = client::get(conn, &format!("/rest/agile/1.0/board/{board_id}"))
-        .await
-        .ok();
-    let field = |key: &str| {
-        board
-            .as_ref()
-            .and_then(|b| b.get(key))
-            .and_then(Value::as_str)
-            .map(str::to_string)
+    #[cfg(debug_assertions)]
+    let started = std::time::Instant::now();
+    let board = async {
+        let scope = board_cache::board_scope(conn, board_id).await?;
+        let sprint = board_cache::open_sprint(conn, board_id, scope.settings.sprint_support).await;
+        let jql = scope::board_jql(
+            scope.filter_jql.as_deref(),
+            scope.sub_query.as_deref(),
+            &scope.settings,
+            sprint.is_some(),
+        );
+        let issues = fetch_board_issues(conn, &jql).await?;
+        Ok::<_, String>((scope, sprint, issues))
     };
-    let board_name = field("name").unwrap_or_else(|| format!("Board {board_id}"));
-    let board_type = field("type").unwrap_or_else(|| "kanban".to_string());
-
-    // Resolve the board's saved filter and settings so the search mirrors what
-    // the board itself renders.
-    let board_filter = match &config.filter_id {
-        Some(id) => board_filter_jql(conn, id).await,
-        None => None,
-    };
-    let settings: BoardSettings = scope::fetch_settings(conn, board_id, &board_type).await;
-    let sprint_name = match settings.sprint_support {
-        true => scope::open_sprint_name(conn, board_id).await,
-        false => None,
-    };
-    let jql = scope::board_jql(
-        board_filter.as_deref(),
-        config.sub_query.as_deref(),
-        &settings,
-        sprint_name.is_some(),
-    );
-    let mut columns = scope::visible_columns(config.columns, &settings.backlog_statuses);
-    let issues = fetch_board_issues(conn, &jql).await?;
+    let (board, mut meta) = tokio::join!(board, board_cache::status_meta(conn));
+    let (scope, sprint_name, issues) = board?;
+    let mut columns = scope::visible_columns(scope.columns, &scope.settings.backlog_statuses);
 
     // Label each column's statuses. Prefer the instance status map (covers empty
     // statuses); fall back to names/categories carried on the issues themselves.
-    let mut meta = fetch_status_meta(conn).await;
     for issue in &issues {
         meta.entry(issue.status_id.clone())
             .or_insert_with(|| (issue.status_name.clone(), issue.status_category.clone()));
@@ -262,9 +247,16 @@ pub async fn get_board(conn: &JiraConnection, board_id: i64) -> Result<BoardData
         }
     }
 
+    // Dev builds time each load, to see what a board costs.
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "[trace] jira board {board_id}: {} issues in {} ms",
+        issues.len(),
+        started.elapsed().as_millis()
+    );
     Ok(BoardData {
         board_id: board_id.to_string(),
-        board_name,
+        board_name: scope.name,
         // The header shows the running sprint when there is one, else the board.
         sprint_name: sprint_name.filter(|n| !n.is_empty()),
         columns,
