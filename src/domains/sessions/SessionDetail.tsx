@@ -11,6 +11,7 @@ import { agentLabel } from "@/domains/agent/providerLabel";
 import { RestartChip } from "@/domains/agent/RestartChip";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
+import { useViewerTabs } from "@/domains/agent/viewerTabs";
 import { useAgentMenuItems } from "@/domains/agentChat/agentMenu";
 import { useBoardStore } from "@/domains/board/store";
 import { shownAsk } from "@/domains/live/light";
@@ -93,6 +94,7 @@ export function SessionDetail({
   const info = useWorkspaceInfo(session.id, turnIds, run.running);
   const waiting = agentActivity[active.workspaceId] === "waiting";
   const plan = usePlanTab(active.workspaceId);
+  const viewers = useViewerTabs(active.workspaceId);
 
   // Viewing a waiting agent acknowledges it — see AgentDetail.
   useEffect(() => {
@@ -105,6 +107,7 @@ export function SessionDetail({
     active,
     live,
     plan,
+    viewers,
     onAddAgent: (cli, provider) => onAddAgent(cli, provider),
     addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
   });

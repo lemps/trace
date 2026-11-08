@@ -6,11 +6,13 @@
 pub mod activity;
 pub mod agent_session;
 pub mod agent_tools;
+pub mod browser;
 pub mod claude;
 pub mod cleanup;
 pub mod commands;
 pub mod diff_parse;
 pub mod diff_summary;
+pub mod gallery;
 pub mod git;
 pub mod github;
 pub mod helpers;
@@ -50,6 +52,8 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .manage(app_state)
+        // The Gallery's images; only trace's own webview is served (`gallery::protocol`).
+        .register_asynchronous_uri_scheme_protocol(gallery::SCHEME, gallery::protocol::handle)
         .setup(|app| {
             // Agents the last run was cut off from, offered back by the renderer.
             interrupted::collect_at_launch(&app.state::<AppState>());
@@ -61,7 +65,9 @@ pub fn run() {
             repo_catalog::setup::init(app.handle().clone());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        // Every command is refused to any webview but trace's own (the Browser tab's
+        // pages are webviews too): `browser::guard`.
+        .invoke_handler(browser::guard::app_only(tauri::generate_handler![
             commands::activity::list_activity,
             commands::agent_tools::set_agent_tools,
             commands::agent_tools::agent_tool_result,
@@ -138,6 +144,19 @@ pub fn run() {
             commands::plans::remove_plan_doc,
             commands::plans::export_plan_doc,
             commands::plans::export_plan_pdf,
+            commands::browser::browser_pages,
+            commands::browser::browser_open,
+            commands::browser::browser_go,
+            commands::browser::browser_select,
+            commands::browser::browser_close,
+            commands::browser::browser_show,
+            commands::browser::browser_hide,
+            commands::browser::browser_act,
+            commands::gallery::gallery_show,
+            commands::gallery::gallery_sets,
+            commands::gallery::gallery_list,
+            commands::gallery::gallery_remove,
+            commands::gallery::gallery_open,
             commands::editor::open_in_editor,
             commands::session::list_sessions,
             commands::session::create_session,
@@ -188,7 +207,7 @@ pub fn run() {
             commands::providers::set_wafer_key,
             commands::providers::deepseek_key_configured,
             commands::providers::set_deepseek_key,
-        ])
+        ]))
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {

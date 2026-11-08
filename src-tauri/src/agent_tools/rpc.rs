@@ -21,7 +21,7 @@ To fan work out across tickets, start trace agents on them with start_agent rath
 sub-agents: each gets its own worktree, terminal and PR, and shows on the board. \
 Only create a scheduled prompt when the user asks for one; it is created paused for them to switch on. \
 Use update_scheduled_prompt to fix a prompt that isn't behaving as intended. \
-To give the user a plan, spec, design or report to read, review or export, publish it with publish_document (Markdown, or HTML): it opens in this workspace's Plan tab, and publishing again with the same title (or replaces) adds a new version. On a long-running task, use update_user now and then to say how it's going in one short line; \
+To give the user a plan, spec, design or report to read, review or export, publish it with publish_document (Markdown, or HTML): it opens in this workspace's Plan tab, and publishing again with the same title (or replaces) adds a new version. To show the user a page (your dev server, docs) or a folder of images (screenshots, renders), use open_browser or show_images: they open in this workspace's Browser and Gallery tabs. On a long-running task, use update_user now and then to say how it's going in one short line; \
 it shows beside you on trace's Fleet page and doesn't interrupt the user. \
 For work that isn't a ticket, start_session opens a standalone session in one of trace's repos \
 (list_repos); send_to_session types into it (slash commands included) and read_session shows its \

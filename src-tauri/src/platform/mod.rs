@@ -9,6 +9,8 @@ pub mod acl;
 pub mod paths;
 pub mod ports;
 pub mod process;
+#[cfg(test)]
+pub mod test_links;
 
 /// The operating system this build runs on. Every port is implemented for it.
 pub struct Os;

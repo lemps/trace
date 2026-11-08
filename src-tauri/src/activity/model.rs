@@ -35,6 +35,10 @@ pub enum ActivityKind {
     AgentStopped,
     /// A repository joined trace's list (e.g. an agent's approved `add_repo`).
     RepoAdded,
+    /// An agent opened a page in a workspace's Browser tab (`open_browser`).
+    PageOpened,
+    /// An agent showed a set of images in a workspace's Gallery tab (`show_images`).
+    ImagesShown,
     #[serde(other)]
     Other,
 }

@@ -24,6 +24,10 @@ export type ActivityKind =
   | "agent-stopped"
   /** A repository joined trace's list (an agent's approved `add_repo` / `clone_repo`). */
   | "repo-added"
+  /** An agent opened a page in the Browser tab (`open_browser`); `data.url`, `data.external`. */
+  | "page-opened"
+  /** An agent showed images in the Gallery tab (`show_images`); `data.count`, `data.roots`. */
+  | "images-shown"
   /** A kind this build doesn't know (written by a newer one). */
   | "other";
 

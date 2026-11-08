@@ -55,6 +55,8 @@ src/
     ├── board/              # Board, Column, Card, filters; store also tracks agent run-state + PTY buffers
     ├── agent/              # AgentDetail + tabs (chat/ticket/files/terminal/tests/PR), xterm registry, defaults
     ├── plans/              # the Plan tab: plans and published documents, versions, task list, export
+    ├── browser/            # the Browser tab: pages in an isolated native webview laid over the pane
+    ├── gallery/            # the Gallery tab: sets of images, thumbnail grid, zoom/compare viewer
     ├── sessions/           # exploratory (non-Jira) Claude sessions
     ├── schedules/          # scheduled prompts: list, form, run history + run viewer
     ├── prs/                # pull-request list view
@@ -86,6 +88,8 @@ src-tauri/src/
 ├── schedule/               # scheduled prompts: cron/timing, runner loop, run lifecycle, hooks, transcripts
 ├── agent_tools/            # trace's own tools served to its agents over loopback MCP (renderer runs them)
 ├── plans/                  # the Plan tab's documents: capture (plan mode, transcripts), versions, store
+├── browser/                # Browser tab: URL rules, pages store, child webviews, the IPC guard (`guard`)
+├── gallery/                # Gallery tab: sets, scanning, path containment, the `trace-img` protocol
 ├── repo_catalog/           # per-repo remote, checkouts, default branch + worktree setup hooks
 ├── interrupted.rs          # ledger of live agents; ones cut off by quit/update/crash are offered back
 └── commands/               # thin wrappers: agent, session, schedules, issues, activity, pr, diff, tests, repos, editor
@@ -154,7 +158,13 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   (only for sessions the caller started, or their descendants, by `createdBy`: `ownership.ts`),
   `get_session_changes` (the Files tab's diff, capped), `get_session_pr` (the PR watcher's cache),
   `read_activity`, and `add_repo` / `clone_repo`, which wait on a confirm card the user answers
-  (`RepoConfirm`, `confirmQueue.ts`). Codex agents get the same endpoint as `-c` overrides
+  (`RepoConfirm`, `confirmQueue.ts`). `viewerTools.ts` has `open_browser` (a page in the
+  workspace's Browser tab: http/https only, loopback quiet, other hosts with a notice) and
+  `show_images` (a folder or files in its Gallery tab). A Browser page is a native child webview
+  that gets nothing of trace's: the capability names the `main` *webview*, every command from
+  another webview is refused (`browser::guard`), and it can't load trace's own origins. Gallery
+  images load only through `trace-img`, which serves image files inside the set's roots
+  (canonicalised) to the main webview only. Codex agents get the same endpoint as `-c` overrides
   (`agent_tools/codex.rs`). Agents are top-level
   Claude sessions: inherited Claude Code session markers (`claude::env::INHERITED_SESSION_ENV`) are
   stripped, or a trace started from a Claude session would hand its agents transcript saving off.

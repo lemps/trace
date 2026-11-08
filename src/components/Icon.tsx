@@ -1,35 +1,9 @@
-import type { CSSProperties, ReactNode } from "react";
+import { Base, type IconProps } from "./iconBase";
+import { VIEWER_ICONS } from "./iconsViewer";
 
 // Minimal Lucide-style stroked icons, 16x16 by default. Ported from the design's icons.jsx.
 
-export interface IconProps {
-  size?: number;
-  stroke?: number;
-  style?: CSSProperties;
-}
-
-interface BaseProps extends IconProps {
-  children: ReactNode;
-}
-
-function Base({ size = 16, stroke = 1.6, children, style }: BaseProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={stroke}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={style}
-      aria-hidden="true"
-    >
-      {children}
-    </svg>
-  );
-}
+export type { IconProps } from "./iconBase";
 
 export const I = {
   Board: (p: IconProps) => (
@@ -378,4 +352,5 @@ export const I = {
       <path d="M4 4v7a4 4 0 0 0 4 4h12" />
     </Base>
   ),
+  ...VIEWER_ICONS,
 };

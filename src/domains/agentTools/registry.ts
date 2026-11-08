@@ -8,9 +8,11 @@ import { PUBLISH_DOCUMENT, runPublishDocument } from "./publishTool";
 import { runScheduleTool, SCHEDULE_TOOLS } from "./scheduleTools";
 import { isSessionTool, runSessionTool, SESSION_TOOLS } from "./sessionTools";
 import { runUpdateUser, UPDATE_USER } from "./updateTool";
+import { isViewerTool, runViewerTool, VIEWER_TOOLS } from "./viewerTools";
 
 // The tools trace offers its own agents over MCP: the board, scheduled prompts,
-// standalone sessions (`sessionTools`), and publishing a document to the Plan tab. The board ones are the
+// standalone sessions (`sessionTools`), publishing a document to the Plan tab, and
+// showing a page or images in the Browser and Gallery tabs (`viewerTools`). The board ones are the
 // orchestrator's — same definitions, same store, same effects as the in-app
 // assistant — so an agent on an epic can move its tickets and start agents on
 // them without spawning sub-agents. Unlike the assistant, there's no confirm
@@ -34,6 +36,7 @@ const TOOLS: Anthropic.Tool[] = [
   UPDATE_USER,
   ...MORE_TOOLS,
   PUBLISH_DOCUMENT,
+  ...VIEWER_TOOLS,
 ];
 
 /** The tool definitions in MCP's shape. */
@@ -50,6 +53,7 @@ export async function runAgentTool(name: string, input: unknown, caller: string)
   if (name === GET_BOARD.name) return buildBoardContext();
   if (name === UPDATE_USER.name) return runUpdateUser(input, caller);
   if (name === PUBLISH_DOCUMENT.name) return runPublishDocument(input, caller);
+  if (isViewerTool(name)) return runViewerTool(name, input, caller);
   if (WRITE_TOOL_NAMES.has(name)) return runWriteTool(name, input, "agent");
   if (SCHEDULE_TOOL_NAMES.has(name)) return runScheduleTool(name, input);
   if (isSessionTool(name)) return runSessionTool(name, input, caller);
