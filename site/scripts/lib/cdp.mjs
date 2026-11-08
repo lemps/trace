@@ -138,6 +138,8 @@ function makeDriver(c) {
         Tab: [9, "Tab"],
         ArrowDown: [40, "ArrowDown"],
         ArrowUp: [38, "ArrowUp"],
+        ArrowLeft: [37, "ArrowLeft"],
+        ArrowRight: [39, "ArrowRight"],
         Backspace: [8, "Backspace"],
       };
       const [vk, code, text] = codes[key] ?? [key.toUpperCase().charCodeAt(0), `Key${key.toUpperCase()}`];

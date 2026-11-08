@@ -34,13 +34,37 @@
       "id": "panes",
       "label": "Split panes",
       "title": "Chat, Files and Terminal, arranged like an IDE",
-      "text": "Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. Layouts are remembered per workspace.",
+      "text": "Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. A tab shows up when there's something in it and steps aside with its ×; the ⋯ menu lists them all. Layouts are remembered per workspace.",
       "points": [
-        "Split right, split down, or move a tab to the next pane",
-        "Files shows the changes against the base branch, with diffs",
-        "A plain shell rooted in the agent's worktree"
+        "Split right, split down, or drag a tab to any edge",
+        "Tabs come and go with their content; × hides, never deletes",
+        "Turn off the tabs you never use in Settings → Tabs"
       ],
       "alt": "From a single chat pane, Files is split to the right and Terminal moved below it. A shell opens in the agent's worktree, npm test runs and passes, and the changed test file's diff is shown."
+    },
+    {
+      "id": "plan",
+      "label": "Plans and documents",
+      "title": "What the agent planned, as a document you can read",
+      "text": "When an agent leaves plan mode or publishes a plan, spec or report, it opens in the Plan tab beside the chat: Markdown set like a page, or HTML in a sandbox. Each document keeps its versions, so you can compare a revision with the one before.",
+      "points": [
+        "Plan mode, published documents and the live task list in one tab",
+        "Versions, with a diff between any two",
+        "Copy, save as Markdown or HTML, or save as PDF"
+      ],
+      "alt": "An agent is asked to publish a plan for adding middleware to a router. When its turn ends a Plan tab appears with a dot; it's opened, the document is scrolled from its goal to its tests, and the list of plans slides out from the left edge."
+    },
+    {
+      "id": "gallery",
+      "label": "Gallery and Browser",
+      "title": "See what the agent made, without leaving the app",
+      "text": "An agent can show you a folder of images, like screenshots, charts or icons, in the Gallery tab, or open its dev server in the Browser tab. Images update as files are written; pages run in their own isolated view that gets nothing of trace's.",
+      "points": [
+        "Thumbnails that fill in as files appear, full size with zoom and compare",
+        "Open a folder or a page yourself, from the ⋯ menu",
+        "Agents use show_images and open_browser; turn either off in Settings"
+      ],
+      "alt": "An agent is asked to draw four icons for a CLI's sort modes and show them. When its turn ends a Gallery tab appears; it's opened to a grid of the four icons, the first opens full size, and the arrow keys step through the rest."
     },
     {
       "id": "tickets",
@@ -120,7 +144,7 @@
       "id": "files",
       "label": "Files and Quick Open",
       "title": "Find any file in the worktree in a keystroke",
-      "text": "The Files tab shows the worktree's tree and what the agent changed. Quick Open fuzzy-searches the whole worktree, and opens a file in the Files tab or in your own editor.",
+      "text": "The Files tab shows the worktree's tree and what the agent changed. The list folds away beside the diff and slides out when you point at it. Quick Open fuzzy-searches the whole worktree, and opens a file in the Files tab or in your own editor.",
       "points": [
         "Changes or all files, with filters",
         "Quick Open: Ctrl+Shift+P on Windows and Linux, ⌘P on macOS",

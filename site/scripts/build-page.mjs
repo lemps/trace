@@ -4,6 +4,8 @@
 //   node site/scripts/build-page.mjs           write site/index.html
 //   node site/scripts/build-page.mjs --check   fail if index.html is out of date
 //
+// A feature whose media isn't recorded yet is left off the page (see below).
+//
 // Env: SITE_URL  the published site's URL, for social cards (default: GitHub Pages)
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,15 +15,20 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const site = resolve(here, "..");
 const url = process.env.SITE_URL || "https://noble1911.github.io/trace/";
-const { hero, features } = JSON.parse(readFileSync(join(site, "features.json"), "utf8"));
+const { hero, features: listed } = JSON.parse(readFileSync(join(site, "features.json"), "utf8"));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const num = (i) => String(i + 1).padStart(2, "0");
 
-for (const f of features) {
-  const files = f.kind === "still" ? [`${f.id}.jpg`] : [`${f.id}.mp4`, `${f.id}.webm`, `${f.id}.jpg`];
-  for (const file of files) if (!existsSync(join(site, "media", file))) console.warn(`missing media/${file}: run record.mjs ${f.id}`);
-}
+// A section waits for its clip: one listed in features.json before it's recorded
+// (`record.mjs <id>`) is left off the page, so the published page never shows a
+// frame with nothing in it. Recording it and building again brings it in.
+const mediaOf = (f) => (f.kind === "still" ? [`${f.id}.jpg`] : [`${f.id}.mp4`, `${f.id}.webm`, `${f.id}.jpg`]);
+const features = listed.filter((f) => {
+  const missing = mediaOf(f).filter((file) => !existsSync(join(site, "media", file)));
+  if (missing.length > 0) console.warn(`${f.id}: left off the page until it's recorded (no media/${missing.join(", media/")}): run record.mjs ${f.id}`);
+  return missing.length === 0;
+});
 
 const index = features
   .map((f, i) => `            <li><a href="#${f.id}"><span class="n">${num(i)}</span>${esc(f.label)}</a></li>`)

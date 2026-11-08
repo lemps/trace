@@ -92,8 +92,9 @@ Features trace may build. **Wanted** items are decided; **Candidates** came from
 
 ### Workspace
 
-- [x] **Split panes:** a detail's tabs (agents, HTML, Files, terminals) side by side or stacked,
-      resizable, remembered per workspace (`domains/panes`). A browser pane comes with the browser.
+- [x] **Split panes:** a detail's tabs (agents, Plan, Files, terminals) side by side or stacked,
+      resizable, remembered per workspace (`domains/panes`). Tabs come with content and hide on ×
+      (`panes/coming.ts`, `.claude/rules/tabs.md`); Settings → Tabs turns each off.
 - [ ] **Embedded browser with Design Mode:** click an element to send its HTML, styles and selector
       to the agent. The browser itself has started: the Browser tab shows pages an agent opens with
       `open_browser` (or you do) in an isolated native webview laid over its pane (`domains/browser`,

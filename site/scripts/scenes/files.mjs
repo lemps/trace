@@ -1,5 +1,5 @@
 // Files and Quick Open: the worktree's tree and changes, and a fuzzy file search.
-import { ROUTER, ensureSession, resetPanes, sleep } from "../lib/ui.mjs";
+import { ROUTER, ensureSession, openSidebar, resetPanes, sleep } from "../lib/ui.mjs";
 
 export const clip = { segments: [["start+0.4", "end", 1.1]] };
 
@@ -12,12 +12,16 @@ export async function run(d, mark) {
   await sleep(1000);
   await d.click('button[aria-label="Files"]');
   await sleep(1500);
-  await d.click(".detail button", "All files");
+  // The list is folded beside the viewer; resting on its strip slides it out.
+  await openSidebar(d);
+  mark("list");
+  await sleep(700);
+  await d.click(".detail aside.as button", "All files");
   mark("all files");
   await sleep(1500);
-  await d.click(".detail *", "src");
+  await d.click(".detail aside.as *", "src");
   await sleep(1200);
-  await d.click(".detail *", "path.ts");
+  await d.click(".detail aside.as *", "path.ts");
   await sleep(1800);
   // Quick Open: Ctrl+Shift+P here (⌘P on macOS).
   await d.key("p", process.platform === "darwin" ? 4 : 2 | 8);

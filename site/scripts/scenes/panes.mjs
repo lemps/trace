@@ -1,5 +1,5 @@
 // Split panes: chat | Files over Terminal, arranged from each pane's menu.
-import { ROUTER, ensureSession, ideLayout, resetPanes, sleep } from "../lib/ui.mjs";
+import { ROUTER, ensureSession, ideLayout, openSidebar, resetPanes, sleep } from "../lib/ui.mjs";
 
 export const clip = {
   segments: [
@@ -22,6 +22,8 @@ export async function run(d, mark) {
   await d.type("npm test\n", 70);
   mark("npm test");
   await sleep(3500);
-  await d.click("*", "router.test.ts");
+  // The file list folds away beside the diff: rest on its strip to slide it out.
+  await openSidebar(d);
+  await d.click(".detail aside.as *", "router.test.ts");
   await sleep(3000);
 }

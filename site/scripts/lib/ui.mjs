@@ -190,11 +190,42 @@ export async function paneMenu(d, index) {
   await sleep(700);
 }
 
-/** Put the open session back to one pane, with any leftover shell closed. */
+/**
+ * Show a tab that comes and goes (Terminal, Tests, Plan, Gallery…): click it if it's
+ * in a tab row, else pick it from pane `pane`'s ⋯ → Tabs. Picking Terminal there
+ * starts a shell; Tests starts a run.
+ */
+export async function openTab(d, label, pane = 0) {
+  if (await d.eval((l) => !!document.querySelector(`button[aria-label="${l}"]`), label)) {
+    await d.click(`button[aria-label="${label}"]`);
+  } else {
+    await paneMenu(d, pane);
+    await d.click("[role=menuitem]", label);
+  }
+  await sleep(800);
+}
+
+/**
+ * Slide out a pane's folded list (Files' tree, Plan's documents, Gallery's sets) by
+ * resting on its strip. It stays out while the pointer is over it, so click into
+ * it next; it's still laid out while folded, so a click without this goes through.
+ */
+export async function openSidebar(d) {
+  if (await d.eval(() => !!document.querySelector(".detail aside.as.pinned"))) return;
+  await d.hover(".detail aside.as .as-strip");
+  await d.waitFor(() => !!document.querySelector(".detail aside.as.open"));
+  await sleep(350);
+}
+
+/** Put the open session back to one pane, with any leftover shell ended. */
 export async function resetPanes(d) {
-  if (await d.eval(() => !!document.querySelector("button.term-stop"))) {
-    await d.click("button.term-stop");
-    await sleep(800);
+  // A shell's tab only hides on ×; `exit` ends the shell, and the tab goes with it.
+  if (await d.eval(() => !!document.querySelector('button[aria-label="Terminal"]'))) {
+    await d.click('button[aria-label="Terminal"]');
+    await sleep(500);
+    await d.click(".xterm");
+    await d.type("exit\n", 5);
+    await sleep(1000);
   }
   if (await d.eval(() => document.querySelectorAll('button[aria-label="Pane actions"]').length > 1)) {
     await paneMenu(d, 0);
@@ -212,7 +243,8 @@ export async function ideLayout(d, pause = 1000) {
   await paneMenu(d, 0);
   await d.click("[role=menuitem]", "Split right");
   await sleep(pause * 1.3);
-  await d.click('button[aria-label="Terminal"]');
+  // Terminal shows once a shell is open: picking it from the menu starts one.
+  await openTab(d, "Terminal", 0);
   await sleep(pause * 0.7);
   await paneMenu(d, 0);
   await d.click("[role=menuitem]", "Move to next pane");
@@ -222,6 +254,7 @@ export async function ideLayout(d, pause = 1000) {
   await sleep(pause);
   await d.click('button[aria-label="claude"]');
   await sleep(pause);
+  // The shell started as the tab opened; only a failed start leaves the button.
   if (await d.eval(() => document.body.innerText.includes("Open terminal"))) await d.click("button", "Open terminal");
   await sleep(2500);
 }
