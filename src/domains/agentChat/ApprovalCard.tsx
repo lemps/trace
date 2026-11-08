@@ -32,7 +32,7 @@ export function ApprovalCard({ approval, attached = false }: ApprovalCardProps) 
   return (
     <div className={`ac-card ac-ask${attached ? " attached" : ""}`}>
       <div className="ac-card-head">
-        <I.Bolt size={13} />
+        <I.Shield size={13} />
         <span className="ac-card-title">
           <ChatMarkdown text={approval.title} inline />
         </span>

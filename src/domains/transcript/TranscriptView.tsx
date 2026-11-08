@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { StatusLight } from "@/components/StatusLight";
 import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
 import { ChatViewContext } from "@/domains/agentChat/chatContext";
 import { useBoardStore } from "@/domains/board/store";
@@ -112,7 +113,11 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
                 isCurrent={working && i === blocks.length - 1}
               />
             ))}
-            {working && <div className="tx-working">Working…</div>}
+            {working && (
+              <div className="tx-working">
+                <StatusLight light="working" variant="word" />
+              </div>
+            )}
             <div className="tx-foot">
               {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"}
             </div>
@@ -120,7 +125,7 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
         </div>
         {!following && (
           <button type="button" className="btn tx-latest" onClick={jumpToLatest}>
-            <I.Download size={13} /> Latest
+            <I.ArrowDown size={13} /> Latest
           </button>
         )}
       </div>
