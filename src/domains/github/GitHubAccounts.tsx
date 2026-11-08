@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { useGitHubStore } from "./store";
 import { type GitHubAccount, SOURCE_LABEL } from "./types";
 
@@ -8,16 +9,12 @@ import { type GitHubAccount, SOURCE_LABEL } from "./types";
 export function GitHubAccounts({ accounts }: { accounts: GitHubAccount[] }) {
   const { removeAccount, setPrimary } = useGitHubStore.getState();
   const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState<string | null>(null);
 
   const run = (action: () => Promise<void>, failure: string) => {
     setBusy(true);
     action()
       .catch((err) => toast.error(`${failure}: ${String(err)}`))
-      .finally(() => {
-        setBusy(false);
-        setConfirming(null);
-      });
+      .finally(() => setBusy(false));
   };
 
   return (
@@ -32,42 +29,23 @@ export function GitHubAccounts({ accounts }: { accounts: GitHubAccount[] }) {
             <div className="gh-row-meta">{SOURCE_LABEL[a.source]}</div>
             {a.problem && <div className="ig-error">{a.problem}</div>}
           </div>
-          {confirming === a.login ? (
-            <>
-              <button type="button" className="btn" onClick={() => setConfirming(null)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn danger"
-                disabled={busy}
-                onClick={() => run(() => removeAccount(a.login), `Couldn't remove ${a.login}`)}
-              >
-                Remove {a.login}
-              </button>
-            </>
-          ) : (
-            <>
-              {!a.primary && (
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => run(() => setPrimary(a.login), `Couldn't make ${a.login} primary`)}
-                >
-                  Make primary
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={() => setConfirming(a.login)}
-              >
-                Remove
-              </button>
-            </>
+          {!a.primary && (
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={() => run(() => setPrimary(a.login), `Couldn't make ${a.login} primary`)}
+            >
+              Make primary
+            </button>
           )}
+          <InlineConfirm
+            label="Remove"
+            message={`Remove ${a.login}?`}
+            confirmLabel="Remove"
+            disabled={busy}
+            onConfirm={() => run(() => removeAccount(a.login), `Couldn't remove ${a.login}`)}
+          />
         </li>
       ))}
     </ul>

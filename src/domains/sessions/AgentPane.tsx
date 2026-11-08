@@ -35,12 +35,7 @@ export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
             </span>
             <div className="title">Start {agentLabel(cli)}</div>
             <div className="hint">{hint}</div>
-            <button
-              type="button"
-              className="btn primary"
-              style={{ marginTop: 6 }}
-              onClick={() => void run.start()}
-            >
+            <button type="button" className="btn empty-action" onClick={() => void run.start()}>
               <I.Play size={14} /> Start {agentLabel(cli)}
             </button>
             <button

@@ -64,7 +64,7 @@ export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoSt
               separate from the agent in Chat. Run git, build, or test commands here.
             </div>
             {error && <div style={{ color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>}
-            <button type="button" className="btn primary" style={{ marginTop: 6 }} onClick={start}>
+            <button type="button" className="btn empty-action" onClick={start}>
               <I.Terminal size={14} /> Open terminal
             </button>
           </div>

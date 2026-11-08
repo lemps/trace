@@ -47,7 +47,7 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--radius-xs);
   background: var(--bg-3);
 }
 .pr-row .status-dot.open {
@@ -92,7 +92,7 @@
   color: var(--fg-2);
   background: var(--bg-3);
   border: 1px solid var(--border-faint);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 1px 6px;
 }
 .pr-row .ticket:hover {

@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Switch } from "@/components/Switch";
 import { useNow } from "@/hooks/useNow";
 import { describeSchedule, formatWhen, relative } from "./describe";
@@ -27,7 +29,6 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
   const runNow = useSchedulesStore((s) => s.runNow);
   const stopRun = useSchedulesStore((s) => s.stopRun);
   const remove = useSchedulesStore((s) => s.remove);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const now = useNow(30_000);
 
   const runs = useMemo(() => allRuns.filter((r) => r.promptId === prompt.id), [allRuns, prompt.id]);
@@ -36,12 +37,8 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
   const live = runs.find((r) => r.status === "running");
   const fail = (err: unknown) => toast.error(String(err));
 
+  // Confirmed inline first: this kills a live run and deletes the history and worktree.
   const onDelete = () => {
-    // Two clicks: this kills a live run and deletes the history and worktree.
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
     void remove(prompt.id)
       .then(() => toast.success(`Deleted “${prompt.title}”`))
       .catch(fail);
@@ -76,18 +73,23 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
               label={prompt.enabled ? "Pause schedule" : "Resume schedule"}
             />
           </span>
-          <button type="button" className="btn" onClick={onEdit}>
-            <I.Pencil size={14} /> Edit
-          </button>
-          <button
-            type="button"
-            className={`btn${confirmDelete ? " danger" : ""}`}
-            onClick={onDelete}
-            onBlur={() => setConfirmDelete(false)}
-            title="Delete this prompt, its run history, and its worktree"
-          >
-            <I.Trash size={14} /> {confirmDelete ? "Confirm delete" : "Delete"}
-          </button>
+          <IconButton label="Edit prompt" onClick={onEdit}>
+            <I.Pencil size={14} />
+          </IconButton>
+          <InlineConfirm
+            label={
+              <>
+                <I.Trash size={14} /> Delete
+              </>
+            }
+            message={
+              live
+                ? "Stop its run and delete it, its run history and its worktree?"
+                : "Delete it, its run history and its worktree?"
+            }
+            confirmLabel="Delete"
+            onConfirm={onDelete}
+          />
           {live ? (
             <button type="button" className="btn" onClick={() => void stopRun(live.id).catch(fail)}>
               <I.Stop size={14} /> Stop run

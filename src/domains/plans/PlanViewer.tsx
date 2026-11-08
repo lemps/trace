@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { ConfirmPrompt } from "@/components/InlineConfirm";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { Segmented } from "@/components/Segmented";
 import { countChanges, type DiffLine } from "@/domains/agentChat/lineDiff";
@@ -118,19 +119,18 @@ export function PlanViewer({ workspaceId, agentTab, series }: PlanViewerProps) {
       </div>
       {confirm && (
         <div className="pl-confirm" role="alert">
-          <span>
-            {confirm === "all" && multi
-              ? `Remove “${doc.title}” and all ${series.versions.length} versions?`
-              : confirm === "all"
-                ? `Remove “${doc.title}”?`
-                : `Remove version ${doc.version} of “${doc.title}”?`}
-          </span>
-          <button type="button" className="btn" onClick={() => setConfirm(null)}>
-            Cancel
-          </button>
-          <button type="button" className="btn danger" onClick={() => onRemove(confirm === "all")}>
-            Remove
-          </button>
+          <ConfirmPrompt
+            message={
+              confirm === "all" && multi
+                ? `Remove “${doc.title}” and all ${series.versions.length} versions?`
+                : confirm === "all"
+                  ? `Remove “${doc.title}”?`
+                  : `Remove version ${doc.version} of “${doc.title}”?`
+            }
+            confirmLabel="Remove"
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => onRemove(confirm === "all")}
+          />
         </div>
       )}
       {shown === "changes" && base ? (

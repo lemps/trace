@@ -32,6 +32,12 @@
   background: var(--fg-1);
 }
 
+/* An empty state's action, under its hint (`.empty-state`). Plain, not primary: the
+   page or detail header already has the screen's one primary (trace-ui §1). */
+.btn.empty-action {
+  margin-top: 6px;
+}
+
 /* Dense in-content toolbars only, never in a header beside bordered buttons. */
 .btn.ghost {
   background: transparent;

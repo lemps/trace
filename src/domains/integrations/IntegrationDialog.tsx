@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/app/toast";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Modal } from "@/components/Modal";
 import { useIssuesStore } from "@/domains/issues/store";
 import { JiraForm, PylonForm } from "./ConnectForms";
@@ -17,7 +18,6 @@ export function IntegrationDialog({ integration, onClose }: IntegrationDialogPro
   const user = useIssuesStore((s) => s.users[kind]);
   const disconnect = useIssuesStore((s) => s.disconnect);
   const clearConnectError = useIssuesStore((s) => s.clearConnectError);
-  const [confirming, setConfirming] = useState(false);
   const wasConnected = useState(() => Boolean(session))[0];
 
   // Don't greet this dialog with the last attempt's failure.
@@ -52,20 +52,12 @@ export function IntegrationDialog({ integration, onClose }: IntegrationDialogPro
         {!session && (kind === "jira" ? <JiraForm /> : <PylonForm />)}
         {session && (
           <div className="ig-form-foot">
-            {confirming ? (
-              <>
-                <button type="button" className="btn" onClick={() => setConfirming(false)}>
-                  Cancel
-                </button>
-                <button type="button" className="btn danger" onClick={confirmDisconnect}>
-                  Disconnect {name} and delete its token
-                </button>
-              </>
-            ) : (
-              <button type="button" className="btn" onClick={() => setConfirming(true)}>
-                Disconnect
-              </button>
-            )}
+            <InlineConfirm
+              label="Disconnect"
+              message={`Disconnect ${name} and delete its token?`}
+              confirmLabel="Disconnect"
+              onConfirm={confirmDisconnect}
+            />
           </div>
         )}
       </div>

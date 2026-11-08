@@ -1,4 +1,4 @@
-// The icon scale (trace-ui §2 rule 9): icon sizes follow the control heights, and the
+// The icon scale (trace-ui §4): icon sizes follow the control heights, and the
 // stroke is compensated so a glyph draws the same line weight at every size.
 
 /** The three icon sizes: `xs` controls and in-row pills, `.btn` and `sm` controls, the rail/nav/empty states. */

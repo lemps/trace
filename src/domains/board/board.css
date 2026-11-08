@@ -88,7 +88,7 @@
   padding: 0;
   min-inline-size: 0;
   border: 1px solid var(--border-faint);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   margin-right: 4px;
 }
@@ -125,6 +125,12 @@
   background: var(--bg-3);
   color: var(--fg-0);
   border-color: var(--border);
+}
+/* A chip's count (Inbox, Fleet). */
+.filter-chip .mono {
+  font-family: var(--font-mono);
+  font-size: calc(var(--text-meta) - 0.5px);
+  color: var(--fg-3);
 }
 
 /* Issue-type filter row, under the header: Epic / Story / Bug … */
