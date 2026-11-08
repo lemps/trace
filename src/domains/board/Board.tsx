@@ -117,7 +117,7 @@ export function Board() {
       <div className="board-header">
         <div>
           <h1>{data.sprintName ?? data.boardName}</h1>
-          <div className="subtitle">
+          <div className="desc">
             {filtered.length} issue{filtered.length === 1 ? "" : "s"} · {activeCount} active
             {boardLights.length > 0 &&
               ` · ${boardLights.length} agent${boardLights.length === 1 ? "" : "s"} running`}

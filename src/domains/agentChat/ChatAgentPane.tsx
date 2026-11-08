@@ -29,8 +29,6 @@ interface ChatAgentPaneProps {
    * counts as always running.
    */
   onStart?: () => void;
-  /** End the agent's process, the way the view's own Stop does. */
-  onStop?: () => void;
 }
 
 // A chat agent's conversation, the same for every brand: the header's facts,
@@ -38,12 +36,7 @@ interface ChatAgentPaneProps {
 // diffs, plans, prompts answered in place) and the composer, which always
 // talks to the main agent. This is the one seam the session and ticket views
 // mount; it needs only the workspace id.
-export function ChatAgentPane({
-  workspaceId,
-  expandAll = false,
-  onStart,
-  onStop,
-}: ChatAgentPaneProps) {
+export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatAgentPaneProps) {
   useJournalFeed(workspaceId);
   const actions = useChatActions();
   const live = useBoardStore((s) => s.runningAgents.has(workspaceId));
@@ -90,7 +83,7 @@ export function ChatAgentPane({
   return (
     <ChatViewContext.Provider value={view}>
       <div className="ac-pane" ref={paneRef}>
-        <ChatHeader info={info} turns={turns} onStop={live ? onStop : undefined} />
+        <ChatHeader info={info} turns={turns} />
         {tabbed.length > 0 && (
           <ChatTabs subagents={tabbed} inPanes={inPanes} active={tab} onPick={setTab} />
         )}
@@ -118,7 +111,7 @@ export function ChatAgentPane({
             <div className="ac-stopped-in">
               <span>The agent isn't running. Start it to carry on this conversation.</span>
               <button type="button" className="btn primary" onClick={onStart}>
-                <I.Bolt size={13} /> Start
+                <I.Play size={13} /> Start
               </button>
             </div>
           </div>
@@ -160,7 +153,7 @@ function Empty({
           : "Nothing here yet. Your messages and the agent's work will show up here."}
         {stopped && onStart && (
           <button type="button" className="btn primary" onClick={onStart}>
-            <I.Bolt size={13} /> Start
+            <I.Play size={13} /> Start
           </button>
         )}
       </div>

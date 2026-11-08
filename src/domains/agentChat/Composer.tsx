@@ -14,9 +14,13 @@ import { isShortcut, useAriaKeys, useTitleWithHint } from "@/platform/shortcuts"
 import { AttachmentChips } from "./AttachmentChips";
 import { useChatActions } from "./actions";
 import { useComposerFill } from "./composerFill";
+import { useDrafts, useDraftText } from "./drafts";
 import { useAttachments } from "./hooks/useAttachments";
+import { useSlash } from "./hooks/useSlash";
 import { QueueList } from "./QueueList";
-import { SlashMenu, slashMatches } from "./SlashMenu";
+import { SlashMenu } from "./SlashMenu";
+import { keepExisting } from "./sendFiles";
+import { expandSaved } from "./slash";
 import { useAgentChatStore } from "./store";
 
 interface ComposerProps {
@@ -37,9 +41,12 @@ const carriesFiles = (e: DragEvent) => e.dataTransfer.types.includes("Files");
 // Where you talk to the agent (the main one; subagents are read-only). Enter
 // sends (Shift+Enter is a new line); while a turn runs, Enter queues the message
 // instead. The box grows to show the whole message. Files go with it from the
-// paperclip, a paste (a screenshot) or a drop onto the box. Esc interrupts (the pane hears it, wherever focus is). Typing `/`
-// lists the agent's slash commands. The keys are in the buttons' tooltips and the
-// cheat sheet, not spelled out under the box.
+// paperclip, a paste (a screenshot) or a drop onto the box. Esc interrupts (the pane
+// hears it, wherever focus is). Typing `/` lists the agent's slash commands and the
+// user's saved prompts; `/name` + Enter puts a saved prompt's text in the box. What's
+// typed and attached is the workspace's draft (`drafts.ts`): it waits, across closing
+// the detail and restarts, until it's sent. The keys are in the buttons' tooltips and
+// the cheat sheet, not spelled out under the box.
 export function Composer({
   workspaceId,
   busy,
@@ -49,12 +56,14 @@ export function Composer({
   slashCommands,
 }: ComposerProps) {
   const actions = useChatActions();
-  const [text, setText] = useState("");
-  const [active, setActive] = useState(0);
-  const [menuClosed, setMenuClosed] = useState(false);
+  const text = useDraftText(workspaceId);
+  const setText = (next: string) => useDrafts.getState().setText(workspaceId, next);
   const [dropping, setDropping] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const files = useAttachments();
+  /** Sends wait their turn while one checks its files, so they go in the order typed. */
+  const sendChain = useRef(Promise.resolve());
+  const files = useAttachments(workspaceId);
+  const slash = useSlash(text, setText, slashCommands);
   // Fit the box to its text: all of it shows, however long (no inner scroll).
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure whenever the text changes
   useLayoutEffect(() => {
@@ -69,34 +78,51 @@ export function Composer({
     if (pending === undefined) return;
     const text = useComposerFill.getState().take(workspaceId);
     if (!text) return;
-    setText((was) => (was.trim() ? `${was}\n\n${text}` : text));
+    const was = useDrafts.getState().drafts[workspaceId]?.text ?? "";
+    useDrafts.getState().setText(workspaceId, was.trim() ? `${was}\n\n${text}` : text);
     inputRef.current?.focus();
   }, [pending, workspaceId]);
-  const matches = menuClosed ? null : slashMatches(text, slashCommands);
+  const matches = slash.matches;
   const interruptTitle = `${useTitleWithHint("Interrupt", "chatInterrupt")}: stops the turn and its subagents`;
   const interruptKeys = useAriaKeys("chatInterrupt");
   const sendTitle = useTitleWithHint(busy ? "Queue the message" : "Send the message", "chatSend");
-  const slash = slashCommands.length > 0 ? ", / for commands" : "";
+  const slashHint = slash.entries.length > 0 ? ", / for commands" : "";
 
   const attached = files.paths;
   const canSend = (text.trim() !== "" || attached.length > 0) && !files.saving;
-  const submit = () => {
-    const message = text.trim();
-    if (!canSend) return;
-    setText("");
-    files.set([]);
+  const deliver = (message: string, attachments: string[]) => {
+    if (message === "" && attachments.length === 0) return;
     const { queues, sending, enqueue, setSending } = useAgentChatStore.getState();
     if (busy || sending[workspaceId] || (queues[workspaceId]?.length ?? 0) > 0) {
-      enqueue(workspaceId, message, attached);
+      enqueue(workspaceId, message, attachments);
       return;
     }
     setSending(workspaceId, true);
-    void actions.send(workspaceId, { text: message, attachments: attached }).catch((e) => {
+    void actions.send(workspaceId, { text: message, attachments }).catch((e) => {
       setSending(workspaceId, false);
-      setText(message);
-      files.set(attached);
+      // Back in the box to try again (whatever was typed since is replaced, as before).
+      useDrafts.getState().setText(workspaceId, message);
+      useDrafts.getState().setAttachments(workspaceId, attachments);
       toast.error(`Couldn't send: ${String(e)}`);
     });
+  };
+  const submit = () => {
+    if (!canSend) return;
+    // `/name` for a saved prompt fills the box with it, to edit before sending.
+    const saved = expandSaved(text, slash.entries);
+    if (saved !== null) {
+      setText(saved);
+      return;
+    }
+    const message = text.trim();
+    useDrafts.getState().clear(workspaceId);
+    // A draft can outlive its files (a restart, a swept paste): leave off the gone ones.
+    sendChain.current = sendChain.current
+      .then(() => keepExisting(attached))
+      .then((kept) => deliver(message, kept))
+      .catch((e) => {
+        toast.error(`Couldn't send: ${String(e)}`);
+      });
   };
   const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = [...e.clipboardData.files];
@@ -117,33 +143,10 @@ export function Composer({
     files.addFiles([...e.dataTransfer.files]);
     inputRef.current?.focus();
   };
-  const pick = (command: string) => {
-    setText(`/${command} `);
-    setActive(0);
-  };
-
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter while an IME is composing commits the candidate; it isn't a send.
     if (e.nativeEvent.isComposing) return;
-    if (matches) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const step = e.key === "ArrowDown" ? 1 : -1;
-        setActive((a) => (a + step + matches.length) % matches.length);
-        return;
-      }
-      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
-        e.preventDefault();
-        pick(matches[Math.min(active, matches.length - 1)]);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setMenuClosed(true);
-        return;
-      }
-    }
+    if (slash.onKey(e)) return;
     if (isShortcut("chatSend", e)) {
       e.preventDefault();
       submit();
@@ -160,7 +163,7 @@ export function Composer({
         onDragLeave={() => setDropping(false)}
         onDrop={onDrop}
       >
-        {matches && <SlashMenu matches={matches} active={active} onPick={pick} />}
+        {matches && <SlashMenu matches={matches} active={slash.active} onPick={slash.pick} />}
         <AttachmentChips paths={attached} saving={files.saving} onRemove={files.remove} />
         <textarea
           ref={inputRef}
@@ -168,17 +171,16 @@ export function Composer({
           aria-label="Message the agent"
           placeholder={
             busy
-              ? `Queue a message for when this turn ends${slash}`
+              ? `Queue a message for when this turn ends${slashHint}`
               : toMain
-                ? `Message the main agent${slash}`
-                : `Message the agent${slash}`
+                ? `Message the main agent${slashHint}`
+                : `Message the agent${slashHint}`
           }
           rows={1}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
-            setActive(0);
-            setMenuClosed(false);
+            slash.reset();
           }}
           onKeyDown={onKeyDown}
           onPaste={onPaste}

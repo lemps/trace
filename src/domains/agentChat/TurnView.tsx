@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { I } from "@/components/Icon";
 import { useAppearance } from "@/domains/appearance/store";
-import { formatDuration, workSentence } from "./format";
+import { failedCount, formatDuration, workSentence } from "./format";
 import { useDisclosure } from "./hooks/useDisclosure";
 import { ItemView } from "./ItemView";
 import { MessageRow } from "./MessageRow";
@@ -40,6 +40,7 @@ const NONE: ReadonlySet<ChatItem> = new Set();
 
 function FoldHead({ turn, open, toggle }: { turn: ChatTurn; open: boolean; toggle: () => void }) {
   const ms = turn.summary?.durationMs;
+  const failed = failedCount(turn.folded);
   return (
     <div className={`ac-fold${open ? " open" : ""}`}>
       <button type="button" className="ac-fold-head" aria-expanded={open} onClick={toggle}>
@@ -47,6 +48,7 @@ function FoldHead({ turn, open, toggle }: { turn: ChatTurn; open: boolean; toggl
           <I.Chevron size={12} />
         </span>
         <span className="ac-fold-sentence">{workSentence(turn.folded)}</span>
+        {failed > 0 && <span className="tx-tool-state error">{failed} failed</span>}
         {ms !== undefined && <span className="ac-fold-time">{formatDuration(ms)}</span>}
         <span className="tx-run-count">{turn.folded.length}</span>
       </button>

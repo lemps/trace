@@ -75,7 +75,7 @@ export function summarize(name: string, input: unknown): ToolSummary {
       return { label: "Agent", target, path: null, isCode: false };
     }
     case "TodoWrite":
-      return { label: "Todos", target: todoProgress(input), path: null, isCode: false };
+      return { label: "Tasks", target: todoProgress(input), path: null, isCode: false };
     case "Skill":
       return { label, target: str(input, "skill"), path: null, isCode: true };
     default: {

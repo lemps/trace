@@ -147,8 +147,8 @@
   gap: 6px;
 }
 .pr-convo-head .count {
-  font-size: 11px;
-  color: var(--fg-4);
+  font-size: calc(var(--text-meta) - 0.5px);
+  color: var(--fg-3);
   font-family: var(--font-mono);
 }
 .pr-convo-head .pr-link-btn {
@@ -159,7 +159,7 @@
   gap: 12px;
 }
 .pr-link-btn {
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--c-review);
 }
 .pr-link-btn:hover {
@@ -191,7 +191,7 @@
   gap: 6px;
   width: 100%;
   text-align: left;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   min-width: 0;
 }
 .pr-entry-head:hover .pr-entry-who {
@@ -205,7 +205,7 @@
   color: var(--fg-1);
 }
 .pr-bot {
-  font-size: 9.5px;
+  font-size: calc(var(--text-label) - 1px);
   font-weight: 500;
   padding: 0 4px;
   border-radius: 3px;
@@ -215,7 +215,7 @@
   letter-spacing: 0.05em;
 }
 .pr-verdict {
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .pr-verdict.approved {
@@ -225,13 +225,13 @@
   color: var(--c-danger);
 }
 .pr-entry-when {
-  font-size: 11px;
-  color: var(--fg-4);
+  font-size: calc(var(--text-meta) - 0.5px);
+  color: var(--fg-3);
   white-space: nowrap;
 }
 .pr-flag {
   margin-left: auto;
-  font-size: 9.5px;
+  font-size: calc(var(--text-label) - 1px);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -241,7 +241,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   min-width: 0;
 }
@@ -253,7 +253,7 @@
   min-width: 0;
 }
 .pr-tag {
-  font-size: 10px;
+  font-size: calc(var(--text-label) - 0.5px);
   padding: 0 5px;
   border-radius: 3px;
   background: var(--bg-2);
@@ -278,7 +278,7 @@
   overflow-x: auto;
 }
 .pr-more {
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   margin-top: 2px;
 }
@@ -290,7 +290,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-2);
 }
 .pr-chev {

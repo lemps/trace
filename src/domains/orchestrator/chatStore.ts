@@ -145,7 +145,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       // stays reserved for pre-send problems (e.g. no key) so the banner and the
       // assistant bubble never report the same failure twice.
       const msg = e instanceof Error ? e.message : String(e);
-      patch((m) => ({ ...m, text: m.text || `⚠️ ${msg}`, tool: undefined }));
+      patch((m) => ({ ...m, text: m.text || `Error: ${msg}`, tool: undefined }));
     } finally {
       if (ac && abortController === ac) abortController = null;
       if (live()) set({ busy: false, pendingConfirm: null });

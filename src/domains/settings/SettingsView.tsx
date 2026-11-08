@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSetupStore } from "@/domains/setup/store";
 import { AgentDefaultsSettings } from "./AgentDefaultsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AssistantSettings } from "./AssistantSettings";
@@ -6,6 +7,7 @@ import { AutoCleanupSettings } from "./AutoCleanupSettings";
 import { BuddySettings } from "./BuddySettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
+import { SavedPromptsSettings } from "./SavedPromptsSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SidebarSettings } from "./SidebarSettings";
 import { TabsSettings } from "./TabsSettings";
@@ -13,7 +15,10 @@ import { type SettingsTab, useSettingsTabRequest } from "./tabStore";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
 
+// Repositories come first: they are where every agent works, and the first thing
+// a new install needs.
 const TABS: { id: SettingsTab; label: string }[] = [
+  { id: "repositories", label: "Repositories" },
   { id: "agents", label: "Agents" },
   { id: "notifications", label: "Notifications" },
   { id: "assistant", label: "Assistant" },
@@ -28,7 +33,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 // Settings: one tab per concern, so each is a short page rather than one long scroll.
 export function SettingsView() {
   const [tab, setTab] = useState<SettingsTab>(
-    () => useSettingsTabRequest.getState().take() ?? "agents"
+    () => useSettingsTabRequest.getState().take() ?? "repositories"
   );
   // Asked for a tab while already open (the cheat sheet's "Customize…").
   const requested = useSettingsTabRequest((s) => s.requested);
@@ -43,7 +48,14 @@ export function SettingsView() {
       <div className="page-head">
         <div>
           <h1>Settings</h1>
-          <div className="desc">Workspace defaults for trace.</div>
+          <div className="desc">
+            Where agents work, how they start, and how trace looks and gets your attention.
+          </div>
+        </div>
+        <div className="right">
+          <button type="button" className="btn" onClick={() => useSetupStore.getState().start()}>
+            Run setup again
+          </button>
         </div>
       </div>
       <div className="tab-bar">
@@ -60,10 +72,11 @@ export function SettingsView() {
       </div>
       <div className="page-body">
         <div className="settings-wrap">
+          {tab === "repositories" && <RepoSettings />}
           {tab === "agents" && (
             <>
-              <RepoSettings />
               <AgentDefaultsSettings />
+              <SavedPromptsSettings />
             </>
           )}
           {tab === "notifications" && <NotificationSettings />}

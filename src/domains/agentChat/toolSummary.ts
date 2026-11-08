@@ -7,7 +7,7 @@
 export type ToolCategory = "run" | "read" | "edit" | "search" | "web" | "agent" | "plan" | "other";
 
 export interface ToolLine {
-  /** A short verb-like label: Run, Read, Edit, Search, `github · create_pr`. */
+  /** A short verb-like label: Run, Read, Edit, Search, Tasks, `github · create_pr`. */
   label: string;
   /** What it acted on: a command, a pattern, a description. Empty when nothing says. */
   target: string;
@@ -163,7 +163,7 @@ export function summarizeTool(name: string, input: unknown): ToolLine {
     }
     case "TodoWrite":
     case "update_plan":
-      return line("Plan", "", "plan", false);
+      return line("Tasks", "", "plan", false);
     case "Skill":
       return line("Skill", str(input, "skill"), "other");
     default: {

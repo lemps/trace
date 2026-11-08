@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
+import { Spinner } from "@/components/Spinner";
 import { RestartChip } from "@/domains/agent/RestartChip";
 
 interface SessionRunButtonProps {
@@ -16,17 +17,17 @@ interface SessionRunButtonProps {
 }
 
 // A sandbox outlives trace, so a running one gets two exits that say what they
-// do: Disconnect leaves Claude working there, Stop & save ends it and keeps the
+// do: Leave running keeps Claude working there, Stop & save ends it and keeps the
 // sandbox to resume. The session's terminal says the same as each happens.
-const DISCONNECT =
-  "Leave Claude working in its Vercel sandbox (until the plan's time limit). Start rejoins it.";
+const LEAVE_RUNNING =
+  "Leave Claude working in its Vercel Sandbox (until the plan's time limit). Start joins it again.";
 const STOP_AND_SAVE =
   "Stop Claude and save the sandbox: files, branch and conversation. Start resumes it.";
 const START_REMOTE =
-  "Joins the Vercel sandbox if it's still running, resumes it from where it was saved if it stopped, or starts a new one.";
+  "Joins this session's Vercel Sandbox if it's still running, resumes the sandbox from where it was saved if it stopped, or starts a new one.";
 
 // The header's run control for a session's agent: Stop while it runs (or, on
-// Vercel, Disconnect and Stop & save), Restart once it has ended by itself,
+// Vercel, Leave running and Stop & save), Restart once it has ended by itself,
 // Start otherwise.
 export function SessionRunButton({
   agentName,
@@ -49,21 +50,18 @@ export function SessionRunButton({
   if (running && remote && saving) {
     return (
       <button type="button" className="btn" disabled aria-busy="true" title={STOP_AND_SAVE}>
-        <span className="vs-ic spinning">
-          <I.Refresh size={13} />
-        </span>{" "}
-        Saving…
+        <Spinner /> Saving…
       </button>
     );
   }
   if (running && remote) {
     return (
       <>
-        <button type="button" className="btn" onClick={onDisconnect} title={DISCONNECT}>
-          Disconnect
+        <button type="button" className="btn" onClick={onDisconnect} title={LEAVE_RUNNING}>
+          Leave running
         </button>
         <button type="button" className="btn" onClick={stopAndSave} title={STOP_AND_SAVE}>
-          <I.X size={13} /> Stop &amp; save
+          <I.Stop size={13} /> Stop &amp; save
         </button>
       </>
     );
@@ -71,7 +69,7 @@ export function SessionRunButton({
   if (running) {
     return (
       <button type="button" className="btn" onClick={onStop}>
-        <I.X size={13} /> Stop {agentName}
+        <I.Stop size={13} /> Stop agent
       </button>
     );
   }
@@ -83,7 +81,7 @@ export function SessionRunButton({
       onClick={onStart}
       title={remote ? START_REMOTE : undefined}
     >
-      <I.Bolt size={13} /> {remote ? "Start on Vercel" : `Start ${agentName}`}
+      <I.Bolt size={13} /> {remote ? "Start in sandbox" : `Start ${agentName}`}
     </button>
   );
 }

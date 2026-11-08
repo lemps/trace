@@ -27,7 +27,7 @@ function tokenFacts(s: GitHubStatus): string {
 }
 
 // GitHub's details: sign trace in to one or more GitHub accounts with its own
-// tokens, pick the primary (the one the repo browser uses), remove one, sign out of
+// tokens, pick the primary (the one the repo browser uses), remove one, disconnect
 // all of them (which deletes the tokens), and open the repo browser.
 export function GitHubDialog({ onClose }: { onClose: () => void }) {
   const status = useGitHubStore((s) => s.status);
@@ -41,7 +41,7 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
   // With no account working, signing in is the only useful thing here.
   const mustSignIn = !accounts.some((a) => !a.problem);
   const signingIn = mustSignIn || adding;
-  const tokens = accounts.length === 1 ? "token" : `${accounts.length} tokens`;
+  const tokens = accounts.length === 1 ? "its token" : `its ${accounts.length} tokens`;
 
   if (browsing) return <RepoBrowser onClose={onClose} />;
   return (
@@ -92,13 +92,13 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
                   className="btn danger"
                   onClick={() => void signOut().then(() => setConfirming(false))}
                 >
-                  Sign out and delete {tokens}
+                  Disconnect GitHub and delete {tokens}
                 </button>
               </>
             ) : (
               <>
                 <button type="button" className="btn" onClick={() => setConfirming(true)}>
-                  {accounts.length > 1 ? "Sign out of everything" : "Sign out"}
+                  {accounts.length > 1 ? "Disconnect all accounts" : "Disconnect"}
                 </button>
                 {working && (
                   <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>

@@ -16,6 +16,9 @@ import "@/components/status-light.css";
 import "@/components/side-panel.css";
 import "@/components/auto-sidebar.css";
 import "@/components/tab-fit.css";
+import "@/components/button.css";
+import "@/components/spinner.css";
+import "@/components/inline-confirm.css";
 import "@/app/shell.css";
 import "@/domains/board/board.css";
 import "@/domains/inbox/inbox.css";
@@ -60,6 +63,7 @@ import "@/domains/github/github.css";
 import "@/domains/repos/repos.css";
 import "@/domains/settings/settings.css";
 import "@/domains/settings/conductor-import.css";
+import "@/domains/settings/saved-prompts.css";
 import "@/domains/settings/shortcuts.css";
 import "@/domains/settings/sidebar.css";
 import "@/domains/settings/cleanup.css";
@@ -72,6 +76,7 @@ import "@/domains/orchestrator/chat.css";
 import "@/domains/orchestrator/charts.css";
 import "@/domains/buddy/buddy.css";
 import "@/domains/cheatSheet/cheat-sheet.css";
+import "@/domains/setup/setup.css";
 
 // Dev only: /#/dev/chat shows the chat UI over a fixture journal. The check is
 // on `import.meta.env.DEV`, so production builds drop the page and its fixture.

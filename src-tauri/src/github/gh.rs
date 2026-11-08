@@ -40,14 +40,14 @@ fn remember(owner: &str, login: &str) {
 
 /// One github.com account from `gh auth status --json hosts`.
 #[derive(Debug, PartialEq)]
-struct Account {
-    login: String,
-    active: bool,
-    ok: bool,
+pub(crate) struct Account {
+    pub login: String,
+    pub active: bool,
+    pub ok: bool,
 }
 
 /// The github.com accounts in `gh auth status --json hosts` output.
-fn parse_auth_status(json: &str) -> Result<Vec<Account>, String> {
+pub(crate) fn parse_auth_status(json: &str) -> Result<Vec<Account>, String> {
     let v: Value = serde_json::from_str(json).map_err(|e| format!("Unexpected gh output: {e}"))?;
     Ok(v.pointer("/hosts/github.com")
         .and_then(Value::as_array)
