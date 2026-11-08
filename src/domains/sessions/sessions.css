@@ -210,27 +210,10 @@
 }
 
 /* Tab-bar extras: add-tab button + active-tab actions */
-.tab-add {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px;
-  color: var(--fg-4);
-}
-.tab-add:hover {
-  color: var(--fg-1);
-}
 .tab-actions {
   display: inline-flex;
   gap: 2px;
   margin-left: 4px;
-}
-.tab-actions button {
-  display: inline-flex;
-  padding: 4px;
-  color: var(--fg-4);
-}
-.tab-actions button:hover {
-  color: var(--fg-1);
 }
 .tab-bar .title-edit {
   max-width: 160px;

@@ -258,7 +258,7 @@ export function SessionDetail({
                 onClick={onRemoveAgent}
                 title="Stops this agent and forgets its conversation; the worktree stays"
               >
-                <I.X size={14} /> Confirm remove {active.label}
+                <I.Trash size={14} /> Confirm remove {active.label}
               </button>
             </>
           )}
