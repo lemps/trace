@@ -1,43 +1,38 @@
-// The agent's slash commands, listed above the composer while you type `/…`.
+import type { SlashEntry } from "./slash";
 
-/** Most commands listed at once. */
-const MAX = 8;
-
-/** The commands matching what's typed, or null when the menu shouldn't show. */
-export function slashMatches(text: string, commands: readonly string[]): string[] | null {
-  const m = /^\/(\S*)$/.exec(text);
-  if (!m || commands.length === 0) return null;
-  const typed = m[1].toLowerCase();
-  const list = commands
-    .map((c) => c.replace(/^\//, ""))
-    .filter((c) => c.toLowerCase().startsWith(typed));
-  if (list.length === 0 || (list.length === 1 && list[0].toLowerCase() === typed)) return null;
-  return list.slice(0, MAX);
-}
+// The slash menu above the composer while you type `/…`: the user's saved prompts
+// (marked, with their title) and the agent's own commands.
 
 interface SlashMenuProps {
-  matches: string[];
+  matches: SlashEntry[];
   active: number;
-  onPick: (command: string) => void;
+  onPick: (entry: SlashEntry) => void;
 }
 
 export function SlashMenu({ matches, active, onPick }: SlashMenuProps) {
   return (
-    <div className="ac-slash" role="listbox" aria-label="Slash commands">
-      {matches.map((c, i) => (
+    <div className="ac-slash" role="listbox" aria-label="Slash commands and saved prompts">
+      {matches.map((entry, i) => (
         <button
-          key={c}
+          key={`${entry.saved ? "s" : "c"}:${entry.label}`}
           type="button"
           role="option"
           aria-selected={i === active}
           className={`ac-slash-item${i === active ? " active" : ""}`}
+          title={entry.saved ? "Puts this saved prompt in the box to edit and send" : undefined}
           // Keep the textarea focused: pick on mousedown, before it blurs.
           onMouseDown={(e) => {
             e.preventDefault();
-            onPick(c);
+            onPick(entry);
           }}
         >
-          /{c}
+          <span className="ac-slash-name">/{entry.label}</span>
+          {entry.saved && (
+            <>
+              <span className="ac-slash-title">{entry.saved.title}</span>
+              <span className="ac-slash-tag">Saved</span>
+            </>
+          )}
         </button>
       ))}
     </div>
