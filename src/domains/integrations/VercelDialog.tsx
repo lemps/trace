@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "@/app/toast";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Modal } from "@/components/Modal";
 import { useVercelStore } from "@/domains/vercel/store";
 import { ClaudeLogin } from "./ClaudeLogin";
@@ -15,15 +16,12 @@ export function VercelDialog({ onClose }: { onClose: () => void }) {
   const status = useVercelStore((s) => s.status);
   const disconnect = useVercelStore((s) => s.disconnect);
   const clearConnectError = useVercelStore((s) => s.clearConnectError);
-  const [confirming, setConfirming] = useState(false);
 
   // Don't greet this dialog with the last attempt's failure.
   useEffect(() => clearConnectError(), [clearConnectError]);
 
   const confirmDisconnect = () => {
-    disconnect()
-      .then(() => setConfirming(false))
-      .catch((err) => toast.error(`Couldn't disconnect Vercel: ${String(err)}`));
+    disconnect().catch((err) => toast.error(`Couldn't disconnect Vercel: ${String(err)}`));
   };
 
   return (
@@ -45,20 +43,12 @@ export function VercelDialog({ onClose }: { onClose: () => void }) {
         {status && <ClaudeLogin />}
         {status && (
           <div className="ig-form-foot">
-            {confirming ? (
-              <>
-                <button type="button" className="btn" onClick={() => setConfirming(false)}>
-                  Cancel
-                </button>
-                <button type="button" className="btn danger" onClick={confirmDisconnect}>
-                  Disconnect Vercel and delete its token
-                </button>
-              </>
-            ) : (
-              <button type="button" className="btn" onClick={() => setConfirming(true)}>
-                Disconnect
-              </button>
-            )}
+            <InlineConfirm
+              label="Disconnect"
+              message="Disconnect Vercel and delete its token?"
+              confirmLabel="Disconnect"
+              onConfirm={confirmDisconnect}
+            />
           </div>
         )}
       </div>

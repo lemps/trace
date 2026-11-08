@@ -40,10 +40,6 @@
   font-size: var(--text-meta);
   color: var(--fg-3);
 }
-.sp-row-ask {
-  font-size: var(--text-ui);
-  color: var(--fg-1);
-}
 .sp-empty {
   padding: 20px 12px;
   border: 1px dashed var(--border);

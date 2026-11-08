@@ -132,9 +132,10 @@
   font-size: var(--text-ui);
   color: var(--fg-1);
 }
-.pl-confirm span {
+/* Removing from the actions menu asks here, in a band: `ConfirmPrompt` fills it. */
+.pl-confirm .inline-confirm,
+.pl-confirm .inline-confirm-msg {
   flex: 1;
-  min-width: 0;
 }
 .pl-body {
   flex: 1;
