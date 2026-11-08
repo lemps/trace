@@ -7,7 +7,7 @@
   container: detail-top / inline-size;
 }
 /* The actions keep their width; the title beside them gives way. */
-.detail-top .right {
+.detail-top > .right {
   flex-shrink: 0;
 }
 

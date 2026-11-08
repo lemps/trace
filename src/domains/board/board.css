@@ -27,7 +27,7 @@
 .board-header .desc .needs-you {
   color: var(--state-needs-fg);
 }
-.board-header .right {
+.board-header > .right {
   margin-left: auto;
   display: flex;
   align-items: center;
