@@ -47,7 +47,7 @@
   min-width: 0;
 }
 .sched-row-title {
-  font-size: 14px;
+  font-size: calc(var(--text-body) + 0.5px);
   font-weight: 600;
   color: var(--fg-0);
   letter-spacing: -0.01em;
@@ -57,7 +57,7 @@
 }
 .sched-row-sub {
   margin-top: 2px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -71,7 +71,7 @@
   flex-shrink: 0;
 }
 .sched-row-col .k {
-  font-size: 10.5px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--fg-3);
@@ -81,7 +81,7 @@
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-1);
 }
 .sched-row-col .ago {
@@ -101,7 +101,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 .run-dot {
@@ -141,7 +141,7 @@
   border-radius: var(--radius-sm);
   color: var(--fg-0);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   line-height: 1.5;
   resize: vertical;
 }
@@ -152,12 +152,12 @@
 .sched-mono,
 .sched-cron {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
 }
 .field-note code,
 .sched-modal code {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-2);
 }
 .sched-form-row {
@@ -174,7 +174,7 @@
 .sched-form-error {
   margin-right: auto;
   align-self: center;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--c-danger);
 }
 
@@ -190,7 +190,7 @@
 .sched-kind {
   padding: 4px 10px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
 }
 .sched-kind:hover {
@@ -208,7 +208,7 @@
   margin-top: 4px;
 }
 .sched-word {
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-2);
 }
 .sched-num {
@@ -226,10 +226,10 @@
 }
 .sched-day {
   width: 32px;
-  height: 30px;
+  height: var(--control-h);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .sched-day:hover {
@@ -244,7 +244,7 @@
 .sched-preview {
   min-height: 16px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .sched-preview.error {
@@ -257,7 +257,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
   margin-right: 4px;
 }
@@ -279,7 +279,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 14px 8px;
-  font-size: 10.5px;
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -346,12 +346,12 @@
 .sched-run-top .when {
   margin-left: auto;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-2);
 }
 .sched-run-meta {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 
@@ -378,12 +378,12 @@
 }
 .sched-viewer-facts {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .sched-viewer-note {
   padding: 8px 16px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--c-warn);
   border-bottom: 1px solid var(--border-faint);
   flex-shrink: 0;
@@ -407,7 +407,7 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
 }
 .sched-view:hover {
@@ -430,7 +430,7 @@
 }
 .sched-log-loading {
   padding: 16px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-3);
 }
 .sched-log-toggle {
@@ -438,7 +438,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
@@ -455,7 +455,7 @@
 }
 .sched-log-when {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 .sched-log-body {
@@ -467,7 +467,7 @@
   display: block;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   line-height: 1.5;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
@@ -483,7 +483,7 @@
   display: flex;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;

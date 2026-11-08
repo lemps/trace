@@ -17,13 +17,13 @@
 .answer-text {
   flex: 1;
   min-width: 200px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-1);
 }
 /* The Esc hint on a detail's back button. */
 .detail-top .back .kbd,
 .back .kbd {
   margin-left: 4px;
-  font-size: 9.5px;
+  font-size: calc(var(--text-label) - 1px);
   padding: 0 4px;
 }

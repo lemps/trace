@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   color: var(--fg-2);
 }
 .topbar .crumbs .sep {
@@ -40,14 +40,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
+  height: var(--control-h);
   padding: 0 10px;
   background: var(--bg-2);
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
   color: var(--fg-3);
   width: 280px;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   position: relative;
 }
 /* Results dropdown, anchored under the search box. */
@@ -66,7 +66,7 @@
   z-index: 100;
 }
 .sr-group {
-  font-size: 10px;
+  font-size: calc(var(--text-label) - 0.5px);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--fg-3);
@@ -81,7 +81,7 @@
   text-align: left;
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-1);
 }
 .sr-row.active {
@@ -95,7 +95,7 @@
   margin-left: auto;
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: calc(var(--text-label) - 0.5px);
   color: var(--fg-3);
   padding: 0 5px;
   border: 1px solid var(--border);
@@ -104,7 +104,7 @@
 .sr-chip {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
   padding: 0 5px;
   border: 1px solid var(--border-faint);
@@ -122,7 +122,7 @@
 .sr-sub {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   font-family: var(--font-mono);
   color: var(--fg-3);
   white-space: nowrap;
@@ -132,7 +132,7 @@
 .sr-empty {
   padding: 14px;
   text-align: center;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-3);
 }
 .topbar .search:focus-within {
@@ -157,7 +157,7 @@
 .topbar .search kbd {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -252,7 +252,7 @@
   box-sizing: border-box;
   box-shadow: none;
   color: var(--on-needs);
-  font-size: 9.5px;
+  font-size: calc(var(--text-label) - 1px);
   font-weight: 600;
   line-height: 15px;
   text-align: center;
@@ -264,7 +264,7 @@
   background: linear-gradient(135deg, var(--fg-4), var(--bg-3));
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-1);
   font-weight: 600;
   margin-top: 12px;
@@ -302,7 +302,7 @@
   background: var(--bg-elev);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-pop);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-1);
   animation: toast-in 0.18s ease;
 }

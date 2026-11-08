@@ -58,8 +58,8 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
   margin-right: 4px;
   border-radius: var(--radius-sm);
   color: var(--fg-3);

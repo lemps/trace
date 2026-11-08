@@ -44,7 +44,7 @@
   border-right: 1px solid var(--border-faint);
 }
 .assignee-filter .af-all {
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   padding: 3px 9px;
   border-radius: 999px;
@@ -95,7 +95,7 @@
 .seg button {
   height: var(--control-h-sm);
   padding: 0 9px;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
 }
 .seg button:hover {
@@ -113,7 +113,7 @@
   padding: 0 10px;
   border: 1px solid var(--border-faint);
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-2);
   background: var(--bg-1);
 }
@@ -136,7 +136,7 @@
   padding: 0 20px 12px;
 }
 .type-filter .tf-label {
-  font-size: 10.5px;
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -147,7 +147,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
   padding: 3px 9px;
   border-radius: 999px;
@@ -175,7 +175,7 @@
 }
 .type-filter .tf-count {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 .type-filter .tf-chip.active .tf-count {
@@ -216,7 +216,7 @@
   border-radius: 50%;
 }
 .col-name {
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -224,7 +224,7 @@
 }
 .col-count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   margin-left: 2px;
 }
@@ -260,7 +260,7 @@
   flex: 1;
 }
 .zone-label {
-  font-size: 9.5px;
+  font-size: calc(var(--text-label) - 1px);
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -294,7 +294,7 @@
   border-radius: var(--radius);
   padding: 20px 12px;
   color: var(--fg-3);
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   text-align: center;
 }
 
@@ -316,7 +316,7 @@
   border-radius: var(--radius-sm);
   background: var(--bg-1);
   color: var(--fg-3);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
 }
 .repo-pick-row:hover {
   border-color: var(--border-strong);
@@ -330,7 +330,7 @@
   flex: 1;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
