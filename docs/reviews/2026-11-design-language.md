@@ -2,7 +2,7 @@
 
 This review is about how trace *looks and behaves*: its philosophy, buttons, icons, and where a symbol should replace a word.
 
-Follows [`2026-11-ui-review.md`](2026-11-ui-review.md). Status: **proposed**. Batches J–N haven't started.
+Follows [`2026-11-ui-review.md`](2026-11-ui-review.md). Status: **shipped** as #73–#78 (batches J–N). See [Status](#status) for what each PR covered and what's still open.
 
 **Sources:** three research sessions.
 - **R1** audited all 341 controls in trace's code.
@@ -10,6 +10,31 @@ Follows [`2026-11-ui-review.md`](2026-11-ui-review.md). Status: **proposed**. Ba
 - **R3** read the public guidelines and help docs for IntelliJ, Slack and Discord.
 
 Every claim about another app is cited in the source reports. Inferences are marked there.
+
+---
+
+## Status
+
+**Shipped**
+
+| Batch | What | PR |
+|---|---|---|
+| **J: Glyph system** | §4's glyphs added, `Dot3` / `Forward` / `SidebarLeft` / `PR` pruned, one meaning each (Trash, Stop, Play, GitMerge, RotateCcw, ArchiveRestore, Layers, Download). The icon scale 12 / 14 / 16 with stroke compensation (`iconScale.ts`). `.btn.icon.sm` / `.xs`, with the bespoke small buttons migrated. `IconButton`, which names the 11 unnamed buttons. `Icon.tsx` split by family. | #73 |
+| **K: Symbols over words** | §3's table. The composer's Send / Queue / Stop slot beside the #72 pickers. The round "Jump to latest" pill. Header Stop and Raise PR fold to icons when narrow (a container query), with Raise PR after Start/Stop. Busy verbs in reserved width (`BusyLabel`). `SessionHeader` extracted. | #74 |
+| **M: Consistency and rules** | One primary per screen. `.detail-tabs` for every page tab bar; Inbox filters as `.filter-chip`. `InlineConfirm` / `ConfirmPrompt` for every destructive confirm. Edit and Reset order as icon buttons. `.btn.empty-action`. Raw radii to tokens (new `--radius-xs`). §2 and §4 written into the `trace-ui` skill. | #75, #77 |
+| **L: Interaction model** | The message hover bar (Copy, Edit in composer, time) with its reveal recipe, and its right-click menu. Right-click full lists on session rows, board cards and chat tabs. Shortcut tooltips on pane and chat tabs. Pane chrome on hover, always shown on the focused pane. Tab ×s that keep their slot. The chevron `+3` overflow. | #76 |
+| **N: Density and unread** | The compact chat layout. A bold "new since you looked" session title (rows and the rail flyout). The dashed "No recent update" light for a Working agent that's been silent for 10 minutes. | #78 |
+
+**Open**
+
+| Item | Why it's open |
+|---|---|
+| An unseen finished turn still shows amber "Turn finished" as well as bold | Rule 10 says amber is for Needs you only. Changing it affects the Inbox, rail and Dock badges and the buddy's mood, so it's a product decision. |
+| Rail buttons naming their shortcut (§5.3) | No rail page has a shortcut yet; Keyboard shortcuts already names its own. |
+| Rewind and Fork on messages (§5.1) | Needs backend support. |
+| Single keys on a focused item (§2 rule 6) | Planned as a later step. |
+| Edit in composer carries text only | The composer-fill mechanism has no attachments. |
+| `schedules/schedules.css` is 502 lines | Over the cap since before this review; still needs a split. |
 
 ---
 
@@ -33,7 +58,7 @@ All five apps share the stance trace already wrote down: *content first, quiet c
 
 ---
 
-## 2. trace's design principles (proposed for the `trace-ui` skill)
+## 2. trace's design principles (now in the `trace-ui` skill)
 
 Rules 1–3 are new. Rules 4–10 sharpen what exists, or write down what trace already does but never stated.
 

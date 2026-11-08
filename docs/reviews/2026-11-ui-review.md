@@ -37,7 +37,7 @@ The agreed batches shipped as #58–#68. Their manual test checklist was kept in
 | §8 Conductor | Custom prompts imported as saved prompts; archived notes as Plan documents; extra chats as companion agents |
 | Upkeep | `schedules.css` is 502 lines and needs a split; `composer.css` (374) and `markdown.css` (358) are near the cap; `.status-pill` and `.add-agent-btn` are off the three heights; `.key-btn` uses amber |
 
-The design-language follow-up (buttons, icons, symbols over words) is in [`2026-11-design-language.md`](2026-11-design-language.md).
+The design-language follow-up (buttons, icons, symbols over words) is in [`2026-11-design-language.md`](2026-11-design-language.md). It shipped as #73–#78.
 
 ---
 
