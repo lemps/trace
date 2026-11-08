@@ -18,7 +18,7 @@ use crate::helpers::persist::{self, Style};
 mod tests;
 
 /// Longest `/name`; long enough for `review-security`, short enough for the menu.
-const MAX_NAME: usize = 40;
+pub const MAX_NAME: usize = 40;
 const MAX_TITLE: usize = 120;
 /// A guard against a runaway paste, not a limit anyone should meet.
 const MAX_BODY: usize = 50_000;
@@ -213,6 +213,31 @@ pub fn save_at(path: &Path, draft: &PromptDraft) -> Result<SavedPrompt, String> 
     })?
 }
 
+/// Add several new prompts at `path` in one write under its lock, each checked as
+/// [`save_at`] checks one. It only ever adds: a draft with an `id` is refused rather
+/// than replacing that prompt, as is a name already taken. One that fails doesn't stop
+/// the rest; the result has one entry per draft, in order.
+pub fn add_all_at(
+    path: &Path,
+    drafts: &[PromptDraft],
+) -> Result<Vec<Result<SavedPrompt, String>>, String> {
+    let now = now_ms();
+    let init = || SavedPromptsFile {
+        prompts: builtins(now),
+    };
+    persist::update_or(path, Style::Pretty, init, |file: &mut SavedPromptsFile| {
+        drafts
+            .iter()
+            .map(|draft| {
+                if draft.id.is_some() {
+                    return Err("Only new prompts can be added here.".to_string());
+                }
+                apply_save(&mut file.prompts, draft, crate::helpers::new_id, now)
+            })
+            .collect()
+    })
+}
+
 /// Remove one prompt at `path`. One that's already gone is fine.
 pub fn delete_at(path: &Path, id: &str) -> Result<(), String> {
     let now = now_ms();
@@ -232,6 +257,11 @@ pub fn list() -> Result<Vec<SavedPrompt>, String> {
 /// Save one prompt in the app config dir.
 pub fn save(draft: &PromptDraft) -> Result<SavedPrompt, String> {
     save_at(&prompts_file(), draft)
+}
+
+/// Add several new prompts in the app config dir; see [`add_all_at`].
+pub fn add_all(drafts: &[PromptDraft]) -> Result<Vec<Result<SavedPrompt, String>>, String> {
+    add_all_at(&prompts_file(), drafts)
 }
 
 /// Delete one prompt from the app config dir.

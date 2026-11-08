@@ -52,16 +52,45 @@ export interface ConductorDefaults {
   editorUnknown: string | null;
 }
 
+export type ConductorPromptKind =
+  | "general"
+  | "createPr"
+  | "codeReview"
+  | "fixErrors"
+  | "mergeConflicts"
+  | "renameBranch";
+
+/** One of Conductor's custom prompts (or one text several repos share), as a saved prompt. */
+export interface ConductorPrompt {
+  /** What the selection hands back. */
+  key: string;
+  kind: ConductorPromptKind;
+  /** The proposed `/name`, unique among trace's prompts and this import's. */
+  name: string;
+  title: string;
+  body: string;
+  /** The repos that had this text, by name. */
+  repos: string[];
+  /** The name it would have had, when that was taken and a suffix was added. */
+  takenName: string | null;
+  /** The saved prompt that already has exactly this text: nothing to import. */
+  existing: string | null;
+}
+
 export interface ConductorPreview {
   repos: ConductorRepo[];
   workspaces: ConductorWorkspace[];
   defaults: ConductorDefaults;
+  prompts: ConductorPrompt[];
+  /** The `/name`s trace's saved prompts already use. */
+  savedPromptNames: string[];
 }
 
-/** What the user ticked, by Conductor id, with any setup they edited. */
+/** What the user ticked, by Conductor id or key, with any setup or name they edited. */
 export interface ConductorSelection {
   repos: { id: string; setup: SetupConfig | null }[];
   workspaces: string[];
+  prompts: { key: string; name: string | null }[];
 }
 
 export interface ConductorReportItem {

@@ -12,6 +12,11 @@ pub struct Preview {
     /// Live and archived; the renderer leaves archived ones unticked.
     pub workspaces: Vec<WorkspacePreview>,
     pub defaults: Defaults,
+    /// Conductor's custom prompts, as saved prompts trace could add.
+    pub prompts: Vec<PromptPreview>,
+    /// The `/name`s trace's saved prompts already use, so the renderer can flag
+    /// an edited name that's taken before importing.
+    pub saved_prompt_names: Vec<String>,
 }
 
 /// One Conductor repo and its setup, translated.
@@ -86,6 +91,27 @@ pub struct Defaults {
     pub editor_unknown: Option<String>,
 }
 
+/// One of Conductor's custom prompts (or one text several repos share), as the
+/// saved prompt it would become.
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptPreview {
+    /// `<kind>:<first repo's id>`; what `apply` is given back.
+    pub key: String,
+    /// "general" | "createPr" | "codeReview" | "fixErrors" | "mergeConflicts" | "renameBranch".
+    pub kind: String,
+    /// The proposed `/name`: unique among trace's prompts and this import's.
+    pub name: String,
+    pub title: String,
+    pub body: String,
+    /// The repos (by name) that had this text, in Conductor's order.
+    pub repos: Vec<String>,
+    /// The name it would have had, when that was taken and a suffix was added.
+    pub taken_name: Option<String>,
+    /// The saved prompt that already has exactly this text: nothing to import.
+    pub existing: Option<String>,
+}
+
 /// What the user ticked, by Conductor id, with any setup they edited.
 #[derive(Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -94,6 +120,17 @@ pub struct Selection {
     pub repos: Vec<RepoChoice>,
     #[serde(default)]
     pub workspaces: Vec<String>,
+    #[serde(default)]
+    pub prompts: Vec<PromptChoice>,
+}
+
+/// A prompt to import, by key, with the name the user gave it (if edited).
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptChoice {
+    pub key: String,
+    #[serde(default)]
+    pub name: Option<String>,
 }
 
 /// A repo to import, and the setup to give it (as edited in the preview).
