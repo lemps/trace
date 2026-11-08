@@ -27,11 +27,13 @@ export function useQueueFlush(workspaceId: string, busy: boolean): void {
     if (state.sending[workspaceId] || head?.id !== next.id) return;
     state.removeQueued(workspaceId, head.id);
     state.setSending(workspaceId, true);
-    void actions.send(workspaceId, { text: head.text, attachments: [] }).catch((e) => {
-      // Back at the front, held until the agent is heard from again (no retry loop).
-      useAgentChatStore.getState().requeue(workspaceId, head);
-      toast.error(`Couldn't send the queued message (it's still queued): ${String(e)}`);
-    });
+    void actions
+      .send(workspaceId, { text: head.text, attachments: head.attachments })
+      .catch((e) => {
+        // Back at the front, held until the agent is heard from again (no retry loop).
+        useAgentChatStore.getState().requeue(workspaceId, head);
+        toast.error(`Couldn't send the queued message (it's still queued): ${String(e)}`);
+      });
   }, [busy, sending, paused, next, workspaceId, actions]);
 
   // Fallback: an agent that never reports busy shouldn't strand the queue.

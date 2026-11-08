@@ -38,6 +38,16 @@ export function sendChatMessage(workspaceId: string, message: UserMessage): Prom
   return invoke("send_chat_message", { workspaceId, message });
 }
 
+/**
+ * Save a file pasted or dropped into the composer (it has bytes but no path) and
+ * return the path to attach. The bytes go as the raw request body, not JSON.
+ */
+export function saveChatAttachment(name: string, bytes: Uint8Array): Promise<string> {
+  // Header values must be ASCII; the backend cleans the name again anyway.
+  const safe = name.replace(/[^A-Za-z0-9._-]/g, "-");
+  return invoke("save_chat_attachment", bytes, { headers: { "x-file-name": safe } });
+}
+
 /** Resolve an approval or question row by its `requestId`. */
 export function answerChatPrompt(
   workspaceId: string,
