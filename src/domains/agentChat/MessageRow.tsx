@@ -15,7 +15,7 @@ export function MessageRow({ message }: { message: Message }) {
     case "user":
       return (
         <div className="ac-msg mine">
-          <PromptBubble>
+          <PromptBubble attachments={message.attachments}>
             <ChatMarkdown text={message.text} />
           </PromptBubble>
           <MessageActions text={message.text} />

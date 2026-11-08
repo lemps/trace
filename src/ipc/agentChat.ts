@@ -48,6 +48,19 @@ export function saveChatAttachment(name: string, bytes: Uint8Array): Promise<str
   return invoke("save_chat_attachment", bytes, { headers: { "x-file-name": safe } });
 }
 
+/**
+ * An attached picture as a `data:` URL (the webview can't load local paths).
+ * Rejects with `{ kind: "notImage" | "tooBig" | "missing" }`; read it with
+ * `previewErrorKind` (agentChat/attachmentFiles.ts).
+ */
+export async function attachmentPreview(path: string): Promise<string> {
+  const raw: unknown = await invoke("attachment_preview", { path });
+  if (typeof raw !== "string" || !raw.startsWith("data:image/")) {
+    throw new Error("Not a picture preview.");
+  }
+  return raw;
+}
+
 /** Resolve an approval or question row by its `requestId`. */
 export function answerChatPrompt(
   workspaceId: string,

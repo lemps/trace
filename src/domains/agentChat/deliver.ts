@@ -64,7 +64,8 @@ export async function chatTail(workspaceId: string, max: number): Promise<string
     const b = row.body;
     if (b.kind === "message" && b.role !== "reasoning") {
       const who = b.role === "user" ? "You" : b.role === "assistant" ? "Agent" : "Note";
-      lines.push(`${who}: ${b.text}`);
+      const files = b.attachments?.length ? ` [Attached: ${b.attachments.join(", ")}]` : "";
+      lines.push(`${who}: ${b.text}${files}`);
     } else if (b.kind === "tool") {
       const line = summarizeTool(b.name, b.input);
       lines.push(`  · ${line.label} ${line.target} (${b.state})`);
