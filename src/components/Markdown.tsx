@@ -3,12 +3,14 @@ import { Fragment, type MouseEvent, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeBlock } from "./markdown/CodeBlock";
+import { CopyableTable } from "./markdown/CopyableTable";
 import { fenceLanguage, type HastNode, textOfNode } from "./markdown/highlight";
 import { splitInsights } from "./markdown/insight";
 
 // The one Markdown renderer: react-markdown + remark-gfm, so GitHub-Flavored
 // extensions — tables, task lists, strikethrough, autolinks — render the way
-// GitHub shows them, and fenced code is highlighted (markdown/CodeBlock).
+// GitHub shows them, fenced code is highlighted (markdown/CodeBlock), and a
+// table has a copy control for docs and spreadsheets (markdown/CopyableTable).
 // Raw HTML is NOT enabled (no rehype-raw), so there is no HTML injection
 // surface; output is plain semantic elements styled by the `.md` scope in
 // styles/markdown.css. `prose` adds the Chat & transcript settings (agent
@@ -47,6 +49,7 @@ function FencedCode({ node }: { node?: HastNode }) {
 export const MARKDOWN_COMPONENTS: Components = {
   a: ({ href, children }) => <ExternalLink href={href}>{children}</ExternalLink>,
   pre: ({ node }) => <FencedCode node={node} />,
+  table: ({ node, children }) => <CopyableTable node={node}>{children}</CopyableTable>,
 };
 
 /** For text inside a button, where a link would be a control inside a control. */
