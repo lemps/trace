@@ -6,10 +6,12 @@
 
 <p align="center">
   <strong>A Kanban board for running Claude Code agents in parallel.</strong><br />
-  Start an agent from any issue and follow it from first prompt to pull request.
+  Start an agent from any issue and follow it from first prompt to pull request.<br />
+  <a href="https://noble1911.github.io/trace/">See it in action on the website →</a>
 </p>
 
 <p align="center">
+  <a href="https://noble1911.github.io/trace/"><img src="https://img.shields.io/badge/website-noble1911.github.io%2Ftrace-blue" alt="Website: noble1911.github.io/trace" /></a>
   <a href="https://github.com/noble1911/trace/releases/latest"><img src="https://img.shields.io/github/v/release/noble1911/trace" alt="Latest release" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platform: macOS, Windows and Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/github/license/noble1911/trace" alt="License: Apache 2.0" /></a>
