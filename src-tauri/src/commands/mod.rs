@@ -23,6 +23,7 @@ pub mod providers;
 pub mod repo_guard;
 pub mod repo_setup;
 pub mod repos;
+pub mod saved_prompts;
 pub mod schedules;
 pub mod session;
 pub mod session_agents;
