@@ -30,12 +30,17 @@ export interface Opened {
   host: string;
 }
 
-/** Where a page goes, in the window's physical pixels. */
+/**
+ * Where a page goes: its element's rect in CSS pixels, and the viewport (CSS pixels)
+ * it was measured in, from which the backend works out the window's pixels.
+ */
 export interface Bounds {
   x: number;
   y: number;
   width: number;
   height: number;
+  viewWidth: number;
+  viewHeight: number;
 }
 
 export type BrowserAction = "back" | "forward" | "reload" | "stop";

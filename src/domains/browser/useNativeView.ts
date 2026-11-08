@@ -9,7 +9,8 @@ import { type Bounds, browserHide, browserShow } from "@/ipc/browser";
 //
 // The element is measured every frame (a rect read, a few overlay checks) rather than
 // observed, because panes move it without resizing it: a split, a drag, a side panel
-// sliding in, a scroll. Only a change is sent, one call in flight at a time.
+// sliding in, a scroll. Only a change is sent, one call in flight at a time, in CSS
+// pixels: the backend maps them onto the window (`browser::webview::Bounds`).
 
 /** What can sit over a pane. Toasts are left out: they'd blank the page for seconds. */
 const OVERLAYS = '[role="menu"], [role="dialog"], [role="listbox"], .modal-backdrop, .pn-drop';
@@ -29,20 +30,22 @@ function covered(el: HTMLElement, r: DOMRect): boolean {
   return hit !== null && !el.contains(hit);
 }
 
-/** Where `el` is in the window's physical pixels, or null if it can't be seen. */
+/**
+ * Where `el` is, in CSS pixels with the viewport they're measured in, or null if it
+ * can't be seen. The backend turns them into the window's pixels by measuring the
+ * webview: `devicePixelRatio` misses trace's own zoom on macOS.
+ */
 function placement(el: HTMLElement): Bounds | null {
   if (!el.isConnected || document.visibilityState !== "visible") return null;
   const r = el.getBoundingClientRect();
   if (r.width < 4 || r.height < 4 || covered(el, r)) return null;
-  // CSS pixels × devicePixelRatio: the screen's scaling and trace's own zoom both.
-  const dpr = window.devicePixelRatio || 1;
-  const x = Math.round(r.left * dpr);
-  const y = Math.round(r.top * dpr);
   return {
-    x,
-    y,
-    width: Math.round(r.right * dpr) - x,
-    height: Math.round(r.bottom * dpr) - y,
+    x: r.left,
+    y: r.top,
+    width: r.width,
+    height: r.height,
+    viewWidth: window.innerWidth,
+    viewHeight: window.innerHeight,
   };
 }
 
@@ -58,7 +61,15 @@ function inOrder(pageId: string, run: () => Promise<void>): Promise<void> {
   return next;
 }
 
-const key = (b: Bounds | null) => (b ? `${b.x},${b.y},${b.width},${b.height}` : "hidden");
+const key = (b: Bounds | null) =>
+  b ? `${b.x},${b.y},${b.width},${b.height},${b.viewWidth},${b.viewHeight}` : "hidden";
+
+/**
+ * After the window stops resizing, place the page again even if its rect reads the
+ * same: the window's native views settle after the DOM does, so the last placement
+ * made mid-resize can be measured against a webview size that has since changed.
+ */
+const SETTLE_MS = 250;
 
 /** After a failed show, the first retry's wait; it doubles each time, up to the cap. */
 const RETRY_FIRST_MS = 250;
@@ -127,8 +138,18 @@ export function useNativeView(
       flush();
     };
     frame = requestAnimationFrame(tick);
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const onResize = () => {
+      clearTimeout(settle);
+      settle = setTimeout(() => {
+        sent = "";
+      }, SETTLE_MS);
+    };
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(frame);
+      clearTimeout(settle);
+      window.removeEventListener("resize", onResize);
       dead = true;
       if (!busy) void inOrder(pageId, () => browserHide(ws, pageId)).catch(() => {});
     };
