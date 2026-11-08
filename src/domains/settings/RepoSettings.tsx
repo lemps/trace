@@ -16,6 +16,7 @@ import {
   setRepoMappings,
 } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
+import { ConductorImport } from "./ConductorImport";
 import { REPO_ACCOUNT_HINT } from "./RepoAccountSelect";
 import { RepoRow } from "./RepoRow";
 
@@ -133,6 +134,12 @@ export function RepoSettings() {
         <button type="button" className="btn" onClick={() => setBrowsing(true)}>
           <I.Download size={13} /> Clone from GitHub
         </button>
+        <ConductorImport
+          onImported={() => {
+            void listRepos().then(setRepos);
+            loadDetails();
+          }}
+        />
         {message && <span style={{ fontSize: 12.5, color: "var(--c-danger)" }}>{message}</span>}
       </div>
       {repos.length === 0 && (
