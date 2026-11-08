@@ -16,6 +16,7 @@
 
 mod agents;
 mod items;
+mod options;
 mod requests;
 mod session;
 mod turn;
@@ -79,6 +80,8 @@ pub struct Translator {
     threads: HashMap<String, String>,
     /// The spawn call whose sub-agent the frame being read comes from.
     parent: Option<String>,
+    /// The workspace's options, sent with every `turn/start` (`options`).
+    overrides: options::TurnOverrides,
 }
 
 struct OpenTurn {
@@ -135,6 +138,7 @@ impl Translator {
             spawns: HashMap::new(),
             threads: HashMap::new(),
             parent: None,
+            overrides: options::TurnOverrides::default(),
         }
     }
 
@@ -266,6 +270,7 @@ impl Translator {
             i.conversation_id = thread.or(i.conversation_id.take());
             i.model = model.or(i.model.take());
         });
+        self.thread_settings(result, out);
         self.pump(out);
     }
 

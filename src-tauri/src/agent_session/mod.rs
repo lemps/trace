@@ -13,12 +13,14 @@
 //! - `transport`: whether each workspace runs as a chat or in the terminal.
 //! - `claude`, `codex`: the adapters; `brands` picks one by its CLI.
 //! - `attachments`: files sent with a message (pasted ones saved to disk first).
+//! - `options`: each workspace's model, effort and permission mode.
 
 pub mod attachments;
 pub mod brands;
 pub mod claude;
 pub mod codex;
 pub mod journal;
+pub mod options;
 pub mod process;
 pub mod registry;
 pub mod runtime;
@@ -32,6 +34,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use journal::{Answer, JournalRow};
+use options::AgentOptions;
 
 /// What a chat agent is started with. Brand-neutral; an adapter maps it to flags.
 #[derive(Clone, Debug)]
@@ -48,6 +51,9 @@ pub struct LaunchSpec {
     /// The `seq` the adapter's first new row takes, continuing the journal: only
     /// the runtime has read it, and rows must keep their order across restarts.
     pub next_seq: u64,
+    /// The workspace's picked effort and permission mode (its model is
+    /// `model`, already resolved against the provider).
+    pub options: AgentOptions,
 }
 
 /// A user turn.
@@ -85,6 +91,17 @@ pub struct SessionInfo {
     /// has reported it. Subagents' calls never move it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub context: Option<ContextUsage>,
+    /// The reasoning effort in effect, when known (Claude Code's names; Codex's
+    /// own for Codex). None: the CLI's default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effort: Option<String>,
+    /// The permission mode in effect (Claude Code's names), when known.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permission_mode: Option<String>,
+    /// The third-party provider behind the agent, which pins its model. None
+    /// for Anthropic.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
 }
 
 impl SessionInfo {
@@ -140,6 +157,12 @@ pub trait AgentAdapter: Send {
     /// Stop one subagent, named by the call that started it.
     fn stop_subagent(&mut self, _call_id: &str) -> Result<(), String> {
         Err("This agent can't stop one subagent on its own.".to_string())
+    }
+    /// Apply picked options (`options::pick`): only the fields set. True when
+    /// the agent takes them without a restart; false when they wait for its
+    /// next start.
+    fn set_options(&mut self, _changes: &AgentOptions) -> Result<bool, String> {
+        Ok(false)
     }
     /// End the agent.
     fn stop(&mut self);

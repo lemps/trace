@@ -53,7 +53,9 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       transport's composer has `/` commands and attachments (picked, pasted or dropped; pictures
       go as images, other files by path: `agent_session/attachments.rs`), drafts kept per
       workspace, and saved prompts run as `/name` (Settings → Agents;
-      [#62](https://github.com/noble1911/trace/pull/62)). Not yet: `@` mentions, model/effort pills.
+      [#62](https://github.com/noble1911/trace/pull/62)), and model, effort and permission-mode
+      pickers kept per workspace, switched live where the CLI allows (`agent_session::options`).
+      Not yet: `@` mentions; the pickers for terminal agents.
 - [~] **Question cards in the transcript:** answer `AskUserQuestion` and permission prompts inline.
       The Inbox has these today, but a chat view doesn't. *Started:* the chat transport
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and

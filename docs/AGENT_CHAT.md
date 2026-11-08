@@ -187,6 +187,25 @@ is only offered while the agent is idle (not mid-turn, nothing
 waiting on an answer). The chat journal covers only what ran as a chat; turns taken in the
 terminal aren't replayed into it.
 
+## Model, effort and permission mode
+
+The composer's pickers (`agentChat/AgentOptionPickers`) set a workspace's options
+(`agent_session::options`, kept in `agent-options.json`; `set_agent_option`). Every start
+honours them: Claude gets `--model`, `--effort` and `--permission-mode`, and Settings' flags they
+replace (`--model`, `--effort`, `--permission-mode`, `--dangerously-skip-permissions`) are dropped;
+a provider still pins its model. A running agent gets the change at once where its CLI allows:
+
+| | Model | Effort | Mode |
+| --- | --- | --- | --- |
+| Claude (2.1.319, probed) | `set_model` control request (answers the resolved id) | `apply_flag_settings` `{effortLevel}` | `set_permission_mode` (answered, plus a `system` `status`) |
+| Codex (app-server) | `turn/start` `model` | `turn/start` `effort` (`max` → `xhigh`) | `turn/start` `approvalPolicy` + `sandboxPolicy`; no plan mode |
+
+Claude refuses `bypassPermissions` unless it started with `--allow-dangerously-skip-permissions`,
+so a local chat Claude always gets that flag (it bypasses nothing by itself). Codex's overrides go
+with the next message and every one after. `SessionInfo` carries `effort`, `permissionMode` and
+`provider`: Claude's from its answers, `init` and `status`; Codex's from `thread/start` and the
+overrides. A stopped agent's pickers show what its next start uses.
+
 ## The Codex adapter, as built
 
 `agent_session::codex`, built against codex-cli 0.147.0 (`codex app-server generate-ts
