@@ -1,21 +1,32 @@
 import { Fragment } from "react";
 import { navTracker } from "@/app/nav";
+import { Segmented } from "@/components/Segmented";
 import { useIssuesStore } from "@/domains/issues/store";
 import { sidebarItem } from "@/domains/sidebar/items";
 import { isDefaultSidebar } from "@/domains/sidebar/prefs";
+import { RECENTS_DELAYS } from "@/domains/sidebar/recentsDelay";
 import { useSidebarStore } from "@/domains/sidebar/store";
 import { useHint } from "@/platform/shortcuts";
+import { SettingRow } from "./SettingRow";
 import { SidebarRow } from "./SidebarRow";
 import { useSidebarDrag } from "./useSidebarDrag";
 
+const DELAY_OPTIONS = RECENTS_DELAYS.map((ms) => ({
+  value: ms,
+  label: ms === 0 ? "Instant" : `${ms / 1000}s`,
+}));
+
 // Settings → Sidebar: every page the rail can show, in the rail's order. Each can be
 // hidden or shown, and dragged (or moved with the buttons / Alt+↑↓) into a new place;
-// Settings itself stays, at the bottom. Changes reach the rail at once.
+// Settings itself stays, at the bottom. Changes reach the rail at once. Below the
+// list, how long resting on Sessions waits before its recent sessions slide out.
 export function SidebarSettings() {
   const entries = useSidebarStore((s) => s.entries);
   const setVisibility = useSidebarStore((s) => s.setVisibility);
   const nudge = useSidebarStore((s) => s.nudge);
   const reset = useSidebarStore((s) => s.reset);
+  const recentsDelay = useSidebarStore((s) => s.recentsDelay);
+  const setRecentsDelay = useSidebarStore((s) => s.setRecentsDelay);
   const trackers = useIssuesStore((s) => s.sessions);
   const searchKey = useHint("search");
   const movable = entries.filter((e) => !sidebarItem(e.id)?.isFixed).map((e) => e.id);
@@ -66,6 +77,17 @@ export function SidebarSettings() {
           );
         })}
       </div>
+      <SettingRow
+        label="Recent sessions delay"
+        hint="How long the pointer rests on Sessions before your recent sessions slide out."
+      >
+        <Segmented
+          label="Recent sessions delay"
+          value={recentsDelay}
+          options={DELAY_OPTIONS}
+          onChange={setRecentsDelay}
+        />
+      </SettingRow>
     </section>
   );
 }
