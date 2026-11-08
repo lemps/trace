@@ -13,6 +13,28 @@ export const SETUP_KEY = "trace.setup";
 
 export const DEFAULT_SETUP: SetupPrefs = { done: false, dismissed: "" };
 
+/** What a launch knows about how much trace has been used, for `alreadySetUp`. */
+export interface UsageFacts {
+  /** Configured repos (`repos.json`). */
+  repos: number;
+  /** Sessions, of any kind. */
+  sessions: number;
+  /** Connected issue trackers. */
+  trackers: number;
+  /** Agents the last run was cut off from (it offers them back in a modal). */
+  interrupted: number;
+}
+
+/**
+ * Whether someone with no saved setup flag has clearly used trace already (it
+ * predates the first run): then setup is marked done quietly instead of opening.
+ * Any one sign is enough. Interrupted agents count too, which also keeps the
+ * first run from opening over the modal that offers them back.
+ */
+export function alreadySetUp(facts: UsageFacts): boolean {
+  return facts.repos > 0 || facts.sessions > 0 || facts.trackers > 0 || facts.interrupted > 0;
+}
+
 /** Prefs from the stored JSON; anything unreadable counts as never set up. */
 export function parseSetup(raw: string | null): SetupPrefs {
   if (!raw) return DEFAULT_SETUP;

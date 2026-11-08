@@ -8,11 +8,13 @@ import {
   type SetupStep,
   shouldNotify,
 } from "./checks";
-import { loadSetup, type SetupPrefs, saveSetup } from "./prefs";
+import { alreadySetUp, loadSetup, type SetupPrefs, saveSetup } from "./prefs";
+import { usageFacts } from "./usage";
 
 // The first run and the preflight checks. Loaded once, written by its actions
 // (no effect pairs): `launch` decides, once per app start, between showing the
-// first run and quietly checking.
+// first run and quietly checking. Someone who used trace before the first run
+// existed (`alreadySetUp`) is marked done without seeing it.
 
 /** What's on screen: the three-step first run, the checks alone, or nothing. */
 export type SetupView = "setup" | "checks" | null;
@@ -26,7 +28,10 @@ interface SetupStore {
   checking: boolean;
   /** The check itself failed (not a failing check): the reason. */
   error: string | null;
-  /** At app start: the first run if it's never been shown, else a quiet check. */
+  /**
+   * At app start: the first run for someone new, else a quiet check that raises
+   * the notice when a required check fails.
+   */
   launch: () => void;
   /** Open the first run at its first step (Settings' "Run setup again"). */
   start: () => void;
@@ -58,20 +63,27 @@ export const useSetupStore = create<SetupStore>((set, get) => {
     launch() {
       if (launched) return;
       launched = true;
-      if (!get().prefs.done) {
-        get().start();
+      const quietCheck = async () => {
+        const checks = await get().check();
+        if (!checks || !shouldNotify(checks, get().prefs.dismissed)) return;
+        const key = problemKey(checks);
+        toast.notice(noticeText(checks), {
+          action: { label: "Details", run: () => get().showChecks() },
+          onDismiss: () => savePrefs({ dismissed: key }),
+        });
+      };
+      if (get().prefs.done) {
+        void quietCheck();
         return;
       }
-      void get()
-        .check()
-        .then((checks) => {
-          if (!checks || !shouldNotify(checks, get().prefs.dismissed)) return;
-          const key = problemKey(checks);
-          toast.notice(noticeText(checks), {
-            action: { label: "Details", run: () => get().showChecks() },
-            onDismiss: () => savePrefs({ dismissed: key }),
-          });
-        });
+      void usageFacts().then((facts) => {
+        if (!alreadySetUp(facts)) {
+          get().start();
+          return;
+        }
+        savePrefs({ done: true });
+        void quietCheck();
+      });
     },
 
     start() {

@@ -10,7 +10,7 @@ import {
   shouldNotify,
   stepBy,
 } from "./checks.ts";
-import { DEFAULT_SETUP, parseSetup } from "./prefs.ts";
+import { alreadySetUp, DEFAULT_SETUP, parseSetup, type UsageFacts } from "./prefs.ts";
 
 function check(id: string, ok: boolean, required = true): PreflightCheck {
   return { id, ok, required, title: `${id} title`, detail: "", fix: ok ? null : `fix ${id}` };
@@ -94,5 +94,20 @@ describe("parseSetup", () => {
       dismissed: "gh",
     });
     assert.deepEqual(parseSetup('{"done":"yes","dismissed":3}'), DEFAULT_SETUP);
+  });
+});
+
+describe("alreadySetUp", () => {
+  const none: UsageFacts = { repos: 0, sessions: 0, trackers: 0, interrupted: 0 };
+
+  it("is false for a new user, who gets the first run", () => {
+    assert.equal(alreadySetUp(none), false);
+  });
+
+  it("is true on any one sign of earlier use", () => {
+    assert.equal(alreadySetUp({ ...none, repos: 1 }), true);
+    assert.equal(alreadySetUp({ ...none, sessions: 3 }), true);
+    assert.equal(alreadySetUp({ ...none, trackers: 1 }), true);
+    assert.equal(alreadySetUp({ ...none, interrupted: 2 }), true, "never over the resume modal");
   });
 });
