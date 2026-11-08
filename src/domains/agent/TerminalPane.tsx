@@ -65,7 +65,7 @@ export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoSt
             </div>
             {error && <div style={{ color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>}
             <button type="button" className="btn primary" style={{ marginTop: 6 }} onClick={start}>
-              <I.Terminal size={13} /> Open terminal
+              <I.Terminal size={14} /> Open terminal
             </button>
           </div>
         </div>

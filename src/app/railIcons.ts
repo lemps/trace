@@ -10,7 +10,7 @@ export const RAIL_ICONS: Record<NavId, (p: IconProps) => JSX.Element> = {
   fleet: I.Fleet,
   sessions: I.Agents,
   scheduled: I.Clock,
-  pr: I.PR,
+  pr: I.GitPR,
   activity: I.Activity,
   integrations: I.Plug,
   settings: I.Settings,

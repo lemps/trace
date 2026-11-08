@@ -63,7 +63,7 @@ export function SchedulesView() {
                 style={{ marginTop: 6 }}
                 onClick={() => setEditing("new")}
               >
-                <I.Plus size={13} /> New scheduled prompt
+                <I.Plus size={14} /> New scheduled prompt
               </button>
             </div>
           </div>

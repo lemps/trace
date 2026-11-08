@@ -8,6 +8,7 @@ import {
 } from "react";
 import { usePersistedFlag } from "@/hooks/usePersistedFlag";
 import { I, type IconProps } from "./Icon";
+import { IconButton } from "./IconButton";
 
 // A pane's list beside what it shows (Plan's documents, Gallery's sets, Files' tree)
 // that gets out of the way: folded to a strip naming it, it slides out over the pane
@@ -136,15 +137,14 @@ export function PinButton({ pin, label }: { pin: SidebarPin; label: string }) {
     ? `Let the ${label.toLowerCase()} hide`
     : `Keep the ${label.toLowerCase()} open`;
   return (
-    <button
-      type="button"
-      className={pin.pinned ? "btn ghost icon as-pin on" : "btn ghost icon as-pin"}
-      aria-label={what}
+    <IconButton
+      size="sm"
+      className="ghost as-pin"
+      label={what}
       aria-pressed={pin.pinned}
-      title={what}
       onClick={pin.toggle}
     >
-      <I.Pin size={13} />
-    </button>
+      <I.Pin size={14} />
+    </IconButton>
   );
 }

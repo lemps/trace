@@ -73,10 +73,6 @@
   /* Two buttons' room, so a fixed row's control lines up with the rest. */
   width: calc(var(--control-h-sm) * 2 + 2px);
 }
-.sb-move .btn.icon {
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-}
 /* Not `disabled`: a disabled button drops focus, and Alt+↑ would lose its row at the top. */
 .sb-move .btn[aria-disabled="true"] {
   color: var(--fg-4);

@@ -2,6 +2,7 @@ import type { DragEvent, KeyboardEvent } from "react";
 import { navTracker } from "@/app/nav";
 import { RAIL_ICONS } from "@/app/railIcons";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { Switch } from "@/components/Switch";
 import type { ProviderKind } from "@/domains/issues/types";
 import {
@@ -111,26 +112,28 @@ export function SidebarRow(props: SidebarRowProps) {
       <span className="sb-move">
         {!def.isFixed && (
           <>
-            <button
-              type="button"
-              className="btn ghost icon"
-              aria-label={`Move ${def.label} up`}
+            <IconButton
+              size="sm"
+              className="ghost"
+              label={`Move ${def.label} up`}
               title={`Move up (${upKey})`}
+              shortcut="sidebarMoveUp"
               aria-disabled={!canUp}
               onClick={() => canUp && props.onNudge(-1)}
             >
-              <I.Chevron size={13} style={{ transform: "rotate(-90deg)" }} />
-            </button>
-            <button
-              type="button"
-              className="btn ghost icon"
-              aria-label={`Move ${def.label} down`}
+              <I.Chevron size={14} style={{ transform: "rotate(-90deg)" }} />
+            </IconButton>
+            <IconButton
+              size="sm"
+              className="ghost"
+              label={`Move ${def.label} down`}
               title={`Move down (${downKey})`}
+              shortcut="sidebarMoveDown"
               aria-disabled={!canDown}
               onClick={() => canDown && props.onNudge(1)}
             >
-              <I.Chevron size={13} style={{ transform: "rotate(90deg)" }} />
-            </button>
+              <I.Chevron size={14} style={{ transform: "rotate(90deg)" }} />
+            </IconButton>
           </>
         )}
       </span>

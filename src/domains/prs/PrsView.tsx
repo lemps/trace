@@ -108,7 +108,7 @@ export function PrsView() {
 
 const STATE_ICON: Record<Tab, (p: { size?: number }) => ReactNode> = {
   open: I.GitPR,
-  merged: I.Check,
+  merged: I.GitMerge,
   draft: I.Clock,
   closed: I.X,
 };

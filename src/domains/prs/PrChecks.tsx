@@ -25,11 +25,11 @@ function StateIcon({ state }: { state: PrCheck["state"] }) {
     case "running":
       return <span className="chk-spin" role="img" aria-label="Running" />;
     case "queued":
-      return <I.Clock size={13} />;
+      return <I.Clock size={14} />;
     case "passed":
-      return <I.Check size={13} />;
+      return <I.Check size={14} />;
     case "failed":
-      return <I.X size={13} />;
+      return <I.X size={14} />;
     default:
       return <span className="chk-dash" role="img" aria-label={state} />;
   }

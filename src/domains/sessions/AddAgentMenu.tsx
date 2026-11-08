@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { PopMenu } from "@/components/PopMenu";
 import { AGENT_OPTIONS } from "@/domains/agent/agentOptions";
 import type { AgentCli, AgentProvider } from "@/ipc/agent";
@@ -18,16 +19,16 @@ export function AddAgentMenu({ onAdd, blocked }: AddAgentMenuProps) {
       <PopMenu
         align="left"
         trigger={({ toggle }) => (
-          <button
-            type="button"
-            className="add-agent-btn"
+          <IconButton
+            size="sm"
+            className="ghost add-agent-btn"
             onClick={toggle}
             disabled={Boolean(blocked)}
             title={blocked || "Add another agent in this session's worktree"}
-            aria-label="Add an agent to this session"
+            label="Add an agent to this session"
           >
-            <I.Plus size={13} />
-          </button>
+            <I.Plus size={14} />
+          </IconButton>
         )}
         sections={[
           {

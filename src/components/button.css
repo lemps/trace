@@ -75,9 +75,28 @@
   background: color-mix(in oklch, var(--state-needs) 85%, var(--fg-0));
 }
 
-/* Square icon-only button (the ⋯ trigger); always has an aria-label. */
+/* Square icon-only button, in three tiers: 30 (headers, toolbars), 26 (`sm`: pane
+   strips, in-content toolbars), 20 (`xs`: inside rows, chips and inputs). Always
+   named — use `IconButton` (components/IconButton.tsx). Icons: 14 in md/sm, 12 in xs. */
 .btn.icon {
+  flex: none;
   width: var(--control-h);
   padding: 0;
   justify-content: center;
+}
+.btn.icon.sm {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+}
+.btn.icon.xs {
+  width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  gap: 0;
+}
+/* A toggle (`aria-pressed`), lit in the accent while on: a pinned sidebar, a list view. */
+.btn.icon[aria-pressed="true"],
+.btn.icon[aria-pressed="true"]:hover:not(:disabled) {
+  color: var(--c-accent);
+  background: var(--c-accent-bg);
+  border-color: color-mix(in oklch, var(--c-accent) 45%, transparent);
 }

@@ -249,10 +249,8 @@
 .ac-working-subs {
   color: var(--fg-3);
 }
-/* "Open beside" on a subagent card: square, beside Stop. */
+/* "Open beside" on a subagent card: `.btn.icon.sm`, beside Stop. */
 .btn.icon.ac-agent-beside {
-  width: var(--control-h-sm);
-  justify-content: center;
   color: var(--fg-2);
 }
 .btn.icon.ac-agent-beside:hover {

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { PopMenu } from "@/components/PopMenu";
 import { copyText } from "../copyText";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -31,30 +32,29 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
         </span>
       )}
       {children}
-      <button
-        type="button"
-        className="fx-tool"
+      <IconButton
+        size="sm"
+        className="ghost"
         onClick={() => copyText(path, "path")}
-        title="Copy path"
-        aria-label="Copy path"
+        label="Copy path"
       >
         <I.Copy size={14} />
-      </button>
+      </IconButton>
       <PopMenu
         align="right"
         sections={fileMenu(workspaceId, path, isGone).map((items) => ({ items }))}
         trigger={({ open, toggle }) => (
           <button
             type="button"
-            className={`fx-tool text${open ? " on" : ""}`}
+            className={`fx-tool${open ? " on" : ""}`}
             onClick={toggle}
             aria-haspopup="menu"
             aria-expanded={open}
           >
-            <I.Code size={14} />
+            <I.External size={14} />
             Open in
             <span className="fx-caret" aria-hidden="true">
-              <I.Chevron size={13} />
+              <I.Chevron size={14} />
             </span>
           </button>
         )}

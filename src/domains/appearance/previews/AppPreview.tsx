@@ -50,7 +50,7 @@ export function AppPreview() {
               Filter
             </button>
             <button type="button" className="btn primary">
-              <I.Plus size={13} /> New
+              <I.Plus size={14} /> New
             </button>
           </div>
           {ROWS.map((r, i) => (

@@ -61,7 +61,7 @@ export function SessionRunButton({
           Leave running
         </button>
         <button type="button" className="btn" onClick={stopAndSave} title={STOP_AND_SAVE}>
-          <I.Stop size={13} /> Stop &amp; save
+          <I.Stop size={14} /> Stop &amp; save
         </button>
       </>
     );
@@ -69,7 +69,7 @@ export function SessionRunButton({
   if (running) {
     return (
       <button type="button" className="btn" onClick={onStop}>
-        <I.Stop size={13} /> Stop agent
+        <I.Stop size={14} /> Stop agent
       </button>
     );
   }
@@ -81,7 +81,7 @@ export function SessionRunButton({
       onClick={onStart}
       title={remote ? START_REMOTE : undefined}
     >
-      <I.Bolt size={13} /> {remote ? "Start in sandbox" : `Start ${agentName}`}
+      <I.Play size={14} /> {remote ? "Start in sandbox" : `Start ${agentName}`}
     </button>
   );
 }

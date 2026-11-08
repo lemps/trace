@@ -2,6 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { githubDeviceCancel, githubDeviceStart, githubDeviceWait } from "@/ipc/github";
 import { useGitHubStore } from "./store";
 import type { DeviceStart } from "./types";
@@ -54,14 +55,9 @@ export function DeviceSignIn({ onCancel, onDone }: { onCancel: () => void; onDon
           </div>
           <div className="gh-device-code">
             <span className="gh-mono">{start.userCode}</span>
-            <button
-              type="button"
-              className="btn icon"
-              aria-label="Copy code"
-              onClick={() => copy(start.userCode)}
-            >
-              <I.Copy size={13} />
-            </button>
+            <IconButton label="Copy code" onClick={() => copy(start.userCode)}>
+              <I.Copy size={14} />
+            </IconButton>
           </div>
         </>
       )}

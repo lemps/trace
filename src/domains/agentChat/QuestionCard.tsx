@@ -61,7 +61,7 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
                   className={`ac-q-option${on ? " on" : ""}${q.multiSelect ? " multi" : ""}`}
                   onClick={() => pick(q, o.label)}
                 >
-                  <span className="ac-q-mark">{on && <I.Check size={11} />}</span>
+                  <span className="ac-q-mark">{on && <I.Check size={12} />}</span>
                   <span className="ac-q-label">
                     <Markdown text={o.label} prose inline components={NO_LINK_COMPONENTS} />
                   </span>
@@ -98,7 +98,7 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
           disabled={!ready || busy}
           onClick={send}
         >
-          <I.Send size={13} /> Answer
+          <I.Send size={14} /> Answer
         </button>
       </div>
     </div>

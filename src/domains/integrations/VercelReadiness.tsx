@@ -23,11 +23,11 @@ export function VercelReadiness({ vercel }: { vercel: VercelStatus | null }) {
           <li key={r.id} className={`ig-ready-row ${stateClass(r.ok)}`}>
             <span className="ig-ready-ic" role="img" aria-label={word(r.ok)}>
               {r.ok === null ? (
-                <I.Clock size={13} />
+                <I.Clock size={14} />
               ) : r.ok ? (
-                <I.Check size={13} />
+                <I.Check size={14} />
               ) : (
-                <I.X size={13} />
+                <I.X size={14} />
               )}
             </span>
             <span className="ig-ready-text">

@@ -142,7 +142,7 @@ export function TreeRow({
         <span key={i} className="fx-guide" aria-hidden="true" />
       ))}
       <span className={`fx-twisty${isOpen ? " open" : ""}`} aria-hidden="true">
-        {isDir && <I.Chevron size={13} />}
+        {isDir && <I.Chevron size={14} />}
       </span>
       <span className="fx-icon" aria-hidden="true">
         {isDir ? (

@@ -106,7 +106,7 @@ export function SessionRow(props: SessionRowProps) {
             style={{ width: depth * 16 }}
             title={`Started by “${creatorLabel(createdBy)}”, above`}
           >
-            <I.StartedBy size={11} />
+            <I.StartedBy size={12} />
           </span>
         )}
         {renaming ? (

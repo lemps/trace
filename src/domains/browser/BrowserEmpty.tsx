@@ -23,7 +23,7 @@ export function BrowserEmpty({ workspaceId }: { workspaceId: string }) {
   };
   return (
     <div className="bw-empty">
-      <I.Globe size={18} />
+      <I.Globe size={16} />
       <div className="bw-empty-title">No pages yet</div>
       <p>
         A page shows here when the agent opens one, usually the dev server it started or docs it

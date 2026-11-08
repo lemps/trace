@@ -43,7 +43,7 @@ export function SavedPromptsSettings() {
         ) : (
           <div>
             <button type="button" className="btn" onClick={() => setEditing("new")}>
-              <I.Plus size={13} /> Add a prompt
+              <I.Plus size={14} /> Add a prompt
             </button>
           </div>
         )}

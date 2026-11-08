@@ -1,5 +1,6 @@
 import { type DragEvent, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { sessionsDrag } from "./dragState";
 import { TitleEditor } from "./TitleEditor";
 import type { SessionTab } from "./types";
@@ -89,15 +90,9 @@ export function SessionTabs({
       {adding ? (
         <TitleEditor initial="" onSave={onAdd} onClose={() => setAdding(false)} />
       ) : (
-        <button
-          type="button"
-          className="tab-add"
-          onClick={() => setAdding(true)}
-          title="New tab"
-          aria-label="New tab"
-        >
-          <I.Plus size={13} />
-        </button>
+        <IconButton size="sm" className="ghost" onClick={() => setAdding(true)} label="New tab">
+          <I.Plus size={14} />
+        </IconButton>
       )}
       {activeTab &&
         (renaming ? (
@@ -108,22 +103,23 @@ export function SessionTabs({
           />
         ) : (
           <span className="tab-actions">
-            <button
-              type="button"
+            <IconButton
+              size="xs"
+              className="ghost"
               onClick={() => setRenaming(true)}
-              aria-label="Rename tab"
-              title="Rename tab"
+              label="Rename tab"
             >
               <I.Pencil size={12} />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
+              size="xs"
+              className="ghost"
               onClick={() => onDelete(activeTab.id)}
-              aria-label="Delete tab"
+              label="Delete tab"
               title="Delete tab (its sessions move to General)"
             >
-              <I.X size={12} />
-            </button>
+              <I.Trash size={12} />
+            </IconButton>
           </span>
         ))}
     </div>

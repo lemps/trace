@@ -78,7 +78,7 @@ export function PrEntryItem({ entry, flag, onSeen }: PrEntryItemProps) {
       </button>
       {entry.kind === "thread" && entry.path && (
         <div className="pr-entry-path">
-          <I.File size={11} />
+          <I.File size={12} />
           <span className="file">
             {entry.path}
             {entry.line ? `:${entry.line}` : ""}
@@ -96,7 +96,7 @@ export function PrEntryItem({ entry, flag, onSeen }: PrEntryItemProps) {
             onClick={() => setShowReplies(!showReplies)}
           >
             <span className={`pr-chev${showReplies ? " open" : ""}`}>
-              <I.Chevron size={11} />
+              <I.Chevron size={12} />
             </span>
             {entry.replies.length} {entry.replies.length === 1 ? "reply" : "replies"}
             <span className="pr-entry-when">· latest {relTime(entry.activityAt)}</span>

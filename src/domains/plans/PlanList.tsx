@@ -28,7 +28,7 @@ export function PlanList({ series, tasks, selected, onSelect }: PlanListProps) {
           onClick={() => onSelect(TASKS)}
         >
           <span className="pl-item-title">
-            <I.Check size={12} /> Task list
+            <I.ListChecks size={12} /> Task list
           </span>
           <span className="pl-item-meta">
             {done} of {items.length} done

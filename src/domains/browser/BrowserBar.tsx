@@ -17,7 +17,7 @@ interface BrowserBarProps {
 
 const NAV: { action: BrowserAction; label: string; icon: typeof I.Back }[] = [
   { action: "back", label: "Back", icon: I.Back },
-  { action: "forward", label: "Forward", icon: I.Forward },
+  { action: "forward", label: "Forward", icon: I.Chevron },
 ];
 
 // Back, forward, reload (stop while loading), the address bar (Enter goes, Esc

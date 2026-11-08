@@ -341,12 +341,7 @@
   font-size: var(--text-meta);
 }
 .toast .toast-x {
-  flex-shrink: 0;
-  color: var(--fg-4);
-  margin-top: 1px;
-}
-.toast .toast-x:hover {
-  color: var(--fg-1);
+  margin: -1px -4px 0 0;
 }
 
 .board-switcher {

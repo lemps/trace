@@ -16,7 +16,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
   return (
     <div className="ac-card ac-plan">
       <div className="ac-card-head">
-        <I.List size={13} />
+        <I.List size={14} />
         <span className="ac-card-title">Tasks</span>
         <span className="ac-card-meta">
           {done} of {plan.items.length} done
@@ -27,7 +27,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
           // biome-ignore lint/suspicious/noArrayIndexKey: a plan's steps are positional
           <li key={i} className={item.status}>
             <span className="ac-plan-mark" role="img" aria-label={WORD[item.status]}>
-              {item.status === "done" && <I.Check size={11} />}
+              {item.status === "done" && <I.Check size={12} />}
             </span>
             <span className="ac-plan-text">
               <ChatMarkdown text={item.text} inline />

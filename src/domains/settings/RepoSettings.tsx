@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { CloneFolder } from "@/domains/github/CloneFolder";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
 import { useGitHubStore } from "@/domains/github/store";
@@ -129,10 +130,10 @@ export function RepoSettings() {
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
         <button type="button" className="btn" onClick={addFolder}>
-          <I.Plus size={13} /> Add repository
+          <I.Plus size={14} /> Add repository
         </button>
         <button type="button" className="btn" onClick={() => setBrowsing(true)}>
-          <I.Download size={13} /> Clone from GitHub
+          <I.Download size={14} /> Clone from GitHub
         </button>
         <ConductorImport
           onImported={() => {
@@ -193,14 +194,14 @@ export function RepoSettings() {
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="repo-remove"
+              <IconButton
+                size="xs"
+                className="ghost repo-remove"
                 onClick={() => persist(mappings.filter((_, j) => j !== i))}
-                aria-label="Remove mapping"
+                label="Remove mapping"
               >
-                <I.X size={13} />
-              </button>
+                <I.X size={12} />
+              </IconButton>
             </div>
           ))}
           <button
