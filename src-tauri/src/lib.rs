@@ -25,6 +25,7 @@ pub mod platform;
 pub mod preflight;
 pub mod pylon;
 pub mod repo_catalog;
+pub mod saved_prompts;
 pub mod schedule;
 pub mod state;
 pub mod workspace_dir;
@@ -141,6 +142,7 @@ pub fn run() {
             commands::agent_chat::set_agent_transport,
             commands::agent_chat::send_chat_message,
             commands::agent_chat::save_chat_attachment,
+            commands::composer::existing_attachments,
             commands::agent_chat::answer_chat_prompt,
             commands::agent_chat::interrupt_chat_agent,
             commands::agent_chat::stop_chat_subagent,
@@ -204,6 +206,9 @@ pub fn run() {
             commands::groups::save_session_groups,
             commands::session_order::list_session_order,
             commands::session_order::set_session_list,
+            commands::saved_prompts::list_saved_prompts,
+            commands::saved_prompts::save_saved_prompt,
+            commands::saved_prompts::delete_saved_prompt,
             commands::sound::list_notify_sounds,
             commands::sound::play_notify_sound,
             commands::tests::run_tests,

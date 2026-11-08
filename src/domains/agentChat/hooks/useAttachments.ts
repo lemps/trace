@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useState } from "react";
 import { toast } from "@/app/toast";
 import { saveChatAttachment } from "@/ipc/agentChat";
+import { useDraftFiles, useDrafts } from "../drafts";
 
 export interface Attachments {
   /** Absolute paths, in the order added. */
@@ -26,14 +27,17 @@ function nameFor(file: File): string {
 
 // What goes with the next message from the composer: files picked from disk,
 // pasted (a screenshot from the clipboard) or dropped onto it. The agent gets
-// pictures as images and anything else as a path to read.
-export function useAttachments(): Attachments {
-  const [paths, setPaths] = useState<string[]>([]);
+// pictures as images and anything else as a path to read. The list is part of the
+// workspace's draft (`drafts.ts`), so it outlasts the composer; a file still saving
+// when you switch away lands in the workspace it was added to.
+export function useAttachments(workspaceId: string): Attachments {
+  const paths = useDraftFiles(workspaceId);
   const [saving, setSaving] = useState(0);
 
-  const add = useCallback((more: string[]) => {
-    setPaths((was) => [...new Set([...was, ...more])]);
-  }, []);
+  const add = useCallback(
+    (more: string[]) => useDrafts.getState().addAttachments(workspaceId, more),
+    [workspaceId]
+  );
 
   const pick = useCallback(() => {
     void open({ multiple: true, directory: false, title: "Attach files" })
@@ -59,9 +63,11 @@ export function useAttachments(): Attachments {
     [add]
   );
 
-  const remove = useCallback((path: string) => {
-    setPaths((was) => was.filter((p) => p !== path));
-  }, []);
+  const set = useCallback(
+    (next: string[]) => useDrafts.getState().setAttachments(workspaceId, next),
+    [workspaceId]
+  );
+  const remove = useCallback((path: string) => set(paths.filter((p) => p !== path)), [paths, set]);
 
-  return { paths, saving: saving > 0, pick, addFiles, remove, set: setPaths };
+  return { paths, saving: saving > 0, pick, addFiles, remove, set };
 }

@@ -250,12 +250,16 @@
   display: flex;
   flex-direction: column;
   min-width: 220px;
+  max-width: min(520px, calc(100% - 16px));
   padding: 4px;
   border-radius: var(--radius);
   background: var(--bg-elev);
   box-shadow: var(--shadow-pop);
 }
 .ac-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   height: var(--control-h-sm);
   padding: 0 10px;
   border-radius: var(--radius-sm);
@@ -263,6 +267,31 @@
   font-size: var(--text-ui);
   color: var(--fg-1);
   text-align: left;
+}
+.ac-slash-name {
+  flex-shrink: 0;
+}
+/* A saved prompt's title, then its mark. */
+.ac-slash-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  color: var(--fg-2);
+}
+.ac-slash-tag {
+  flex-shrink: 0;
+  height: var(--control-h-xs);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  color: var(--fg-3);
 }
 .ac-slash-item.active,
 .ac-slash-item:hover {
