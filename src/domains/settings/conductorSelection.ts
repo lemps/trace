@@ -16,6 +16,10 @@ export interface Ticks {
   defaults: Set<DefaultKey>;
   /** Setups edited in the preview, by repo id. */
   setups: Record<string, SetupConfig>;
+  /** Custom prompts to import, by key. */
+  prompts: Set<string>;
+  /** Prompt names edited in the preview, by key. */
+  promptNames: Record<string, string>;
 }
 
 /** What trace has set now, so a default only starts ticked where it fills a gap. */
@@ -47,6 +51,8 @@ export function initialTicks(preview: ConductorPreview, current: CurrentDefaults
     ),
     defaults,
     setups: {},
+    prompts: new Set(preview.prompts.filter((p) => !p.existing).map((p) => p.key)),
+    promptNames: {},
   };
 }
 
@@ -67,6 +73,9 @@ export function toSelection(preview: ConductorPreview, ticks: Ticks): ConductorS
     workspaces: preview.workspaces
       .filter((w) => canAdopt(w) && ticks.workspaces.has(w.id))
       .map((w) => w.id),
+    prompts: preview.prompts
+      .filter((p) => !p.existing && ticks.prompts.has(p.key))
+      .map((p) => ({ key: p.key, name: ticks.promptNames[p.key] ?? null })),
   };
 }
 
@@ -74,7 +83,7 @@ export function toSelection(preview: ConductorPreview, ticks: Ticks): ConductorS
 export function selectedCount(preview: ConductorPreview, ticks: Ticks): number {
   const sel = toSelection(preview, ticks);
   const defaults = [...ticks.defaults].filter((k) => preview.defaults[k]).length;
-  return sel.repos.length + sel.workspaces.length + defaults;
+  return sel.repos.length + sel.workspaces.length + sel.prompts.length + defaults;
 }
 
 /**

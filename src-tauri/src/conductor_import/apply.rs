@@ -52,6 +52,12 @@ pub fn apply(preview: &Preview, sel: &Selection) -> Report {
             );
         }
     }
+    super::prompt_apply::apply(
+        &preview.prompts,
+        &sel.prompts,
+        crate::saved_prompts::add_all,
+        &mut report,
+    );
     let archived = preview.workspaces.iter().filter(|w| w.archived).count();
     let unticked = archived
         - preview

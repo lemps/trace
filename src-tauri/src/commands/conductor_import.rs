@@ -23,8 +23,8 @@ pub async fn conductor_import_preview() -> Result<Option<Preview>, String> {
     .map_err(|e| e.to_string())?
 }
 
-/// Import what the user ticked. Conductor is read again here, so only ids
-/// (and edited setups) come from the renderer.
+/// Import what the user ticked. Conductor is read again here, so only ids and
+/// keys (and edited setups and prompt names) come from the renderer.
 #[tauri::command]
 pub async fn conductor_import_apply(selection: Selection) -> Result<Report, String> {
     tauri::async_runtime::spawn_blocking(move || {
