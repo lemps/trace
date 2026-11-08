@@ -261,3 +261,27 @@
   vertical-align: middle;
   accent-color: var(--c-accent);
 }
+
+/* Claude Code's "★ Insight" asides (markdown/insight.ts): a quiet card with the
+   accent on its left rule and a label in place of the star and dashes. */
+.md-insight {
+  margin: 0 0 calc(var(--md-gap) * 1.25);
+  padding: 8px 12px;
+  border: 1px solid var(--border-faint);
+  border-left: 2px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-1);
+}
+.md-insight-label {
+  margin-bottom: 4px;
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.md-insight > :last-child,
+.md-insight > :last-child > :last-child {
+  margin-bottom: 0;
+}
