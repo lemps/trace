@@ -51,7 +51,7 @@ import type { ScratchSession } from "./types";
 // the agent last in focus.
 // What being on Vercel means here, for the header's chip.
 const HOST_HINT =
-  "Runs in a Vercel sandbox. Disconnect leaves Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
+  "Runs in a Vercel Sandbox. Leave running keeps Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
 
 export function SessionDetail({
   session,

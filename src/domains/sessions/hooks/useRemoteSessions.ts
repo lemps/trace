@@ -5,7 +5,7 @@ import type { RemoteSandboxSession } from "@/ipc/vercel";
 import { useSessionsStore } from "../store";
 
 export interface RemoteSessionsState {
-  /** Vercel is connected, so the "On Vercel" group shows. */
+  /** Vercel is connected, so the "Vercel Sandbox" group shows. */
   connected: boolean;
   /** Sessions on Vercel that aren't already one of this trace's sessions. */
   joinable: RemoteSandboxSession[];
@@ -18,7 +18,7 @@ export interface RemoteSessionsState {
 }
 
 /**
- * The Sessions page's "On Vercel" group: the trace sessions living in Vercel
+ * The Sessions page's "Vercel Sandbox" group: the trace sessions living in Vercel
  * sandboxes (started by this trace or another with the same token) that this
  * trace doesn't have yet. Loaded when the page mounts and on Refresh.
  */
@@ -35,7 +35,7 @@ export function useRemoteSessions(): RemoteSessionsState {
 
   const refresh = useCallback(() => {
     loadRemote().catch((err) =>
-      toast.error(`Couldn't list your sessions on Vercel: ${String(err)}`)
+      toast.error(`Couldn't list your sessions in Vercel Sandbox: ${String(err)}`)
     );
   }, [loadRemote]);
   useEffect(() => {

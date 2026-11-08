@@ -125,8 +125,8 @@ export function NewSessionModal({
 
   const note = host
     ? repos.length === 0
-      ? "A Vercel session needs a repository. Add one in Settings → Repositories."
-      : "Runs in a Vercel sandbox; sessions on the Hobby plan end after 45 minutes."
+      ? "A Vercel Sandbox session needs a repository. Add one in Settings → Repositories."
+      : "Runs in a Vercel Sandbox; on the Hobby plan a sandbox ends after 45 minutes."
     : place === SCRATCH
       ? "Runs in a new empty folder, which is deleted along with the session."
       : place === FOLDER
@@ -139,7 +139,7 @@ export function NewSessionModal({
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="btn ghost" onClick={onClose}>
+          <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
           <button type="button" className="btn primary" disabled={!canCreate} onClick={submit}>

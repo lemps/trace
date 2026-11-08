@@ -58,7 +58,7 @@ export function IntegrationDialog({ integration, onClose }: IntegrationDialogPro
                   Cancel
                 </button>
                 <button type="button" className="btn danger" onClick={confirmDisconnect}>
-                  Disconnect {name}
+                  Disconnect {name} and delete its token
                 </button>
               </>
             ) : (

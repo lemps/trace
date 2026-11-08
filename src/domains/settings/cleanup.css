@@ -25,6 +25,6 @@
 
 .setting-note {
   padding: 8px 0 0;
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-3);
 }

@@ -132,8 +132,8 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
                   className={`pn-tab-close${fitClass(mode)}`}
                   data-fit-of={tab}
                   tabIndex={out ? -1 : undefined}
-                  aria-label={`Close ${panel.label}`}
-                  title={`Close ${panel.label}`}
+                  aria-label={`${panel.comes ? "Hide" : "Close"} ${panel.label}`}
+                  title={`${panel.comes ? "Hide" : "Close"} ${panel.label}`}
                   onClick={() =>
                     panel.onClose ? panel.onClose() : panes.apply((l) => removeTab(l, tab))
                   }

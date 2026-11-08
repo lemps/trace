@@ -54,6 +54,17 @@
   flex: 1;
 }
 /* A repo's GitHub account, the same height as the row's Setup toggle. */
+/* A repo's GitHub account: a visible label, then the select. */
+.rp-account-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.rp-account-label {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
 .rp-account {
   flex-shrink: 0;
   max-width: 140px;

@@ -20,11 +20,6 @@
   letter-spacing: -0.015em;
   color: var(--fg-0);
 }
-.fl-desc {
-  margin-top: 3px;
-  font-size: 12.5px;
-  color: var(--fg-3);
-}
 .fl-filters {
   margin-left: auto;
   display: flex;
@@ -34,7 +29,7 @@
 }
 .fl-filters .mono {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
 }
 .fl-scroll {
@@ -56,7 +51,7 @@
   height: 46px;
   padding: 0 16px;
   border-bottom: 1px solid var(--border-faint);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-2);
   cursor: pointer;
 }
@@ -79,7 +74,7 @@
 .fl-row.fl-th {
   height: 34px;
   cursor: default;
-  font-size: 10.5px;
+  font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -88,7 +83,7 @@
 }
 .fl-row .mono {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
 }
 .fl-row .hot {
   color: var(--state-needs-fg);
@@ -110,19 +105,19 @@
 .fl-title {
   color: var(--fg-0);
   font-weight: 500;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .fl-sub {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 .fl-src {
   justify-self: start;
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 1px 6px;
@@ -153,6 +148,6 @@
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   text-align: center;
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   color: var(--fg-3);
 }

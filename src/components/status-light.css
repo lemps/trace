@@ -49,7 +49,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   white-space: nowrap;
   color: var(--fg-3);
   min-width: 0;
@@ -67,7 +67,7 @@
   height: var(--control-h-xs);
   padding: 0 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   font-weight: 500;
   white-space: nowrap;
   color: var(--fg-3);
@@ -80,7 +80,7 @@
 }
 .light-age {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-label);
   opacity: 0.85;
 }
 
@@ -115,9 +115,9 @@
   height: var(--control-h);
   padding: 0 11px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: var(--text-ui);
   gap: 7px;
 }
 .light-pill.lg .light-age {
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
 }

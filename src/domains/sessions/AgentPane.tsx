@@ -1,5 +1,6 @@
 import { I } from "@/components/Icon";
 import { ChatSurface } from "@/domains/agent/ChatSurface";
+import { agentLabel } from "@/domains/agent/providerLabel";
 import { ChatAgentPane } from "@/domains/agentChat/ChatAgentPane";
 import { useIsChatAgent } from "@/domains/agentChat/transport";
 import type { AgentCli } from "@/ipc/agent";
@@ -32,7 +33,7 @@ export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
             <span className="ic">
               <I.Sparkles size={28} />
             </span>
-            <div className="title">Start {cli}</div>
+            <div className="title">Start {agentLabel(cli)}</div>
             <div className="hint">{hint}</div>
             <button
               type="button"
@@ -40,7 +41,7 @@ export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
               style={{ marginTop: 6 }}
               onClick={() => void run.start()}
             >
-              <I.Bolt size={13} /> Start {cli}
+              <I.Bolt size={13} /> Start {agentLabel(cli)}
             </button>
             <button
               type="button"

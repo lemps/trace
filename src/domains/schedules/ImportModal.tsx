@@ -69,7 +69,7 @@ export function ImportModal({ items, onClose }: ImportModalProps) {
       footer={
         <>
           {error && <span className="sched-form-error">{error}</span>}
-          <button type="button" className="btn ghost" onClick={onClose}>
+          <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
           <button
