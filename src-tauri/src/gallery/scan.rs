@@ -202,10 +202,9 @@ fn rel_of(root: &Path, path: &Path) -> String {
 
 /// Every image `set` shows now.
 pub fn list(set: &GallerySet) -> Listing {
-    let glob = set.glob.as_deref().and_then(|g| Glob::new(g).ok());
     let mut walk = Walk {
         set,
-        glob: glob.as_ref(),
+        glob: set.glob.as_ref(),
         recursive: set.recursive,
         out: Listing::default(),
         seen: HashSet::new(),

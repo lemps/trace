@@ -5,7 +5,6 @@
 use tauri::webview::{DownloadEvent, NewWindowResponse, PageLoadEvent};
 use tauri::{AppHandle, Manager, Url, Webview, WebviewBuilder, WebviewUrl};
 
-use super::store;
 use super::url_rules;
 use super::webview::{app_origins, emit, ViewEvent, DATA_STORE};
 
@@ -53,13 +52,26 @@ pub(super) fn build(
         label.to_string(),
     );
     let origins_nav = origins.clone();
+    let l1 = label.to_string();
     Ok(WebviewBuilder::new(label, WebviewUrl::External(url))
         .data_directory(data_dir)
         .data_store_identifier(DATA_STORE)
         .focused(false)
         .initialization_script_for_all_frames(SAME_PAGE_LINKS)
         .on_navigation(move |url| match url_rules::check_url(url, &origins_nav) {
-            Ok(_) => true,
+            // A link to 0.0.0.0 goes to loopback instead, where it can load.
+            Ok(_) => match url_rules::loopback_for_any(url) {
+                Some(to) => {
+                    let (app, label) = (a1.clone(), l1.clone());
+                    tauri::async_runtime::spawn(async move {
+                        if let Some(view) = app.get_webview(&label) {
+                            let _ = view.navigate(to);
+                        }
+                    });
+                    false
+                }
+                None => true,
+            },
             // Pages' own blank and srcdoc documents (frames, on platforms that ask
             // about frames too).
             Err(_) if url.scheme() == "about" => true,
@@ -82,7 +94,7 @@ pub(super) fn build(
             match load.event() {
                 PageLoadEvent::Started => emit(&a2, &w2, &p2, ViewEvent::Loading { url }),
                 PageLoadEvent::Finished => {
-                    remember(&w2, &p2, &url);
+                    super::history::remember(&a2, &w2, &p2, &url);
                     let at = load.url();
                     let external = url_rules::check_url(at, &[])
                         .is_ok_and(|r| r == url_rules::Reach::External);
@@ -147,17 +159,4 @@ pub(super) fn build(
             }
             NewWindowResponse::Deny
         }))
-}
-
-/// A finished load lands in the page's history (best-effort, off the UI thread).
-fn remember(ws: &str, page: &str, url: &str) {
-    let (ws, page, url) = (ws.to_string(), page.to_string(), url.to_string());
-    std::thread::spawn(move || {
-        let now = chrono::Utc::now().timestamp_millis();
-        let _ = store::update(&ws, |f| {
-            if let Some(p) = f.pages.iter_mut().find(|p| p.id == page) {
-                store::visit(p, &url, now);
-            }
-        });
-    });
 }

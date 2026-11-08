@@ -60,32 +60,57 @@ function inOrder(pageId: string, run: () => Promise<void>): Promise<void> {
 
 const key = (b: Bounds | null) => (b ? `${b.x},${b.y},${b.width},${b.height}` : "hidden");
 
-/** Lay `pageId`'s webview over `ref` while mounted; `onError` hears why it couldn't. */
+/** After a failed show, the first retry's wait; it doubles each time, up to the cap. */
+const RETRY_FIRST_MS = 250;
+const RETRY_MAX_MS = 8000;
+
+/**
+ * Lay `pageId`'s webview over `ref` while mounted. `onError` hears why it couldn't
+ * (once per run of failures), then `null` once it could again. A failed show is
+ * retried with backoff; a hide is never held back, so the page can always get out
+ * of the way of a menu or dialog.
+ */
 export function useNativeView(
   ref: RefObject<HTMLElement | null>,
   ws: string,
   pageId: string,
-  onError: (why: string) => void
+  onError: (why: string | null) => void
 ): void {
   useEffect(() => {
     let frame = 0;
     let sent = "";
     let busy = false;
-    let failed = false;
     let dead = false;
     let want: Bounds | null = null;
+    let backoff = 0;
+    let retryAt = 0;
+    let failing = false;
     const flush = () => {
       if (busy || key(want) === sent) return;
       const target = want;
+      if (target && performance.now() < retryAt) return;
       busy = true;
       sent = key(target);
       const call = inOrder(pageId, () =>
         target ? browserShow(ws, pageId, target) : browserHide(ws, pageId)
       );
       call
+        .then(() => {
+          if (!target) return;
+          backoff = 0;
+          retryAt = 0;
+          if (failing && !dead) onError(null);
+          failing = false;
+        })
         .catch((e: unknown) => {
-          if (!failed) onError(String(e));
-          failed = true;
+          // Not where it was asked to be: ask again (a show after a wait).
+          sent = "";
+          if (target) {
+            backoff = Math.min(backoff ? backoff * 2 : RETRY_FIRST_MS, RETRY_MAX_MS);
+            retryAt = performance.now() + backoff;
+          }
+          if (!failing && !dead) onError(String(e));
+          failing = true;
         })
         .finally(() => {
           busy = false;
@@ -97,7 +122,7 @@ export function useNativeView(
     const tick = () => {
       frame = requestAnimationFrame(tick);
       const el = ref.current;
-      if (!el || failed) return;
+      if (!el) return;
       want = placement(el);
       flush();
     };

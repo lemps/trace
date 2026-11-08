@@ -52,7 +52,7 @@ impl From<&GallerySet> for SetView {
                 .map(|r| plain(&r.path.to_string_lossy()))
                 .collect(),
             recursive: s.recursive,
-            glob: s.glob.clone(),
+            glob: s.glob.as_ref().map(|g| g.source().to_string()),
             created_at: s.created_at,
         }
     }
@@ -110,7 +110,7 @@ pub fn show(app: &AppHandle, ws: &str, new: NewSet) -> Result<(SetView, Listing)
         return Err("trace couldn't tell which workspace these images are for.".into());
     }
     let glob = match new.glob.map(str::trim).filter(|g| !g.is_empty()) {
-        Some(g) => Some(glob::Glob::new(g).map(|_| g.to_string())?),
+        Some(g) => Some(glob::Glob::new(g)?),
         None => None,
     };
     let roots = scan::resolve(new.inputs, agent_cwd(ws).as_deref())?;
@@ -123,7 +123,7 @@ pub fn show(app: &AppHandle, ws: &str, new: NewSet) -> Result<(SetView, Listing)
         created_at: chrono::Utc::now().timestamp_millis(),
     };
     set.title = match new.title.map(str::trim).filter(|t| !t.is_empty()) {
-        Some(t) => t.chars().take(200).collect(),
+        Some(t) => t.chars().take(store::MAX_TITLE).collect(),
         None => default_title(&set),
     };
     let listing = scan::list(&set);
@@ -153,6 +153,7 @@ fn no_images(set: &GallerySet, listing: &Listing) -> String {
         SetView::from(set).roots.join(", ")
     );
     if let Some(g) = &set.glob {
+        let g = g.source();
         why.push_str(&format!(" matching \"{g}\""));
     }
     why.push_str(&format!(" (the Gallery shows {}).", kinds::listed()));
@@ -175,8 +176,9 @@ pub fn sets(ws: &str) -> Result<Vec<SetView>, String> {
 
 fn find(ws: &str, set_id: &str) -> Result<GallerySet, String> {
     store::load(ws)?
-        .into_iter()
+        .iter()
         .find(|s| s.id == set_id)
+        .cloned()
         .ok_or_else(|| "That set was removed.".to_string())
 }
 

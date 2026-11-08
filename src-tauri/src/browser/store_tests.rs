@@ -124,3 +124,42 @@ fn pages_are_capped_least_recently_used_first() {
     assert_eq!(file.pages[0].url, "http://localhost/3");
     assert!(file.active.is_some());
 }
+
+#[test]
+fn trimming_names_the_pages_it_drops() {
+    let mut file = BrowserFile::default();
+    let mut ids = Vec::new();
+    for i in 0..(MAX_PAGES + 2) {
+        let url = format!("http://localhost/{i}");
+        ids.push(open(&mut file, &url, None, true, Opener::Agent, i as i64).id);
+    }
+    // Those past the cap are the least recently used; their webviews close with them.
+    assert_eq!(trim(&mut file), ids[..2]);
+    assert!(trim(&mut file).is_empty());
+}
+
+#[test]
+fn merging_adds_the_sessions_pages_within_the_cap() {
+    let mut issue = BrowserFile::default();
+    for i in 0..5 {
+        let url = format!("http://localhost/issue{i}");
+        open(&mut issue, &url, None, true, Opener::Agent, 100 + i);
+    }
+    let issue_active = issue.active.clone();
+    let mut session = BrowserFile::default();
+    for i in 0..5 {
+        let url = format!("http://localhost/session{i}");
+        open(&mut session, &url, None, true, Opener::User, 200 + i);
+    }
+    // A page both have (the same id) isn't doubled.
+    session.pages.push(issue.pages[4].clone());
+    merge(&mut issue, session);
+    let dropped = trim(&mut issue);
+    assert_eq!(issue.pages.len(), MAX_PAGES);
+    assert_eq!(issue.active, issue_active);
+    assert_eq!(dropped.len(), 2);
+    let urls: Vec<_> = issue.pages.iter().map(|p| p.url.as_str()).collect();
+    assert!(urls.contains(&"http://localhost/session4"));
+    assert!(!urls.contains(&"http://localhost/issue0"));
+    assert!(!urls.contains(&"http://localhost/issue1"));
+}

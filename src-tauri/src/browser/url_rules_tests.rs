@@ -96,3 +96,23 @@ fn overlong_urls_are_refused() {
     let long = format!("http://localhost/{}", "a".repeat(MAX_URL));
     assert!(refused(&long).contains("characters"));
 }
+
+#[test]
+fn the_any_address_is_local_and_opens_at_loopback() {
+    // `python -m http.server` prints "Serving HTTP on 0.0.0.0 port 8000".
+    let (url, reach) = check("http://0.0.0.0:8000/", &[]).unwrap();
+    assert_eq!(reach, Reach::Loopback);
+    assert_eq!(url.as_str(), "http://127.0.0.1:8000/");
+    let (url, reach) = check("http://[::]:8000/x?y=1", &[]).unwrap();
+    assert_eq!(reach, Reach::Loopback);
+    assert_eq!(url.as_str(), "http://[::1]:8000/x?y=1");
+    // Inside the tab (a link to it) it's local too.
+    for host in ["0.0.0.0", "[::]", "::", "[::ffff:0.0.0.0]"] {
+        assert!(is_loopback(host), "{host}");
+    }
+    assert!(!is_loopback("0.0.0.1"));
+    assert_eq!(
+        loopback_for_any(&Url::parse("http://example.com/").unwrap()),
+        None
+    );
+}

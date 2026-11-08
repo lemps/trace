@@ -69,8 +69,12 @@ pub fn load(workspace_id: &str) -> Result<BrowserFile, String> {
     Ok(validate(raw))
 }
 
-/// Change a workspace's file under its lock.
-pub fn update<R>(workspace_id: &str, f: impl FnOnce(&mut BrowserFile) -> R) -> Result<R, String> {
+/// Change a workspace's file under its lock. Also gives the ids of pages the change
+/// pushed past [`MAX_PAGES`], whose webviews the caller closes.
+pub fn update<R>(
+    workspace_id: &str,
+    f: impl FnOnce(&mut BrowserFile) -> R,
+) -> Result<(R, Vec<String>), String> {
     let path = browser_path(workspace_id);
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
@@ -78,7 +82,7 @@ pub fn update<R>(workspace_id: &str, f: impl FnOnce(&mut BrowserFile) -> R) -> R
     persist::update(&path, Style::Compact, |raw: &mut RawFile| {
         let mut file = validate(std::mem::take(raw));
         let out = f(&mut file);
-        trim(&mut file);
+        let dropped = trim(&mut file);
         *raw = RawFile {
             pages: file
                 .pages
@@ -87,7 +91,7 @@ pub fn update<R>(workspace_id: &str, f: impl FnOnce(&mut BrowserFile) -> R) -> R
                 .collect(),
             active: file.active.clone().map(Value::String),
         };
-        out
+        (out, dropped)
     })
 }
 
@@ -127,7 +131,9 @@ fn validate(raw: RawFile) -> BrowserFile {
     file
 }
 
-fn trim(file: &mut BrowserFile) {
+/// Cap history and pages; the ids of the pages dropped.
+fn trim(file: &mut BrowserFile) -> Vec<String> {
+    let mut dropped = Vec::new();
     for page in &mut file.pages {
         page.history.dedup();
         let extra = page.history.len().saturating_sub(MAX_HISTORY);
@@ -144,11 +150,12 @@ fn trim(file: &mut BrowserFile) {
         else {
             break;
         };
-        file.pages.remove(oldest);
+        dropped.push(file.pages.remove(oldest).id);
     }
     if file.active.is_none() {
         file.active = file.pages.last().map(|p| p.id.clone());
     }
+    dropped
 }
 
 /// Note that `page` is now at `url` (a navigation it made, or one trace asked for).
@@ -196,25 +203,45 @@ pub fn open(
     page.clone()
 }
 
-/// Drop `path` and `persist`'s lock file beside it.
-fn remove_with_lock(path: PathBuf) {
-    let _ = std::fs::remove_file(&path);
-    let mut lock = path.into_os_string();
-    lock.push(".lock");
-    let _ = std::fs::remove_file(lock);
-}
-
 /// A deleted workspace's file goes with it.
 pub fn forget(workspace_id: &str) {
-    remove_with_lock(browser_path(workspace_id));
+    persist::remove(&browser_path(workspace_id));
 }
 
-/// A session's conversation now belongs to an issue: so does this file, unless the
-/// issue already has one (which is kept).
-pub fn transfer(from: &str, to: &str) {
+/// A session's conversation now belongs to an issue: so do its pages. If the issue
+/// has pages already, the session's join them (the issue's active page stays active,
+/// and past [`MAX_PAGES`] the least recently used go). Gives the ids of the issue's
+/// pages that were dropped.
+pub fn transfer(from: &str, to: &str) -> Vec<String> {
     let (src, dst) = (browser_path(from), browser_path(to));
-    if src.exists() && !dst.exists() {
+    if !src.exists() {
+        return Vec::new();
+    }
+    if !dst.exists() {
         let _ = std::fs::rename(&src, &dst);
+        return Vec::new();
+    }
+    let Ok(moved) = load(from) else {
+        return Vec::new();
+    };
+    match update(to, |file| merge(file, moved)) {
+        Ok(((), dropped)) => {
+            forget(from);
+            dropped
+        }
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Add `other`'s pages to `file` (page ids are unique UUIDs).
+fn merge(file: &mut BrowserFile, other: BrowserFile) {
+    for page in other.pages {
+        if !file.pages.iter().any(|p| p.id == page.id) {
+            file.pages.push(page);
+        }
+    }
+    if file.active.is_none() {
+        file.active = other.active;
     }
 }
 

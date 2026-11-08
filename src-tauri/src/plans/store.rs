@@ -257,11 +257,7 @@ pub fn remove(file: &mut PlanFile, id: &str, all_versions: bool) -> bool {
 
 /// The workspace is gone: its documents go with it.
 pub fn forget(workspace_id: &str) {
-    let path = plan_path(workspace_id);
-    let _ = std::fs::remove_file(&path);
-    let mut lock = path.into_os_string();
-    lock.push(".lock");
-    let _ = std::fs::remove_file(lock);
+    persist::remove(&plan_path(workspace_id));
 }
 
 /// A session's conversation now belongs to an issue: so do its documents.

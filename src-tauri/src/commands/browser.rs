@@ -39,8 +39,12 @@ pub async fn browser_go(
 }
 
 #[tauri::command]
-pub async fn browser_select(workspace_id: String, page_id: String) -> Result<(), String> {
-    browser::select(&workspace_id, &page_id)
+pub async fn browser_select(
+    app: AppHandle,
+    workspace_id: String,
+    page_id: String,
+) -> Result<(), String> {
+    browser::select(&app, &workspace_id, &page_id)
 }
 
 #[tauri::command]

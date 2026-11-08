@@ -49,3 +49,35 @@ fn sets_are_capped_oldest_first() {
     assert_eq!(sets[0].id, format!("s{}", MAX_SETS + 4));
     assert!(sets.iter().all(|s| s.id != "s0"));
 }
+
+#[test]
+fn merging_adds_the_sessions_sets_within_the_cap() {
+    let mut issue = validate(RawFile {
+        sets: (0..20).map(|i| set(&format!("i{i}"), 100 + i)).collect(),
+    });
+    let session = validate(RawFile {
+        sets: (0..20)
+            .map(|i| set(&format!("s{i}"), 200 + i))
+            .chain([set("i19", 119)])
+            .collect(),
+    });
+    merge(&mut issue, &session);
+    trim(&mut issue);
+    assert_eq!(issue.len(), MAX_SETS);
+    assert_eq!(issue.iter().filter(|s| s.id == "i19").count(), 1);
+    assert!(issue.iter().all(|s| s.id != "i0"));
+    assert_eq!(issue[0].id, "s19");
+}
+
+#[test]
+fn a_sets_glob_is_kept_as_written_and_compiled_once() {
+    let mut v = set("g", 1);
+    v["glob"] = json!(" shots/*.PNG ");
+    let sets = validate(RawFile { sets: vec![v] });
+    let glob = sets[0].glob.as_ref().unwrap();
+    assert!(glob.matches("shots/a.png"));
+    assert_eq!(
+        serde_json::to_value(&sets[0]).unwrap()["glob"],
+        json!("shots/*.PNG")
+    );
+}

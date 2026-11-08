@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ use crate::helpers::persist::{self, Style};
 
 /// Sets kept per workspace; the oldest go first.
 pub const MAX_SETS: usize = 30;
-const MAX_TITLE: usize = 200;
+pub const MAX_TITLE: usize = 200;
 
 /// A folder or a single image a set shows, canonical (symlinks resolved).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -38,8 +38,9 @@ pub struct GallerySet {
     pub roots: Vec<Root>,
     #[serde(default)]
     pub recursive: bool,
+    /// Compiled once, when the set is made or read.
     #[serde(default)]
-    pub glob: Option<String>,
+    pub glob: Option<Glob>,
     pub created_at: i64,
 }
 
@@ -56,27 +57,27 @@ pub fn gallery_path(workspace_id: &str) -> PathBuf {
     ))
 }
 
-type Cached = (Option<SystemTime>, Vec<GallerySet>);
+type Cached = (Option<SystemTime>, Arc<Vec<GallerySet>>);
 static CACHE: Mutex<Option<HashMap<String, Cached>>> = Mutex::new(None);
 
 fn modified(path: &std::path::Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
-/// A workspace's validated sets, newest first.
-pub fn load(workspace_id: &str) -> Result<Vec<GallerySet>, String> {
+/// A workspace's validated sets, newest first (shared with the cache, not copied).
+pub fn load(workspace_id: &str) -> Result<Arc<Vec<GallerySet>>, String> {
     let path = gallery_path(workspace_id);
     let stamp = modified(&path);
     let mut cache = CACHE.lock().unwrap_or_else(|e| e.into_inner());
     let map = cache.get_or_insert_with(HashMap::new);
     if let Some((at, sets)) = map.get(workspace_id) {
         if *at == stamp && stamp.is_some() {
-            return Ok(sets.clone());
+            return Ok(Arc::clone(sets));
         }
     }
     let raw: RawFile = persist::read_or_default(&path)?;
-    let sets = validate(raw);
-    map.insert(workspace_id.to_string(), (stamp, sets.clone()));
+    let sets = Arc::new(validate(raw));
+    map.insert(workspace_id.to_string(), (stamp, Arc::clone(&sets)));
     Ok(sets)
 }
 
@@ -99,9 +100,7 @@ pub fn update<R>(
             .collect();
         out
     })?;
-    if let Some(map) = CACHE.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
-        map.remove(workspace_id);
-    }
+    uncache(workspace_id);
     Ok(out)
 }
 
@@ -114,11 +113,6 @@ fn valid(set: &mut GallerySet) -> bool {
     }
     if set.roots.iter().any(|r| !r.path.is_absolute()) {
         return false;
-    }
-    if let Some(g) = &set.glob {
-        if Glob::new(g).is_err() {
-            return false;
-        }
     }
     set.title = set.title.chars().take(MAX_TITLE).collect();
     true
@@ -143,25 +137,45 @@ fn trim(sets: &mut Vec<GallerySet>) {
     sets.truncate(MAX_SETS);
 }
 
-/// Drop `path` and `persist`'s lock file beside it.
-fn remove_with_lock(path: PathBuf) {
-    let _ = std::fs::remove_file(&path);
-    let mut lock = path.into_os_string();
-    lock.push(".lock");
-    let _ = std::fs::remove_file(lock);
-}
-
 /// A deleted workspace's file goes with it.
 pub fn forget(workspace_id: &str) {
-    remove_with_lock(gallery_path(workspace_id));
+    persist::remove(&gallery_path(workspace_id));
+    uncache(workspace_id);
 }
 
-/// A session's conversation now belongs to an issue: so does this file, unless the
-/// issue already has one (which is kept).
+fn uncache(workspace_id: &str) {
+    if let Some(map) = CACHE.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
+        map.remove(workspace_id);
+    }
+}
+
+/// A session's conversation now belongs to an issue: so do its sets. If the issue
+/// has sets already, the session's join them (past [`MAX_SETS`], the oldest go).
 pub fn transfer(from: &str, to: &str) {
     let (src, dst) = (gallery_path(from), gallery_path(to));
-    if src.exists() && !dst.exists() {
+    if !src.exists() {
+        return;
+    }
+    if !dst.exists() {
         let _ = std::fs::rename(&src, &dst);
+        uncache(from);
+        uncache(to);
+        return;
+    }
+    let Ok(moved) = load(from) else {
+        return;
+    };
+    if update(to, |sets| merge(sets, &moved)).is_ok() {
+        forget(from);
+    }
+}
+
+/// Add `other`'s sets to `sets` (set ids are unique UUIDs).
+fn merge(sets: &mut Vec<GallerySet>, other: &[GallerySet]) {
+    for set in other {
+        if !sets.iter().any(|s| s.id == set.id) {
+            sets.push(set.clone());
+        }
     }
 }
 

@@ -117,8 +117,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
         if (p.external && page?.openedBy === "agent" && !seen) {
           set((st) => ({ notices: { ...st.notices, [p.pageId]: p.host } }));
         }
-        // The backend added it to the page's history.
-        if (get().loaded[p.workspaceId]) setTimeout(() => void get().reload(p.workspaceId), 300);
+        // Its history reloads when the backend has written it (`browser-pages`).
         break;
       }
       case "title":

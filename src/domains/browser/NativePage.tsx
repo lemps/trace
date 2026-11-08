@@ -11,7 +11,7 @@ export function NativePage({ workspaceId, page }: { workspaceId: string; page: B
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const live = usePageLive(page.id);
-  const onError = useCallback((why: string) => setError(why), []);
+  const onError = useCallback((why: string | null) => setError(why), []);
   useNativeView(ref, workspaceId, page.id, onError);
   return (
     <div className="bw-view" ref={ref}>

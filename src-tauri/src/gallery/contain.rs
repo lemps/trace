@@ -7,13 +7,11 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::glob::Glob;
 use super::kinds::{self, MAX_DEPTH, MAX_FILE_BYTES};
 use super::store::GallerySet;
 
 /// Whether `canon` (already canonical) is one of `set`'s files.
 pub fn admits(set: &GallerySet, canon: &Path) -> bool {
-    let glob = set.glob.as_deref().and_then(|g| Glob::new(g).ok());
     set.roots.iter().any(|root| {
         if !root.folder {
             return canon == root.path;
@@ -30,7 +28,7 @@ pub fn admits(set: &GallerySet, canon: &Path) -> bool {
             .map(|c| c.as_os_str().to_string_lossy())
             .collect::<Vec<_>>()
             .join("/");
-        glob.as_ref().is_none_or(|g| g.matches(&rel))
+        set.glob.as_ref().is_none_or(|g| g.matches(&rel))
     })
 }
 

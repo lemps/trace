@@ -36,7 +36,7 @@ pub(crate) fn set_of(roots: Vec<Root>, recursive: bool, glob: Option<&str>) -> G
         title: "t".into(),
         roots,
         recursive,
-        glob: glob.map(str::to_string),
+        glob: glob.map(|g| crate::gallery::glob::Glob::new(g).unwrap()),
         created_at: 0,
     }
 }

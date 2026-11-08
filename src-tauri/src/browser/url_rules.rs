@@ -20,7 +20,7 @@ pub const MAX_URL: usize = 4096;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Reach {
-    /// localhost, 127.0.0.0/8, ::1: the user's own machine.
+    /// localhost, 127.0.0.0/8, ::1 (and 0.0.0.0, ::): the user's own machine.
     Loopback,
     External,
 }
@@ -34,6 +34,7 @@ pub fn check(raw: &str, app_origins: &[Url]) -> Result<(Url, Reach), String> {
     let url = Url::parse(raw).map_err(|_| {
         format!("\"{raw}\" isn't a full URL. Include the scheme, e.g. http://localhost:5173.")
     })?;
+    let url = loopback_for_any(&url).unwrap_or(url);
     check_url(&url, app_origins).map(|reach| (url, reach))
 }
 
@@ -74,17 +75,38 @@ fn is_app_host(host: &str) -> bool {
     APP_SCHEMES.contains(&first)
 }
 
-/// The machine itself: `localhost` (and `*.localhost`), 127.0.0.0/8, `::1`, and
-/// IPv4-mapped loopback.
+/// `url` with `0.0.0.0` or `[::]` (what a server listening on every interface
+/// prints, `python -m http.server`'s "Serving HTTP on 0.0.0.0 port 8000") swapped for
+/// the loopback address that reaches it: Windows refuses to connect to 0.0.0.0, so
+/// the page would only fail. `None` for any other host.
+pub fn loopback_for_any(url: &Url) -> Option<Url> {
+    let host = url.host_str()?;
+    let to = match host.trim_start_matches('[').trim_end_matches(']').parse() {
+        Ok(IpAddr::V4(ip)) if ip.is_unspecified() => "127.0.0.1",
+        Ok(IpAddr::V6(ip)) if ip.is_unspecified() => "[::1]",
+        _ => return None,
+    };
+    let mut out = url.clone();
+    out.set_host(Some(to)).ok()?;
+    Some(out)
+}
+
+/// The machine itself: `localhost` (and `*.localhost`), 127.0.0.0/8, `::1`,
+/// IPv4-mapped loopback, and the any-address (`0.0.0.0`, `::`), which a browser that
+/// connects to it at all reaches this machine through.
 pub fn is_loopback(host: &str) -> bool {
     let host = host.trim_start_matches('[').trim_end_matches(']');
     if host == "localhost" || host.ends_with(".localhost") {
         return true;
     }
     match host.parse::<IpAddr>() {
-        Ok(IpAddr::V4(ip)) => ip.is_loopback(),
+        Ok(IpAddr::V4(ip)) => ip.is_loopback() || ip.is_unspecified(),
         Ok(IpAddr::V6(ip)) => {
-            ip == Ipv6Addr::LOCALHOST || ip.to_ipv4_mapped().is_some_and(|v4| v4.is_loopback())
+            ip == Ipv6Addr::LOCALHOST
+                || ip.is_unspecified()
+                || ip
+                    .to_ipv4_mapped()
+                    .is_some_and(|v4| v4.is_loopback() || v4.is_unspecified())
         }
         Err(_) => false,
     }

@@ -3,18 +3,43 @@
 //! without a `/` matches the file name alone, so `*.png` finds PNGs at any depth.
 
 use regex::Regex;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+/// A compiled pattern. On disk (a set's `glob`) it's the pattern as given, compiled
+/// once when read, so matching a file never builds a regex.
 #[derive(Debug, Clone)]
 pub struct Glob {
+    source: String,
     re: Regex,
     name_only: bool,
+}
+
+impl PartialEq for Glob {
+    fn eq(&self, other: &Self) -> bool {
+        self.source == other.source
+    }
+}
+
+impl Serialize for Glob {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&self.source)
+    }
+}
+
+/// A pattern that doesn't compile fails the set it's in, which is then dropped.
+impl<'de> Deserialize<'de> for Glob {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let source = String::deserialize(d)?;
+        Glob::new(&source).map_err(serde::de::Error::custom)
+    }
 }
 
 const MAX_PATTERN: usize = 200;
 
 impl Glob {
-    pub fn new(pattern: &str) -> Result<Glob, String> {
-        let pattern = pattern.trim().replace('\\', "/");
+    pub fn new(given: &str) -> Result<Glob, String> {
+        let source = given.trim().to_string();
+        let pattern = source.replace('\\', "/");
         if pattern.is_empty() || pattern.len() > MAX_PATTERN {
             return Err("Give a glob like *.png or shots/**/*.webp.".into());
         }
@@ -52,9 +77,15 @@ impl Glob {
         re.push('$');
         let re = Regex::new(&re).map_err(|_| format!("\"{pattern}\" isn't a glob trace reads."))?;
         Ok(Glob {
+            source,
             re,
             name_only: !pattern.contains('/'),
         })
+    }
+
+    /// The pattern as given (trimmed).
+    pub fn source(&self) -> &str {
+        &self.source
     }
 
     /// Whether `rel` (relative to the set's folder, `/`-separated) matches.
