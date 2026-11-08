@@ -1,6 +1,7 @@
 import { toast } from "@/app/toast";
 import type { MenuItem } from "@/components/PopMenu";
 import { useCapabilities } from "@/domains/agent/capabilities";
+import { useSandboxChatBlocker } from "@/domains/vercel/chatLogin";
 import type { AgentCli } from "@/ipc/agent";
 import { useSwitchBlocker } from "./switch";
 import { useAgentTransport, useHasChat } from "./transport";
@@ -30,11 +31,14 @@ export function useAgentMenuItems({
 }: AgentMenuArgs): MenuItem[] {
   const current = useAgentTransport(workspaceId);
   const hasChat = useHasChat(cli);
-  // A sandbox runs the terminal only: no chat to move to there.
+  // A host without a chat (none today: a sandbox has both) offers no move to one.
   const hostChats = useCapabilities(workspaceId)?.chat !== false;
   const canChat = hasChat && hostChats;
   const to: Transport = current === "chat" ? "terminal" : "chat";
-  const blocker = useSwitchBlocker(workspaceId, to);
+  // A sandbox with no Claude login saved can only /login in its terminal.
+  const noLogin = useSandboxChatBlocker(workspaceId);
+  const idleBlocker = useSwitchBlocker(workspaceId, to);
+  const why = to === "chat" && noLogin ? noLogin : idleBlocker && `when idle: ${idleBlocker}`;
   const items: MenuItem[] = [];
   const run = (work: Promise<void>) =>
     void work.catch((e) => toast.error(`Couldn't do that: ${String(e)}`));
@@ -45,8 +49,8 @@ export function useAgentMenuItems({
     const label = to === "terminal" ? "Open in terminal" : "Open as chat";
     items.push({
       id: "switch",
-      label: blocker ? `${label} (when idle: ${blocker})` : label,
-      disabled: blocker !== null,
+      label: why ? `${label} (${why})` : label,
+      disabled: Boolean(why),
       onSelect: () => run(running ? restart(to) : start(to)),
     });
   }
