@@ -27,7 +27,7 @@ pub fn dir(target: &Path, link: &Path) -> bool {
 #[cfg(windows)]
 fn junction(target: &Path, link: &Path) -> std::io::Result<()> {
     let plain = |p: &Path| super::paths::plain(&p.to_string_lossy());
-    let status = std::process::Command::new("cmd")
+    let status = super::process::command("cmd")
         .args(["/C", "mklink", "/J", &plain(link), &plain(target)])
         .stdout(std::process::Stdio::null())
         .status()?;
