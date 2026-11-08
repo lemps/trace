@@ -4,9 +4,9 @@ import { I } from "@/components/Icon";
 import { ApprovalCard } from "./ApprovalCard";
 import { useChatActions } from "./actions";
 import { useChatView } from "./chatContext";
+import { showSubagentTab } from "./closedTabs";
 import type { ToolItem } from "./projection";
 import { plainLine, SubagentStatusWord, useElapsed } from "./SubagentBits";
-import { useAgentChatStore } from "./store";
 import { openSubagentBeside } from "./subagentPanel";
 import type { SubagentThread } from "./subagents";
 
@@ -20,7 +20,7 @@ function CardBody({ item }: { item: ToolItem }) {
   const { workspaceId } = useChatView();
   const actions = useChatActions();
   const elapsed = useElapsed(thread);
-  const open = () => useAgentChatStore.getState().setTab(workspaceId, thread.callId);
+  const open = () => showSubagentTab(workspaceId, thread.callId);
   const stop = () =>
     void actions
       .stopSubagent(workspaceId, thread.callId)
