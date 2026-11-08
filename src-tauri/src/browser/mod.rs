@@ -3,6 +3,7 @@
 //! only each page's URL and history (`store`); what may load is `url_rules`; who may
 //! call trace is `guard`.
 
+mod build;
 pub mod guard;
 pub mod store;
 pub mod url_rules;

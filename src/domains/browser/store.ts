@@ -37,6 +37,8 @@ interface BrowserStore {
   live: Record<string, PageLive>;
   /** Page id → the host an agent opened in it, until dismissed. */
   notices: Record<string, string>;
+  /** Page id → the host whose notice was dismissed (it isn't raised again). */
+  dismissed: Record<string, string>;
   unseen: Record<string, boolean>;
   revealed: Record<string, boolean>;
   ensure: (ws: string) => void;
@@ -47,7 +49,10 @@ interface BrowserStore {
   close: (ws: string, pageId: string) => Promise<void>;
   onView: (p: ViewPayload) => void;
   notify: (ws: string, pageId: string, host: string | null) => void;
+  /** Dismiss the "agent opened <host>" notice. */
   dismiss: (pageId: string) => void;
+  /** Dismiss what the page was refused. */
+  clearBlocked: (pageId: string) => void;
   markSeen: (ws: string) => void;
   reveal: (ws: string, on: boolean) => void;
 }
@@ -61,6 +66,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   loaded: {},
   live: {},
   notices: {},
+  dismissed: {},
   unseen: {},
   revealed: {},
   ensure(ws) {
@@ -92,6 +98,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   async close(ws, pageId) {
     await browserClose(ws, pageId);
     get().dismiss(pageId);
+    get().clearBlocked(pageId);
     await get().reload(ws);
     // The last page gone: the tab goes too, as it came.
     if ((get().files[ws] ?? EMPTY).pages.length === 0) get().reveal(ws, false);
@@ -101,11 +108,19 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
       case "loading":
         set((s) => patchLive(s, p.pageId, { loading: true, url: p.url }));
         break;
-      case "loaded":
+      case "loaded": {
         set((s) => patchLive(s, p.pageId, { loading: false, url: p.url }));
+        // An agent's page that ends up on another host (a redirect, a link) says so too.
+        const s = get();
+        const page = s.files[p.workspaceId]?.pages.find((x) => x.id === p.pageId);
+        const seen = s.notices[p.pageId] === p.host || s.dismissed[p.pageId] === p.host;
+        if (p.external && page?.openedBy === "agent" && !seen) {
+          set((st) => ({ notices: { ...st.notices, [p.pageId]: p.host } }));
+        }
         // The backend added it to the page's history.
         if (get().loaded[p.workspaceId]) setTimeout(() => void get().reload(p.workspaceId), 300);
         break;
+      }
       case "title":
         set((s) => patchLive(s, p.pageId, { title: p.title }));
         break;
@@ -122,11 +137,19 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     set((s) => ({
       unseen: { ...s.unseen, [ws]: true },
       notices: host ? { ...s.notices, [pageId]: host } : s.notices,
+      // The agent opened it again: say so again.
+      dismissed: { ...s.dismissed, [pageId]: "" },
     }));
   },
   dismiss(pageId) {
-    const { [pageId]: _, ...rest } = get().notices;
-    set((s) => ({ notices: rest, ...patchLive(s, pageId, { blocked: null }) }));
+    const { [pageId]: host, ...rest } = get().notices;
+    set((s) => ({
+      notices: rest,
+      dismissed: host ? { ...s.dismissed, [pageId]: host } : s.dismissed,
+    }));
+  },
+  clearBlocked(pageId) {
+    set((s) => patchLive(s, pageId, { blocked: null }));
   },
   markSeen(ws) {
     if (get().unseen[ws]) set((s) => ({ unseen: { ...s.unseen, [ws]: false } }));

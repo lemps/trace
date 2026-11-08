@@ -11,13 +11,11 @@
 use std::sync::Mutex;
 
 use serde::Serialize;
-use tauri::webview::{DownloadEvent, NewWindowResponse, PageLoadEvent};
 use tauri::{
     AppHandle, Emitter, EventTarget, Manager, PhysicalPosition, PhysicalSize, Rect, Url, Webview,
-    WebviewBuilder, WebviewUrl,
 };
 
-use super::store::{self, BrowserPage};
+use super::store::BrowserPage;
 use super::url_rules;
 
 /// The renderer hears about each page on this event (only the main webview does).
@@ -27,28 +25,22 @@ pub const LABEL_PREFIX: &str = "browser-";
 /// at its URL when shown again).
 const MAX_LIVE: usize = 6;
 
-/// Links that would open a new window open in the page instead. The opener plugin's
-/// script (injected into every webview) would otherwise catch them and ask trace,
-/// which a page may not, so they'd do nothing. Running first, in the capture phase,
-/// this drops `target=_blank` for the click (the page's own handlers still run) and
-/// turns a Ctrl/Shift-click into a plain navigation.
-const SAME_PAGE_LINKS: &str = r#"(() => {
-  addEventListener("click", (e) => {
-    if (e.button !== 0) return;
-    const a = e.composedPath().find((n) => n instanceof Element && n.localName === "a");
-    if (!a || !/^https?:/i.test(a.href)) return;
-    if (e.ctrlKey || e.shiftKey || e.metaKey) {
-      e.preventDefault();
-      location.href = a.href;
-    } else if (a.target === "_blank") {
-      a.removeAttribute("target");
-      setTimeout(() => a.setAttribute("target", "_blank"));
-    }
-  }, true);
-})();"#;
-
 /// Live pages, least recently shown first.
 static LIVE: Mutex<Vec<String>> = Mutex::new(Vec::new());
+/// Pages on screen now; never evicted, however long ago they were placed.
+static SHOWN: Mutex<Vec<String>> = Mutex::new(Vec::new());
+/// Held while a page's webview is made, so two shows can't both create it.
+static CREATING: Mutex<()> = Mutex::new(());
+/// Browser pages' own website data store on macOS, where `data_directory` is ignored.
+pub(super) const DATA_STORE: [u8; 16] = *b"trace-browser-v1";
+
+fn set_shown(label: &str, on: bool) {
+    let mut shown = SHOWN.lock().unwrap_or_else(|e| e.into_inner());
+    shown.retain(|l| l != label);
+    if on {
+        shown.push(label.to_string());
+    }
+}
 
 /// Where a page goes, in the window's physical pixels.
 #[derive(serde::Deserialize, Clone, Copy, Debug)]
@@ -80,6 +72,10 @@ pub enum ViewEvent {
     },
     Loaded {
         url: String,
+        /// "example.com": where the page ended up (after any redirects).
+        host: String,
+        /// Not loopback: an agent's page that lands here gets a notice.
+        external: bool,
     },
     Title {
         title: String,
@@ -111,7 +107,7 @@ pub fn label_for(workspace_id: &str, page_id: &str) -> String {
     format!("{LABEL_PREFIX}{ws}-{page}")
 }
 
-fn emit(app: &AppHandle, ws: &str, page: &str, event: ViewEvent) {
+pub(super) fn emit(app: &AppHandle, ws: &str, page: &str, event: ViewEvent) {
     let payload = Payload {
         workspace_id: ws.to_string(),
         page_id: page.to_string(),
@@ -144,14 +140,20 @@ fn forget(label: &str) {
     LIVE.lock()
         .unwrap_or_else(|e| e.into_inner())
         .retain(|l| l != label);
+    set_shown(label, false);
 }
 
-/// Close the least recently shown pages past [`MAX_LIVE`].
+/// Close the least recently shown pages past [`MAX_LIVE`], never one on screen.
 fn evict(app: &AppHandle) {
     let extra: Vec<String> = {
         let live = LIVE.lock().unwrap_or_else(|e| e.into_inner());
+        let shown = SHOWN.lock().unwrap_or_else(|e| e.into_inner());
         let n = live.len().saturating_sub(MAX_LIVE);
-        live[..n].to_vec()
+        live.iter()
+            .filter(|l| !shown.contains(l))
+            .take(n)
+            .cloned()
+            .collect()
     };
     for label in extra {
         forget(&label);
@@ -170,12 +172,14 @@ pub fn place(app: &AppHandle, ws: &str, page_id: &str, bounds: Bounds) -> Result
     view.set_bounds(bounds.rect()).map_err(|e| e.to_string())?;
     view.show().map_err(|e| e.to_string())?;
     touch(&label);
+    set_shown(&label, true);
     Ok(true)
 }
 
 /// Create `page`'s webview at its URL, at `bounds`.
 pub fn create(app: &AppHandle, ws: &str, page: &BrowserPage, bounds: Bounds) -> Result<(), String> {
     let label = label_for(ws, &page.id);
+    let _one_at_a_time = CREATING.lock().unwrap_or_else(|e| e.into_inner());
     if place(app, ws, &page.id, bounds)? {
         return Ok(());
     }
@@ -184,132 +188,15 @@ pub fn create(app: &AppHandle, ws: &str, page: &BrowserPage, bounds: Bounds) -> 
     let window = app
         .get_window(crate::browser::guard::APP_WEBVIEW)
         .ok_or("trace's window isn't open.")?;
-    let builder = build(app, ws, &page.id, &label, url)?;
+    let builder = super::build::build(app, ws, &page.id, &label, url)?;
     let rect = bounds.rect();
     window
         .add_child(builder, rect.position, rect.size)
         .map_err(|e| format!("Couldn't open the page: {e}"))?;
     touch(&label);
+    set_shown(&label, true);
     evict(app);
     Ok(())
-}
-
-fn build(
-    app: &AppHandle,
-    ws: &str,
-    page: &str,
-    label: &str,
-    url: Url,
-) -> Result<WebviewBuilder<tauri::Wry>, String> {
-    let data_dir = app
-        .path()
-        .app_cache_dir()
-        .map_err(|e| e.to_string())?
-        .join("browser");
-    let origins = app_origins(app);
-    let (a1, w1, p1) = (app.clone(), ws.to_string(), page.to_string());
-    let (a2, w2, p2) = (app.clone(), ws.to_string(), page.to_string());
-    let (a3, w3, p3) = (app.clone(), ws.to_string(), page.to_string());
-    let (a4, w4, p4) = (app.clone(), ws.to_string(), page.to_string());
-    let (a5, w5, p5, l5) = (
-        app.clone(),
-        ws.to_string(),
-        page.to_string(),
-        label.to_string(),
-    );
-    let origins_nav = origins.clone();
-    Ok(WebviewBuilder::new(label, WebviewUrl::External(url))
-        .data_directory(data_dir)
-        .focused(false)
-        .initialization_script_for_all_frames(SAME_PAGE_LINKS)
-        .on_navigation(move |url| match url_rules::check_url(url, &origins_nav) {
-            Ok(_) => true,
-            // The first load of a frame-less popup, and pages' own about:blank.
-            Err(_) if url.as_str() == "about:blank" => true,
-            Err(reason) => {
-                emit(
-                    &a1,
-                    &w1,
-                    &p1,
-                    ViewEvent::Blocked {
-                        url: url.to_string(),
-                        reason,
-                        download: false,
-                    },
-                );
-                false
-            }
-        })
-        .on_page_load(move |_view, load| {
-            let url = load.url().to_string();
-            match load.event() {
-                PageLoadEvent::Started => emit(&a2, &w2, &p2, ViewEvent::Loading { url }),
-                PageLoadEvent::Finished => {
-                    remember(&w2, &p2, &url);
-                    emit(&a2, &w2, &p2, ViewEvent::Loaded { url });
-                }
-            }
-        })
-        .on_document_title_changed(move |_view, title| {
-            emit(&a3, &w3, &p3, ViewEvent::Title { title });
-        })
-        .on_download(move |_view: Webview, event| {
-            if let DownloadEvent::Requested { url, .. } = event {
-                let reason =
-                    "Downloads don't run in trace. Open the page in your browser to download it."
-                        .into();
-                emit(
-                    &a4,
-                    &w4,
-                    &p4,
-                    ViewEvent::Blocked {
-                        url: url.to_string(),
-                        reason,
-                        download: true,
-                    },
-                );
-            }
-            false
-        })
-        // A popup (target=_blank, window.open) opens in this same page instead.
-        .on_new_window(move |url, _features| {
-            match url_rules::check_url(&url, &origins) {
-                Ok(_) => {
-                    let (app, label) = (a5.clone(), l5.clone());
-                    tauri::async_runtime::spawn(async move {
-                        if let Some(view) = app.get_webview(&label) {
-                            let _ = view.navigate(url);
-                        }
-                    });
-                }
-                Err(reason) => {
-                    emit(
-                        &a5,
-                        &w5,
-                        &p5,
-                        ViewEvent::Blocked {
-                            url: url.to_string(),
-                            reason,
-                            download: false,
-                        },
-                    );
-                }
-            }
-            NewWindowResponse::Deny
-        }))
-}
-
-/// A finished load lands in the page's history (best-effort, off the UI thread).
-fn remember(ws: &str, page: &str, url: &str) {
-    let (ws, page, url) = (ws.to_string(), page.to_string(), url.to_string());
-    std::thread::spawn(move || {
-        let now = chrono::Utc::now().timestamp_millis();
-        let _ = store::update(&ws, |f| {
-            if let Some(p) = f.pages.iter_mut().find(|p| p.id == page) {
-                store::visit(p, &url, now);
-            }
-        });
-    });
 }
 
 fn live_view(app: &AppHandle, ws: &str, page: &str) -> Option<Webview> {
@@ -317,6 +204,7 @@ fn live_view(app: &AppHandle, ws: &str, page: &str) -> Option<Webview> {
 }
 
 pub fn hide(app: &AppHandle, ws: &str, page: &str) {
+    set_shown(&label_for(ws, page), false);
     if let Some(view) = live_view(app, ws, page) {
         let _ = view.hide();
     }

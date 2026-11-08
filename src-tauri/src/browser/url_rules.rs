@@ -13,6 +13,9 @@ use tauri::Url;
 /// webview that isn't trace's.
 pub const APP_SCHEMES: &[&str] = &["tauri", "ipc", "asset", crate::gallery::SCHEME];
 
+/// Longest URL the tab loads or keeps.
+pub const MAX_URL: usize = 4096;
+
 /// Where a URL points, which decides how the tab shows it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,6 +39,9 @@ pub fn check(raw: &str, app_origins: &[Url]) -> Result<(Url, Reach), String> {
 
 /// [`check`] for a parsed URL: also what every navigation inside the tab goes through.
 pub fn check_url(url: &Url, app_origins: &[Url]) -> Result<Reach, String> {
+    if url.as_str().len() > MAX_URL {
+        return Err(format!("That URL is over {MAX_URL} characters."));
+    }
     let scheme = url.scheme();
     if scheme != "http" && scheme != "https" {
         return Err(format!(

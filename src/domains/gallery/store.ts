@@ -108,7 +108,12 @@ export function useListing(
             setState({ listing, error: null });
           }
         })
-        .catch((e: unknown) => alive && setState({ listing: null, error: String(e) }))
+        .catch((e: unknown) => {
+          if (!alive) return;
+          // The next good listing must show, even if it says what the last one did.
+          last = "";
+          setState({ listing: null, error: String(e) });
+        })
         .finally(() => {
           if (alive) timer = window.setTimeout(run, RELIST_MS);
         });

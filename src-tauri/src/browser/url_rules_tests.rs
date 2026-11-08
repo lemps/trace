@@ -90,3 +90,9 @@ fn host_label() {
     let u = Url::parse("https://example.com/a").unwrap();
     assert_eq!(display_host(&u), "example.com");
 }
+
+#[test]
+fn overlong_urls_are_refused() {
+    let long = format!("http://localhost/{}", "a".repeat(MAX_URL));
+    assert!(refused(&long).contains("characters"));
+}

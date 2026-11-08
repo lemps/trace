@@ -17,7 +17,6 @@ pub const MAX_PAGES: usize = 8;
 /// URLs remembered per page, newest last.
 pub const MAX_HISTORY: usize = 50;
 const MAX_TITLE: usize = 200;
-const MAX_URL: usize = 4096;
 
 /// Who opened a page. An agent's page on another host gets a notice in the tab.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,10 +93,9 @@ pub fn update<R>(workspace_id: &str, f: impl FnOnce(&mut BrowserFile) -> R) -> R
 
 /// A URL worth keeping: loadable by the tab and of sane length.
 fn keepable(url: &str) -> bool {
-    url.len() <= MAX_URL
-        && Url::parse(url)
-            .ok()
-            .is_some_and(|u| url_rules::check_url(&u, &[]).is_ok())
+    Url::parse(url)
+        .ok()
+        .is_some_and(|u| url_rules::check_url(&u, &[]).is_ok())
 }
 
 fn clip(text: &str, max: usize) -> String {

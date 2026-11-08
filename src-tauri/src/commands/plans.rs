@@ -186,7 +186,7 @@ pub async fn export_plan_pdf(
     let done = Os::print_to_pdf(&webview, &path);
     blocking(move || done.recv().map_err(|e| e.to_string())?).await?;
     // The dialog may have taken focus from the window; give it back.
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_window(crate::browser::guard::APP_WEBVIEW) {
         let _ = window.set_focus();
     }
     Ok(PdfExport::Saved {

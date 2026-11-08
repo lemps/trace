@@ -42,7 +42,7 @@ export type BrowserAction = "back" | "forward" | "reload" | "stop";
 
 export type ViewEvent =
   | { kind: "loading"; url: string }
-  | { kind: "loaded"; url: string }
+  | { kind: "loaded"; url: string; host: string; external: boolean }
   | { kind: "title"; title: string }
   | { kind: "blocked"; url: string; reason: string; download: boolean };
 

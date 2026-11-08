@@ -46,6 +46,18 @@ function placement(el: HTMLElement): Bounds | null {
   };
 }
 
+/**
+ * Each page's show/hide calls, in order. Commands run concurrently backend-side, so
+ * an old mount's hide could otherwise land after a new mount's show (a tab moved to
+ * another pane) and leave the page hidden.
+ */
+const queues = new Map<string, Promise<unknown>>();
+function inOrder(pageId: string, run: () => Promise<void>): Promise<void> {
+  const next = (queues.get(pageId) ?? Promise.resolve()).catch(() => {}).then(run);
+  queues.set(pageId, next);
+  return next;
+}
+
 const key = (b: Bounds | null) => (b ? `${b.x},${b.y},${b.width},${b.height}` : "hidden");
 
 /** Lay `pageId`'s webview over `ref` while mounted; `onError` hears why it couldn't. */
@@ -67,7 +79,9 @@ export function useNativeView(
       const target = want;
       busy = true;
       sent = key(target);
-      const call = target ? browserShow(ws, pageId, target) : browserHide(ws, pageId);
+      const call = inOrder(pageId, () =>
+        target ? browserShow(ws, pageId, target) : browserHide(ws, pageId)
+      );
       call
         .catch((e: unknown) => {
           if (!failed) onError(String(e));
@@ -76,7 +90,7 @@ export function useNativeView(
         .finally(() => {
           busy = false;
           // Unmounted while a show was on its way: make sure it ends hidden.
-          if (dead) void browserHide(ws, pageId).catch(() => {});
+          if (dead) void inOrder(pageId, () => browserHide(ws, pageId)).catch(() => {});
           else flush();
         });
     };
@@ -91,7 +105,7 @@ export function useNativeView(
     return () => {
       cancelAnimationFrame(frame);
       dead = true;
-      if (!busy) void browserHide(ws, pageId).catch(() => {});
+      if (!busy) void inOrder(pageId, () => browserHide(ws, pageId)).catch(() => {});
     };
   }, [ref, ws, pageId, onError]);
 }
