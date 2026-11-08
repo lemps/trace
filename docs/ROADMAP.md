@@ -1,7 +1,8 @@
 # Roadmap
 
 Features trace may build. **Wanted** items are decided; **Candidates** came from a review of
-[Orca](https://github.com/stablyai/orca) on 2026-11-06 and still need a decision.
+[Orca](https://github.com/stablyai/orca) on 2026-11-06 and still need a decision. UI and design
+reviews, with what shipped and what's still open, live in [`reviews/`](reviews/).
 
 ## Updating this list
 
