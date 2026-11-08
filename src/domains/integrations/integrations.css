@@ -109,3 +109,90 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* A section inside a connected integration's dialog (Vercel's Claude login). */
+.ig-sub {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-faint);
+}
+.ig-sub > .field,
+.ig-sub > .ig-form-foot {
+  align-self: stretch;
+}
+.ig-sub h3 {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.ig-note {
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+.ig-sub .field .hint code {
+  font-family: var(--font-mono);
+}
+
+/* Tailscale's devices: one row each, name then OS, address and reachability. */
+.ig-devices {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ig-device {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 56px;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border-faint);
+  font-size: var(--text-ui);
+}
+.ig-device:last-child {
+  border-bottom: none;
+}
+.ig-device-name {
+  overflow: hidden;
+  color: var(--fg-1);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ig-device-meta {
+  color: var(--fg-3);
+  font-size: var(--text-meta);
+}
+.ig-device-ip {
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+/* Reachability is a fact about the network, not agent state: words, no colour. */
+.ig-device-on,
+.ig-device-off {
+  font-size: var(--text-meta);
+  text-align: right;
+}
+.ig-device-on {
+  color: var(--fg-1);
+}
+.ig-device-off {
+  color: var(--fg-3);
+}
+.ig-empty {
+  align-self: stretch;
+  padding: 12px;
+  border: 1px dashed var(--border-faint);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}

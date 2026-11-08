@@ -6,9 +6,26 @@ import type { RemoteRepo, SetupConfig } from "@/domains/repos/types";
 /** How trace got its token. */
 export type GitHubSource = "pasted" | "gh" | "device";
 
-/** The GitHub integration's state. */
+/** How an account was added, in a few words. */
+export const SOURCE_LABEL: Record<GitHubSource, string> = {
+  pasted: "pasted token",
+  gh: "from gh",
+  device: "browser sign-in",
+};
+
+/** One signed-in GitHub account. trace holds several and picks one per repo. */
+export interface GitHubAccount {
+  login: string;
+  source: GitHubSource;
+  /** What the repo browser and other single-account features use. */
+  primary: boolean;
+  /** Why its token isn't working right now. */
+  problem: string | null;
+}
+
+/** The GitHub integration's state. The top-level fields describe the primary account. */
 export interface GitHubStatus {
-  /** Who trace's token belongs to; null when signed out. */
+  /** The primary account's login; null when signed out. */
   login: string | null;
   source: GitHubSource | null;
   /** A classic or OAuth token's scopes; null for fine-grained tokens. */
@@ -19,8 +36,10 @@ export interface GitHubStatus {
   ghAvailable: boolean;
   /** Signing in through the browser (OAuth device flow) is set up. */
   deviceFlow: boolean;
-  /** Why the saved token isn't working right now. */
+  /** Why the primary account's token isn't working right now. */
   problem: string | null;
+  /** Every signed-in account, the primary first. */
+  accounts: GitHubAccount[];
 }
 
 /** A device sign-in in progress: the code to enter on GitHub. */

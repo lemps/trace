@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { CreatedBy, ScratchSession, SessionGroups } from "@/domains/sessions/types";
+import type {
+  CreatedBy,
+  ScratchSession,
+  SessionGroups,
+  SessionHostKind,
+} from "@/domains/sessions/types";
 import type { AgentCli, AgentProvider, Transport } from "./agent";
 
 // Typed wrappers around the exploratory-session commands. Start/stop/input/resize
@@ -11,7 +16,8 @@ export function listSessions(): Promise<ScratchSession[]> {
 
 /**
  * `remoteControl` starts it with Claude Code's Remote Control (Claude on Anthropic
- * only). `createdBy` unset = the user.
+ * only). `createdBy` unset = the user. `host` unset = this computer; `"vercel"` runs
+ * it in a Vercel Sandbox and needs a `repo` with a GitHub remote (the error says so).
  */
 export function createSession(
   title: string,
@@ -20,7 +26,8 @@ export function createSession(
   provider?: AgentProvider,
   remoteControl?: boolean,
   folder?: string | null,
-  createdBy?: CreatedBy
+  createdBy?: CreatedBy,
+  host?: SessionHostKind | null
 ): Promise<ScratchSession> {
   return invoke("create_session", {
     title,
@@ -30,6 +37,7 @@ export function createSession(
     provider: provider ?? null,
     remoteControl: remoteControl ?? null,
     createdBy: createdBy ?? null,
+    host: host ?? null,
   });
 }
 

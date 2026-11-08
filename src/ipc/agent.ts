@@ -87,6 +87,29 @@ export function ptySnapshot(workspaceId: string): Promise<PtySnapshot | null> {
 }
 
 /** Stop a workspace's agent, terminal or chat. A chat agent's exit follows shortly. */
+/** What an agent's host can do besides its screen (`execution::Capabilities`).
+ * Everything on this computer; on a Vercel sandbox, the terminal only. */
+export interface AgentCapabilities {
+  turnHooks: boolean;
+  transcript: boolean;
+  files: boolean;
+  terminal: boolean;
+  tests: boolean;
+  agentTools: boolean;
+  /** It can run as a chat as well as in a terminal. */
+  chat: boolean;
+}
+
+export function agentCapabilities(workspaceId: string): Promise<AgentCapabilities> {
+  return invoke("agent_capabilities", { workspaceId });
+}
+
+/** Disconnect from an agent on another host (a Vercel sandbox), leaving it running
+ * there. Starting it again joins it. Refused for a local agent. */
+export function detachAgent(issueKey: string): Promise<void> {
+  return invoke("detach_agent", { issueKey });
+}
+
 export function stopAgent(issueKey: string): Promise<void> {
   return invoke("stop_agent", { issueKey });
 }

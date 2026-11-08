@@ -7,7 +7,6 @@ use std::sync::OnceLock;
 
 use parking_lot::{Mutex, RwLock};
 
-use crate::claude::pty::PtySession;
 use crate::claude::render_bridge::RenderBridge;
 use crate::issues::Provider;
 
@@ -36,8 +35,9 @@ pub struct AppState {
     /// Connected issue trackers, one per provider kind. Tokens live here and in
     /// `0600` config files — never sent to the UI.
     pub providers: RwLock<HashMap<crate::issues::ProviderKind, Provider>>,
-    /// Live interactive Claude sessions, keyed by issue key.
-    pub pty_sessions: Mutex<HashMap<String, PtySession>>,
+    /// Live agent terminals (and Terminal-tab shells), keyed by workspace id, on
+    /// whichever host runs them (`execution`).
+    pub pty_sessions: Mutex<HashMap<String, crate::execution::LiveSession>>,
     /// Child PIDs for running agents (for SIGINT/stop), keyed by issue key.
     pub child_pids: Mutex<HashMap<String, u32>>,
     /// Rolling PTY output per workspace (see `OutputHistory`). Reset on spawn,

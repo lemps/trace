@@ -17,6 +17,7 @@ pub mod brands;
 pub mod claude;
 pub mod codex;
 pub mod journal;
+pub mod process;
 pub mod registry;
 pub mod runtime;
 pub mod settle;
@@ -117,6 +118,11 @@ pub trait AgentAdapter: Send {
     }
     /// End the agent.
     fn stop(&mut self);
+    /// Let go of the agent and leave it running where it is (a cloud sandbox),
+    /// for a later start to rejoin. False when it can't outlive trace here.
+    fn detach(&mut self) -> bool {
+        false
+    }
     /// The agent's process id, for the interrupted-agents ledger.
     fn pid(&self) -> Option<u32> {
         None

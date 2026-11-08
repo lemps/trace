@@ -4,6 +4,7 @@ import { TranscriptView } from "@/domains/transcript/TranscriptView";
 import type { AgentCli } from "@/ipc/agent";
 import { isAgentViewKey } from "@/platform/shortcuts";
 import { AnswerBar } from "./AnswerBar";
+import { useCapabilities } from "./capabilities";
 import { PtyTerminal } from "./PtyTerminal";
 import { getTerminal } from "./terminalRegistry";
 
@@ -24,11 +25,13 @@ interface ChatSurfaceProps {
 // ⌘⇧T (Ctrl+Shift+T) flips; the answer bar works in both.
 export function ChatSurface({ workspaceId, cli, children }: ChatSurfaceProps) {
   const view = useAgentView(workspaceId);
-  const showTranscript = view === "transcript" && cli !== "codex";
+  // A sandbox's conversation is on its host, not this disk: terminal only there.
+  const canTranscript = useCapabilities(workspaceId)?.transcript !== false;
+  const showTranscript = view === "transcript" && cli !== "codex" && canTranscript;
   const hasTranscript = useTranscriptStore((s) => (s.feeds[workspaceId]?.items.length ?? 0) > 0);
   const coverRef = useRef<HTMLDivElement>(null);
   const shownBefore = useRef<boolean | null>(null);
-  useAgentViewKey(workspaceId, cli);
+  useAgentViewKey(workspaceId, canTranscript ? cli : "codex");
 
   // Keys follow what's shown: typing into a terminal you can't see would send
   // keystrokes to the agent blind. The cover takes focus (so arrows and Page

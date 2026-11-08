@@ -4,8 +4,9 @@
 
 use serde::Serialize;
 
+use super::accounts::{self, Credential, Source};
 use super::api;
-use super::token::{self, Credential, Source, Token};
+use super::token::Token;
 
 /// The GitHub integration's state, for its card and dialog. Never holds the token.
 #[derive(Serialize, Clone, Debug, PartialEq, Default)]
@@ -24,6 +25,20 @@ pub struct GitHubStatus {
     /// The OAuth device flow is configured (`device::CLIENT_ID`).
     pub device_flow: bool,
     /// Why the saved token isn't working right now.
+    pub problem: Option<String>,
+    /// Every signed-in account, the primary (the one above) first.
+    pub accounts: Vec<AccountSummary>,
+}
+
+/// One signed-in account, for the dialog's list. Never holds the token.
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountSummary {
+    pub login: String,
+    pub source: Source,
+    /// What the repo browser and other single-account features use.
+    pub primary: bool,
+    /// Why its token isn't working right now.
     pub problem: Option<String>,
 }
 
@@ -74,43 +89,65 @@ fn base() -> GitHubStatus {
     }
 }
 
-/// The saved token's state. Never errors: signed out, or a token GitHub
-/// refuses, is a state to show.
+/// The signed-in accounts' state. Never errors: signed out, or a token GitHub
+/// refuses, is a state to show. The top-level fields describe the primary.
 pub async fn status() -> GitHubStatus {
-    let Some(cred) = token::load() else {
-        return base();
-    };
-    let mut s = GitHubStatus {
-        login: Some(cred.login.clone()),
-        source: Some(cred.source),
-        ..base()
-    };
-    match validate(&cred.token).await {
-        Ok(info) => {
-            s.login = Some(info.login);
-            s.scopes = info.scopes;
-            s.expires_at = info.expires_at;
+    let all = accounts::load_all();
+    let mut s = base();
+    for (i, cred) in all.iter().enumerate() {
+        let checked = validate(&cred.token).await;
+        if i == 0 {
+            s.login = Some(cred.login.clone());
+            s.source = Some(cred.source);
+            match &checked {
+                Ok(info) => {
+                    s.scopes = info.scopes.clone();
+                    s.expires_at = info.expires_at.clone();
+                }
+                Err(e) => s.problem = Some(e.clone()),
+            }
         }
-        Err(e) => s.problem = Some(e),
+        s.accounts.push(AccountSummary {
+            login: checked
+                .as_ref()
+                .map_or(cred.login.clone(), |info| info.login.clone()),
+            source: cred.source,
+            primary: i == 0,
+            problem: checked.err(),
+        });
     }
     s
 }
 
-/// Check `token`, then save it as trace's GitHub credential.
-pub async fn sign_in(token: Token, source: Source) -> Result<GitHubStatus, String> {
+/// Check `token`, then add it as one of trace's GitHub accounts (replacing the
+/// token of an account already signed in).
+pub async fn add(token: Token, source: Source) -> Result<(), String> {
     let info = validate(&token).await?;
-    token::save(&Credential {
+    accounts::save(&Credential {
         token,
         source,
-        login: info.login.clone(),
-    })?;
-    Ok(GitHubStatus {
-        login: Some(info.login),
-        source: Some(source),
-        scopes: info.scopes,
-        expires_at: info.expires_at,
-        ..base()
+        login: info.login,
     })
+}
+
+/// [`add`], then the accounts' state.
+pub async fn sign_in(token: Token, source: Source) -> Result<GitHubStatus, String> {
+    add(token, source).await?;
+    Ok(status().await)
+}
+
+/// Every account `gh` is signed in to on github.com, each token copied once.
+/// Falls back to `gh`'s active account on a `gh` too old to list them.
+pub fn gh_tokens() -> Result<Vec<Token>, String> {
+    let tokens: Vec<Token> = super::gh::logins()
+        .iter()
+        .filter_map(|login| super::gh::token_for(login))
+        .filter_map(|t| Token::new(&t))
+        .collect();
+    if tokens.is_empty() {
+        return gh_token().map(|t| vec![t]);
+    }
+    Ok(tokens)
 }
 
 /// The token `gh` is signed in with on github.com, copied once. After this
@@ -137,7 +174,7 @@ pub fn gh_token() -> Result<Token, String> {
 
 /// The signed-in credential's token, or why there isn't one.
 pub fn require_token() -> Result<Token, String> {
-    token::load()
+    accounts::load()
         .map(|c| c.token)
         .ok_or_else(|| "Sign in to GitHub first (Integrations → GitHub).".to_string())
 }

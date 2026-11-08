@@ -12,5 +12,6 @@ pub mod launch;
 pub mod permission_ask;
 pub mod pty;
 pub mod pty_exit;
+pub mod pty_output;
 pub mod render_bridge;
 pub mod transcript;

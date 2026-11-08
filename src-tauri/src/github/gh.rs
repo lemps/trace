@@ -64,7 +64,7 @@ fn parse_auth_status(json: &str) -> Result<Vec<Account>, String> {
 }
 
 /// Signed-in github.com logins, the active one first.
-fn logins() -> Vec<String> {
+pub(super) fn logins() -> Vec<String> {
     let Ok(out) = crate::claude::discovery::command("gh")
         .args(["auth", "status", "--json", "hosts"])
         .output()
@@ -79,7 +79,7 @@ fn logins() -> Vec<String> {
     accounts.into_iter().map(|a| a.login).collect()
 }
 
-fn token_for(login: &str) -> Option<String> {
+pub(super) fn token_for(login: &str) -> Option<String> {
     let out = crate::claude::discovery::command("gh")
         .args(["auth", "token", "--user", login])
         .output()

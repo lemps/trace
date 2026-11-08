@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
+import { GitHubAccounts } from "@/domains/github/GitHubAccounts";
 import { GitHubSignIn } from "@/domains/github/GitHubSignIn";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
 import { useGitHubStore } from "@/domains/github/store";
-import type { GitHubStatus } from "@/domains/github/types";
+import { type GitHubStatus, SOURCE_LABEL } from "@/domains/github/types";
 import { GITHUB } from "./github";
 
-const SOURCE: Record<NonNullable<GitHubStatus["source"]>, string> = {
-  pasted: "personal access token",
-  gh: "token copied from gh",
-  device: "signed in through the browser",
-};
+/** "ron875 · from gh", or "2 accounts · primary ron875" with several. */
+function accountLine(s: GitHubStatus, login: string): string {
+  if (s.accounts.length > 1) return `${s.accounts.length} accounts · primary ${login}`;
+  return s.source ? `${login} · ${SOURCE_LABEL[s.source]}` : login;
+}
 
 /** "repo, read:org · expires 2026-12-01", or what GitHub didn't say. */
 function tokenFacts(s: GitHubStatus): string {
@@ -25,15 +26,22 @@ function tokenFacts(s: GitHubStatus): string {
   return `${scopes} · ${expiry}`;
 }
 
-// GitHub's details: sign trace in with its own token, see whose it is, sign out
-// (which deletes the token), and open the repo browser.
+// GitHub's details: sign trace in to one or more GitHub accounts with its own
+// tokens, pick the primary (the one the repo browser uses), remove one, sign out of
+// all of them (which deletes the tokens), and open the repo browser.
 export function GitHubDialog({ onClose }: { onClose: () => void }) {
   const status = useGitHubStore((s) => s.status);
   const signOut = useGitHubStore((s) => s.signOut);
   const [browsing, setBrowsing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [adding, setAdding] = useState(false);
   const login = status?.login;
+  const accounts = status?.accounts ?? [];
   const working = Boolean(login) && !status?.problem;
+  // With no account working, signing in is the only useful thing here.
+  const mustSignIn = !accounts.some((a) => !a.problem);
+  const signingIn = mustSignIn || adding;
+  const tokens = accounts.length === 1 ? "token" : `${accounts.length} tokens`;
 
   if (browsing) return <RepoBrowser onClose={onClose} />;
   return (
@@ -45,17 +53,34 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
             <div className="ig-desc">{GITHUB.description}</div>
             {login && status && (
               <>
-                <div className="ig-account">
-                  {login}
-                  {status.source && ` · ${SOURCE[status.source]}`}
-                </div>
+                <div className="ig-account">{accountLine(status, login)}</div>
                 {working && <div className="gh-note">{tokenFacts(status)}</div>}
               </>
             )}
           </div>
         </div>
-        {!working && <GitHubSignIn />}
-        {login && (
+        {accounts.length === 0 ? (
+          <GitHubSignIn />
+        ) : (
+          <div className="ig-sub">
+            <h3>Accounts</h3>
+            <div className="ig-note">
+              Sandboxes clone and push each repo as the account that owns it.
+            </div>
+            <GitHubAccounts accounts={accounts} />
+            {signingIn ? (
+              <GitHubSignIn
+                onSignedIn={() => setAdding(false)}
+                onCancel={mustSignIn ? undefined : () => setAdding(false)}
+              />
+            ) : (
+              <button type="button" className="btn" onClick={() => setAdding(true)}>
+                <I.Plus size={13} /> Add another account
+              </button>
+            )}
+          </div>
+        )}
+        {accounts.length > 0 && !adding && (
           <div className="ig-form-foot">
             {confirming ? (
               <>
@@ -67,13 +92,13 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
                   className="btn danger"
                   onClick={() => void signOut().then(() => setConfirming(false))}
                 >
-                  Sign out and delete token
+                  Sign out and delete {tokens}
                 </button>
               </>
             ) : (
               <>
                 <button type="button" className="btn" onClick={() => setConfirming(true)}>
-                  Sign out
+                  {accounts.length > 1 ? "Sign out of everything" : "Sign out"}
                 </button>
                 {working && (
                   <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>

@@ -28,7 +28,15 @@ impl RemoteRepo {
     /// Whether `other` names the same repo. Hosts and GitHub names are
     /// case-insensitive, so `Org/Repo` and `org/repo` are one repo.
     pub fn same_as(&self, other: &RemoteRepo) -> bool {
-        self.host.eq_ignore_ascii_case(&other.host)
+        // A record saved before SSH aliases were read as GitHub keeps the alias.
+        let canon = |h: &str| {
+            if alias_account(&h.to_ascii_lowercase()).is_some() {
+                GITHUB_HOST.to_string()
+            } else {
+                h.to_ascii_lowercase()
+            }
+        };
+        canon(&self.host) == canon(&other.host)
             && self.full_name().eq_ignore_ascii_case(&other.full_name())
     }
 }
@@ -119,6 +127,10 @@ pub struct RepoRecord {
     pub default_branch: Option<String>,
     #[serde(default)]
     pub setup: SetupConfig,
+    /// The GitHub account a cloud sandbox clones and pushes this repo as, when
+    /// the user picked one (`github::pick`); None = work it out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub github_account: Option<String>,
 }
 
 impl RepoRecord {
@@ -132,7 +144,9 @@ impl RepoRecord {
 /// anything without both an owner and a name.
 ///
 /// Handles scp-style (`git@github.com:o/n.git`), `ssh://` (with user and port)
-/// and `https://` (with credentials, `.git` and a trailing slash).
+/// and `https://` (with credentials, `.git` and a trailing slash). A per-account
+/// SSH alias (`github.com-work`, set up in `~/.ssh/config` to use several GitHub
+/// accounts) is still github.com: see [`github_alias_account`].
 pub fn parse_remote_url(url: &str) -> Option<RemoteRepo> {
     let url = url.trim();
     let (host, path) = if let Some((_, rest)) = url.split_once("://") {
@@ -154,11 +168,33 @@ pub fn parse_remote_url(url: &str) -> Option<RemoteRepo> {
     if host.is_empty() || owner.is_empty() || name.is_empty() {
         return None;
     }
+    let host = host.to_ascii_lowercase();
+    let host = if alias_account(&host).is_some() {
+        GITHUB_HOST.to_string()
+    } else {
+        host
+    };
     Some(RemoteRepo {
-        host: host.to_ascii_lowercase(),
+        host,
         owner: owner.to_string(),
         name: name.to_string(),
     })
+}
+
+const GITHUB_HOST: &str = "github.com";
+
+fn alias_account(host: &str) -> Option<&str> {
+    host.strip_prefix("github.com-").filter(|a| !a.is_empty())
+}
+
+/// The GitHub account a remote URL's SSH alias names (`github.com-noble1911` →
+/// `noble1911`): which of several signed-in accounts this checkout pushes as.
+pub fn github_alias_account(url: &str) -> Option<String> {
+    let url = url.trim();
+    let rest = url.split_once("://").map_or(url, |(_, r)| r);
+    let authority = rest.split(['/', ':']).next()?;
+    let host = authority.rsplit('@').next()?.to_ascii_lowercase();
+    alias_account(&host).map(str::to_string)
 }
 
 #[cfg(test)]
@@ -198,6 +234,25 @@ mod tests {
             parse_remote_url("https://x:tok@github.com/noble1911/trace"),
             want
         );
+    }
+
+    #[test]
+    fn a_per_account_ssh_alias_is_still_github() {
+        let url = "git@github.com-noble1911:noble1911/trace.git";
+        assert_eq!(
+            parse_remote_url(url),
+            remote("github.com", "noble1911", "trace")
+        );
+        assert_eq!(github_alias_account(url).as_deref(), Some("noble1911"));
+        assert_eq!(
+            github_alias_account("ssh://git@github.com-work/o/n.git").as_deref(),
+            Some("work")
+        );
+        assert_eq!(
+            github_alias_account("git@github.com:noble1911/trace.git"),
+            None
+        );
+        assert_eq!(github_alias_account("https://github.com/o/n"), None);
     }
 
     #[test]

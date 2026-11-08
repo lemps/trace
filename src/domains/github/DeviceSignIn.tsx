@@ -1,5 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { githubDeviceCancel, githubDeviceStart, githubDeviceWait } from "@/ipc/github";
@@ -7,11 +7,14 @@ import { useGitHubStore } from "./store";
 import type { DeviceStart } from "./types";
 
 // The OAuth device flow: show the code, open github.com/login/device, and wait
-// (on the Rust side) until the user approves it there.
-export function DeviceSignIn({ onCancel }: { onCancel: () => void }) {
+// (on the Rust side) until the user approves it there, which adds that account.
+export function DeviceSignIn({ onCancel, onDone }: { onCancel: () => void; onDone?: () => void }) {
   const setStatus = useGitHubStore((s) => s.setStatus);
   const [start, setStart] = useState<DeviceStart | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Read when the wait ends, so a new callback doesn't restart the flow.
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
 
   useEffect(() => {
     let live = true;
@@ -21,7 +24,9 @@ export function DeviceSignIn({ onCancel }: { onCancel: () => void }) {
         if (!live) return;
         setStart(s);
         const status = await githubDeviceWait();
-        if (live) setStatus(status);
+        if (!live) return;
+        setStatus(status);
+        doneRef.current?.();
       } catch (err) {
         if (live) setError(String(err));
       }

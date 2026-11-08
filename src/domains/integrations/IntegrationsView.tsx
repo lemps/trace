@@ -1,10 +1,16 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useGitHubStore } from "@/domains/github/store";
 import { useIssuesStore } from "@/domains/issues/store";
+import { useTailscaleStatus } from "@/domains/tailscale/store";
+import { useVercelStatus } from "@/domains/vercel/store";
 import { GitHubDialog } from "./GitHubDialog";
 import { GITHUB } from "./github";
 import { IntegrationDialog } from "./IntegrationDialog";
 import { INTEGRATIONS, type Integration } from "./registry";
+import { TailscaleDialog } from "./TailscaleDialog";
+import { TAILSCALE } from "./tailscale";
+import { VercelDialog } from "./VercelDialog";
+import { VERCEL } from "./vercel";
 
 interface CardProps {
   name: string;
@@ -30,12 +36,19 @@ function IntegrationCard({ name, logo, description, connected, onOpen }: CardPro
 // Connect and disconnect the services trace works with, one card each. Connecting a
 // tracker adds its board to the rail; disconnecting takes it away. GitHub is about
 // code rather than a board: signed in with trace's own token, it opens the repo browser.
+// Vercel is somewhere sessions run: connected, New session offers it. Tailscale is
+// how trace reaches your other computers; its own app connects it, so it shows as
+// connected while this computer is on a tailnet.
 export function IntegrationsView() {
   const sessions = useIssuesStore((s) => s.sessions);
   const githubLogin = useGitHubStore((s) => s.status?.login);
   const checkGitHub = useGitHubStore((s) => s.checkStatus);
   const [open, setOpen] = useState<Integration | null>(null);
   const [githubOpen, setGithubOpen] = useState(false);
+  const vercel = useVercelStatus();
+  const [vercelOpen, setVercelOpen] = useState(false);
+  const tailscale = useTailscaleStatus();
+  const [tailscaleOpen, setTailscaleOpen] = useState(false);
 
   useEffect(() => void checkGitHub(), [checkGitHub]);
 
@@ -57,7 +70,25 @@ export function IntegrationsView() {
   );
   const connected = INTEGRATIONS.filter((i) => sessions[i.kind]).map(card);
   const available = INTEGRATIONS.filter((i) => !sessions[i.kind]).map(card);
+  const vercelCard = (
+    <IntegrationCard
+      key="vercel"
+      {...VERCEL}
+      connected={Boolean(vercel)}
+      onOpen={() => setVercelOpen(true)}
+    />
+  );
+  const tailscaleCard = (
+    <IntegrationCard
+      key="tailscale"
+      {...TAILSCALE}
+      connected={tailscale?.state === "running"}
+      onOpen={() => setTailscaleOpen(true)}
+    />
+  );
   (githubLogin ? connected : available).push(githubCard);
+  (vercel ? connected : available).push(vercelCard);
+  (tailscale?.state === "running" ? connected : available).push(tailscaleCard);
   const section = (title: string, items: ReactNode[]) =>
     items.length > 0 && (
       <section className="ig-section">
@@ -72,7 +103,8 @@ export function IntegrationsView() {
         <div>
           <h1>Integrations</h1>
           <div className="desc">
-            Connect a tracker to add its board to the rail, or GitHub to check out repos.
+            Connect a tracker to add its board to the rail, GitHub to check out repos, Vercel to run
+            sessions in the cloud, or Tailscale to reach your other computers.
           </div>
         </div>
       </div>
@@ -84,6 +116,8 @@ export function IntegrationsView() {
       </div>
       {open && <IntegrationDialog integration={open} onClose={() => setOpen(null)} />}
       {githubOpen && <GitHubDialog onClose={() => setGithubOpen(false)} />}
+      {vercelOpen && <VercelDialog onClose={() => setVercelOpen(false)} />}
+      {tailscaleOpen && <TailscaleDialog onClose={() => setTailscaleOpen(false)} />}
     </div>
   );
 }

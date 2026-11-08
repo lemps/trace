@@ -3,11 +3,19 @@ import { I } from "@/components/Icon";
 import { DeviceSignIn } from "./DeviceSignIn";
 import { useGitHubStore } from "./store";
 
-// Signing trace in to GitHub with its own token, kept in a private file in
+interface GitHubSignInProps {
+  /** An account was added (or its token renewed). */
+  onSignedIn?: () => void;
+  /** Shown as a Cancel button when adding another account. */
+  onCancel?: () => void;
+}
+
+// Signing trace in to GitHub with its own tokens, kept in a private file in
 // trace's config dir: through the browser (OAuth device flow, when this build has
-// an OAuth app), a one-off copy of the gh CLI's login, or a pasted personal
-// access token. Nothing here sees the token after it's submitted.
-export function GitHubSignIn() {
+// an OAuth app), a one-off copy of every gh CLI login, or a pasted personal
+// access token. Each adds an account (or renews that account's token). Nothing here
+// sees a token after it's submitted.
+export function GitHubSignIn({ onSignedIn, onCancel }: GitHubSignInProps) {
   const status = useGitHubStore((s) => s.status);
   const signingIn = useGitHubStore((s) => s.signingIn);
   const error = useGitHubStore((s) => s.signInError);
@@ -15,16 +23,23 @@ export function GitHubSignIn() {
   const [token, setToken] = useState("");
   const [device, setDevice] = useState(false);
 
-  if (device) return <DeviceSignIn onCancel={() => setDevice(false)} />;
+  if (device) return <DeviceSignIn onCancel={() => setDevice(false)} onDone={onSignedIn} />;
   const deviceFlow = status?.deviceFlow ?? false;
   const canSubmit = Boolean(token.trim()) && !signingIn;
-  const submit = () => {
-    if (canSubmit) void signInToken(token.trim());
+  const done = (ok: boolean) => {
+    if (!ok) return;
+    setToken("");
+    onSignedIn?.();
   };
+  const submit = () => {
+    if (canSubmit) void signInToken(token.trim()).then(done);
+  };
+  // With accounts signed in, each one's problem shows on its own row instead.
+  const problem = status?.accounts.length ? null : status?.problem;
 
   return (
     <div className="gh-signin">
-      {status?.problem && <div className="ig-error">{status.problem}</div>}
+      {problem && <div className="ig-error">{problem}</div>}
       {(deviceFlow || status?.ghAvailable) && (
         <div className="gh-signin-options">
           {deviceFlow && (
@@ -37,16 +52,17 @@ export function GitHubSignIn() {
               type="button"
               className="btn"
               disabled={signingIn}
-              onClick={() => void importGh()}
+              onClick={() => void importGh().then(done)}
             >
-              <I.Terminal size={13} /> Use my gh login
+              <I.Terminal size={13} /> Use my gh logins
             </button>
           )}
         </div>
       )}
       {status?.ghAvailable && (
         <div className="gh-note">
-          Use my gh login copies the GitHub CLI's token once; trace doesn't need gh after that.
+          Use my gh logins copies the token of every account the GitHub CLI is signed in to, once;
+          trace doesn't need gh after that.
         </div>
       )}
       <div className="field">
@@ -70,6 +86,11 @@ export function GitHubSignIn() {
       </div>
       {error && <div className="ig-error">{error}</div>}
       <div className="ig-form-foot">
+        {onCancel && (
+          <button type="button" className="btn" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
         <button
           type="button"
           className={deviceFlow ? "btn" : "btn primary"}

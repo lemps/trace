@@ -18,15 +18,17 @@ import {
   withoutTab,
 } from "./groupOps";
 import { useLastTab } from "./hooks/useLastTab";
+import { useRemoteSessions } from "./hooks/useRemoteSessions";
 import { useSessionColumns } from "./hooks/useSessionColumns";
 import { ListSortMenu, useSessionLists } from "./hooks/useSessionLists";
 import { NewSessionModal } from "./NewSessionModal";
 import { useSessionOrderStore } from "./orderStore";
+import { RemoteSessions } from "./RemoteSessions";
 import { SectionGroup } from "./SectionGroup";
 import { SessionTabs } from "./SessionTabs";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
-import type { ScratchSession, SessionSection } from "./types";
+import type { ScratchSession, SessionHostKind, SessionSection } from "./types";
 
 export function SessionsView() {
   const sessions = useSessionsStore((s) => s.sessions);
@@ -46,6 +48,7 @@ export function SessionsView() {
   // The tab you were on last time, if you have several.
   const [activeTab, setActiveTab] = useLastTab(groups.tabs.map((t) => t.id));
   const [addingSection, setAddingSection] = useState(false);
+  const remote = useRemoteSessions();
 
   useEffect(() => {
     if (!loaded) {
@@ -95,17 +98,21 @@ export function SessionsView() {
     repo: string | null,
     provider: AgentProvider,
     folder: string | null,
-    transport: Transport
+    transport: Transport,
+    host: SessionHostKind | null
   ) => {
     setAgentCli(cli);
     setAgentProvider(provider);
     setCreating(false);
-    void create(title, cli, repo, provider, folder).then((s) => {
-      if (activeTab) void assign(s.id, activeTab, null);
-      // Its first start runs on what was picked here (and every start after).
-      noteTransport(s.id, transport);
-      void setWorkspaceTransport(s.id, transport).catch(() => {});
-    });
+    create(title, cli, repo, provider, folder, host)
+      .then((s) => {
+        if (activeTab) void assign(s.id, activeTab, null);
+        // Its first start runs on what was picked here (and every start after).
+        noteTransport(s.id, transport);
+        void setWorkspaceTransport(s.id, transport).catch(() => {});
+      })
+      // A Vercel session without a GitHub remote is refused, with a readable reason.
+      .catch((err) => toast.error(`Couldn't create the session: ${String(err)}`));
   };
 
   // The unsectioned grid accepts session drops (unfile from a section) and
@@ -127,7 +134,11 @@ export function SessionsView() {
   const bodyRef = useRef<HTMLDivElement>(null);
   useSessionColumns(bodyRef);
 
-  const nothingAnywhere = active.length === 0 && archived.length === 0 && groups.tabs.length === 0;
+  const nothingAnywhere =
+    active.length === 0 &&
+    archived.length === 0 &&
+    groups.tabs.length === 0 &&
+    remote.joinable.length === 0;
 
   return (
     <div className="page">
@@ -227,6 +238,8 @@ export function SessionsView() {
                 <I.Plus size={12} /> Add section
               </button>
             )}
+
+            {remote.connected && <RemoteSessions remote={remote} />}
 
             {archived.length > 0 && (
               <ArchiveBin

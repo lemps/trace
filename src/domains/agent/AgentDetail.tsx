@@ -15,7 +15,7 @@ import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { OrchestratorPane } from "@/domains/orchestrator/OrchestratorPane";
 import { PaneArea } from "@/domains/panes/PaneArea";
-import { comingTabs, layoutItems } from "@/domains/panes/paneMenu";
+import { layoutItems } from "@/domains/panes/paneMenu";
 import { isTabOn, useOnTabs, useTabSettings } from "@/domains/panes/tabSettings";
 import { usePanes } from "@/domains/panes/usePanes";
 import { usePlanTab } from "@/domains/plans/store";
@@ -305,7 +305,6 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         transport={nextTransport ?? ranOn}
         onChooseTransport={setNextTransport}
         agentItems={agentItems}
-        tabItems={comingTabs(panes)}
         layoutItems={layoutItems(panes)}
       />
 

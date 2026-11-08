@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { useIssuesStore } from "@/domains/issues/store";
+import { useVercelStore } from "@/domains/vercel/store";
 
-function FormFoot({ canSubmit, onSubmit }: { canSubmit: boolean; onSubmit: () => void }) {
-  const connecting = useIssuesStore((s) => s.connecting);
-  const error = useIssuesStore((s) => s.error);
+interface FormFootProps {
+  canSubmit: boolean;
+  onSubmit: () => void;
+  connecting: boolean;
+  error: string | null;
+}
+
+function FormFoot({ canSubmit, onSubmit, connecting, error }: FormFootProps) {
   return (
     <>
       {error && <div className="ig-error">{error}</div>}
@@ -25,6 +31,7 @@ function FormFoot({ canSubmit, onSubmit }: { canSubmit: boolean; onSubmit: () =>
 export function JiraForm() {
   const connect = useIssuesStore((s) => s.connectJira);
   const connecting = useIssuesStore((s) => s.connecting);
+  const error = useIssuesStore((s) => s.error);
   const [site, setSite] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
@@ -69,7 +76,7 @@ export function JiraForm() {
           user account can read, and only ever sent to Atlassian.
         </span>
       </div>
-      <FormFoot canSubmit={canSubmit} onSubmit={submit} />
+      <FormFoot canSubmit={canSubmit} onSubmit={submit} connecting={connecting} error={error} />
     </div>
   );
 }
@@ -77,6 +84,7 @@ export function JiraForm() {
 export function PylonForm() {
   const connect = useIssuesStore((s) => s.connectPylon);
   const connecting = useIssuesStore((s) => s.connecting);
+  const error = useIssuesStore((s) => s.error);
   const [token, setToken] = useState("");
 
   const canSubmit = Boolean(token.trim());
@@ -101,7 +109,40 @@ export function PylonForm() {
           your user account can read, and only ever sent to Pylon.
         </span>
       </div>
-      <FormFoot canSubmit={canSubmit} onSubmit={submit} />
+      <FormFoot canSubmit={canSubmit} onSubmit={submit} connecting={connecting} error={error} />
+    </div>
+  );
+}
+
+export function VercelForm() {
+  const connect = useVercelStore((s) => s.connect);
+  const connecting = useVercelStore((s) => s.connecting);
+  const error = useVercelStore((s) => s.connectError);
+  const [token, setToken] = useState("");
+
+  const canSubmit = Boolean(token.trim());
+  const submit = () => {
+    if (canSubmit && !connecting) void connect(token.trim());
+  };
+
+  return (
+    <div className="ig-form">
+      <div className="field">
+        <label htmlFor="vercel-token">Vercel token</label>
+        <input
+          id="vercel-token"
+          type="password"
+          placeholder="Paste your Vercel token"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+        />
+        <span className="hint">
+          Create one in Vercel → Account Settings → Tokens, limited to one team, with an expiry.
+          Stored in a private file only your user account can read, and only ever sent to Vercel.
+        </span>
+      </div>
+      <FormFoot canSubmit={canSubmit} onSubmit={submit} connecting={connecting} error={error} />
     </div>
   );
 }

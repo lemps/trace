@@ -53,3 +53,26 @@
 .rp-spacer {
   flex: 1;
 }
+/* A repo's GitHub account, the same height as the row's Setup toggle. */
+.rp-account {
+  flex-shrink: 0;
+  max-width: 140px;
+  height: var(--control-h-xs);
+  padding: 0 6px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  color: var(--fg-1);
+}
+.rp-account:hover,
+.rp-account:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}
+.rp-account-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}

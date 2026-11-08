@@ -6,11 +6,13 @@ import {
   githubSignInToken,
   githubSignOut,
   githubStatus,
+  removeGitHubAccount,
+  setPrimaryGitHubAccount,
 } from "@/ipc/github";
 import type { GhRepo, GitHubStatus } from "./types";
 
-// The GitHub integration: who trace's own token is signed in as, and the repo
-// lists the browser has fetched. Kept per owner so a list shows at once, and refetched each
+// The GitHub integration: the accounts trace's own tokens are signed in as (the
+// primary one first), and the repo lists the browser has fetched for the primary. Kept per owner so a list shows at once, and refetched each
 // time the browser opens, so "In trace" and new repos don't go stale.
 
 interface GitHubStore {
@@ -29,9 +31,16 @@ interface GitHubStore {
   checkStatus: () => Promise<void>;
   /** Adopt a status a sign-in returned. */
   setStatus: (status: GitHubStatus) => void;
-  signInToken: (token: string) => Promise<void>;
-  importGh: () => Promise<void>;
+  /** Add (or renew) an account from a pasted token; resolves whether it worked. */
+  signInToken: (token: string) => Promise<boolean>;
+  /** Add every account gh is signed in to; resolves whether it worked. */
+  importGh: () => Promise<boolean>;
+  /** Remove every account. */
   signOut: () => Promise<void>;
+  /** Remove one account; rejects with the reason. */
+  removeAccount: (login: string) => Promise<void>;
+  /** Make one account primary; rejects with the reason. */
+  setPrimary: (login: string) => Promise<void>;
   loadOwners: (login: string) => Promise<void>;
   /** Fetch an owner's repos, showing the cached list meanwhile. */
   loadRepos: (owner: string) => Promise<void>;
@@ -47,16 +56,19 @@ const SIGNED_OUT: GitHubStatus = {
   ghAvailable: false,
   deviceFlow: false,
   problem: null,
+  accounts: [],
 };
 
-/** Run a sign-in, keeping its result or its error. */
-async function signIn(run: () => Promise<GitHubStatus>): Promise<void> {
+/** Run a sign-in, keeping its result or its error; resolves whether it worked. */
+async function signIn(run: () => Promise<GitHubStatus>): Promise<boolean> {
   const { setState, getState } = useGitHubStore;
   setState({ signingIn: true, signInError: null });
   try {
     getState().setStatus(await run());
+    return true;
   } catch (err) {
     setState({ signInError: String(err) });
+    return false;
   } finally {
     setState({ signingIn: false });
   }
@@ -101,6 +113,9 @@ export const useGitHubStore = create<GitHubStore>((set, get) => ({
       set({ error: String(err) });
     }
   },
+
+  removeAccount: async (login) => get().setStatus(await removeGitHubAccount(login)),
+  setPrimary: async (login) => get().setStatus(await setPrimaryGitHubAccount(login)),
 
   loadOwners: async (login) => {
     try {

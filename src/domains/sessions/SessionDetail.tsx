@@ -8,7 +8,6 @@ import { editorItems } from "@/domains/agent/editorItems";
 import { useHasExited } from "@/domains/agent/exitedStore";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
-import { RestartChip } from "@/domains/agent/RestartChip";
 import { usePrTab, useTestsTab } from "@/domains/agent/reviewTabs";
 import { disposeTerminal } from "@/domains/agent/terminalRegistry";
 import { useDetailKeys } from "@/domains/agent/useDetailKeys";
@@ -20,13 +19,13 @@ import { shownAsk } from "@/domains/live/light";
 import { useLiveStore } from "@/domains/live/store";
 import { focusedGroup } from "@/domains/panes/model";
 import { PaneArea } from "@/domains/panes/PaneArea";
-import { comingTabs, layoutItems } from "@/domains/panes/paneMenu";
+import { layoutItems } from "@/domains/panes/paneMenu";
 import { isTabOn, useOnTabs, useTabSettings } from "@/domains/panes/tabSettings";
 import { type Panes, usePanes } from "@/domains/panes/usePanes";
 import { usePlanTab } from "@/domains/plans/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
-import type { AgentCli, AgentProvider } from "@/ipc/agent";
+import { type AgentCli, type AgentProvider, detachAgent } from "@/ipc/agent";
 import { basename } from "@/platform/paths";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
 import { CreatorChip } from "./CreatorChip";
@@ -34,6 +33,7 @@ import { creatorOf } from "./createdBy";
 import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
+import { SessionRunButton } from "./SessionRunButton";
 import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
@@ -48,6 +48,10 @@ import type { ScratchSession } from "./types";
 // conversation, so work claude started can be continued by codex on the same code.
 // The tabs can be arranged side by side in panes (`domains/panes`); the header acts on
 // the agent last in focus.
+// What being on Vercel means here, for the header's chip.
+const HOST_HINT =
+  "Runs in a Vercel sandbox. Disconnect leaves Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
+
 export function SessionDetail({
   session,
   onBack,
@@ -86,6 +90,10 @@ export function SessionDetail({
   const active = roster.find((r) => r.workspaceId === selectedAgent) ?? roster[0];
 
   const run = useSessionAgentRun(session, active);
+  const disconnect = () =>
+    void detachAgent(active.workspaceId).catch((e) =>
+      toast.error(`Couldn't disconnect: ${String(e)}`)
+    );
   const agentItems = useAgentMenuItems({
     workspaceId: active.workspaceId,
     cli: active.cli,
@@ -98,8 +106,8 @@ export function SessionDetail({
   const waiting = agentActivity[active.workspaceId] === "waiting";
   const plan = usePlanTab(active.workspaceId);
   const viewers = useViewerTabs(active.workspaceId);
-  // A plain folder has no git, so nothing for Files to show.
-  const hasFiles = !session.folder;
+  // A plain folder has no git, and a remote host (Vercel) no local folder: nothing for Files.
+  const hasFiles = !session.folder && !session.host;
   const filesOn = useTabSettings((s) => isTabOn(s.off, "files"));
   const workspace = useWorkspaceTabs(session.id, hasFiles && filesOn);
   const tests = useTestsTab(session.id);
@@ -202,6 +210,11 @@ export function SessionDetail({
             {info ? [basename(info.repo), info.branch].filter(Boolean).join(" · ") : "\u00a0"}
           </span>
           <CreatorChip createdBy={creatorOf(session)} variant="detail" />
+          {session.host && (
+            <span className="session-cli" title={HOST_HINT}>
+              Vercel
+            </span>
+          )}
           {renaming ? (
             <TitleEditor
               initial={session.title}
@@ -248,21 +261,27 @@ export function SessionDetail({
               </button>
             </>
           )}
-          {run.running ? (
-            <button type="button" className="btn" onClick={() => void run.stop()}>
-              <I.X size={13} /> Stop {active.label}
-            </button>
-          ) : exited ? (
-            <RestartChip agentName={active.label} onRestart={() => void run.start()} />
-          ) : (
-            <button type="button" className="btn primary" onClick={() => void run.start()}>
-              <I.Bolt size={13} /> Start {active.label}
-            </button>
-          )}
+          <SessionRunButton
+            agentName={active.label}
+            running={run.running}
+            exited={exited}
+            remote={Boolean(session.host)}
+            onStart={() => void run.start()}
+            onStop={() => void run.stop()}
+            onDisconnect={disconnect}
+          />
           <PopMenu
             trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
             sections={[
-              { title: session.folder ? "Folder" : "Worktree", items: editorItems(session.id) },
+              // A remote host's files aren't on this computer to open.
+              ...(session.host
+                ? []
+                : [
+                    {
+                      title: session.folder ? "Folder" : "Worktree",
+                      items: editorItems(session.id),
+                    },
+                  ]),
               { title: active.label, items: agentItems },
               {
                 title: "Session",
@@ -281,7 +300,6 @@ export function SessionDetail({
                     : []),
                 ],
               },
-              { title: "Tabs", items: comingTabs(panes) },
               { title: "Layout", items: layoutItems(panes) },
             ]}
           />

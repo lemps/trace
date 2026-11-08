@@ -62,6 +62,20 @@ impl Catalog {
         }
     }
 
+    /// Pick the GitHub account for the repo checked out at `path` (None = let
+    /// trace work it out), creating its record.
+    pub fn set_github_account(
+        &mut self,
+        path: &str,
+        remote: Option<RemoteRepo>,
+        login: Option<String>,
+    ) {
+        self.add_local(path, remote, None);
+        if let Some(r) = self.records.iter_mut().find(|r| r.has_local(path)) {
+            r.github_account = login;
+        }
+    }
+
     /// Drop the checkout at `path`. The record stays while it has a remote, so
     /// its setup comes back if the repo is cloned or added again.
     pub fn forget_local(&mut self, path: &str) {

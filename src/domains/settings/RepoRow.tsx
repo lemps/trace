@@ -5,6 +5,7 @@ import { SetupFields } from "@/domains/repos/SetupFields";
 import { fullName, isEmptySetup, type RepoDetails, type SetupConfig } from "@/domains/repos/types";
 import { setRepoSetup, suggestRepoSetup } from "@/ipc/repoSetup";
 import { basename } from "@/platform/paths";
+import { RepoAccountSelect } from "./RepoAccountSelect";
 
 interface RepoRowProps {
   path: string;
@@ -12,13 +13,24 @@ interface RepoRowProps {
   details: RepoDetails | null;
   onRemove: () => void;
   onSaved: (setup: SetupConfig) => void;
+  /** The signed-in GitHub logins; the account picker shows with two or more. */
+  githubLogins: string[];
+  onAccountSaved: (login: string | null) => void;
 }
 
 const setupCount = (s: SetupConfig) => s.commands.length + s.copyFiles.length;
 
 // One configured repo: name, where it's hosted, its folder, and its worktree
-// setup — what runs after trace creates a worktree for an agent.
-export function RepoRow({ path, details, onRemove, onSaved }: RepoRowProps) {
+// setup — what runs after trace creates a worktree for an agent — and, with several
+// GitHub accounts signed in, which one a sandbox uses for it.
+export function RepoRow({
+  path,
+  details,
+  onRemove,
+  onSaved,
+  githubLogins,
+  onAccountSaved,
+}: RepoRowProps) {
   const [editing, setEditing] = useState<SetupConfig | null>(null);
   const saved = details?.setup;
   const name = basename(path);
@@ -49,6 +61,15 @@ export function RepoRow({ path, details, onRemove, onSaved }: RepoRowProps) {
         <span className="repo-name">{name}</span>
         {details?.remote && <span className="rp-remote">{fullName(details.remote)}</span>}
         <span className="repo-path">{path}</span>
+        {details && githubLogins.length > 1 && (
+          <RepoAccountSelect
+            path={path}
+            name={name}
+            logins={githubLogins}
+            value={details.githubAccount}
+            onSaved={onAccountSaved}
+          />
+        )}
         <button
           type="button"
           className="rp-setup-toggle"

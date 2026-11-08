@@ -79,6 +79,9 @@ pub struct ScratchSession {
         skip_serializing_if = "Option::is_none"
     )]
     pub created_by: Option<CreatedBy>,
+    /// Where its agent runs; `None` = this machine (`commands::session_host`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host: Option<crate::execution::SessionHost>,
 }
 
 impl ScratchSession {
@@ -156,6 +159,7 @@ pub fn list_sessions() -> Result<Vec<ScratchSession>, String> {
 /// `repo` it gets a worktree of that repo. Without one it runs in `folder`, or in a
 /// new scratch folder if that's absent too, so no session needs git. `created_by`
 /// unset = the user.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn create_session(
     title: String,
@@ -165,6 +169,8 @@ pub fn create_session(
     folder: Option<String>,
     remote_control: Option<bool>,
     created_by: Option<CreatedBy>,
+    // "vercel" runs it in a sandbox; unset = this machine.
+    host: Option<String>,
 ) -> Result<ScratchSession, String> {
     let title = title.trim();
     let title = if title.is_empty() {
@@ -192,6 +198,7 @@ pub fn create_session(
         return Err("That repository isn't configured in Settings.".to_string());
     }
     let id = new_id();
+    let host = crate::commands::session_host::new_host(host.as_deref(), &id, repo.as_deref())?;
     let folder = if repo.is_some() {
         None
     } else {
@@ -206,12 +213,14 @@ pub fn create_session(
         archived_at: None,
         tab: None,
         section: None,
-        worktree: repo.is_some(),
+        // A sandbox session's checkout is in the sandbox, not here.
+        worktree: repo.is_some() && host.is_none(),
         repo,
         folder,
         agents: Vec::new(),
         remote_control,
         created_by: created_by.and_then(CreatedBy::sanitize),
+        host,
     };
     update(|list| list.push(session.clone()))?;
     Ok(session)
@@ -289,6 +298,7 @@ pub fn delete_session(state: State<'_, AppState>, id: String) -> Result<(), Stri
             crate::agent_session::runtime::forget(&agent.id);
         }
         session_folder::remove_scratch_folder(&session);
+        crate::commands::session_host::forget_remote(&session);
     }
     let _ = forget_session_id(&id);
     crate::agent_session::runtime::forget(&id);
@@ -329,7 +339,10 @@ pub fn start_session(
     // Worktree sessions get the same isolation as issues (and become linkable to
     // a ticket later), created on demand; legacy sessions stay in the repo root
     // where their Claude conversations live. Shared with the shell terminal.
-    let cwd = session_cwd(&id, true)?;
+    let cwd = match &session.host {
+        Some(host) => crate::commands::session_host::sandbox_cwd(host),
+        None => session_cwd(&id, true)?,
+    };
     let mut extra_args = extra_args.unwrap_or_default();
     if session.remote_control {
         // Named after the session, so it's recognisable in claude.ai/code.

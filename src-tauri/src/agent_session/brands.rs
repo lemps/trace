@@ -8,6 +8,7 @@ use tauri::AppHandle;
 
 use super::claude::ClaudeAdapter;
 use super::codex::CodexAdapter;
+use super::process::RemoteOpener;
 use super::{AgentAdapter, JournalSink, LaunchSpec};
 use crate::claude::launch::Wiring;
 use crate::state::AppState;
@@ -58,11 +59,14 @@ pub fn launch(
     cli: &str,
     spec: LaunchSpec,
     sink: Arc<dyn JournalSink>,
+    remote: Option<RemoteOpener>,
 ) -> Result<Box<dyn AgentAdapter>, String> {
-    match cli {
-        "claude" => Ok(Box::new(ClaudeAdapter::launch(spec, sink)?)),
-        "codex" => Ok(Box::new(CodexAdapter::launch(spec, sink)?)),
-        other => Err(unsupported(other)),
+    match (cli, remote) {
+        ("claude", Some(open)) => Ok(Box::new(ClaudeAdapter::launch_remote(spec, sink, open))),
+        ("claude", None) => Ok(Box::new(ClaudeAdapter::launch(spec, sink)?)),
+        ("codex", None) => Ok(Box::new(CodexAdapter::launch(spec, sink)?)),
+        ("codex", Some(_)) => Err("Codex can't run as a chat in a sandbox yet.".to_string()),
+        (other, _) => Err(unsupported(other)),
     }
 }
 

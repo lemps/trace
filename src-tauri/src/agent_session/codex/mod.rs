@@ -24,7 +24,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 
 use super::claude::book::now_ms;
-use super::claude::Pacer;
+use super::claude::deliver::Pacer;
 use super::journal::{Answer, Tone};
 use super::{AgentAdapter, JournalSink, LaunchSpec, UserMessage};
 use crate::claude::discovery::find_cli_with_env;

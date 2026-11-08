@@ -1,20 +1,14 @@
-//! trace's own GitHub token: the credential every GitHub call (and, later, a
-//! remote sandbox) uses, so nothing depends on a local `gh` login.
+//! A GitHub token, the credential every GitHub call (and a cloud sandbox's
+//! clone and push) uses, so nothing depends on a local `gh` login. Stored per
+//! account by `github::accounts`.
 //!
-//! Stored like the Jira and Pylon credentials: a JSON file in the config dir,
-//! written atomically and user-only from creation (`helpers::persist`; `0600` on
-//! Unix, an owner-only ACL on Windows, inside a config dir that is itself
-//! restricted). Never logged, emitted or returned to the renderer: [`Token`]
+//! Never logged, emitted or returned to the renderer: [`Token`]
 //! has no `Serialize` and a redacted `Debug`, and every error that might echo
 //! it goes through [`redact`].
 
 use std::fmt;
-use std::path::PathBuf;
 
 use base64::Engine;
-use serde::{Deserialize, Serialize};
-
-use crate::helpers::persist::{self, Style};
 
 /// A GitHub access token. Only [`Token::expose`] gives the text out.
 #[derive(Clone, PartialEq, Eq)]
@@ -74,84 +68,6 @@ pub fn redact(text: &str, token: Option<&Token>) -> String {
         .fold(text.to_string(), |acc, f| acc.replace(f.as_str(), "***"))
 }
 
-/// How trace got the token.
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum Source {
-    /// A personal access token the user pasted.
-    Pasted,
-    /// Copied once from `gh auth token`.
-    Gh,
-    /// OAuth device flow.
-    Device,
-}
-
-/// The file's contents. `login` is kept so the card can say who is signed in
-/// while GitHub is unreachable.
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Stored {
-    token: String,
-    source: Source,
-    login: String,
-}
-
-/// A loaded credential.
-#[derive(Clone, Debug)]
-pub struct Credential {
-    pub token: Token,
-    pub source: Source,
-    pub login: String,
-}
-
-fn path() -> PathBuf {
-    crate::helpers::trace_dir().join("github-token.json")
-}
-
-/// Persist `cred`, replacing any earlier one.
-pub fn save(cred: &Credential) -> Result<(), String> {
-    save_at(&path(), cred)
-}
-
-/// The saved credential, if any. An unreadable file reads as signed out.
-pub fn load() -> Option<Credential> {
-    load_at(&path())
-}
-
-/// Forget the token.
-pub fn clear() -> Result<(), String> {
-    clear_at(&path())
-}
-
-fn save_at(path: &std::path::Path, cred: &Credential) -> Result<(), String> {
-    persist::write_json(
-        path,
-        Style::Compact,
-        &Stored {
-            token: cred.token.expose().to_string(),
-            source: cred.source,
-            login: cred.login.clone(),
-        },
-    )
-}
-
-fn load_at(path: &std::path::Path) -> Option<Credential> {
-    let s = persist::read_or_log::<Option<Stored>>(path)?;
-    Some(Credential {
-        token: Token::new(&s.token)?,
-        source: s.source,
-        login: s.login,
-    })
-}
-
-fn clear_at(path: &std::path::Path) -> Result<(), String> {
-    match std::fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(format!("Couldn't remove the GitHub token: {e}")),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,12 +83,7 @@ mod tests {
     #[test]
     fn debug_never_shows_the_token() {
         let t = Token::new("ghp_SECRET123").unwrap();
-        let cred = Credential {
-            token: t.clone(),
-            source: Source::Pasted,
-            login: "me".into(),
-        };
-        assert!(!format!("{t:?} {cred:?}").contains("SECRET"));
+        assert!(!format!("{t:?}").contains("SECRET"));
     }
 
     #[test]
@@ -197,28 +108,5 @@ mod tests {
             .decode(h.trim_start_matches("Basic "))
             .unwrap();
         assert_eq!(raw, b"x-access-token:abc");
-    }
-
-    #[test]
-    fn credential_file_round_trips_and_clears() {
-        let dir = std::env::temp_dir().join(format!("trace-ghtoken-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let file = dir.join("github-token.json");
-        assert!(load_at(&file).is_none(), "missing file is signed out");
-        let cred = Credential {
-            token: Token::new("gho_round").unwrap(),
-            source: Source::Device,
-            login: "octo".into(),
-        };
-        save_at(&file, &cred).unwrap();
-        let back = load_at(&file).unwrap();
-        assert_eq!(back.token, cred.token);
-        assert_eq!((back.source, back.login.as_str()), (Source::Device, "octo"));
-        // (`persist::write_atomic` makes it user-only; its own tests check that.)
-        clear_at(&file).unwrap();
-        assert!(!file.exists());
-        clear_at(&file).unwrap();
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -30,6 +30,13 @@ pub(crate) fn session_cwd(id: &str, create: bool) -> Result<String, String> {
 
 /// `session_cwd` for a session already loaded (skips reading the sessions file again).
 pub(crate) fn cwd_of(session: &ScratchSession, create: bool) -> Result<String, String> {
+    // Its files are on its host: never fall back to a checkout on this computer.
+    if session.host.is_some() {
+        return Err(
+            "This session runs on Vercel: its files are in its sandbox, not on this computer."
+                .to_string(),
+        );
+    }
     if let Some(folder) = &session.folder {
         return session_folder::folder_cwd(&session_folder::scratch_root(), folder, create);
     }
