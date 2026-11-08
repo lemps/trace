@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { Spinner } from "@/components/Spinner";
 import { RestartChip } from "@/domains/agent/RestartChip";
@@ -28,7 +29,8 @@ const START_REMOTE =
 
 // The header's run control for a session's agent: Stop while it runs (or, on
 // Vercel, Leave running and Stop & save), Restart once it has ended by itself,
-// Start otherwise.
+// Start otherwise. Stop drops to its icon when the header is narrow
+// (`header-fit.css`); the sandbox pair keep their words, which tell them apart.
 export function SessionRunButton({
   agentName,
   running,
@@ -47,29 +49,38 @@ export function SessionRunButton({
     setSaving(true);
     void Promise.resolve(onStop()).catch(() => setSaving(false));
   };
-  if (running && remote && saving) {
-    return (
-      <button type="button" className="btn" disabled aria-busy="true" title={STOP_AND_SAVE}>
-        <Spinner /> Saving…
-      </button>
-    );
-  }
   if (running && remote) {
+    // Saving keeps both in place, disabled, with the verb in Stop & save's own width.
     return (
       <>
-        <button type="button" className="btn" onClick={onDisconnect} title={LEAVE_RUNNING}>
+        <button
+          type="button"
+          className="btn"
+          onClick={onDisconnect}
+          disabled={saving}
+          title={LEAVE_RUNNING}
+        >
           Leave running
         </button>
-        <button type="button" className="btn" onClick={stopAndSave} title={STOP_AND_SAVE}>
-          <I.Stop size={14} /> Stop &amp; save
+        <button
+          type="button"
+          className="btn"
+          onClick={stopAndSave}
+          disabled={saving}
+          aria-busy={saving}
+          title={STOP_AND_SAVE}
+        >
+          {saving ? <Spinner size={14} /> : <I.Stop size={14} />}
+          <BusyLabel busy={saving} idle="Stop & save" working="Saving…" />
         </button>
       </>
     );
   }
   if (running) {
     return (
-      <button type="button" className="btn" onClick={onStop}>
-        <I.Stop size={14} /> Stop agent
+      <button type="button" className="btn fit" onClick={onStop} title="Stop the agent">
+        <I.Stop size={14} />
+        <span className="fit-label">Stop</span>
       </button>
     );
   }

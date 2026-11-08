@@ -1,0 +1,29 @@
+/* Detail headers under pressure (trace-ui §2 rule 3): labels collapse to icons and
+   are never truncated. A secondary text button in `.detail-top` marks itself
+   `.btn.fit` and wraps its words in `.fit-label`; below the width here the words
+   are hidden visually but stay its accessible name, and its `title` names it on
+   hover. Start, Merge #N and Answer don't opt in: they keep their words. */
+.detail-top {
+  container: detail-top / inline-size;
+}
+/* The actions keep their width; the title beside them gives way. */
+.detail-top .right {
+  flex-shrink: 0;
+}
+
+@container detail-top (max-width: 720px) {
+  .detail-top .btn.fit {
+    position: relative;
+    width: var(--control-h);
+    padding: 0;
+    justify-content: center;
+  }
+  .detail-top .btn.fit .fit-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
