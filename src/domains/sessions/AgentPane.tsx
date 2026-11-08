@@ -22,13 +22,7 @@ interface AgentPaneProps {
 export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
   const isChat = useIsChatAgent(workspaceId);
   if (isChat) {
-    return (
-      <ChatAgentPane
-        workspaceId={workspaceId}
-        onStart={() => void run.start()}
-        onStop={() => void run.stop()}
-      />
-    );
+    return <ChatAgentPane workspaceId={workspaceId} onStart={() => void run.start()} />;
   }
   return (
     <ChatSurface workspaceId={workspaceId} cli={cli}>
