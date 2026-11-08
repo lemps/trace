@@ -22,7 +22,8 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       with `github::checkout::RepoCheckout` (clone at a branch with trace's token, then run setup),
       which has no desktop dependencies.
       *Started:* Vercel sessions, terminal or chat, that survive a quit and resume after a stop
-      ([remote execution](REMOTE_EXECUTION_PLAN.md)); another trace over Tailscale is next.
+      ([remote execution](REMOTE_EXECUTION_PLAN.md)), with a readiness checklist, sandbox state and a
+      PR tab ([#71](https://github.com/noble1911/trace/pull/71)); another trace over Tailscale is next.
 - [ ] **iPhone and Android apps.** Not planned yet; they'd speak the remote-execution peer protocol.
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.
@@ -66,7 +67,8 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       order). Not yet: reordering.
 - [x] **Import from Conductor:** Settings → Repositories brings over repos with their setup
       scripts, live workspaces (worktree and conversation) and defaults, never Conductor's secrets
-      ([#63](https://github.com/noble1911/trace/pull/63)). Next: its custom prompts as saved prompts.
+      ([#63](https://github.com/noble1911/trace/pull/63)); its custom prompts become saved prompts
+      ([#70](https://github.com/noble1911/trace/pull/70)).
 - [x] **First run and preflight:** checks for git, claude and a signed-in gh with fixes, and a
       three-step setup for new users; Settings → Run setup again
       ([#61](https://github.com/noble1911/trace/pull/61)). Not yet: a base branch picker.
