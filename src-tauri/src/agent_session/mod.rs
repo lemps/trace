@@ -83,6 +83,15 @@ pub struct SessionInfo {
     pub limits: Vec<LimitWindow>,
 }
 
+impl SessionInfo {
+    /// Still at work: a turn running, or subagents that outlived it. What a
+    /// resume after a quit goes by (`interrupted`), as a terminal agent's turn
+    /// that ends with background tasks pending stays busy (`claude::hooks`).
+    pub fn at_work(&self) -> bool {
+        self.busy || self.running_subagents > 0
+    }
+}
+
 /// One usage-limit window, so the header can warn before the agent is cut off.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -128,5 +137,27 @@ pub trait AgentAdapter: Send {
     /// The agent's process id, for the interrupted-agents ledger.
     fn pid(&self) -> Option<u32> {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SessionInfo;
+
+    #[test]
+    fn background_subagents_keep_an_agent_at_work_after_its_turn() {
+        let idle = SessionInfo::default();
+        assert!(!idle.at_work());
+        let in_turn = SessionInfo {
+            busy: true,
+            ..SessionInfo::default()
+        };
+        assert!(in_turn.at_work());
+        // The turn ended, but background subagents still run: a restart cuts them off.
+        let waiting_on_subagents = SessionInfo {
+            running_subagents: 5,
+            ..SessionInfo::default()
+        };
+        assert!(waiting_on_subagents.at_work());
     }
 }

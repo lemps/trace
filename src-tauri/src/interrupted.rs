@@ -12,9 +12,11 @@
 //!
 //! A resumed conversation just sits at its prompt, so an agent cut off mid-task
 //! is told to carry on (`resume_prompt`). Which ones were mid-task comes from the
-//! turn hooks (`claude::hooks`): a submitted prompt marks the agent busy, a turn
-//! that ends with nothing left in the background marks it idle. One that was
-//! idle — done, or waiting on you — is left waiting.
+//! turn hooks (`claude::hooks`) for a terminal agent and its session info for a
+//! chat one (`agent_session::runtime`): a submitted prompt marks the agent busy,
+//! a turn that ends with nothing left in the background (no pending tasks, no
+//! running subagents) marks it idle. One that was idle — done, or waiting on
+//! you — is left waiting.
 //!
 //! Scheduled runs (`sched:`) aren't listed: the scheduler owns their lifecycle.
 
@@ -59,8 +61,9 @@ fn busy_if_unknown() -> bool {
 }
 
 /// What a resumed agent that was mid-task is told, as its first prompt.
-const RESUME_NUDGE: &str = "trace was restarted while you were working, which cut your last \
-turn off. Continue where you left off.";
+const RESUME_NUDGE: &str = "trace was restarted while you were working, which cut off your \
+last turn and any background tasks or subagents still running. Continue where you left off, \
+restarting any of that work you still need.";
 
 /// The prompt to resume an agent with: the nudge for a Claude agent that was
 /// mid-task, none for one that was idle. Codex is left alone — it has no saved
