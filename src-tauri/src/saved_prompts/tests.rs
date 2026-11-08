@@ -3,7 +3,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use super::{apply_save, builtins, clean_name, delete_at, list_at, save_at, PromptDraft};
+use super::{
+    add_all_at, apply_save, builtins, clean_name, delete_at, list_at, save_at, PromptDraft,
+};
 
 struct TempDir(PathBuf);
 
@@ -133,4 +135,39 @@ fn a_partial_file_loads() {
     )
     .unwrap();
     assert_eq!(list_at(&dir.file()).unwrap()[0].created_at, 0);
+}
+
+#[test]
+fn add_all_only_adds_and_reports_each() {
+    let dir = TempDir::new();
+    let results = add_all_at(
+        &dir.file(),
+        &[
+            draft(None, "lint", "Run the linter"),
+            draft(None, "pr", "Would replace the built-in"),
+            draft(Some("builtin-review-diff"), "review-diff", "Replaced?"),
+            draft(None, "lint", "A second lint"),
+        ],
+    )
+    .unwrap();
+    assert!(results[0].is_ok());
+    assert!(results[1].as_ref().unwrap_err().contains("/pr"));
+    assert!(results[2].is_err(), "an id is never replaced");
+    assert!(results[3].is_err(), "names stay unique within the batch");
+    let list = list_at(&dir.file()).unwrap();
+    assert_eq!(names(&list), vec!["review-diff", "pr", "lint"]);
+    assert_eq!(
+        list[0].body,
+        builtins(0)[0].body,
+        "the built-ins are untouched"
+    );
+    assert_eq!(list[1].body, builtins(0)[1].body);
+}
+
+#[test]
+fn add_all_that_adds_nothing_writes_nothing() {
+    let dir = TempDir::new();
+    let results = add_all_at(&dir.file(), &[draft(None, "pr", "taken")]).unwrap();
+    assert!(results[0].is_err());
+    assert!(!dir.file().exists());
 }

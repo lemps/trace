@@ -65,6 +65,8 @@ const preview: ConductorPreview = {
     editor: "intellij",
     editorUnknown: null,
   },
+  prompts: [],
+  savedPromptNames: [],
 };
 
 describe("initialTicks", () => {

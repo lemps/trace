@@ -179,3 +179,73 @@
   border-radius: var(--radius);
   background: var(--bg-1);
 }
+/* Saved prompts (`ConductorPrompts`): a name to edit, and the text, clamped. */
+.ci-prompt-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-left: 23px;
+}
+.ci-prompt-detail .ci-row-note {
+  padding-left: 0;
+}
+.ci-prompt-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ci-prompt-name label {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+/* The leading /, inside the box as the composer shows it. */
+.ci-prompt-input {
+  display: flex;
+  align-items: center;
+  width: 240px;
+  height: var(--control-h-sm);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+.ci-prompt-input:focus-within {
+  border-color: var(--border-strong);
+}
+.ci-prompt-input.invalid {
+  border-color: var(--c-danger-border);
+}
+.ci-prompt-input input {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg-0);
+}
+.ci-prompt-problem {
+  font-size: var(--text-meta);
+  color: var(--c-danger);
+}
+.ci-prompt-body {
+  margin: 0;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--fg-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.ci-prompt-body.open {
+  display: block;
+}

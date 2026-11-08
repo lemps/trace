@@ -3,6 +3,7 @@ import type {
   ConductorWorkspace,
   ConductorWorkspaceStatus,
 } from "@/ipc/conductorImport";
+import { ConductorPrompts } from "./ConductorPrompts";
 import { ConductorRepoRow } from "./ConductorRepoRow";
 import { defaultLabel } from "./conductorDefaults";
 import { canAdopt, type DefaultKey, type Ticks, toggled } from "./conductorSelection";
@@ -93,6 +94,8 @@ export function ConductorPreviewList({ preview, ticks, onChange }: ConductorPrev
           </details>
         )}
       </section>
+
+      <ConductorPrompts preview={preview} ticks={ticks} onChange={onChange} />
 
       {defaults.length > 0 && (
         <section className="ci-section">

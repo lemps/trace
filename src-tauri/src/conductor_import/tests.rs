@@ -85,13 +85,15 @@ fn previews_repos_workspaces_and_defaults() {
     drop(conn);
 
     let snap = db::read(&db).unwrap();
-    let p = preview_of(&snap, &home, &[]);
+    let p = preview_of(&snap, &home, &[], &[]);
 
     assert_eq!(p.repos.len(), 2, "hidden repos are left out");
     let app = &p.repos[0];
     assert!(app.exists && !app.already_added);
     assert_eq!(app.setup.commands, vec!["pnpm i"]);
-    assert_eq!(app.not_imported.len(), 2, "{:?}", app.not_imported);
+    assert_eq!(app.not_imported.len(), 1, "{:?}", app.not_imported);
+    assert_eq!(p.prompts.len(), 1);
+    assert_eq!(p.prompts[0].name, "app-context");
     assert!(!p.repos[1].exists);
 
     assert_eq!(p.workspaces.len(), 2);
@@ -153,4 +155,21 @@ fn conductor_real_preview() {
         .count();
     println!("archived with a folder still there: {archived_on_disk}");
     println!("defaults: {:?}", p.defaults);
+    // Names and counts only: a prompt's text is the user's, and stays unprinted.
+    let shared = p.prompts.iter().filter(|x| x.repos.len() > 1).count();
+    let existing = p.prompts.iter().filter(|x| x.existing.is_some()).count();
+    let renamed = p.prompts.iter().filter(|x| x.taken_name.is_some()).count();
+    println!(
+        "prompts: {} ({shared} shared by several repos, {existing} already saved, {renamed} renamed)",
+        p.prompts.len()
+    );
+    for x in &p.prompts {
+        println!(
+            "  /{} {} repos={} chars={}",
+            x.name,
+            x.kind,
+            x.repos.len(),
+            x.body.chars().count()
+        );
+    }
 }
