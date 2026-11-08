@@ -95,7 +95,7 @@
   color: var(--fg-3);
   margin-top: 2px;
 }
-.page-head .right {
+.page-head > .right {
   margin-left: auto;
   display: flex;
   gap: 8px;

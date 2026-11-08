@@ -93,7 +93,8 @@
   letter-spacing: -0.01em;
   color: var(--fg-0);
 }
-.detail-top .right {
+/* `>`: a PopMenu's popover is `.pop-menu-pop.right`, and must not pick this up. */
+.detail-top > .right {
   margin-left: auto;
   display: flex;
   align-items: center;
