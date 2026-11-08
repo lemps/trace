@@ -1,30 +1,32 @@
-import { type DragEvent, Fragment, type MouseEvent, useRef, useState } from "react";
+import { type DragEvent, Fragment, useRef, useState } from "react";
 import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { PopMenu } from "@/components/PopMenu";
+import { TabMore } from "@/components/TabMore";
+import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { fitClass, useTabFit } from "@/components/useTabFit";
+import { useNumberedAriaKeys, useNumberedHints } from "@/platform/shortcuts";
 import { usePaneArea } from "./context";
 import { beginTabDrag, endTabDrag, useTabDrag } from "./drag";
 import { insertionIndex } from "./dropZone";
 import { closeGroup, moveTab, type PaneGroup, removeTab } from "./model";
+import { PaneTab } from "./PaneTab";
 import { paneMenu, usePaneHints } from "./paneMenu";
-
-interface Menu {
-  tab: string;
-  x: number;
-  y: number;
-}
+import { NUMBERED_TABS, tabNumbers } from "./tabNumber";
 
 // One pane's tab row: the same `.detail-tabs` the detail has always had, plus what
 // arranging needs — tabs drag (to reorder, to another pane, or to a pane's edge to
 // split), right-click for the pane menu, and a ⋯ at the end for the same menu
 // without a mouse. The shown tab's own controls (the agent's view switch) sit at the end.
-// A narrow pane's tabs are measured to fit (`useTabFit`): icons named by their
-// tooltips, then a "more" menu.
+// The pane's × and ⋯ show on the focused pane, and on another while the strip is
+// hovered or holds focus (IntelliJ's New UI); right-click on a tab is the other path.
+// Tabs name their ⌘1–9 in their tooltips. A narrow pane's tabs are measured to fit
+// (`useTabFit`): icons named by their tooltips, then a "more" menu.
 export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: boolean }) {
   const { panes, narrow, multi, focusLater } = usePaneArea();
   const hints = usePaneHints();
-  const [menu, setMenu] = useState<Menu | null>(null);
+  const { menu, openAt, close: closeMenu } = useContextMenuAt<string>();
   const [insertAt, setInsertAt] = useState<{ index: number; x: number } | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef<HTMLDivElement>(null);
@@ -34,13 +36,10 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
   const active = panes.panels.get(group.active);
   const refocus = focusLater;
 
-  const openMenu = (tab: string) => (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    // The context-menu key reports no pointer: open under the tab instead.
-    const r = e.currentTarget.getBoundingClientRect();
-    const keyboard = e.clientX === 0 && e.clientY === 0;
-    setMenu({ tab, x: keyboard ? r.left : e.clientX, y: keyboard ? r.bottom : e.clientY });
-  };
+  // ⌘1–9 pick the detail's tabs wherever they sit: each tab names its number.
+  const numbers = tabNumbers(panes.panels.values());
+  const numberHints = useNumberedHints("detailTab", NUMBERED_TABS);
+  const numberKeys = useNumberedAriaKeys("detailTab", NUMBERED_TABS);
 
   // The tabs on show (not those in the "more" menu), and where each sits in the group.
   const shownTabs = () => [
@@ -80,7 +79,7 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
     // biome-ignore lint/a11y/noStaticElementInteractions: a drop target; tabs are its buttons
     <div
       ref={stripRef}
-      className={`detail-tabs pn-strip${focused && multi && !narrow ? " focused" : ""}`}
+      className={`detail-tabs pn-strip${focused && multi && !narrow ? " focused" : ""}${focused || !multi || narrow ? " pn-chrome-on" : ""}`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -89,27 +88,26 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
         {group.tabs.map((tab, i) => {
           const panel = panes.panels.get(tab);
           if (!panel) return null;
-          const Icon = panel.icon;
-          const isDragged = dragging?.tab === tab && dragging.scope === panes.scope;
           const mode = fit.mode(tab);
-          const out = mode === "out";
+          const number = numbers.get(tab);
           return (
             <Fragment key={tab}>
               {i > 0 && panel.section !== panes.panels.get(group.tabs[i - 1])?.section && (
                 <span className={`detail-tab-sep${fitClass(mode)}`} data-fit-of={tab} />
               )}
-              <button
-                type="button"
-                data-tab={tab}
-                data-fit-tab={tab}
-                className={`detail-tab${tab === group.active ? " active" : ""}${isDragged ? " dragged" : ""}${fitClass(mode)}`}
-                title={panel.title ?? panel.label}
-                aria-label={panel.label}
-                aria-hidden={out || undefined}
-                tabIndex={out ? -1 : undefined}
-                draggable={!narrow && !out}
-                onClick={() => panes.select(tab)}
-                onContextMenu={openMenu(tab)}
+              <PaneTab
+                panel={panel}
+                mode={mode}
+                active={tab === group.active}
+                dragged={dragging?.tab === tab && dragging.scope === panes.scope}
+                draggable={!narrow}
+                hint={number ? numberHints[number - 1] : ""}
+                ariaKeys={number ? numberKeys[number - 1] : undefined}
+                onSelect={() => panes.select(tab)}
+                onClose={() =>
+                  panel.onClose ? panel.onClose() : panes.apply((l) => removeTab(l, tab))
+                }
+                onContextMenu={openAt(tab)}
                 onDragStart={(e) => {
                   e.dataTransfer.effectAllowed = "move";
                   e.dataTransfer.setData("text/plain", panel.label);
@@ -119,28 +117,7 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
                   setInsertAt(null);
                   endTabDrag();
                 }}
-              >
-                <Icon size={13} />
-                <span className="pn-tab-label" data-fit-label>
-                  {panel.label}
-                </span>
-                {panel.badge}
-              </button>
-              {(panel.optional || panel.onClose) && (
-                <button
-                  type="button"
-                  className={`pn-tab-close${fitClass(mode)}`}
-                  data-fit-of={tab}
-                  tabIndex={out ? -1 : undefined}
-                  aria-label={`${panel.comes ? "Hide" : "Close"} ${panel.label}`}
-                  title={`${panel.comes ? "Hide" : "Close"} ${panel.label}`}
-                  onClick={() =>
-                    panel.onClose ? panel.onClose() : panes.apply((l) => removeTab(l, tab))
-                  }
-                >
-                  <I.X size={11} />
-                </button>
-              )}
+              />
               {panel.after}
             </Fragment>
           );
@@ -151,15 +128,12 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
           <PopMenu
             align="right"
             trigger={({ open, toggle }) => (
-              <button
-                type="button"
+              <TabMore
+                count={fit.out.length}
+                open={open}
+                toggle={toggle}
                 className={`detail-tab pn-more${open ? " active" : ""}`}
-                aria-haspopup="menu"
-                aria-expanded={open}
-                onClick={toggle}
-              >
-                {fit.out.length} more <I.Chevron size={11} />
-              </button>
+              />
             )}
             sections={[
               {
@@ -179,27 +153,28 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
         {active?.toolbar}
         {/* A pane holding only a closable panel: its tab's × already closes both. */}
         {multi && !narrow && !(group.tabs.length === 1 && active?.optional) && (
-          <button
-            type="button"
-            className="btn ghost icon sm pn-act"
-            aria-label="Close pane"
-            title="Close pane — its tabs join the pane beside it"
+          <IconButton
+            size="sm"
+            className="ghost pn-act"
+            label="Close pane"
+            title="Close pane: its tabs join the pane beside it"
             onClick={() => panes.apply((l) => closeGroup(l, group.id))}
           >
-            <I.X size={13} />
-          </button>
+            <I.X size={14} />
+          </IconButton>
         )}
         <PopMenu
-          trigger={({ toggle }) => (
-            <button
-              type="button"
-              className="btn ghost icon sm pn-act"
-              aria-label="Pane actions"
-              title="Split, move or close this pane"
+          trigger={({ open, toggle }) => (
+            <IconButton
+              size="sm"
+              className={`ghost pn-act${open ? " open" : ""}`}
+              label="Pane actions"
+              aria-haspopup="menu"
+              aria-expanded={open}
               onClick={toggle}
             >
               <I.More size={14} />
-            </button>
+            </IconButton>
           )}
           sections={paneMenu(panes, group.active, hints, narrow, refocus)}
         />
@@ -208,8 +183,8 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
         <ContextMenu
           x={menu.x}
           y={menu.y}
-          sections={paneMenu(panes, menu.tab, hints, narrow, refocus)}
-          onClose={() => setMenu(null)}
+          sections={paneMenu(panes, menu.target, hints, narrow, refocus)}
+          onClose={closeMenu}
         />
       )}
     </div>

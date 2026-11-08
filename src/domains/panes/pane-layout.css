@@ -101,26 +101,47 @@
   margin-left: 0;
   margin-right: 4px;
 }
+/* The pane's × and ⋯: quiet chrome (trace-ui §2 rule 1). Always there on the
+   focused pane (or the only one); on another while its strip is hovered or holds
+   focus, or its menu is open; always without a hovering pointer. */
 .btn.icon.pn-act {
   color: var(--fg-3);
+  opacity: 0;
+  transition: opacity 0.12s;
 }
-.btn.icon.pn-act:hover {
+.pn-strip.pn-chrome-on .pn-act,
+.pn-strip:hover .pn-act,
+.pn-strip:focus-within .pn-act,
+.pn-act.open {
+  opacity: 1;
+}
+.btn.icon.pn-act:hover:not(:disabled) {
   color: var(--fg-1);
 }
-/* An optional tab's close (a subagent's view), tucked against the tab. */
-.pn-tab-close {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+/* A tab's × (a coming tab's hides it, an optional one's closes it), tucked against
+   the tab. It keeps its slot but is clear until the tab is hovered or focused, so
+   labels never shift. */
+.btn.icon.pn-tab-close {
   margin: 0 4px 0 -6px;
-  border-radius: 4px;
   color: var(--fg-3);
+  opacity: 0;
+  transition: opacity 0.12s;
 }
-.pn-tab-close:hover {
+.detail-tab:hover + .pn-tab-close,
+.detail-tab:focus-visible + .pn-tab-close,
+.pn-tab-close:hover,
+.pn-tab-close:focus-visible {
+  opacity: 1;
+}
+.btn.icon.pn-tab-close:hover:not(:disabled) {
   color: var(--fg-0);
   background: var(--bg-3);
+}
+@media (hover: none) {
+  .btn.icon.pn-act,
+  .btn.icon.pn-tab-close {
+    opacity: 1;
+  }
 }
 /* Where a dragged tab would land in the strip. */
 .pn-insert {

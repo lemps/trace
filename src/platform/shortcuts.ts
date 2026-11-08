@@ -107,6 +107,14 @@ export function useNumberedHints(id: string, count: number): string[] {
   return Array.from({ length: count }, (_, i) => numberedHint(binding, i + 1, currentOs));
 }
 
+/** `useNumberedHints` for `aria-keyshortcuts`: each number's chord ("Meta+3"), or undefined. */
+export function useNumberedAriaKeys(id: string, count: number): (string | undefined)[] {
+  const binding = useKeymapStore((s) => s.keymap[id]?.[0]);
+  const numbered = (n: number) =>
+    binding?.endsWith("#") ? `${binding.slice(0, -1)}${n}` : binding;
+  return Array.from({ length: count }, (_, i) => ariaKeys(numbered(i + 1)));
+}
+
 /** Whether buttons show their shortcut as a chip too (Settings → Shortcuts; off by default). */
 export function useButtonHints(): boolean {
   return useHintPrefs((s) => s.onButtons);
