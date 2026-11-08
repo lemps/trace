@@ -6,6 +6,7 @@ import { type MenuItem, MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
 import { editorItems } from "@/domains/agent/editorItems";
 import { shownAsk } from "@/domains/live/light";
+import { useAgentQuiet } from "@/domains/live/quietStore";
 import { useLiveStore } from "@/domains/live/store";
 import type { WorkspaceInfo } from "@/ipc/workspace";
 import { basename } from "@/platform/paths";
@@ -70,6 +71,7 @@ export function SessionHeader({
   const [renaming, setRenaming] = useState(false);
   const rename = useSessionsStore((s) => s.rename);
   const live = useLiveStore((s) => s.info[active.workspaceId]);
+  const quiet = useAgentQuiet(active.workspaceId);
   // Arming "remove" is for the agent in view; another taking the header disarms it.
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run when the agent changes
   useEffect(() => setConfirmRemove(false), [active.workspaceId]);
@@ -112,6 +114,7 @@ export function SessionHeader({
         {run.running && (
           <StatusLight
             light={live?.light ?? "stopped"}
+            quiet={quiet}
             label={shownAsk(live)?.label}
             variant="pill"
             size="lg"

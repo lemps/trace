@@ -23,6 +23,8 @@ interface DetailHeaderProps {
   /** The agent's light, and what it's asking for when it needs you. */
   light: AgentLight;
   askLabel?: string;
+  /** Working, but not heard from in a while: "No recent update" (`live/quietStore`). */
+  quiet: boolean;
   running: boolean;
   /** The agent ended by itself: offer a restart in place of Start. */
   exited: boolean;
@@ -114,6 +116,7 @@ export function DetailHeader({
   site,
   light,
   askLabel,
+  quiet,
   running,
   exited,
   cli,
@@ -157,7 +160,9 @@ export function DetailHeader({
         <div className="ttl">{issue.summary}</div>
       </div>
       <div className="right">
-        {running && <StatusLight light={light} label={askLabel} variant="pill" size="lg" />}
+        {running && (
+          <StatusLight light={light} label={askLabel} quiet={quiet} variant="pill" size="lg" />
+        )}
         {running ? (
           <button type="button" className="btn fit" onClick={onStop} title="Stop the agent">
             <I.Stop size={14} />

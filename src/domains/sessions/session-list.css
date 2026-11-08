@@ -52,6 +52,10 @@
   font-weight: 500;
   color: var(--fg-0);
 }
+/* New since you looked: weight, not colour (amber and a count mean Needs you). */
+.session-row.unread .sr-title {
+  font-weight: 650;
+}
 .sr-where {
   min-width: 0;
   overflow: hidden;
