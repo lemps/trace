@@ -8,6 +8,7 @@
 //! - `config` (+ `translate`, `include`): repo scripts, layered, as a `SetupConfig`.
 //! - `workspaces`: where each workspace really is, and whether it can resume.
 //! - `adopt`: moving one into `.worktrees/` as a trace session.
+//! - `prompts` (+ `prompt_apply`): repos' custom prompts as saved prompts.
 //! - `apply`: importing the user's selection, with a report.
 
 pub mod adopt;
@@ -16,11 +17,14 @@ pub mod config;
 pub mod db;
 pub mod include;
 pub mod model;
+pub mod prompt_apply;
+pub mod prompts;
 pub mod translate;
 pub mod workspaces;
 
 use std::path::{Path, PathBuf};
 
+use crate::saved_prompts::SavedPrompt;
 use db::{Row, Snapshot};
 use model::{Defaults, Preview, RepoPreview};
 
@@ -45,11 +49,19 @@ pub fn preview() -> Result<Preview, String> {
         .ok_or("Conductor's database isn't on this computer.")?;
     let home = dirs::home_dir().ok_or("No home folder.")?;
     let known = crate::commands::repos::all_repos();
-    Ok(preview_of(&db::read(&db)?, &home, &known))
+    // An unreadable prompts file shouldn't block the rest: saving reports it.
+    let saved = crate::saved_prompts::list().unwrap_or_default();
+    Ok(preview_of(&db::read(&db)?, &home, &known, &saved))
 }
 
-/// The preview of `snap`, with `known` the repos trace already has.
-pub fn preview_of(snap: &Snapshot, home: &Path, known: &[String]) -> Preview {
+/// The preview of `snap`, with `known` the repos trace already has and `saved`
+/// its saved prompts.
+pub fn preview_of(
+    snap: &Snapshot,
+    home: &Path,
+    known: &[String],
+    saved: &[SavedPrompt],
+) -> Preview {
     let mut rows: Vec<&Row> = snap
         .repos
         .iter()
@@ -61,13 +73,15 @@ pub fn preview_of(snap: &Snapshot, home: &Path, known: &[String]) -> Preview {
             .unwrap_or(i64::MAX)
     });
     let repos = rows
-        .into_iter()
+        .iter()
         .filter_map(|row| repo_preview(row, home, known))
         .collect();
     Preview {
         repos,
         workspaces: workspaces::previews(snap, home),
         defaults: defaults(snap),
+        prompts: prompts::plan(&rows, saved),
+        saved_prompt_names: saved.iter().map(|p| p.name.clone()).collect(),
     }
 }
 
@@ -145,5 +159,7 @@ fn editor_id(open_in: &str) -> Option<&'static str> {
     }
 }
 
+#[cfg(test)]
+mod prompt_tests;
 #[cfg(test)]
 mod tests;

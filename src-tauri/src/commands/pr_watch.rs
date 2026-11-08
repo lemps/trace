@@ -8,12 +8,14 @@ use crate::commands::workspace::locate;
 use crate::github::{links, thread::PrThread};
 
 /// PR URLs a workspace's agent raised or mentioned, most relevant first. Empty
-/// (not an error) when the workspace has no repo yet.
+/// (not an error) when the workspace has no repo yet. A session in a sandbox has
+/// no checkout here, so its PRs are its branch's on GitHub.
 #[tauri::command]
 pub async fn workspace_prs(workspace_id: String) -> Result<Vec<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         locate(&workspace_id)
             .map(|(cwd, ids)| links::discover(&cwd, &ids))
+            .or_else(|| crate::commands::session_host::remote_prs(&workspace_id))
             .unwrap_or_default()
     })
     .await

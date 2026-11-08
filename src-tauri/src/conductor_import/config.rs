@@ -30,16 +30,6 @@ pub struct Translated {
     pub notes: Vec<String>,
 }
 
-/// `(column, what Conductor calls it)` for each custom prompt.
-const PROMPTS: &[(&str, &str)] = &[
-    ("custom_prompt_general", "general"),
-    ("custom_prompt_create_pr", "create PR"),
-    ("custom_prompt_code_review", "code review"),
-    ("custom_prompt_fix_errors", "fix errors"),
-    ("custom_prompt_resolve_merge_conflicts", "merge conflicts"),
-    ("custom_prompt_rename_branch", "rename branch"),
-];
-
 /// Translate the repo at `root` (its DB row is `row`), with `home` the user's
 /// home folder.
 pub fn translate(row: &Row, root: &Path, home: &Path) -> Translated {
@@ -78,13 +68,7 @@ pub fn translate(row: &Row, root: &Path, home: &Path) -> Translated {
     };
     leave("Run script", "run scripts", run);
     leave("Archive script", "archive scripts", archive);
-    for (column, name) in PROMPTS {
-        if row.get(*column).is_some_and(|p| !p.trim().is_empty()) {
-            not_imported.push(format!(
-                "Custom prompt ({name}): trace has no saved prompts to put it in yet."
-            ));
-        }
-    }
+    // Custom prompts aren't setup: `prompts` offers them as saved prompts.
     Translated {
         setup,
         not_imported,
@@ -212,10 +196,9 @@ mod tests {
         );
         assert_eq!(t.setup.copy_files, vec![".env"]);
         assert_eq!(t.setup.commands, vec!["bun i"]);
-        assert_eq!(t.not_imported.len(), 3, "{:?}", t.not_imported);
+        assert_eq!(t.not_imported.len(), 2, "{:?}", t.not_imported);
         assert!(t.not_imported[0].contains("pnpm dev"));
         assert!(t.not_imported[1].contains("echo bye"));
-        assert!(t.not_imported[2].contains("code review"));
     }
 
     #[test]

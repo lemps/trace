@@ -26,15 +26,17 @@ import { usePlanTab } from "@/domains/plans/store";
 import { usePrWatch } from "@/domains/prs/hooks/usePrWatch";
 import { useQuickOpen } from "@/domains/quickOpen/useQuickOpen";
 import { type AgentCli, type AgentProvider, detachAgent } from "@/ipc/agent";
+import type { WorkspaceInfo } from "@/ipc/workspace";
 import { basename } from "@/platform/paths";
 import { agentRoster, agentWorkspaceIds, companionsOf, MAX_COMPANIONS } from "./agentRoster";
 import { CreatorChip } from "./CreatorChip";
 import { creatorOf } from "./createdBy";
+import { HostChip } from "./HostChip";
 import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
 import { SessionRunButton } from "./SessionRunButton";
-import { addAgentBlocker } from "./sessionHost";
+import { addAgentBlocker, hostPlace } from "./sessionHost";
 import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
@@ -49,9 +51,12 @@ import type { ScratchSession } from "./types";
 // conversation, so work claude started can be continued by codex on the same code.
 // The tabs can be arranged side by side in panes (`domains/panes`); the header acts on
 // the agent last in focus.
-// What being on Vercel means here, for the header's chip.
-const HOST_HINT =
-  "Runs in a Vercel Sandbox. Leave running keeps Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
+
+/** The header's "where": repo · branch here, or the sandbox and its repo on Vercel. */
+function where(info: WorkspaceInfo | null, session: ScratchSession): string {
+  if (info) return [basename(info.repo), info.branch].filter(Boolean).join(" · ");
+  return session.host ? hostPlace(session.host) : "\u00a0";
+}
 
 export function SessionDetail({
   session,
@@ -206,15 +211,11 @@ export function SessionDetail({
           <I.Sparkles size={18} />
         </span>
         <div>
-          <span className="id" title={info?.cwd}>
-            {info ? [basename(info.repo), info.branch].filter(Boolean).join(" · ") : "\u00a0"}
+          <span className="id" title={info?.cwd ?? session.host?.sandbox}>
+            {where(info, session)}
           </span>
           <CreatorChip createdBy={creatorOf(session)} variant="detail" />
-          {session.host && (
-            <span className="session-cli" title={HOST_HINT}>
-              Vercel
-            </span>
-          )}
+          {session.host && <HostChip host={session.host} />}
           {renaming ? (
             <TitleEditor
               initial={session.title}
@@ -324,6 +325,7 @@ export function SessionDetail({
         turnIds={turnIds}
         hasPr={prUrls.length > 0}
         running={run.running}
+        host={session.host}
       />
       {quickOpen}
     </div>

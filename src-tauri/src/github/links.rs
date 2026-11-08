@@ -15,6 +15,8 @@ use std::sync::OnceLock;
 use regex::Regex;
 use serde_json::Value;
 
+use crate::repo_catalog::model::RemoteRepo;
+
 /// Most PRs surfaced per workspace — an agent that raises a stack of PRs
 /// shouldn't turn the tab into a list of them.
 const MAX_PRS: usize = 6;
@@ -113,24 +115,37 @@ fn branch_prs(cwd: &str) -> Vec<String> {
     else {
         return Vec::new();
     };
-    let args: Vec<String> = [
-        "pr",
-        "list",
-        "--head",
-        &branch,
-        "--state",
-        "all",
-        "--limit",
-        &MAX_PRS.to_string(),
-        "--json",
-        "url",
-        "--jq",
-        ".[].url",
-    ]
-    .iter()
-    .map(|a| a.to_string())
-    .collect();
-    super::gh::run(cwd, &owner, &args)
+    head_prs(cwd, &owner, &head_pr_args(&branch, None))
+}
+
+/// PRs whose head is `branch` on GitHub's `owner/name`, with no checkout to
+/// ask: a session in a cloud sandbox pushes its branch there, and its
+/// conversation log stays in the sandbox, so the branch is the one source.
+pub fn repo_branch_prs(remote: &RemoteRepo, branch: &str) -> Vec<String> {
+    // `gh` needs somewhere to run; `--repo` says which repo, so anywhere will do.
+    let Some(home) = dirs::home_dir() else {
+        return Vec::new();
+    };
+    let args = head_pr_args(branch, Some(&remote.full_name()));
+    head_prs(&home.to_string_lossy(), &remote.owner, &args)
+}
+
+/// `gh pr list` for a head branch, in the checkout's repo or `repo`'s.
+fn head_pr_args(branch: &str, repo: Option<&str>) -> Vec<String> {
+    let limit = MAX_PRS.to_string();
+    let mut args: Vec<&str> = vec![
+        "pr", "list", "--head", branch, "--state", "all", "--limit", &limit, "--json", "url",
+        "--jq", ".[].url",
+    ];
+    if let Some(repo) = repo {
+        args.extend(["--repo", repo]);
+    }
+    args.into_iter().map(str::to_string).collect()
+}
+
+/// The PR URLs `gh args` lists, as whichever account can see `owner`'s repo.
+fn head_prs(cwd: &str, owner: &str, args: &[String]) -> Vec<String> {
+    super::gh::run(cwd, owner, args)
         .map(|out| {
             String::from_utf8_lossy(&out)
                 .lines()
@@ -166,7 +181,16 @@ fn git_stdout(cwd: &str, tool: &str, args: &[&str]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{created_in, parse_pr_url, remote_owner, urls_in};
+    use super::{created_in, head_pr_args, parse_pr_url, remote_owner, urls_in};
+
+    #[test]
+    fn lists_a_head_branch_here_or_in_a_named_repo() {
+        let here = head_pr_args("workspace/x", None);
+        assert_eq!(here[..4], ["pr", "list", "--head", "workspace/x"]);
+        assert!(!here.contains(&"--repo".to_string()));
+        let there = head_pr_args("workspace/x", Some("acme/web"));
+        assert_eq!(there[there.len() - 2..], ["--repo", "acme/web"]);
+    }
 
     #[test]
     fn counts_only_the_prs_a_conversation_created() {

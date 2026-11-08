@@ -15,6 +15,30 @@
   border-color: color-mix(in oklch, var(--c-review) 40%, transparent);
   background: var(--c-review-bg);
 }
+/* Where a session runs (a Vercel Sandbox): a place, not an agent type, so a dashed
+   outline in the body face rather than .session-cli's mono chip, and no state colour. */
+.session-host {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+/* In a session's header, on the line above the title, after where it lives. */
+.detail-top .session-host {
+  margin-left: 10px;
+  vertical-align: baseline;
+}
+/* What a sandbox's state means, under it in a session's Details (SandboxSection). */
+.sandbox-note {
+  margin-top: 4px;
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--fg-2);
+}
 /* Archived sessions — collapsible recycle bin */
 .archive-bin {
   margin-top: 22px;

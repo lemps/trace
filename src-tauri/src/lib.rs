@@ -126,6 +126,7 @@ pub fn run() {
             commands::preflight::preflight_checks,
             commands::agent::detach_agent,
             commands::session_host::agent_capabilities,
+            commands::sandbox_state::sandbox_state,
             commands::github::github_remove_account,
             commands::github::github_set_primary,
             commands::repo_setup::set_repo_github_account,

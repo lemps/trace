@@ -2,9 +2,10 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { type AgentCapabilities, agentCapabilities } from "@/ipc/agent";
 
-// What each agent's host can do besides its screen. A Vercel sandbox has the
-// terminal only, so the chat move, the transcript view and the folder tabs hide
-// for it. A workspace's host never changes, so each is asked once.
+// What each agent's host can do besides its screen. A Vercel sandbox runs the
+// terminal or the chat, but its conversation log and folder stay in the sandbox,
+// so the transcript view and the folder tabs hide for it. A workspace's host
+// never changes, so each is asked once.
 
 interface CapabilitiesStore {
   byWorkspace: Record<string, AgentCapabilities>;

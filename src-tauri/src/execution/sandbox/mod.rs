@@ -45,6 +45,13 @@ pub struct SandboxInfo {
     /// Kept as a snapshot when it stops, so [`SandboxProvider::resume`] brings
     /// its files back.
     pub persistent: bool,
+    /// It has a snapshot to resume from (stopped and saved, not expired).
+    pub saved: bool,
+    /// Epoch ms when the provider stops the current run, if it says (a get
+    /// reports it; a list doesn't). Keep-alive moves it on while attached.
+    pub stops_at: Option<u64>,
+    /// Epoch ms when its snapshot expires, if it has one and the provider says.
+    pub saved_until: Option<u64>,
 }
 
 impl SandboxInfo {

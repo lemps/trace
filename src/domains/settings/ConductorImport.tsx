@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
+import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import {
   type ConductorPreview,
   type ConductorReport,
@@ -9,9 +10,11 @@ import {
   conductorImportAvailable,
   conductorImportPreview,
 } from "@/ipc/conductorImport";
+import { listSavedPrompts } from "@/ipc/savedPrompts";
 import { ConductorPreviewList } from "./ConductorPreviewList";
 import { ConductorSummary } from "./ConductorSummary";
 import { applyDefaults, currentDefaults } from "./conductorDefaults";
+import { promptProblems } from "./conductorPromptNames";
 import { initialTicks, selectedCount, type Ticks, toSelection } from "./conductorSelection";
 
 // Settings → Repositories → Import from Conductor. Shown only when Conductor's
@@ -24,6 +27,15 @@ type Step =
   | { kind: "preview"; preview: ConductorPreview; ticks: Ticks }
   | { kind: "importing" }
   | { kind: "done"; report: ConductorReport };
+
+/** Saved prompts may have been added: load them again so `/` offers them at once. */
+function reloadSavedPrompts() {
+  listSavedPrompts()
+    .then((prompts) => useSavedPrompts.setState({ prompts, loaded: true }))
+    .catch(() => {
+      // The store keeps what it had; the next launch loads them.
+    });
+}
 
 interface ConductorImportProps {
   /** Repos or sessions may have been added: reload what Settings shows. */
@@ -81,6 +93,7 @@ function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported
       report.imported.push(...applyDefaults(preview.defaults, ticks.defaults));
       setStep({ kind: "done", report });
       onImported();
+      reloadSavedPrompts();
     } catch (err) {
       toast.error(`The import stopped: ${String(err)}`);
       setStep({ kind: "preview", preview, ticks });
@@ -140,6 +153,7 @@ function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported
         );
       case "preview": {
         const count = selectedCount(step.preview, step.ticks);
+        const badNames = Object.keys(promptProblems(step.preview, step.ticks)).length > 0;
         return (
           <>
             <button type="button" className="btn" onClick={onClose}>
@@ -148,7 +162,8 @@ function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported
             <button
               type="button"
               className="btn primary"
-              disabled={count === 0}
+              disabled={count === 0 || badNames}
+              title={badNames ? "Fix the saved prompt names marked above" : undefined}
               onClick={() => void runImport(step.preview, step.ticks)}
             >
               Import {count} {count === 1 ? "item" : "items"}

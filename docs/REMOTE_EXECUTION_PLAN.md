@@ -225,7 +225,17 @@ sandbox (spike 0.1, 2026-11-08, Hobby plan).
     quiet timer (`board/waitingNotify.ts`). The chat doesn't need them.
   - The loopback MCP agent tools aren't reachable.
   - No Files, Transcript, Tests or Terminal tabs, and no extra agents (`Capabilities`).
+    The Pull request tab works: PRs are found by the session's branch
+    (`workspace/<slug>`) on GitHub (`gh pr list --repo --head`), so one the agent raises
+    from a branch it named itself isn't found.
   - A permission prompt raised just before a chat is disconnected may not show on rejoin.
+  - The chat needs a Claude login saved for sandboxes: with none, `/login` has nowhere to
+    go, so a session made without one stays a terminal ("Open as chat" says why).
+- **Where it's shown:** the session's header and list row say "Vercel Sandbox · owner/name";
+  its Details (`SandboxSection`, `sandbox_state`) say whether the sandbox is running
+  (attached or unattended), saved as a snapshot, or expired, with the time Vercel gives it
+  (`session.startedAt + timeout`; the snapshot from `statusUpdatedAt + snapshotExpiration`).
+  The Vercel dialog has a checklist: token, Claude login, a GitHub account that can push.
 
 ## Later: mobile apps
 
