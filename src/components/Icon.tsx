@@ -326,6 +326,25 @@ export const I = {
       <path d="M12 15V3" />
     </Base>
   ),
+  /** A warning (triangle-alert). */
+  Alert: (p: IconProps) => (
+    <Base {...p}>
+      <path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z" />
+      <path d="M12 9v4M12 17h.01" />
+    </Base>
+  ),
+  /** An agent asking permission to use a tool (shield). */
+  Shield: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z" />
+    </Base>
+  ),
+  /** Jump to the newest part of a list (arrow-down). */
+  ArrowDown: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M12 5v14M19 12l-7 7-7-7" />
+    </Base>
+  ),
   Upload: (p: IconProps) => (
     <Base {...p}>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

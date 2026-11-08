@@ -16,10 +16,8 @@ const WORD: Record<Exclude<SubagentStatus, "running">, string> = {
 };
 
 export function SubagentStatusWord({ thread }: { thread: SubagentThread }) {
-  if (thread.pending) return <StatusLight light="attention" variant="word" label="Needs you" />;
-  if (thread.status === "running") {
-    return <StatusLight light="working" variant="word" label="Running" />;
-  }
+  if (thread.pending) return <StatusLight light="attention" variant="word" />;
+  if (thread.status === "running") return <StatusLight light="working" variant="word" />;
   return <span className={`ac-agent-state ${thread.status}`}>{WORD[thread.status]}</span>;
 }
 

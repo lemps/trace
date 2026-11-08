@@ -20,7 +20,8 @@ function render(nodes: readonly HastNode[]): ReactNode[] {
   });
 }
 
-function CopyButton({ text }: { text: string }) {
+/** Copies `text`, then shows a check for a moment. Also on tool output (`transcript/ToolOutput`). */
+export function CopyButton({ text, label = "Copy code" }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard.writeText(text).then(
@@ -35,7 +36,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       className="md-code-copy"
-      aria-label={copied ? "Copied" : "Copy code"}
+      aria-label={copied ? "Copied" : label}
       title={copied ? "Copied" : "Copy"}
       onClick={copy}
     >

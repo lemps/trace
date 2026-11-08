@@ -88,14 +88,14 @@ function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean })
             type="button"
             className="btn ac-agent-stop"
             onClick={() => openSubagentBeside(workspaceId, thread.callId)}
-            title="Show it in a pane beside the chat"
+            title="Open beside: its conversation in a pane next to the chat"
           >
             <I.SplitRight size={13} /> Open beside
           </button>
         )}
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
-            <I.X size={13} /> Stop subagent
+            <I.Stop size={13} /> Stop subagent
           </button>
         )}
       </div>

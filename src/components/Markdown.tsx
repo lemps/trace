@@ -1,9 +1,10 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { MouseEvent, ReactNode } from "react";
+import { Fragment, type MouseEvent, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeBlock } from "./markdown/CodeBlock";
 import { fenceLanguage, type HastNode, textOfNode } from "./markdown/highlight";
+import { splitInsights } from "./markdown/insight";
 
 // The one Markdown renderer: react-markdown + remark-gfm, so GitHub-Flavored
 // extensions — tables, task lists, strikethrough, autolinks — render the way
@@ -16,6 +17,9 @@ import { fenceLanguage, type HastNode, textOfNode } from "./markdown/highlight";
 // Streaming text needs nothing special: an unclosed fence runs to the end of
 // the text (CommonMark), so a half-written block shows as code, not as a
 // stray "```", and becomes the same block when its closing fence lands.
+//
+// Agent prose also draws Claude Code's "★ Insight" asides (its explanatory
+// output style) as callout cards (markdown/insight.ts).
 
 /** Open a link in the system browser, never by navigating the webview. */
 export function ExternalLink({ href, children }: { href?: string; children?: ReactNode }) {
@@ -74,15 +78,35 @@ export function Markdown({
   components = MARKDOWN_COMPONENTS,
 }: MarkdownProps) {
   const cls = ["md", prose && "prose", inline && "md-inline", className].filter(Boolean).join(" ");
-  const body = (
+  const render = (markdown: string) => (
     <ReactMarkdown
       remarkPlugins={remarkPlugins}
       components={components}
       allowedElements={inline ? INLINE : undefined}
       unwrapDisallowed={inline}
     >
-      {text}
+      {markdown}
     </ReactMarkdown>
   );
-  return inline ? <span className={cls}>{body}</span> : <div className={cls}>{body}</div>;
+  if (inline) return <span className={cls}>{render(text)}</span>;
+  const segments = prose ? splitInsights(text) : [];
+  if (segments.length < 2 && segments[0]?.kind !== "insight") {
+    return <div className={cls}>{render(text)}</div>;
+  }
+  return (
+    <div className={cls}>
+      {segments.map((s, i) =>
+        s.kind === "insight" ? (
+          // biome-ignore lint/suspicious/noArrayIndexKey: segments of one text, in order
+          <aside key={i} className="md-insight" aria-label="Insight">
+            <div className="md-insight-label">Insight</div>
+            {render(s.text)}
+          </aside>
+        ) : (
+          // biome-ignore lint/suspicious/noArrayIndexKey: segments of one text, in order
+          <Fragment key={i}>{render(s.text)}</Fragment>
+        )
+      )}
+    </div>
+  );
 }

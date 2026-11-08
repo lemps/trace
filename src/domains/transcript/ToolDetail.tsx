@@ -1,5 +1,6 @@
 import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
 import type { ToolStep } from "./blocks";
+import { ToolOutput } from "./ToolOutput";
 import { str, todosOf } from "./toolSummary";
 
 // What an expanded tool row shows: the part of the call worth reading (the
@@ -7,9 +8,6 @@ import { str, todosOf } from "./toolSummary";
 
 /** Calls that answer in the agent's own Markdown: a subagent's report. */
 const PROSE_RESULT = new Set(["Task", "Agent"]);
-
-/** Result text longer than this many lines is cut to its head and tail. */
-const RESULT_LINES = 40;
 
 function EditDiff({ before, after }: { before: string; after: string }) {
   return (
@@ -83,15 +81,6 @@ function CallBody({ name, input }: { name: string; input: unknown }) {
   return <pre className="tx-code">{JSON.stringify(input, null, 2)}</pre>;
 }
 
-/** Keep the head and tail of a long result; the middle is rarely the point. */
-function trimLines(text: string): string {
-  const lines = text.split("\n");
-  if (lines.length <= RESULT_LINES) return text;
-  const head = lines.slice(0, RESULT_LINES / 2);
-  const tail = lines.slice(-RESULT_LINES / 2);
-  return [...head, `… ${lines.length - RESULT_LINES} more lines …`, ...tail].join("\n");
-}
-
 export function ToolDetail({ step }: { step: ToolStep }) {
   const { call, result } = step;
   // Edits and todo lists report a bare "updated" — the call already says it all.
@@ -106,9 +95,7 @@ export function ToolDetail({ step }: { step: ToolStep }) {
       ) : (
         result?.text &&
         (!quietResult || result.isError) && (
-          <pre className={`tx-code tx-result${result.isError ? " error" : ""}`}>
-            {trimLines(result.text)}
-          </pre>
+          <ToolOutput text={result.text} failed={result.isError} />
         )
       )}
     </div>

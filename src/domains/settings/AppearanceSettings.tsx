@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FontField } from "@/components/FontField";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Segmented } from "@/components/Segmented";
 import { StatusLight } from "@/components/StatusLight";
 import { Switch } from "@/components/Switch";
@@ -125,9 +126,12 @@ export function AppearanceSettings() {
       </AppearanceGroup>
 
       <div className="ap-reset">
-        <button type="button" className="btn" onClick={resetAll}>
-          Reset appearance
-        </button>
+        <InlineConfirm
+          label="Reset appearance"
+          message="Reset every appearance setting, terminal font, size and line height included?"
+          confirmLabel="Reset"
+          onConfirm={resetAll}
+        />
       </div>
     </div>
   );

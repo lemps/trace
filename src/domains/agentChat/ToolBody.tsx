@@ -1,3 +1,4 @@
+import { ToolOutput } from "@/domains/transcript/ToolOutput";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { unwrapHandBack } from "./handBack";
 import { commandOf, patchOf, str } from "./toolSummary";
@@ -5,20 +6,6 @@ import type { ToolCall } from "./types";
 
 // An expanded tool row: the part of the input worth reading (the command, the
 // prompt, the patch; JSON for anything else) and what came back.
-
-/** Output longer than this many lines is cut to its head and tail. */
-const OUTPUT_LINES = 40;
-
-function trimLines(text: string): string {
-  const lines = text.split("\n");
-  if (lines.length <= OUTPUT_LINES) return text;
-  const half = OUTPUT_LINES / 2;
-  return [
-    ...lines.slice(0, half),
-    `… ${lines.length - OUTPUT_LINES} more lines …`,
-    ...lines.slice(-half),
-  ].join("\n");
-}
 
 const RUN = new Set(["Bash", "PowerShell", "shell", "local_shell", "exec_command", "unified_exec"]);
 /** Calls whose diff card already shows the change; their input would repeat it. */
@@ -57,7 +44,7 @@ export function ToolBody({ call, hasDiff }: { call: ToolCall; hasDiff: boolean }
           <ChatMarkdown text={unwrapHandBack(call.output)} />
         </div>
       ) : call.output ? (
-        <pre className={`tx-code tx-result${failed ? " error" : ""}`}>{trimLines(call.output)}</pre>
+        <ToolOutput text={call.output} failed={failed} />
       ) : (
         call.state !== "running" && <div className="ac-tool-none">No output</div>
       )}
