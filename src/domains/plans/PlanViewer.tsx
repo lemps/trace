@@ -8,9 +8,9 @@ import { ChangesView } from "./ChangesView";
 import { DocBody } from "./DocBody";
 import { docActions } from "./docActions";
 import { type DocSeries, previousVersion, SOURCE_LABEL, versionDiff } from "./model";
-import { useFillAgent } from "./PlanEmpty";
 import { usePlanStore } from "./store";
 import { fullTime, shortTime } from "./time";
+import { useFillAgent } from "./useFillAgent";
 import { usePrintPdf } from "./usePrintPdf";
 
 type View = "document" | "changes";

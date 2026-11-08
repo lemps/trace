@@ -1,4 +1,4 @@
-//! The Plan tab's document model, mirrored by `src/domains/plans/types.ts`.
+//! The Plan tab's document model, mirrored by `src/ipc/plans.ts`.
 //!
 //! Every plan an agent produces, whatever produced it, becomes a [`PlanDoc`]:
 //! Claude's plan mode (`capture`), a document the agent published (`trace-render`

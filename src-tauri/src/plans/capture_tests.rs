@@ -220,3 +220,26 @@ fn a_terminal_agents_plan_dialog_carries_its_plan() {
         None
     );
 }
+
+#[test]
+fn a_plan_cut_short_in_the_journal_is_read_whole_from_its_file() {
+    let cut = crate::agent_session::journal::cap(
+        &"x".repeat(crate::agent_session::journal::CAP_CHARS + 50),
+    );
+    let finds = vec![
+        from_row(&tool(
+            "Write",
+            json!({"file_path": PLAN_PATH}),
+            ToolState::Completed,
+        ))
+        .unwrap(),
+        from_row(&tool(
+            "ExitPlanMode",
+            json!({"plan": cut}),
+            ToolState::Running,
+        ))
+        .unwrap(),
+    ];
+    let out = run(finds, Some("the whole plan"));
+    assert_eq!(out.docs[0].body, "the whole plan");
+}

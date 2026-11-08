@@ -25,6 +25,10 @@ pub fn scan(app: &AppHandle, workspace_id: &str, turn_end: bool) {
     let app = app.clone();
     let ws = workspace_id.to_string();
     std::thread::spawn(move || {
+        // One scan at a time, read to applied, so two close hook events can't
+        // apply what they read out of order (an older task list last).
+        static SCANNING: Mutex<()> = Mutex::new(());
+        let _one = SCANNING.lock().unwrap_or_else(|e| e.into_inner());
         let Some(path) = conversation_file(&app, &ws) else {
             return;
         };

@@ -267,8 +267,35 @@ pub fn forget(workspace_id: &str) {
 /// A session's conversation now belongs to an issue: so do its documents.
 pub fn transfer(from: &str, to: &str) {
     let (src, dst) = (plan_path(from), plan_path(to));
-    if src.exists() && !dst.exists() {
+    if !src.exists() {
+        return;
+    }
+    if !dst.exists() {
         let _ = std::fs::rename(&src, &dst);
+        return;
+    }
+    // Both have documents: the session's join the issue's.
+    let Ok(moved) = load(from) else {
+        return;
+    };
+    let merged = update(to, |file| merge(file, moved));
+    if merged.is_ok() {
+        forget(from);
+    }
+}
+
+/// Add `other`'s documents and capture keys to `file` (ids are unique UUIDs).
+fn merge(file: &mut PlanFile, other: PlanFile) {
+    let known: std::collections::HashSet<String> = file.docs.iter().map(|d| d.id.clone()).collect();
+    file.docs
+        .extend(other.docs.into_iter().filter(|d| !known.contains(&d.id)));
+    for r in other.refs {
+        if !file.refs.contains(&r) {
+            file.refs.push(r);
+        }
+    }
+    if file.tasks.is_none() {
+        file.tasks = other.tasks;
     }
 }
 

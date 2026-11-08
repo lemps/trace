@@ -73,16 +73,22 @@ t="-"
 msg="$TRACE_RENDER_TOKEN $TRACE_ISSUE_KEY @$format $t $(b64 "$body")"
 
 # Prefer bash's /dev/tcp (no external tool); fall back to nc.
+reply=""
 if exec 3<>"/dev/tcp/127.0.0.1/$TRACE_RENDER_PORT" 2>/dev/null; then
   printf '%s\n' "$msg" >&3
+  IFS= read -r -t 10 reply <&3 || true
   exec 3<&-
 elif command -v nc >/dev/null 2>&1; then
-  printf '%s\n' "$msg" | nc -w 1 127.0.0.1 "$TRACE_RENDER_PORT"
+  reply="$(printf '%s\n' "$msg" | nc -w 10 127.0.0.1 "$TRACE_RENDER_PORT" | head -n 1)"
 else
   echo "trace-render: cannot reach trace (no /dev/tcp or nc)" >&2
   exit 1
 fi
-echo "trace-render: published to the Plan tab"
+case "$reply" in
+  ok:*) echo "trace-render: ${reply#ok: }" ;;
+  error:*) echo "trace-render: ${reply#error: }" >&2; exit 1 ;;
+  *) echo "trace-render: sent, but trace didn't confirm it" >&2 ;;
+esac
 "#;
 
 /// Cap a single message at ~8 MiB of base64 (~6 MiB of HTML) so a malformed or
@@ -128,6 +134,7 @@ pub fn start(app: AppHandle) -> std::io::Result<RenderBridge> {
 /// Read one framed message, authenticate it, and emit the event. Anything
 /// malformed is dropped silently — this endpoint is fed by untrusted local input.
 fn handle_conn(stream: TcpStream, app: &AppHandle, token: &str) {
+    let reply_to = stream.try_clone().ok();
     let mut line = String::new();
     if BufReader::new(stream)
         .take(MAX_MESSAGE_BYTES)
@@ -150,13 +157,23 @@ fn handle_conn(stream: TcpStream, app: &AppHandle, token: &str) {
         crate::claude::hooks::on_hook(app, issue_key, event);
         return;
     }
-    let Some(message) = parse_publish(b64) else {
-        return;
+    // Authenticated: `trace-render` waits for one line saying how it went.
+    let outcome = match parse_publish(b64) {
+        None => Err("trace couldn't read the document (empty, or cut short).".to_string()),
+        Some(m) => {
+            let title = m.title.as_deref();
+            crate::plans::publish(app, issue_key, m.format, title, m.body, None).map(|doc| {
+                format!(
+                    "ok: published \"{}\" (version {}) to the Plan tab",
+                    doc.title, doc.version
+                )
+            })
+        }
     };
-    let title = message.title.as_deref();
-    if let Err(e) = crate::plans::publish(app, issue_key, message.format, title, message.body, None)
-    {
-        eprintln!("trace: trace-render: {e}");
+    let reply = outcome.unwrap_or_else(|e| format!("error: {e}"));
+    if let Some(mut out) = reply_to {
+        use std::io::Write;
+        let _ = writeln!(out, "{}", reply.replace('\n', " "));
     }
 }
 

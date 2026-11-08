@@ -9,6 +9,8 @@ import { hasUnseen, newestAt, planTabVisible } from "./model";
 // workspace whenever a document lands, so trimmed versions go here too.
 
 const NO_DOCS: PlanDoc[] = [];
+/** The latest reload asked for per workspace: an older answer landing later is dropped. */
+const latestLoad: Record<string, number> = {};
 const SEEN_KEY = "trace.planSeen";
 
 function loadSeen(): Record<string, number> {
@@ -59,8 +61,10 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
     void get().reload(workspaceId);
   },
   async reload(workspaceId) {
+    const ticket = (latestLoad[workspaceId] ?? 0) + 1;
+    latestLoad[workspaceId] = ticket;
     const state = await loadPlanDocs(workspaceId).catch(() => null);
-    if (!state) return;
+    if (!state || latestLoad[workspaceId] !== ticket) return;
     set((s) => ({
       docs: { ...s.docs, [workspaceId]: state.docs },
       tasks: { ...s.tasks, [workspaceId]: state.tasks },

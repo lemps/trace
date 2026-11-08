@@ -105,6 +105,13 @@ pub fn publish(
     if body.trim().is_empty() {
         return Err("The document is empty.".into());
     }
+    if format == PlanFormat::Html && body.len() > store::MAX_HTML {
+        return Err(format!(
+            "The document is too large ({} MiB; HTML is kept up to {} MiB).",
+            body.len() / (1024 * 1024),
+            store::MAX_HTML / (1024 * 1024)
+        ));
+    }
     let given = title.map(str::trim).filter(|t| !t.is_empty());
     let found = match format {
         PlanFormat::Markdown => model::markdown_title(&body, ""),
@@ -121,6 +128,17 @@ pub fn publish(
         }
         None => None,
     };
+    // Untitled, it has no series to join: the same text published again (an
+    // HTML page re-printed into a terminal) is the document already there.
+    if earlier.is_none() && title.is_none() {
+        let same = store::load(workspace_id)?
+            .docs
+            .into_iter()
+            .find(|d| d.format == format && d.body == body);
+        if let Some(doc) = same {
+            return Ok(doc);
+        }
+    }
     let series = match (&earlier, &title) {
         (Some(d), _) => d.series.clone(),
         (None, Some(t)) => model::published_series(format, t),

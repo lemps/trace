@@ -59,6 +59,19 @@ fn as_docs(workspace_id: &str, cards: Vec<Card>) -> Vec<NewDoc> {
 /// Bring `workspace_id`'s old cards into its plan file. Best-effort: a card that
 /// can't be read stays in the old file for the next try.
 pub fn import(workspace_id: &str) {
+    // Once per workspace per run: the old file only changes if an older trace
+    // runs alongside, and its new cards are picked up on the next start.
+    {
+        static DONE: std::sync::Mutex<Option<std::collections::HashSet<String>>> =
+            std::sync::Mutex::new(None);
+        let mut done = DONE.lock().unwrap_or_else(|e| e.into_inner());
+        if !done
+            .get_or_insert_with(Default::default)
+            .insert(workspace_id.to_string())
+        {
+            return;
+        }
+    }
     let path = cards_file();
     if !path.exists() {
         return;

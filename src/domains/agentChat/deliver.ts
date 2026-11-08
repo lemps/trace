@@ -20,6 +20,8 @@ export async function sendToAgent(workspaceId: string, text: string): Promise<vo
   await submitLine(workspaceId, text);
 }
 
+const ESC = String.fromCharCode(27);
+
 /**
  * Put `text` where the user is about to write to the agent, without sending it: a
  * chat agent's composer, or a terminal agent's prompt (as a paste, so its lines
@@ -33,7 +35,9 @@ export async function fillAgentInput(
     useComposerFill.getState().fill(workspaceId, text);
     return "chat";
   }
-  await sendAgentInput(workspaceId, `\x1b[200~${text}\x1b[201~`);
+  // No escape bytes of its own: one could end the paste early and type the rest.
+  const safe = text.split(ESC).join("");
+  await sendAgentInput(workspaceId, `\x1b[200~${safe}\x1b[201~`);
   return "terminal";
 }
 

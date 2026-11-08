@@ -141,3 +141,19 @@ fn a_reference_is_kept_for_a_capture_that_said_nothing_new() {
         2
     );
 }
+
+#[test]
+fn merging_keeps_both_workspaces_documents() {
+    let mut issue = PlanFile::default();
+    add(&mut issue, new("plan-mode", "issue plan", Some("a")), 1).unwrap();
+    let mut session = PlanFile::default();
+    add(
+        &mut session,
+        new("published:x", "session doc", Some("b")),
+        2,
+    )
+    .unwrap();
+    merge(&mut issue, session);
+    assert_eq!(issue.docs.len(), 2);
+    assert_eq!(issue.refs, vec!["a".to_string(), "b".to_string()]);
+}

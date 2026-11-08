@@ -175,7 +175,15 @@ impl Tracker {
     ) {
         match found {
             Found::ExitPlan { reference, plan } => {
-                let plan = plan.or_else(|| self.plan_file.as_deref().and_then(read));
+                // A chat row's input is capped (`journal::cap`): a cut plan is
+                // read whole from its file when there is one.
+                let cut = plan.as_deref().is_some_and(is_cut);
+                let from_file = || self.plan_file.as_deref().and_then(read);
+                let plan = if plan.is_none() || cut {
+                    from_file().or(plan)
+                } else {
+                    plan
+                };
                 if let Some(body) = plan {
                     out.docs.push(plan_doc(body, reference));
                     self.dirty = false;
@@ -208,6 +216,12 @@ impl Tracker {
             }
         }
     }
+}
+
+/// Whether `text` was cut by `journal::cap`.
+fn is_cut(text: &str) -> bool {
+    text.ends_with(" more characters)")
+        && text.chars().count() > crate::agent_session::journal::CAP_CHARS
 }
 
 fn plan_doc(body: String, reference: Option<String>) -> NewDoc {
