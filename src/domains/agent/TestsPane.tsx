@@ -1,19 +1,19 @@
 import { I } from "@/components/Icon";
-import type { Issue } from "@/domains/issues/types";
 import { useTestsStore } from "./testsStore";
 
 const secs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
 // The "Tests" tab — runs the worktree's detected test command on demand and
 // renders the result onto the design's tests-summary / test-suite / test-detail.
-// Run state lives in testsStore (keyed by issue) so it survives leaving the tab.
-export function TestsPane({ issue }: { issue: Issue }) {
-  const running = useTestsStore((s) => s.running.has(issue.key));
-  const run = useTestsStore((s) => s.results[issue.key] ?? null);
-  const error = useTestsStore((s) => s.errors[issue.key] ?? null);
+// Run state lives in testsStore (keyed by workspace: a ticket or a session) so it
+// survives leaving the tab.
+export function TestsPane({ workspaceId }: { workspaceId: string }) {
+  const running = useTestsStore((s) => s.running.has(workspaceId));
+  const run = useTestsStore((s) => s.results[workspaceId] ?? null);
+  const error = useTestsStore((s) => s.errors[workspaceId] ?? null);
   const start = useTestsStore((s) => s.run);
 
-  const go = () => void start(issue.key);
+  const go = () => void start(workspaceId);
 
   return (
     <div className="tab-pane">

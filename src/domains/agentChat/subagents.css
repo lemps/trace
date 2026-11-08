@@ -227,15 +227,12 @@
   color: var(--fg-3);
 }
 
-/* The working row's extras: how many subagents, and Interrupt. */
+/* The working row's extra: how many subagents. */
 .ac-working {
   gap: 8px;
 }
 .ac-working-subs {
   color: var(--fg-3);
-}
-.ac-working-stop {
-  margin-left: auto;
 }
 .ac-head-stop {
   flex-shrink: 0;

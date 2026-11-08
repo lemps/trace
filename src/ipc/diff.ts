@@ -17,6 +17,16 @@ export interface DiffSummary {
   /** The ref we diffed against, e.g. `origin/main`. */
   base: string;
   files: FileSummary[];
+  /**
+   * Read from the workspace's own worktree. False before it has one (an unstarted
+   * ticket), when the main checkout was read instead.
+   */
+  ownWorktree: boolean;
+}
+
+/** The changes that are the workspace's own: none while it has no worktree. */
+export function ownChanges(summary: DiffSummary): number {
+  return summary.ownWorktree ? summary.files.length : 0;
 }
 
 export interface DiffLine {

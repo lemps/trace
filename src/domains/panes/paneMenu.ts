@@ -9,6 +9,7 @@ import {
   removeTab,
   splitTab,
 } from "./model";
+import { tabMark } from "./tabMark";
 import type { Panes } from "./usePanes";
 
 export interface PaneHints {
@@ -90,25 +91,33 @@ export function paneMenu(
 }
 
 /**
- * Tabs that come and go (Plan, while it has nothing to show), always listed so
- * they can be found: greyed with what would fill them while hidden, and opened
- * (empty, until closed) by picking them.
+ * Tabs that come and go (.claude/rules/tabs.md), always listed so they can be found:
+ * a filled accent mark when one has content, a hollow one when it's empty. A hidden
+ * one shows again when picked; an empty one only if it can open empty (a shell, a
+ * blank page), since Plan or a PR come from the agent. What each is for: Settings → Tabs.
  */
 export function comingTabs(panes: Panes, after?: () => void): MenuItem[] {
   return [...panes.panels.values()]
-    .filter((p) => p.menuHint !== undefined)
-    .map((p) => ({
-      id: `tab:${p.id}`,
-      label: p.label,
-      muted: p.hidden,
-      detail: p.hidden ? p.menuHint : undefined,
-      title: p.hidden ? undefined : `Show ${p.label}`,
-      onSelect: () => {
-        if (p.hidden) panes.reveal(p.id);
-        else panes.select(p.id);
-        after?.();
-      },
-    }));
+    .filter((p) => p.comes)
+    .map((p) => {
+      const filled = p.filled === true;
+      const shown = !p.hidden;
+      return {
+        id: `tab:${p.id}`,
+        label: tabMark(p.label, filled),
+        disabled: !shown && !filled && !p.opensEmpty,
+        title: shown
+          ? `Show ${p.label}`
+          : filled || p.opensEmpty
+            ? `Open ${p.label}`
+            : "Nothing here yet",
+        onSelect: () => {
+          if (shown) panes.select(p.id);
+          else panes.reveal(p.id);
+          after?.();
+        },
+      };
+    });
 }
 
 /** Reset layout: in every pane menu, and in the detail header's ⋯. */

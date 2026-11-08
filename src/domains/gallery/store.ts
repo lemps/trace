@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { create } from "zustand";
+import { type Coming, useComing } from "@/domains/panes/coming";
 import {
   type GallerySet,
   galleryList,
@@ -7,7 +8,8 @@ import {
   gallerySets,
   type Listing,
 } from "@/ipc/gallery";
-import { galleryTabVisible, listingKey } from "./model";
+import { GALLERY_TAB } from "./galleryTabId";
+import { listingKey } from "./model";
 
 // Each workspace's Gallery tab in the renderer: its sets as the backend keeps them
 // (`gallery::store`), the one in view, whether a set arrived unseen, and whether
@@ -25,14 +27,12 @@ interface GalleryStore {
   /** The set in view per workspace; null follows the newest. */
   picked: Record<string, string | null>;
   unseen: Record<string, boolean>;
-  revealed: Record<string, boolean>;
   ensure: (ws: string) => void;
   reload: (ws: string) => Promise<void>;
   pick: (ws: string, setId: string | null) => void;
   remove: (ws: string, setId: string) => Promise<void>;
   notify: (ws: string) => void;
   markSeen: (ws: string) => void;
-  reveal: (ws: string, on: boolean) => void;
 }
 
 export const useGalleryStore = create<GalleryStore>((set, get) => ({
@@ -40,7 +40,6 @@ export const useGalleryStore = create<GalleryStore>((set, get) => ({
   loaded: {},
   picked: {},
   unseen: {},
-  revealed: {},
   ensure(ws) {
     if (get().loaded[ws]) return;
     set((s) => ({ loaded: { ...s.loaded, [ws]: true } }));
@@ -60,8 +59,6 @@ export const useGalleryStore = create<GalleryStore>((set, get) => ({
     await galleryRemove(ws, setId);
     if (get().picked[ws] === setId) get().pick(ws, null);
     await get().reload(ws);
-    // The last one gone: the tab goes too, as it came.
-    if ((get().sets[ws] ?? NO_SETS).length === 0) get().reveal(ws, false);
   },
   notify(ws) {
     // A new set is shown as it lands.
@@ -69,9 +66,6 @@ export const useGalleryStore = create<GalleryStore>((set, get) => ({
   },
   markSeen(ws) {
     if (get().unseen[ws]) set((s) => ({ unseen: { ...s.unseen, [ws]: false } }));
-  },
-  reveal(ws, on) {
-    set((s) => ({ revealed: { ...s.revealed, [ws]: on } }));
   },
 }));
 
@@ -128,21 +122,20 @@ export function useListing(
   return state;
 }
 
-/** What the tab row needs: whether Gallery shows, and whether it has news. */
+/** What the tab row needs: whether Gallery shows (the tabs rule), and whether it has news. */
 export interface GalleryTabState {
-  visible: boolean;
-  peeking: boolean;
+  coming: Coming;
   unseen: boolean;
   count: number;
 }
 
 export function useGalleryTab(ws: string): GalleryTabState {
   const sets = useGallerySets(ws);
-  const revealed = useGalleryStore((s) => s.revealed[ws] ?? false);
   const unseen = useGalleryStore((s) => s.unseen[ws] ?? false);
+  // A new set brings a hidden tab back; files landing in one already shown don't.
+  const signature = sets.map((s) => s.id).join(",");
   return {
-    visible: galleryTabVisible(sets.length, revealed),
-    peeking: revealed && sets.length === 0,
+    coming: useComing(GALLERY_TAB, ws, sets.length > 0, signature),
     unseen,
     count: sets.length,
   };

@@ -138,22 +138,24 @@ export function cycleFocus(layout: PaneLayout, delta: number): PaneLayout {
 }
 
 /**
- * Move `tab` into group `to` at `index` (the end if omitted), shown and focused.
- * Within one group this reorders. A group the move empties closes.
+ * Move `tab` into group `to`, just before tab `before` (the end if omitted or not
+ * there), shown and focused. Within one group this reorders. A group the move
+ * empties closes.
+ *
+ * A neighbour, not an index: a group holds hidden tabs as well as shown ones (they
+ * keep their places), so a position counted among the tabs on screen means
+ * something else in the group. A tab is the same tab in both.
  */
-export function moveTab(layout: PaneLayout, tab: string, to: string, index?: number): PaneLayout {
+export function moveTab(layout: PaneLayout, tab: string, to: string, before?: string): PaneLayout {
   const from = groupOf(layout, tab);
   const target = findGroup(layout, to);
-  if (!from || !target) return layout;
+  if (!from || !target || before === tab) return layout;
   const root = mapGroups(layout.root, (g) => {
     const rest = g.id === from.id ? withoutTab(g, tab) : g;
     if (g.id !== to) return rest;
-    // An index counted in the old order shifts left when the tab came from before it.
-    const old = g.tabs.indexOf(tab);
-    let at = index ?? rest.tabs.length;
-    if (index !== undefined && old >= 0 && old < index) at -= 1;
     const tabs = [...rest.tabs];
-    tabs.splice(Math.max(0, Math.min(at, tabs.length)), 0, tab);
+    const at = before === undefined ? -1 : tabs.indexOf(before);
+    tabs.splice(at < 0 ? tabs.length : at, 0, tab);
     return { ...rest, tabs, active: tab };
   });
   const pruned = prune(root);

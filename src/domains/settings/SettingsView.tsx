@@ -8,6 +8,7 @@ import { NotificationSettings } from "./NotificationSettings";
 import { RepoSettings } from "./RepoSettings";
 import { ShortcutSettings } from "./ShortcutSettings";
 import { SidebarSettings } from "./SidebarSettings";
+import { TabsSettings } from "./TabsSettings";
 import { type SettingsTab, useSettingsTabRequest } from "./tabStore";
 import { UpdateSettings } from "./UpdateSettings";
 import { WorktreeSettings } from "./WorktreeSettings";
@@ -18,6 +19,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: "assistant", label: "Assistant" },
   { id: "appearance", label: "Appearance" },
   { id: "sidebar", label: "Sidebar" },
+  { id: "tabs", label: "Tabs" },
   { id: "shortcuts", label: "Shortcuts" },
   { id: "worktrees", label: "Worktrees" },
   { id: "updates", label: "Updates" },
@@ -73,6 +75,7 @@ export function SettingsView() {
           )}
           {tab === "appearance" && <AppearanceSettings />}
           {tab === "sidebar" && <SidebarSettings />}
+          {tab === "tabs" && <TabsSettings />}
           {tab === "shortcuts" && <ShortcutSettings />}
           {tab === "worktrees" && (
             <>

@@ -104,3 +104,5 @@ Check each clip anyway before committing it. Clips should stay under 1.5 MB each
    sentence describing what the clip shows; `"kind": "still"` and a `caption` for a
    screenshot). Its position in the list is its place on the page.
 3. `node site/scripts/record.mjs <feature-id>`, then `node site/scripts/build-page.mjs`.
+   Until its media is recorded, a feature listed in `features.json` is left off the page
+   (the build says so), so a section can be written ahead of its clip.

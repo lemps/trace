@@ -88,13 +88,13 @@ describe("split", () => {
 
 describe("move", () => {
   it("reorders within a group", () => {
-    assert.deepEqual(allTabs(moveTab(base(), "terminal", "g1", 0)), [
+    assert.deepEqual(allTabs(moveTab(base(), "terminal", "g1", "chat")), [
       "terminal",
       "chat",
       "html",
       "files",
     ]);
-    assert.deepEqual(allTabs(moveTab(base(), "chat", "g1", 3)), [
+    assert.deepEqual(allTabs(moveTab(base(), "chat", "g1", "terminal")), [
       "html",
       "files",
       "chat",
@@ -103,8 +103,24 @@ describe("move", () => {
     assert.deepEqual(allTabs(moveTab(base(), "chat", "g1")), ["html", "files", "terminal", "chat"]);
   });
 
+  it("lands beside the tab it was dropped by, whatever hidden tabs sit between", () => {
+    // On screen: chat ticket browser html. Gallery and files are hidden in the group.
+    const l = singleGroup(["chat", "ticket", "gallery", "browser", "files", "html"]);
+    const shown = (x: typeof l) => allTabs(x).filter((t) => t !== "gallery" && t !== "files");
+    // Ticket dropped between browser and html, then after html (the end).
+    assert.deepEqual(shown(moveTab(l, "ticket", "g1", "html")), [
+      "chat",
+      "browser",
+      "ticket",
+      "html",
+    ]);
+    assert.deepEqual(shown(moveTab(l, "ticket", "g1")), ["chat", "browser", "html", "ticket"]);
+    // Dropped just before itself, nothing moves.
+    assert.equal(moveTab(l, "ticket", "g1", "ticket"), l);
+  });
+
   it("moves between groups and shows the tab there", () => {
-    const l = moveTab(splitTab(base(), "files", "g1", "right"), "terminal", "g2", 0);
+    const l = moveTab(splitTab(base(), "files", "g1", "right"), "terminal", "g2", "files");
     const right = listGroups(l.root)[1];
     assert.deepEqual(right.tabs, ["terminal", "files"]);
     assert.equal(right.active, "terminal");

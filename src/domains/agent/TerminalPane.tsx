@@ -1,14 +1,16 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { I } from "@/components/Icon";
 import { useBoardStore } from "@/domains/board/store";
-import { startTerminal, stopAgent } from "@/ipc/agent";
+import { startTerminal } from "@/ipc/agent";
 import { PtyTerminal } from "./PtyTerminal";
 import { fitTerminal, resetTerminal, syncPtySize } from "./terminalRegistry";
 
 // The "Terminal" tab — a plain shell in the issue's worktree, distinct from the
 // Claude agent in Chat. Keyed `term:<issue>` so the two PTYs coexist. Reuses the
-// same live-terminal/registry machinery as the agent.
-export function TerminalPane({ issueKey }: { issueKey: string }) {
+// same live-terminal/registry machinery as the agent. The tab shows only while a
+// shell is open; picked from the pane menu, it mounts with `autoStart` and opens one.
+
+export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoStart?: boolean }) {
   const termKey = `term:${issueKey}`;
   const running = useBoardStore((s) => s.runningAgents.has(termKey));
   const setAgentRunning = useBoardStore((s) => s.setAgentRunning);
@@ -34,20 +36,23 @@ export function TerminalPane({ issueKey }: { issueKey: string }) {
       startingRef.current = false;
     }
   };
-  const stop = async () => {
-    await stopAgent(termKey).catch(() => {});
-    setAgentRunning(termKey, false);
-    clearOutput(termKey);
-  };
+  // After a frame, so the terminal is laid out and the shell spawns at its real size.
+  const autoStarted = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: start once, on the first mount asked to
+  useEffect(() => {
+    if (!autoStart || autoStarted.current || running) return;
+    // Marked in the frame, not before: StrictMode's re-run cancels the first one.
+    const frame = requestAnimationFrame(() => {
+      autoStarted.current = true;
+      void start();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [autoStart]);
 
   return (
     <div className="pty-host-wrap">
       <PtyTerminal issueKey={termKey} />
-      {running ? (
-        <button type="button" className="term-stop" onClick={stop} title="Close shell">
-          <I.X size={12} /> Close
-        </button>
-      ) : (
+      {running ? null : (
         <div className="empty-state">
           <div className="inner">
             <span className="ic">

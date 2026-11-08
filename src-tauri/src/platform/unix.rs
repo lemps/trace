@@ -150,7 +150,9 @@ mod tests {
     }
 }
 
-/// WKWebView and WebKitGTK print through their own dialogs, which save as PDF.
+/// WebKitGTK prints through its own dialog (`window.print()`), which saves as PDF.
+/// macOS writes the file itself: `macos_pdf`.
+#[cfg(target_os = "linux")]
 impl super::ports::PdfPrinter for Os {
     fn prints_to_pdf() -> bool {
         false

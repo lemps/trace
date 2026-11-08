@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AutoSidebar } from "@/components/AutoSidebar";
+import { I } from "@/components/Icon";
 import { ChatViewContext } from "@/domains/agentChat/chatContext";
 import { useWorkspaceRoot } from "@/domains/agentChat/hooks/useWorkspaceRoot";
 import { groupSeries } from "./model";
@@ -15,7 +17,8 @@ interface PlanPanelProps {
 }
 
 // The Plan tab: what the agent planned or published, newest first, with each
-// document's versions, beside its live task list. Markdown renders with the chat's
+// document's versions, beside its live task list. The list folds away while it
+// isn't pointed at (AutoSidebar), so the document has the pane. Markdown renders with the chat's
 // prose styles (Settings → Appearance → Chat & transcript); HTML in a sandboxed
 // iframe, as the old HTML tab's cards did. Opening the tab marks its news seen.
 export function PlanPanel({ workspaceId, agentTab }: PlanPanelProps) {
@@ -61,7 +64,15 @@ export function PlanPanel({ workspaceId, agentTab }: PlanPanelProps) {
     <ChatViewContext.Provider value={chatView}>
       <div className="pl-pane">
         <div className="pl-split">
-          <PlanList series={series} tasks={tasks} selected={selected} onSelect={setPicked} />
+          <AutoSidebar
+            id="plans"
+            label="Plans"
+            icon={I.Plan}
+            count={series.length + (hasTasks ? 1 : 0)}
+            width={248}
+          >
+            <PlanList series={series} tasks={tasks} selected={selected} onSelect={setPicked} />
+          </AutoSidebar>
           <div className="pl-main">
             {selected === TASKS && tasks ? (
               <TaskView tasks={tasks} />

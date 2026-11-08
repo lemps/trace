@@ -211,6 +211,26 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
+            // Dev builds say why the app is going (a window closing, a quit asked
+            // for), so an unexpected exit leaves a reason in the `tauri dev` log.
+            #[cfg(debug_assertions)]
+            match &event {
+                tauri::RunEvent::ExitRequested { code, .. } => {
+                    eprintln!("[trace] exit requested (code {code:?})");
+                }
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::CloseRequested { .. },
+                    ..
+                } => eprintln!("[trace] window {label:?}: close requested"),
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::Destroyed,
+                    ..
+                } => eprintln!("[trace] window {label:?}: destroyed"),
+                tauri::RunEvent::Exit => eprintln!("[trace] exiting"),
+                _ => {}
+            }
             // Quitting or restarting for an update kills every agent; mark it, so
             // they're remembered as interrupted rather than finished.
             if let tauri::RunEvent::Exit = event {

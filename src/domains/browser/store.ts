@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { create } from "zustand";
+import { type Coming, useComing } from "@/domains/panes/coming";
 import {
   type BrowserFile,
   type BrowserPage,
@@ -10,7 +11,7 @@ import {
   browserSelect,
   type ViewPayload,
 } from "@/ipc/browser";
-import { browserTabVisible } from "./model";
+import { BROWSER_TAB } from "./browserTabId";
 
 // Each workspace's Browser tab in the renderer: its pages as the backend keeps them
 // (`browser::store`), what each live page is doing (loading, its title, the URL it's
@@ -40,7 +41,6 @@ interface BrowserStore {
   /** Page id → the host whose notice was dismissed (it isn't raised again). */
   dismissed: Record<string, string>;
   unseen: Record<string, boolean>;
-  revealed: Record<string, boolean>;
   ensure: (ws: string) => void;
   reload: (ws: string) => Promise<void>;
   openUrl: (ws: string, url: string, newTab: boolean) => Promise<void>;
@@ -54,7 +54,6 @@ interface BrowserStore {
   /** Dismiss what the page was refused. */
   clearBlocked: (pageId: string) => void;
   markSeen: (ws: string) => void;
-  reveal: (ws: string, on: boolean) => void;
 }
 
 function patchLive(s: BrowserStore, pageId: string, patch: Partial<PageLive>) {
@@ -68,7 +67,6 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   notices: {},
   dismissed: {},
   unseen: {},
-  revealed: {},
   ensure(ws) {
     if (get().loaded[ws]) return;
     set((s) => ({ loaded: { ...s.loaded, [ws]: true } }));
@@ -100,8 +98,6 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     get().dismiss(pageId);
     get().clearBlocked(pageId);
     await get().reload(ws);
-    // The last page gone: the tab goes too, as it came.
-    if ((get().files[ws] ?? EMPTY).pages.length === 0) get().reveal(ws, false);
   },
   onView(p) {
     switch (p.kind) {
@@ -153,9 +149,6 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   markSeen(ws) {
     if (get().unseen[ws]) set((s) => ({ unseen: { ...s.unseen, [ws]: false } }));
   },
-  reveal(ws, on) {
-    set((s) => ({ revealed: { ...s.revealed, [ws]: on } }));
-  },
 }));
 
 /** A workspace's pages (loaded on first use). */
@@ -173,23 +166,21 @@ export function activePage(file: BrowserFile): BrowserPage | null {
   return file.pages.find((p) => p.id === file.active) ?? file.pages[file.pages.length - 1] ?? null;
 }
 
-/** What the tab row needs: whether Browser shows, and whether it has news. */
+/** What the tab row needs: whether Browser shows (the tabs rule), and whether it has news. */
 export interface BrowserTabState {
-  visible: boolean;
-  /** Shown only because the user opened it empty: its tab closes it again. */
-  peeking: boolean;
+  coming: Coming;
   unseen: boolean;
   count: number;
 }
 
 export function useBrowserTab(ws: string): BrowserTabState {
   const file = useBrowserFile(ws);
-  const revealed = useBrowserStore((s) => s.revealed[ws] ?? false);
   const unseen = useBrowserStore((s) => s.unseen[ws] ?? false);
   const count = file.pages.length;
+  // A new page brings a hidden tab back; navigating one already open doesn't.
+  const signature = file.pages.map((p) => p.id).join(",");
   return {
-    visible: browserTabVisible(count, revealed),
-    peeking: revealed && count === 0,
+    coming: useComing(BROWSER_TAB, ws, count > 0, signature),
     unseen,
     count,
   };

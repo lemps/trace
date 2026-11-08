@@ -1,15 +1,7 @@
 import type { BrowserPage } from "../../ipc/browser.ts";
 
-// The Browser tab's pure rules: when the tab shows, what a typed address means,
-// and how a page is named.
-
-/**
- * Whether the Browser tab is in the tab row: the workspace has a page, or the user
- * opened it empty from the pane menu (`revealed`) and hasn't closed it yet.
- */
-export function browserTabVisible(pages: number, revealed: boolean): boolean {
-  return pages > 0 || revealed;
-}
+// The Browser tab's pure rules: what a typed address means, and how a page is
+// named. When the tab shows is the tabs rule's (panes/coming.ts).
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 const LOCAL = /^(localhost|127(\.\d{1,3}){3}|\[::1\])(:\d+)?([/?#]|$)/i;

@@ -1,6 +1,6 @@
 /* ============ The Plan tab (domains/plans) ============
-   A list of documents beside the one shown; in a narrow pane the list sits on
-   top. Markdown takes the chat's prose styles (.md.prose); HTML fills the pane
+   A list of documents beside the one shown, folding away to a strip while it
+   isn't pointed at (components/AutoSidebar). Markdown takes the chat's prose styles (.md.prose); HTML fills the pane
    in a sandboxed frame. */
 
 .pl-pane {
@@ -15,15 +15,15 @@
   min-height: 0;
   display: flex;
 }
+/* Inside an AutoSidebar, which draws its edge. */
 .pl-list {
-  flex: 0 0 232px;
-  min-width: 0;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 8px;
-  border-right: 1px solid var(--border-faint);
+  padding: 8px;
 }
 .pl-item {
   display: flex;
@@ -197,17 +197,6 @@
   flex-shrink: 0;
 }
 
-@container (max-width: 720px) {
-  .pl-split {
-    flex-direction: column;
-  }
-  .pl-list {
-    flex: 0 0 auto;
-    max-height: 132px;
-    border-right: 0;
-    border-bottom: 1px solid var(--border-faint);
-  }
-}
 .pl-ver-btn svg {
   transform: rotate(90deg);
 }

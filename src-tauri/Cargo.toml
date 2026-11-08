@@ -49,6 +49,31 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Process signals
 libc = "0.2"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+# The Plan tab's Save as PDF: WKWebView's own print operation, saving to a file.
+# The same versions wry uses, so nothing new is built.
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSDictionary",
+    "NSGeometry",
+    "NSString",
+    "NSURL",
+] }
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+    "std",
+    "NSPrintInfo",
+    "NSPrintOperation",
+    "NSResponder",
+    "NSView",
+    "NSWindow",
+] }
+objc2-web-kit = { version = "0.3", default-features = false, features = [
+    "std",
+    "objc2-app-kit",
+    "WKWebView",
+] }
+
 [target.'cfg(windows)'.dependencies]
 # Checking whether a process is alive; job objects stop a precheck's whole tree
 windows-sys = { version = "0.59", features = [

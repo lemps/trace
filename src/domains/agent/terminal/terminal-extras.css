@@ -7,7 +7,7 @@
 .term-overlay {
   position: absolute;
   inset: 0;
-  z-index: 3; /* above the shell's Close chip (.term-stop) */
+  z-index: 3;
   pointer-events: none;
 }
 .term-overlay > * {

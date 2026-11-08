@@ -209,3 +209,30 @@ body.pn-resizing-column * {
 .pn-drop-hint.bottom {
   inset: 50% 6px 6px 6px;
 }
+
+/* ---- The pane menu's Tabs list: a mark says whether a tab has content ---- */
+.pn-mi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Hollow: nothing in it. Filled with the accent: it has content, shown or hidden. */
+.pn-mi-mark {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--fg-4);
+}
+.pn-mi-mark.filled {
+  background: var(--c-accent);
+  box-shadow: none;
+}
+.pn-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

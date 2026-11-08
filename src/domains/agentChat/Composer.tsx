@@ -136,12 +136,13 @@ export function Composer({
           {working && (
             <button
               type="button"
-              className="btn"
+              className="btn icon ac-stop"
               onClick={onInterrupt}
               title={interruptTitle}
+              aria-label="Interrupt"
               aria-keyshortcuts={interruptKeys}
             >
-              <I.X size={13} /> Interrupt <KeyHint id="chatInterrupt" />
+              <I.Stop size={12} />
             </button>
           )}
           <button

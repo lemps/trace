@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { BrowserPage } from "../../ipc/browser.ts";
-import { browserTabVisible, hostOf, pageLabel, suggestions, typedUrl } from "./model.ts";
+import { hostOf, pageLabel, suggestions, typedUrl } from "./model.ts";
 
 const page = (id: string, history: string[], updatedAt: number, title = ""): BrowserPage => ({
   id,
@@ -10,15 +10,6 @@ const page = (id: string, history: string[], updatedAt: number, title = ""): Bro
   history,
   openedBy: "agent",
   updatedAt,
-});
-
-describe("Browser tab visibility", () => {
-  it("shows only with a page, or while opened empty from the pane menu", () => {
-    assert.equal(browserTabVisible(0, false), false);
-    assert.equal(browserTabVisible(1, false), true);
-    assert.equal(browserTabVisible(0, true), true);
-    assert.equal(browserTabVisible(3, true), true);
-  });
 });
 
 describe("typedUrl", () => {

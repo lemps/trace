@@ -1,10 +1,11 @@
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
 import { AgentViewSwitch } from "@/domains/agent/AgentViewSwitch";
-import { FilesPane } from "@/domains/agent/FilesPane";
-import { TerminalPane } from "@/domains/agent/TerminalPane";
+import { prTab, testsTab } from "@/domains/agent/reviewTabs";
 import { type ViewerTabsState, viewerTabs } from "@/domains/agent/viewerTabs";
+import { filesTab, terminalTab, type WorkspaceTabsState } from "@/domains/agent/workspaceTabs";
 import type { LiveInfo } from "@/domains/live/types";
+import type { Coming } from "@/domains/panes/coming";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { planTab } from "@/domains/plans/planTab";
 import type { PlanTabState } from "@/domains/plans/store";
@@ -29,16 +30,22 @@ interface SessionPanelsArgs {
   plan: PlanTabState;
   /** Browser and Gallery: what the agent in front showed the user. */
   viewers: ViewerTabsState;
+  /** Files and Terminal (the worktree's): shown only with changes, or a shell open. */
+  workspace: WorkspaceTabsState;
+  /** Tests and Pull request: shown once there's a run, or a PR (never in a folder). */
+  tests: Coming;
+  pr: Coming;
+  prUrls: string[];
   onAddAgent: (cli: AgentCli, provider?: AgentProvider) => void;
   addDisabled: boolean;
 }
 
 /**
  * A session's tabs, in their natural order: one per agent (a status dot each, the
- * "+" after the last), then Plan, Browser and Gallery (each only with something to show), Files
- * (only with git) and Terminal
- * after a rule.
- * Files and Terminal are the worktree's, whichever agent is in front.
+ * "+" after the last), then after a rule Plan, Browser, Gallery, Files, Terminal, Tests
+ * and Pull request, each only with something to show (Files, Tests and Pull request
+ * never in a plain folder, which has no git). Files and Terminal are the
+ * worktree's, whichever agent is in front.
  */
 export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
   const place = a.session.folder ? "folder" : "worktree";
@@ -68,23 +75,10 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       section: "workspace",
     }),
     ...viewerTabs(a.active.workspaceId, a.viewers, "workspace"),
+    ...(a.session.folder ? [] : [filesTab(a.session.id, a.workspace, "workspace")]),
+    terminalTab(a.session.id, a.workspace, "workspace"),
     ...(a.session.folder
       ? []
-      : [
-          {
-            id: "files",
-            label: "Files",
-            icon: I.Code,
-            section: "workspace",
-            render: () => <FilesPane workspaceId={a.session.id} />,
-          },
-        ]),
-    {
-      id: "terminal",
-      label: "Terminal",
-      icon: I.Terminal,
-      section: "workspace",
-      render: () => <TerminalPane issueKey={a.session.id} />,
-    },
+      : [testsTab(a.session.id, a.tests, "workspace"), prTab(a.prUrls, a.pr, "workspace")]),
   ];
 }

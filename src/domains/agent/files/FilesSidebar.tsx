@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { SidebarPin } from "@/components/AutoSidebar";
 import { I } from "@/components/Icon";
 import { Segmented } from "@/components/Segmented";
 import { useQuickOpenStore } from "@/domains/quickOpen/store";
@@ -31,7 +32,8 @@ interface FilesSidebarProps {
   onToggle: (dirs: DirNode[], open: boolean) => void;
   onOpen: (file: FileNode) => void;
   onRefresh: () => void;
-  onHide: () => void;
+  /** Keep the list open beside the viewer, or let it fold away (AutoSidebar). */
+  pin: SidebarPin;
 }
 
 function ModeLabel({ text, count }: { text: string; count?: number | null }) {
@@ -68,8 +70,9 @@ function Tool(p: {
   );
 }
 
-// The Files tab's left side: Changes / All files, a filter, and the tree. Its own
-// header hides it (the viewer then takes the width), as the right-hand side panel's does.
+// The Files tab's left side: Changes / All files, a filter, and the tree. It folds
+// away while not pointed at (AutoSidebar), so the viewer has the width; its own
+// header's pin keeps it open beside the viewer instead.
 export function FilesSidebar(p: FilesSidebarProps) {
   const quickOpenTitle = useTitleWithHint("Quick Open", "quickOpen");
   const quickOpenKeys = useAriaKeys("quickOpen");
@@ -89,8 +92,12 @@ export function FilesSidebar(p: FilesSidebarProps) {
           onChange={p.onMode}
         />
         <span className="fx-spacer" />
-        <Tool label="Hide the file list" onClick={p.onHide}>
-          <I.SidebarLeft size={14} />
+        <Tool
+          label={p.pin.pinned ? "Let the file list hide" : "Keep the file list open"}
+          on={p.pin.pinned}
+          onClick={p.pin.toggle}
+        >
+          <I.Pin size={13} />
         </Tool>
       </div>
       <div className="fx-tools">

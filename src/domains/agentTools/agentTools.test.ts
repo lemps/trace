@@ -115,6 +115,7 @@ describe("session changes", () => {
       { path: "src/new.ts", add: 10, del: 0, status: "untracked" as const },
       { path: "src/b.ts", add: 0, del: 0, status: "renamed" as const, oldPath: "src/old.ts" },
     ],
+    ownWorktree: true,
   };
 
   it("lists files with status and counts", () => {
@@ -123,7 +124,10 @@ describe("session changes", () => {
     assert.match(text, /\nM src\/a\.ts \+3 −1/);
     assert.match(text, /\n\? src\/new\.ts \+10 −0/);
     assert.match(text, /R src\/b\.ts \(from src\/old\.ts\)/);
-    assert.equal(changeList({ base: "origin/main", files: [] }), "No changes against origin/main.");
+    assert.equal(
+      changeList({ base: "origin/main", files: [], ownWorktree: true }),
+      "No changes against origin/main."
+    );
   });
 
   it("rebuilds a unified diff", () => {

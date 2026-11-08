@@ -5,7 +5,7 @@ import {
   groupSeries,
   hasUnseen,
   newestAt,
-  planTabVisible,
+  planHasContent,
   previousVersion,
   versionDiff,
 } from "./model.ts";
@@ -63,21 +63,16 @@ describe("plan documents", () => {
   });
 });
 
-describe("the Plan tab's visibility", () => {
+describe("the Plan tab's content", () => {
   const tasks = (n: number) => ({
     items: Array.from({ length: n }, () => ({ text: "t", status: "pending" as const })),
     updatedAt: 1,
   });
 
-  it("shows only with a document or a task list", () => {
-    assert.equal(planTabVisible({ docs: 0, tasks: null }, false), false);
-    assert.equal(planTabVisible({ docs: 0, tasks: tasks(0) }, false), false);
-    assert.equal(planTabVisible({ docs: 1, tasks: null }, false), true);
-    assert.equal(planTabVisible({ docs: 0, tasks: tasks(2) }, false), true);
-  });
-
-  it("shows empty while opened from the menu, and hides again once closed", () => {
-    assert.equal(planTabVisible({ docs: 0, tasks: null }, true), true);
-    assert.equal(planTabVisible({ docs: 0, tasks: null }, false), false);
+  it("is a document or a task list", () => {
+    assert.equal(planHasContent({ docs: 0, tasks: null }), false);
+    assert.equal(planHasContent({ docs: 0, tasks: tasks(0) }), false);
+    assert.equal(planHasContent({ docs: 1, tasks: null }), true);
+    assert.equal(planHasContent({ docs: 0, tasks: tasks(2) }), true);
   });
 });

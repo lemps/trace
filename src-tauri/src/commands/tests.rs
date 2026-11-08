@@ -83,20 +83,26 @@ fn tail(s: &str, max: usize) -> String {
 /// thread.
 #[tauri::command]
 pub async fn run_tests(issue_key: String) -> Result<TestRun, String> {
-    let repo = crate::commands::repos::repo_for(&issue_key)?;
-    tauri::async_runtime::spawn_blocking(move || run_blocking(&repo, &issue_key))
+    let worktree = test_dir(&issue_key)?;
+    tauri::async_runtime::spawn_blocking(move || run_blocking(&worktree))
         .await
         .map_err(|e| format!("Test runner failed to start: {e}"))?
 }
 
-/// The blocking work — detect the toolchain and run its test command.
-fn run_blocking(repo: &str, issue_key: &str) -> Result<TestRun, String> {
-    let worktree = crate::commands::repos::workspace_dir(repo, issue_key);
-    if !Path::new(&worktree).exists() {
-        return Err(format!(
-            "No worktree for {issue_key} — start a session on this issue first."
-        ));
+/// Where a workspace's tests run: a ticket's worktree (never the main checkout,
+/// which isn't the ticket's), or a session's working tree, as Files reads it.
+fn test_dir(id: &str) -> Result<String, String> {
+    let (repo, dir) = crate::workspace_dir::work_dir_for(id)?;
+    let is_session = crate::commands::session::owning_session(id).is_some();
+    if (!is_session && dir == repo) || !Path::new(&dir).exists() {
+        return Err(format!("No worktree for {id} yet: start its agent first."));
     }
+    Ok(dir)
+}
+
+/// The blocking work — detect the toolchain and run its test command.
+fn run_blocking(worktree: &str) -> Result<TestRun, String> {
+    let worktree = worktree.to_string();
 
     let (program, args, display) = detect(&worktree).ok_or_else(|| {
         "No test command detected (looked for gradlew, Cargo.toml, pom.xml, go.mod, \

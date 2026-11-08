@@ -47,10 +47,8 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
     ...(stripRef.current?.querySelectorAll<HTMLElement>("[data-tab]:not(.fit-out)") ?? []),
   ];
   const tabRects = () => shownTabs().map((el) => el.getBoundingClientRect());
-  const groupIndex = (index: number) => {
-    const tab = shownTabs()[index]?.dataset.tab;
-    return tab === undefined ? group.tabs.length : group.tabs.indexOf(tab);
-  };
+  /** The tab a drop at `index` (counted among the tabs on screen) lands before; none: the end. */
+  const tabBefore = (index: number) => shownTabs()[index]?.dataset.tab;
 
   const onDragOver = (e: DragEvent) => {
     const drag = useTabDrag.getState().drag;
@@ -69,8 +67,8 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
     setInsertAt(null);
     if (!drag || drag.scope !== panes.scope || narrow) return;
     e.preventDefault();
-    const index = groupIndex(insertionIndex(tabRects(), e.clientX));
-    panes.apply((l) => moveTab(l, drag.tab, group.id, index));
+    const before = tabBefore(insertionIndex(tabRects(), e.clientX));
+    panes.apply((l) => moveTab(l, drag.tab, group.id, before));
     endTabDrag();
     refocus();
   };

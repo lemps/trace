@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAgentLight } from "@/domains/live/store";
-import { type DiffSummary, gitDiffSummary } from "@/ipc/diff";
+import { type DiffSummary, gitDiffSummary, ownChanges } from "@/ipc/diff";
 import { listWorkspaceFiles, type WorktreeFiles } from "@/ipc/files";
+import { useWorkspaceTabsStore } from "../workspaceTabsStore";
 import { effectiveMode, type FilesMode } from "./store";
 
 /** The least time between two reloads caused by the window regaining focus. */
@@ -78,6 +79,10 @@ export function useFilesData(
   const summaryFetch = useCallback(() => gitDiffSummary(workspaceId), [workspaceId]);
   const allFetch = useCallback(() => listWorkspaceFiles(workspaceId), [workspaceId]);
   const [summary, summaryError] = useLoaded(summaryFetch, tick, true, sameSummary);
+  // The tab shows only with changes: what's read here keeps that up to date.
+  useEffect(() => {
+    if (summary) useWorkspaceTabsStore.getState().setChanges(workspaceId, ownChanges(summary));
+  }, [workspaceId, summary]);
   const mode = effectiveMode(chosen, summary ? summary.files.length : null, summaryError !== null);
   // The whole list is also needed when the open file isn't a change, to tell
   // whether it's still there after a reload.
