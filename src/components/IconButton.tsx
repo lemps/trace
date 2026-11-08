@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 
-// The one icon-only button (trace-ui §2 rule 4): it always names itself. `label` is
+// The one icon-only button (trace-ui §1): it always names itself. `label` is
 // both the tooltip and the accessible name, and a shortcut id adds its chord to the
 // tooltip ("Close (⌘W)", following rebinds) and to `aria-keyshortcuts`.
 
