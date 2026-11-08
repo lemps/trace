@@ -332,6 +332,14 @@
   flex: 1;
   line-height: 1.45;
 }
+/* A toast's one action (the setup notice's Details): a small control, not a link. */
+.toast .toast-act {
+  flex-shrink: 0;
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  margin: -4px 0;
+  font-size: var(--text-meta);
+}
 .toast .toast-x {
   flex-shrink: 0;
   color: var(--fg-4);

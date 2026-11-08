@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSetupStore } from "@/domains/setup/store";
 import { AgentDefaultsSettings } from "./AgentDefaultsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AssistantSettings } from "./AssistantSettings";
@@ -49,6 +50,11 @@ export function SettingsView() {
           <div className="desc">
             Where agents work, how they start, and how trace looks and gets your attention.
           </div>
+        </div>
+        <div className="right">
+          <button type="button" className="btn" onClick={() => useSetupStore.getState().start()}>
+            Run setup again
+          </button>
         </div>
       </div>
       <div className="tab-bar">

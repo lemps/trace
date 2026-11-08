@@ -22,6 +22,7 @@ pub mod issues;
 pub mod jira;
 pub mod plans;
 pub mod platform;
+pub mod preflight;
 pub mod pylon;
 pub mod repo_catalog;
 pub mod schedule;
@@ -117,6 +118,7 @@ pub fn run() {
             commands::agent::start_agent,
             commands::terminal::start_terminal,
             commands::tailscale::tailscale_status,
+            commands::preflight::preflight_checks,
             commands::agent::detach_agent,
             commands::session_host::agent_capabilities,
             commands::github::github_remove_account,

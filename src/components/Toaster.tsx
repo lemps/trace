@@ -24,10 +24,25 @@ export function Toaster() {
               <Ico size={14} />
             </span>
             <span className="toast-msg">{t.message}</span>
+            {t.action && (
+              <button
+                type="button"
+                className="btn toast-act"
+                onClick={() => {
+                  dismiss(t.id);
+                  t.action?.run();
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
             <button
               type="button"
               className="toast-x"
-              onClick={() => dismiss(t.id)}
+              onClick={() => {
+                dismiss(t.id);
+                t.onDismiss?.();
+              }}
               aria-label="Dismiss"
             >
               <I.X size={12} />
