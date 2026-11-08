@@ -16,7 +16,7 @@ const CHOICES: { value: Choice; label: string }[] = [
 const CURRENT: Record<Choice, string> = {
   oauthToken: "Sandboxes get your OAuth token.",
   apiKey: "Sandboxes get your API key.",
-  none: "Nothing is set: each session asks you to log in with /login.",
+  none: "Nothing is set: each session runs in a terminal and asks you to log in with /login. Chat needs a saved login.",
 };
 
 const FIELD: Record<ClaudeCredentialKind, { label: string; placeholder: string; hint: ReactNode }> =
@@ -72,7 +72,8 @@ export function ClaudeLogin() {
         current !== null && (
           <>
             <div className="ig-note">
-              Forget the saved login. Each session then asks you to log in with /login.
+              Forget the saved login. Each new session then runs in a terminal and asks you to log
+              in with /login, since chat has nowhere to type it.
             </div>
             <div className="ig-form-foot">
               <button type="button" className="btn" disabled={saving} onClick={switchToLogin}>

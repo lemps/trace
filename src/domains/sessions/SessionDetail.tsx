@@ -34,6 +34,7 @@ import { useSessionAgentRun } from "./hooks/useSessionAgentRun";
 import { LinkTicketModal } from "./LinkTicketModal";
 import { SessionPanel } from "./SessionPanel";
 import { SessionRunButton } from "./SessionRunButton";
+import { addAgentBlocker } from "./sessionHost";
 import { agentOfTab, agentTab, sessionPanels } from "./sessionPanels";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
@@ -50,7 +51,7 @@ import type { ScratchSession } from "./types";
 // the agent last in focus.
 // What being on Vercel means here, for the header's chip.
 const HOST_HINT =
-  "Runs in a Vercel sandbox. Disconnect leaves Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
+  "Runs in a Vercel Sandbox. Leave running keeps Claude working there; Stop & save ends it and keeps the sandbox for Start to resume.";
 
 export function SessionDetail({
   session,
@@ -130,7 +131,7 @@ export function SessionDetail({
       pr,
       prUrls,
       onAddAgent: (cli, provider) => onAddAgent(cli, provider),
-      addDisabled: companionsOf(session).length >= MAX_COMPANIONS,
+      addBlocked: addAgentBlocker(session, MAX_COMPANIONS),
     })
   );
   const owners = useMemo(

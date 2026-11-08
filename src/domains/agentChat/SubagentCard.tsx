@@ -65,7 +65,7 @@ function CardBody({ item }: { item: ToolItem }) {
         </button>
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
-            Stop
+            <I.Stop size={13} /> Stop subagent
           </button>
         )}
       </div>

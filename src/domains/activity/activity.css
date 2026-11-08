@@ -7,7 +7,7 @@
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
   background: var(--bg-1);
-  font-size: 12px;
+  font-size: calc(var(--text-ui) - 0.5px);
   color: var(--fg-2);
   display: flex;
   gap: 8px;
@@ -35,7 +35,7 @@
   margin: 0 auto;
 }
 .activity-day {
-  font-size: 10.5px;
+  font-size: var(--text-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--fg-3);
@@ -53,7 +53,7 @@
   gap: 14px;
   padding: 8px 0;
   align-items: flex-start;
-  font-size: 13px;
+  font-size: calc(var(--text-body) - 0.5px);
   position: relative;
 }
 .act-row.click {
@@ -61,8 +61,8 @@
 }
 .act-row .time {
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--fg-4);
+  font-size: calc(var(--text-meta) - 0.5px);
+  color: var(--fg-3);
   padding-top: 2px;
   text-align: right;
 }
@@ -104,7 +104,7 @@
 }
 .act-row .body .ticket {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
   padding: 1px 6px;
   border: 1px solid var(--border-faint);
@@ -115,6 +115,6 @@
 .act-row .meta {
   margin-top: 4px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: calc(var(--text-meta) - 0.5px);
   color: var(--fg-3);
 }

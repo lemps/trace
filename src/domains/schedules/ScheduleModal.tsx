@@ -132,7 +132,7 @@ export function ScheduleModal({ prompt, onClose }: ScheduleModalProps) {
       footer={
         <>
           {error && <span className="sched-form-error">{error}</span>}
-          <button type="button" className="btn ghost" onClick={onClose}>
+          <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
           <button type="button" className="btn primary" onClick={submit} disabled={saving}>

@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
+import { StatusLight } from "@/components/StatusLight";
 import { useAppearance } from "@/domains/appearance/store";
 import { FileLink } from "@/domains/transcript/FileLink";
 import { ApprovalCard } from "./ApprovalCard";
@@ -8,24 +8,8 @@ import { DiffCard } from "./DiffCard";
 import { useDisclosure } from "./hooks/useDisclosure";
 import type { ToolItem } from "./projection";
 import { ToolBody } from "./ToolBody";
-import { summarizeTool, type ToolCategory } from "./toolSummary";
-
-type Glyph = (p: { size?: number }) => ReactNode;
-
-const GLYPHS: Record<ToolCategory, Glyph> = {
-  run: I.Terminal,
-  read: I.File,
-  edit: I.Pencil,
-  search: I.Search,
-  web: I.Download,
-  agent: I.Sparkles,
-  plan: I.Check,
-  other: I.Code,
-};
-
-function glyphFor(name: string, category: ToolCategory): Glyph {
-  return name.startsWith("mcp__") ? I.Plug : GLYPHS[category];
-}
+import { toolGlyph } from "./toolGlyph";
+import { summarizeTool } from "./toolSummary";
 
 // One tool call as one line (what it did, to what) that unfolds to its input
 // and output. Its permission request sits under the line, its file changes as
@@ -36,7 +20,7 @@ export function ToolCard({ item }: { item: ToolItem }) {
   const [open, toggle] = useDisclosure(tools === "expanded");
   const { call, approval, diffs } = item;
   const summary = summarizeTool(call.name, call.input);
-  const Glyph = glyphFor(call.name, summary.category);
+  const Glyph = toolGlyph(call.name, summary.category);
   return (
     <div className={`ac-tool${open ? " open" : ""}${call.state === "failed" ? " failed" : ""}`}>
       <div className="tx-tool-line">
@@ -74,12 +58,15 @@ export function ToolCard({ item }: { item: ToolItem }) {
   );
 }
 
+/** A call's state at the end of its line: the agent-state light while it runs or asks, "Failed" if it failed. */
 function ToolState({ item }: { item: ToolItem }) {
   const { state } = item.call;
-  if (state === "failed") return <span className="tx-tool-state error">failed</span>;
-  if (state === "running") {
-    const waiting = item.approval && !item.approval.approval.resolution;
-    return <span className="tx-tool-state">{waiting ? "waiting for you" : "running…"}</span>;
-  }
-  return null;
+  if (state === "failed") return <span className="tx-tool-state error">Failed</span>;
+  if (state !== "running") return null;
+  const asks = item.approval && !item.approval.approval.resolution;
+  return (
+    <span className="tx-tool-state">
+      <StatusLight light={asks ? "attention" : "working"} variant="word" />
+    </span>
+  );
 }

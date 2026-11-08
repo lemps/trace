@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FIXTURE_ROWS } from "./dev/fixture.ts";
-import { workSentence } from "./format.ts";
+import { failedCount, workSentence } from "./format.ts";
 import { buildTurns, isPending, isTurnLive } from "./projection.ts";
 import type { JournalBody, JournalRow } from "./types.ts";
 
@@ -176,7 +176,22 @@ describe("workSentence", () => {
     const turns = buildTurns(FIXTURE_ROWS);
     assert.equal(
       workSentence(turns[1].folded),
-      "Updated the plan, ran 2 commands and edited 3 files"
+      "Updated the tasks, ran 2 commands and edited 3 files"
     );
+  });
+});
+
+describe("failedCount", () => {
+  it("counts the folded calls that failed", () => {
+    const [turn] = buildTurns(FIXTURE_ROWS).filter((t) => t.folded.length > 0);
+    const tools = turn.folded.filter((i) => i.type === "tool");
+    assert.ok(tools.length >= 2);
+    assert.equal(failedCount(turn.folded), 0);
+    const marked = turn.folded.map((i) =>
+      i.type === "tool" && tools.indexOf(i) < 2
+        ? { ...i, call: { ...i.call, state: "failed" as const } }
+        : i
+    );
+    assert.equal(failedCount(marked), 2);
   });
 });

@@ -17,17 +17,22 @@ interface CardProps {
   logo: string;
   description: string;
   connected: boolean;
+  /** Early, partial support: the card says so beside its name. */
+  preview?: boolean;
   onOpen: () => void;
 }
 
-function IntegrationCard({ name, logo, description, connected, onOpen }: CardProps) {
+function IntegrationCard({ name, logo, description, connected, preview, onOpen }: CardProps) {
   return (
     <button type="button" className="ig-card" onClick={onOpen}>
       <div className="ig-card-top">
         <img className="ig-logo" src={logo} alt="" />
         {connected && <span className="ig-status">Connected</span>}
       </div>
-      <div className="ig-name">{name}</div>
+      <div className="ig-name">
+        {name}
+        {preview && <span className="ig-preview">Preview</span>}
+      </div>
       <div className="ig-desc">{description}</div>
     </button>
   );
@@ -36,9 +41,9 @@ function IntegrationCard({ name, logo, description, connected, onOpen }: CardPro
 // Connect and disconnect the services trace works with, one card each. Connecting a
 // tracker adds its board to the rail; disconnecting takes it away. GitHub is about
 // code rather than a board: signed in with trace's own token, it opens the repo browser.
-// Vercel is somewhere sessions run: connected, New session offers it. Tailscale is
-// how trace reaches your other computers; its own app connects it, so it shows as
-// connected while this computer is on a tailnet.
+// Vercel is somewhere sessions run: connected, New session offers it. Tailscale is a
+// status-only preview of your other computers; its own app connects it, so it shows
+// as connected while this computer is on a tailnet.
 export function IntegrationsView() {
   const sessions = useIssuesStore((s) => s.sessions);
   const githubLogin = useGitHubStore((s) => s.status?.login);
@@ -104,7 +109,7 @@ export function IntegrationsView() {
           <h1>Integrations</h1>
           <div className="desc">
             Connect a tracker to add its board to the rail, GitHub to check out repos, Vercel to run
-            sessions in the cloud, or Tailscale to reach your other computers.
+            sessions in a Vercel Sandbox, or Tailscale to see your other computers.
           </div>
         </div>
       </div>

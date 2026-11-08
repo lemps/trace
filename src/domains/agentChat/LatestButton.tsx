@@ -20,7 +20,7 @@ export function LatestButton({ scrollRef, show, onJump }: LatestButtonProps) {
   return (
     <div className={`ac-latest${docked ? " docked" : ""}`}>
       <button type="button" className="btn" onClick={onJump}>
-        <I.Download size={13} /> Latest
+        <I.ArrowDown size={13} /> Latest
       </button>
     </div>
   );

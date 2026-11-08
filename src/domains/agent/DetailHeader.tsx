@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/StatusPill";
 import type { Issue, PullRequest } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import type { AgentLight } from "@/domains/live/types";
+import { prStateLabel } from "@/domains/prs/prState";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { editorItems } from "./editorItems";
 import { agentLabel } from "./providerLabel";
@@ -74,7 +75,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
         onClick={() => void openUrl(openPr.url)}
         title={openPr.title || "Open on GitHub"}
       >
-        <I.GitPR size={13} /> #{openPr.number} {openPr.state}
+        <I.GitPR size={13} /> #{openPr.number} {prStateLabel(openPr.state)}
       </button>
     );
   }
@@ -146,7 +147,7 @@ export function DetailHeader({
         <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         {running ? (
           <button type="button" className="btn" onClick={onStop}>
-            <I.X size={13} /> Stop session
+            <I.Stop size={13} /> Stop agent
           </button>
         ) : exited ? (
           <RestartChip agentName={agentLabel(cli, provider)} onRestart={onStart} />

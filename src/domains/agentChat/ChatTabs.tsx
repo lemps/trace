@@ -3,7 +3,6 @@ import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
 import { fitClass, type TabFitMode, useTabFit } from "@/components/useTabFit";
-import { useTitleWithHint } from "@/platform/shortcuts";
 import { useChatView } from "./chatContext";
 import { closeSubagentTabs } from "./closedTabs";
 import type { SubagentSummary } from "./hooks/useChat";
@@ -19,7 +18,9 @@ interface ChatTabsProps {
   onPick: (tab: string) => void;
 }
 
-const WORDS = { running: "running", done: "done", failed: "failed", stopped: "stopped" };
+/** How a subagent is doing, in its tooltip: the agent-state words, then the ends. */
+const WORDS = { running: "working", done: "done", failed: "failed", stopped: "stopped" };
+const stateOf = (s: SubagentSummary) => (s.pending ? "needs you" : WORDS[s.status]);
 const calls = (n: number) => `${n} ${n === 1 ? "call" : "calls"}`;
 /** A subagent still going (or waiting on you) keeps its tab; a finished one can close. */
 const closable = (s: SubagentSummary) => s.status !== "running" && !s.pending;
@@ -31,7 +32,6 @@ const closable = (s: SubagentSummary) => s.status !== "running" && !s.pending;
 // strip is measured (`useTabFit`): the tabs become their status marks, named in
 // their tooltips, and past that the last ones move to a "more" menu.
 export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) {
-  const mainTitle = useTitleWithHint("Main chat · next tab", "chatNextTab");
   const fitRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const fit = useTabFit(fitRef, moreRef, active);
@@ -47,7 +47,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
   const finished = subagents.filter(closable).map((s) => s.callId);
   const close = (callIds: string[]) => closeSubagentTabs(workspaceId, callIds);
   const describe = (s: SubagentSummary) =>
-    `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${WORDS[s.status]}, ${calls(s.toolCount)}`;
+    `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${stateOf(s)}, ${calls(s.toolCount)}`;
   return (
     <div className="ac-tabs" role="tablist" aria-label="Main chat and subagents">
       <div className="tab-fit" ref={fitRef}>
@@ -57,7 +57,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
           mode={fit.mode("main")}
           active={active}
           onPick={onPick}
-          title={mainTitle}
+          title="Main chat"
         >
           <I.Chat size={13} />
           <span className="ac-tab-label" data-fit-label>
@@ -76,7 +76,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
             onClose={closable(s) ? () => close([s.callId]) : undefined}
             title={
               inPanes.has(s.callId)
-                ? `${describe(s)} (open in a pane beside: click to go to it)`
+                ? `${describe(s)} (open beside: click to go to it)`
                 : `${describe(s)} (right-click to open beside)`
             }
           >
@@ -109,7 +109,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
                 title: "More subagents",
                 items: rest.map((s) => ({
                   id: s.callId,
-                  label: `${s.label} · ${WORDS[s.status]} · ${calls(s.toolCount)}`,
+                  label: `${s.label} · ${stateOf(s)} · ${calls(s.toolCount)}`,
                   checked: s.callId === active,
                   onSelect: () => onPick(s.callId),
                 })),
@@ -127,7 +127,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
             {
               items: [
                 {
-                  label: inPanes.has(menu.callId) ? "Show its pane" : "Open beside",
+                  label: "Open beside",
                   onSelect: () => openSubagentBeside(workspaceId, menu.callId),
                 },
               ],

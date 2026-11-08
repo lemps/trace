@@ -2,7 +2,7 @@ import { toast } from "@/app/toast";
 import { setRepoGitHubAccount } from "@/ipc/repoSetup";
 
 export const REPO_ACCOUNT_HINT =
-  "Which account a Vercel sandbox clones and pushes as. Automatic uses the repo's SSH alias, its owner, or whichever account can push.";
+  "Which account a Vercel Sandbox clones and pushes as. Automatic uses the repo's SSH alias, its owner, or whichever account can push.";
 
 interface RepoAccountSelectProps {
   path: string;
@@ -27,19 +27,21 @@ export function RepoAccountSelect({ path, name, logins, value, onSaved }: RepoAc
   };
 
   return (
-    <select
-      className="rp-account"
-      aria-label={`GitHub account for ${name}`}
-      title={REPO_ACCOUNT_HINT}
-      value={value ?? ""}
-      onChange={(e) => change(e.target.value)}
-    >
-      <option value="">Automatic</option>
-      {options.map((login) => (
-        <option key={login} value={login}>
-          {logins.includes(login) ? login : `${login} (signed out)`}
-        </option>
-      ))}
-    </select>
+    <label className="rp-account-field" title={REPO_ACCOUNT_HINT}>
+      <span className="rp-account-label">GitHub account</span>
+      <select
+        className="rp-account"
+        aria-label={`GitHub account for ${name}`}
+        value={value ?? ""}
+        onChange={(e) => change(e.target.value)}
+      >
+        <option value="">Automatic</option>
+        {options.map((login) => (
+          <option key={login} value={login}>
+            {logins.includes(login) ? login : `${login} (signed out)`}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

@@ -1,22 +1,12 @@
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { I } from "@/components/Icon";
+import { StatusLight } from "@/components/StatusLight";
+import { toolGlyph } from "@/domains/agentChat/toolGlyph";
 import { useAppearance } from "@/domains/appearance/store";
 import type { ToolStep } from "./blocks";
 import { FileLink } from "./FileLink";
 import { ToolDetail } from "./ToolDetail";
 import { summarize } from "./toolSummary";
-
-type Glyph = (p: { size?: number }) => ReactNode;
-
-function glyphFor(name: string): Glyph {
-  if (name === "Bash" || name === "PowerShell") return I.Terminal;
-  if (["Read", "Edit", "MultiEdit", "Write", "NotebookEdit"].includes(name)) return I.File;
-  if (name === "Grep" || name === "Glob" || name === "WebSearch") return I.Search;
-  if (name === "Task" || name === "Agent") return I.Sparkles;
-  if (name === "TodoWrite") return I.Check;
-  if (name.startsWith("mcp__")) return I.Plug;
-  return I.Code;
-}
 
 interface ToolRowProps {
   step: ToolStep;
@@ -35,7 +25,7 @@ export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
   const open = choice ?? tools === "expanded";
   const { call, result } = step;
   const summary = summarize(call.name, call.input);
-  const Glyph = glyphFor(call.name);
+  const Glyph = toolGlyph(call.name);
   const failed = result?.isError ?? false;
   const pending = !result;
   return (
@@ -59,8 +49,12 @@ export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
           )}
         </button>
         {summary.path && <FileLink workspaceId={workspaceId} path={summary.path} root={root} />}
-        {failed && <span className="tx-tool-state error">failed</span>}
-        {pending && isLive && <span className="tx-tool-state">running…</span>}
+        {failed && <span className="tx-tool-state error">Failed</span>}
+        {pending && isLive && (
+          <span className="tx-tool-state">
+            <StatusLight light="working" variant="word" />
+          </span>
+        )}
       </div>
       {open && <ToolDetail step={step} />}
     </div>
