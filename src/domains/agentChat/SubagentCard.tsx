@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { ApprovalCard } from "./ApprovalCard";
 import { useChatActions } from "./actions";
 import { useChatView } from "./chatContext";
@@ -54,15 +55,15 @@ function CardBody({ item }: { item: ToolItem }) {
             <I.Chevron size={12} />
           </span>
         </button>
-        <button
-          type="button"
-          className="btn icon ac-agent-stop ac-agent-beside"
+        <IconButton
+          size="sm"
+          className="ac-agent-beside"
           onClick={() => openSubagentBeside(workspaceId, thread.callId)}
           title="Open beside: its conversation in a pane next to the chat"
-          aria-label="Open beside"
+          label="Open beside"
         >
-          <I.SplitRight size={13} />
-        </button>
+          <I.SplitRight size={14} />
+        </IconButton>
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>
             <I.Stop size={13} /> Stop subagent

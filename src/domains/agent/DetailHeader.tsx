@@ -63,7 +63,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
   if (openPr && isLive(openPr.state)) {
     return (
       <button type="button" className="btn success" onClick={onMergePr} disabled={busy === "merge"}>
-        <I.Check size={13} /> {busy === "merge" ? "Merging…" : `Merge #${openPr.number}`}
+        <I.GitMerge size={13} /> {busy === "merge" ? "Merging…" : `Merge #${openPr.number}`}
       </button>
     );
   }

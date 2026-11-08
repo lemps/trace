@@ -81,7 +81,7 @@ export function RunViewer({ run, prompt }: { run: ScheduleRun; prompt: Scheduled
               className="btn"
               onClick={() => void stopRun(run.id).catch((e) => toast.error(String(e)))}
             >
-              <I.X size={13} /> Stop
+              <I.Stop size={13} /> Stop
             </button>
           )}
           {!live && run.claudeSessionId && (

@@ -1,6 +1,7 @@
 import { memo, type ReactNode, useMemo } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { type HastNode, highlightCode, useHighlighter } from "./highlight";
 import { useCopied } from "./useCopied";
 
@@ -42,15 +43,14 @@ export function CopyButton({
       .then(flash, () => toast.error("Couldn't copy to the clipboard"));
   };
   return (
-    <button
-      type="button"
-      className={className}
-      aria-label={copied ? "Copied" : label}
-      title={copied ? "Copied" : label}
+    <IconButton
+      size="xs"
+      className={`ghost ${className}`}
+      label={copied ? "Copied" : label}
       onClick={copy}
     >
       {copied ? <I.Check size={12} /> : <I.Copy size={12} />}
-    </button>
+    </IconButton>
   );
 }
 

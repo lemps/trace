@@ -56,12 +56,12 @@ export function TicketProps({ issue, epicUrl }: { issue: Issue; epicUrl?: string
               onClick={() => void openUrl(epicUrl)}
               title={`${issue.epicKey ?? ""} · ${issue.epic}: opens in Jira`}
             >
-              <I.Branch size={10} />
+              <I.Layers size={10} />
               <span className="epic-name">{issue.epic}</span>
             </button>
           ) : (
             <span className="epic-chip" style={epicStyle} title={issue.epic}>
-              <I.Branch size={10} />
+              <I.Layers size={10} />
               <span className="epic-name">{issue.epic}</span>
             </span>
           )}

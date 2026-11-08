@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { useAgentChatStore, useQueue } from "./store";
 
 // Messages typed while the agent works, waiting their turn: sent in order, one
@@ -76,24 +77,18 @@ function QueuedRow({ workspaceId, id, text, files, n }: QueuedRowProps) {
         />
       )}
       {draft === null && (
-        <button
-          type="button"
-          className="btn icon ac-queued-btn"
-          aria-label="Edit the queued message"
-          onClick={() => setDraft(text)}
-        >
-          <I.Pencil size={12} />
-        </button>
+        <IconButton size="sm" label="Edit the queued message" onClick={() => setDraft(text)}>
+          <I.Pencil size={14} />
+        </IconButton>
       )}
-      <button
-        type="button"
-        className="btn icon ac-queued-btn"
-        aria-label="Remove the queued message"
+      <IconButton
+        size="sm"
+        label="Remove the queued message"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => removeQueued(workspaceId, id)}
       >
-        <I.X size={12} />
-      </button>
+        <I.X size={14} />
+      </IconButton>
     </div>
   );
 }

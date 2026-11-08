@@ -53,21 +53,10 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* A page's × and the + are `.btn.ghost.icon.xs`. */
 .bw-page-x,
 .bw-page-new {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: var(--control-h-xs);
-  height: var(--control-h-xs);
   margin-right: 4px;
-  border-radius: var(--radius-sm);
-  color: var(--fg-3);
-}
-.bw-page-x:hover,
-.bw-page-new:hover {
-  background: var(--bg-3);
-  color: var(--fg-1);
 }
 .bw-page-new {
   margin-left: 2px;

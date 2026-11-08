@@ -83,7 +83,7 @@ export function ScheduleRow({
           disabled={live}
           title={live ? "A run is already going" : "Run this prompt now"}
         >
-          <I.Bolt size={13} /> Run now
+          <I.Play size={13} /> Run now
         </button>
         <Switch
           on={prompt.enabled}

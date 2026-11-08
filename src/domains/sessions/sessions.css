@@ -101,9 +101,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  height: var(--control-h-xs);
   font-size: var(--text-meta);
   color: var(--fg-3);
-  padding: 3px 8px;
+  padding: 0 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-faint);
 }
@@ -111,9 +112,9 @@
   color: var(--fg-0);
   border-color: var(--border);
 }
-.archive-action.danger:hover {
+/* Delete permanently: `.btn.ghost.icon.xs`, red on hover. */
+.btn.archive-delete:hover:not(:disabled) {
   color: var(--c-danger);
-  border-color: var(--c-danger-border);
 }
 
 
@@ -167,13 +168,6 @@
   margin-bottom: 4px;
   cursor: grab;
 }
-.sec-toggle {
-  display: inline-flex;
-  color: var(--fg-4);
-}
-.sec-toggle:hover {
-  color: var(--fg-1);
-}
 .sec-name {
   color: var(--fg-2);
 }
@@ -191,14 +185,6 @@
 }
 .sec-head:hover .sec-actions {
   opacity: 1;
-}
-.sec-actions button {
-  display: inline-flex;
-  padding: 2px;
-  color: var(--fg-4);
-}
-.sec-actions button:hover {
-  color: var(--fg-1);
 }
 .sec-add {
   display: inline-flex;
@@ -312,21 +298,11 @@
   display: flex;
   align-items: center;
 }
-.add-agent-btn {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border);
-  color: var(--fg-3);
+/* `.btn.ghost.icon.sm`, outlined dashed: a slot for another agent. */
+.btn.add-agent-btn {
+  border-style: dashed;
+  border-color: var(--border);
 }
-.add-agent-btn:hover:not(:disabled) {
-  color: var(--fg-0);
+.btn.add-agent-btn:hover:not(:disabled) {
   border-color: var(--border-strong);
-  background: var(--bg-2);
-}
-.add-agent-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
 }

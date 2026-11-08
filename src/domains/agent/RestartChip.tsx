@@ -19,7 +19,7 @@ export function RestartChip({ agentName, onRestart }: RestartChipProps) {
         onClick={onRestart}
         title="Start it again on the same conversation"
       >
-        <I.Refresh size={13} /> Restart {agentName}
+        <I.Play size={13} /> Restart {agentName}
       </button>
     </>
   );

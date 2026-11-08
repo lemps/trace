@@ -110,7 +110,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               onClick={onEpicClick}
               title={`${issue.epicKey ?? ""} · ${issue.epic} — opens in Jira`}
             >
-              <I.Branch size={10} />
+              <I.Layers size={10} />
               <span className="epic-name">{issue.epic}</span>
             </button>
           ) : (
@@ -119,7 +119,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               style={{ color: epicColor(issue.epicKey, issue.epicColor) }}
               title={issue.epic}
             >
-              <I.Branch size={10} />
+              <I.Layers size={10} />
               <span className="epic-name">{issue.epic}</span>
             </span>
           )}

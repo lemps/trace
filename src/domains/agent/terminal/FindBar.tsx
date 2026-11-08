@@ -1,6 +1,7 @@
 import type { Terminal } from "@xterm/xterm";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { isTerminalFind } from "@/platform/shortcuts";
 import { clearFind, type FindFlags, findInTerminal, onFindResults } from "./search";
 
@@ -96,7 +97,7 @@ export function FindBar({ term, request, onClose }: FindBarProps) {
       </span>
       <button
         type="button"
-        className={`term-find-btn text${flags.caseSensitive ? " on" : ""}`}
+        className={`term-find-btn${flags.caseSensitive ? " on" : ""}`}
         aria-pressed={flags.caseSensitive}
         aria-label="Match case"
         title="Match case"
@@ -106,7 +107,7 @@ export function FindBar({ term, request, onClose }: FindBarProps) {
       </button>
       <button
         type="button"
-        className={`term-find-btn text${flags.regex ? " on" : ""}`}
+        className={`term-find-btn${flags.regex ? " on" : ""}`}
         aria-pressed={flags.regex}
         aria-label="Regular expression"
         title="Regular expression"
@@ -114,35 +115,27 @@ export function FindBar({ term, request, onClose }: FindBarProps) {
       >
         .*
       </button>
-      <button
-        type="button"
-        className="term-find-btn up"
-        aria-label="Previous match"
-        title="Previous match"
+      <IconButton
+        size="xs"
+        className="ghost term-find-up"
+        label="Previous match"
         disabled={query === ""}
         onClick={() => step("prev")}
       >
-        <I.Chevron size={13} />
-      </button>
-      <button
-        type="button"
-        className="term-find-btn down"
-        aria-label="Next match"
-        title="Next match"
+        <I.Chevron size={12} />
+      </IconButton>
+      <IconButton
+        size="xs"
+        className="ghost term-find-down"
+        label="Next match"
         disabled={query === ""}
         onClick={() => step("next")}
       >
-        <I.Chevron size={13} />
-      </button>
-      <button
-        type="button"
-        className="term-find-btn"
-        aria-label="Close find"
-        title="Close"
-        onClick={close}
-      >
+        <I.Chevron size={12} />
+      </IconButton>
+      <IconButton size="xs" className="ghost" label="Close find" onClick={close}>
         <I.X size={12} />
-      </button>
+      </IconButton>
     </search>
   );
 }

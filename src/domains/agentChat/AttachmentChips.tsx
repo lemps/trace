@@ -36,9 +36,10 @@ function AttachmentChip({ path, onRemove }: { path: string; onRemove: (path: str
         type="button"
         className="ac-attachment-x"
         aria-label={`Remove ${name}`}
+        title="Remove"
         onClick={() => onRemove(path)}
       >
-        <I.X size={11} />
+        <I.X size={12} />
       </button>
     </span>
   );

@@ -132,11 +132,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* A row's remove: `.btn.ghost.icon.xs`, red on hover. */
 .repo-row .repo-remove {
-  flex-shrink: 0;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
-.repo-row .repo-remove:hover {
+.repo-row .btn.repo-remove:hover:not(:disabled) {
   color: var(--c-danger);
 }
 

@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import type { RemoteSessionsState } from "./hooks/useRemoteSessions";
 import { sandboxStatusLabel } from "./sessionHost";
 import { relTime } from "./time";
@@ -15,18 +16,18 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
       <div className="sec-head">
         <span className="sec-name">Vercel Sandbox</span>
         <span className="count">{joinable.length}</span>
-        <button
-          type="button"
-          className="btn ghost icon vs-refresh"
+        <IconButton
+          size="sm"
+          className="ghost vs-refresh"
           onClick={refresh}
           disabled={loading}
-          aria-label="Refresh sessions in Vercel Sandbox"
+          label="Refresh sessions in Vercel Sandbox"
           title="Refresh"
         >
           <span className={`vs-ic${loading ? " spinning" : ""}`}>
-            <I.Refresh size={13} />
+            <I.Refresh size={14} />
           </span>
-        </button>
+        </IconButton>
       </div>
       {joinable.length === 0 ? (
         <div className="vs-empty">

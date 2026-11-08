@@ -172,12 +172,9 @@
   font-weight: 600;
   color: var(--fg-0);
 }
+/* `.btn.ghost.icon.sm`, pulled into the head's padding so it doesn't grow the head. */
 .modal-x {
-  margin-left: auto;
-  color: var(--fg-4);
-}
-.modal-x:hover {
-  color: var(--fg-1);
+  margin: -4px -6px -4px auto;
 }
 .modal-body {
   padding: 16px;

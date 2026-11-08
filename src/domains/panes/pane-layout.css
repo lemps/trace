@@ -102,9 +102,6 @@
   margin-right: 4px;
 }
 .btn.icon.pn-act {
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-  justify-content: center;
   color: var(--fg-3);
 }
 .btn.icon.pn-act:hover {

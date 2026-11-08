@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { CloneFolder } from "@/domains/github/CloneFolder";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
 import { useGitHubStore } from "@/domains/github/store";
@@ -193,14 +194,14 @@ export function RepoSettings() {
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="repo-remove"
+              <IconButton
+                size="xs"
+                className="ghost repo-remove"
                 onClick={() => persist(mappings.filter((_, j) => j !== i))}
-                aria-label="Remove mapping"
+                label="Remove mapping"
               >
-                <I.X size={13} />
-              </button>
+                <I.X size={12} />
+              </IconButton>
             </div>
           ))}
           <button

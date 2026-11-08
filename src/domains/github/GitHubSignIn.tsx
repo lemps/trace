@@ -44,7 +44,7 @@ export function GitHubSignIn({ onSignedIn, onCancel }: GitHubSignInProps) {
         <div className="gh-signin-options">
           {deviceFlow && (
             <button type="button" className="btn primary" onClick={() => setDevice(true)}>
-              <I.Plug size={13} /> Sign in with GitHub
+              <I.GitHub size={13} /> Sign in with GitHub
             </button>
           )}
           {status?.ghAvailable && (
@@ -97,7 +97,7 @@ export function GitHubSignIn({ onSignedIn, onCancel }: GitHubSignInProps) {
           disabled={!canSubmit}
           onClick={submit}
         >
-          <I.Plug size={13} /> {signingIn ? "Checking…" : "Sign in with token"}
+          <I.Key size={13} /> {signingIn ? "Checking…" : "Sign in with token"}
         </button>
       </div>
     </div>

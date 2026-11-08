@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { currentOs } from "@/platform/os";
 import { formatChord } from "@/platform/shortcuts/chord";
 import { useKeymapStore } from "@/platform/shortcuts/keymap";
@@ -77,15 +78,13 @@ export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: Sho
           </button>
         )}
         {isOverridden && !isRecording && (
-          <button
-            type="button"
-            className="btn icon"
-            aria-label={`Reset ${def.label} to its default`}
+          <IconButton
+            label={`Reset ${def.label} to its default`}
             title="Reset to default"
             onClick={() => reset(def.id)}
           >
-            <I.Refresh size={13} />
-          </button>
+            <I.RotateCcw size={14} />
+          </IconButton>
         )}
       </div>
     </div>

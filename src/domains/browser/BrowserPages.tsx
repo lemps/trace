@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import type { BrowserPage } from "@/ipc/browser";
 import { pageLabel } from "./model";
 import { useBrowserStore } from "./store";
@@ -34,20 +35,20 @@ export function BrowserPages({ workspaceId, pages, active, onNew }: BrowserPages
               {state?.loading ? <span className="bw-spin" aria-hidden /> : <I.Globe size={12} />}
               <span className="bw-page-name">{label}</span>
             </button>
-            <button
-              type="button"
-              className="bw-page-x"
-              aria-label={`Close ${label}`}
+            <IconButton
+              size="xs"
+              className="ghost bw-page-x"
+              label={`Close ${label}`}
               onClick={() => void close(workspaceId, page.id)}
             >
-              <I.X size={11} />
-            </button>
+              <I.X size={12} />
+            </IconButton>
           </div>
         );
       })}
-      <button type="button" className="bw-page-new" aria-label="New page" onClick={onNew}>
+      <IconButton size="xs" className="ghost bw-page-new" label="New page" onClick={onNew}>
         <I.Plus size={12} />
-      </button>
+      </IconButton>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function SessionRunButton({
       onClick={onStart}
       title={remote ? START_REMOTE : undefined}
     >
-      <I.Bolt size={13} /> {remote ? "Start in sandbox" : `Start ${agentName}`}
+      <I.Play size={13} /> {remote ? "Start in sandbox" : `Start ${agentName}`}
     </button>
   );
 }

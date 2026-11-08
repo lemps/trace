@@ -41,7 +41,7 @@ export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
               style={{ marginTop: 6 }}
               onClick={() => void run.start()}
             >
-              <I.Bolt size={13} /> Start {agentLabel(cli)}
+              <I.Play size={13} /> Start {agentLabel(cli)}
             </button>
             <button
               type="button"

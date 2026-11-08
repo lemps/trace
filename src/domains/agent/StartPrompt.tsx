@@ -36,7 +36,9 @@ export function StartPrompt({
   return (
     <div className="empty-state">
       <div className="inner">
-        <span className="ic">{exited ? <I.Refresh size={28} /> : <I.Bolt size={28} />}</span>
+        <span className="ic">
+          <I.Play size={28} />
+        </span>
         {exited ? (
           <>
             <div className="title">{capitalize(agentName)} exited</div>
@@ -80,8 +82,7 @@ export function StartPrompt({
           onClick={onStart}
           disabled={noRepos}
         >
-          {exited ? <I.Refresh size={13} /> : <I.Bolt size={13} />} {exited ? "Restart" : "Start"}{" "}
-          {agentName}
+          <I.Play size={13} /> {exited ? "Restart" : "Start"} {agentName}
         </button>
         <button
           type="button"

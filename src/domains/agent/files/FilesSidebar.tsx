@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import type { SidebarPin } from "@/components/AutoSidebar";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { Segmented } from "@/components/Segmented";
 import { useQuickOpenStore } from "@/domains/quickOpen/store";
-import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { FileTree, type TreeFocus } from "./FileTree";
 import type { Query, Row } from "./rows";
 import type { FilesMode } from "./store";
@@ -45,37 +45,10 @@ function ModeLabel({ text, count }: { text: string; count?: number | null }) {
   );
 }
 
-/** A square tool button in the sidebar's toolbar. */
-function Tool(p: {
-  label: string;
-  /** The tooltip, when it says more than the label (its shortcut). */
-  title?: string;
-  keys?: string;
-  on?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={`fx-tool${p.on ? " on" : ""}`}
-      onClick={p.onClick}
-      title={p.title ?? p.label}
-      aria-label={p.label}
-      aria-keyshortcuts={p.keys}
-      aria-pressed={p.on}
-    >
-      {p.children}
-    </button>
-  );
-}
-
 // The Files tab's left side: Changes / All files, a filter, and the tree. It folds
 // away while not pointed at (AutoSidebar), so the viewer has the width; its own
 // header's pin keeps it open beside the viewer instead.
 export function FilesSidebar(p: FilesSidebarProps) {
-  const quickOpenTitle = useTitleWithHint("Quick Open", "quickOpen");
-  const quickOpenKeys = useAriaKeys("quickOpen");
   const showQuickOpen = useQuickOpenStore((s) => s.show);
   const isChanges = p.mode === "changes";
   return (
@@ -92,13 +65,15 @@ export function FilesSidebar(p: FilesSidebarProps) {
           onChange={p.onMode}
         />
         <span className="fx-spacer" />
-        <Tool
+        <IconButton
+          size="sm"
+          className="ghost"
           label={p.pin.pinned ? "Let the file list hide" : "Keep the file list open"}
-          on={p.pin.pinned}
+          aria-pressed={p.pin.pinned}
           onClick={p.pin.toggle}
         >
-          <I.Pin size={13} />
-        </Tool>
+          <I.Pin size={14} />
+        </IconButton>
       </div>
       <div className="fx-tools">
         <label className="fx-filter">
@@ -125,33 +100,39 @@ export function FilesSidebar(p: FilesSidebarProps) {
             }}
           />
           {p.filter && (
-            <button
-              type="button"
-              className="fx-filter-clear"
+            <IconButton
+              size="xs"
+              className="ghost"
               onClick={() => p.onFilter("")}
-              aria-label="Clear the filter"
-              title="Clear the filter"
+              label="Clear the filter"
             >
               <I.X size={12} />
-            </button>
+            </IconButton>
           )}
         </label>
         {isChanges && (
-          <Tool label="Show changes as a list" on={p.flat} onClick={() => p.onFlat(!p.flat)}>
+          <IconButton
+            size="sm"
+            className="ghost"
+            label="Show changes as a list"
+            aria-pressed={p.flat}
+            onClick={() => p.onFlat(!p.flat)}
+          >
             <I.List size={14} />
-          </Tool>
+          </IconButton>
         )}
-        <Tool label="Refresh" onClick={p.onRefresh}>
+        <IconButton size="sm" className="ghost" label="Refresh" onClick={p.onRefresh}>
           <I.Refresh size={14} />
-        </Tool>
-        <Tool
+        </IconButton>
+        <IconButton
+          size="sm"
+          className="ghost"
           label="Quick Open"
-          title={quickOpenTitle}
-          keys={quickOpenKeys}
+          shortcut="quickOpen"
           onClick={() => showQuickOpen(p.workspaceId)}
         >
           <I.Search size={14} />
-        </Tool>
+        </IconButton>
       </div>
       {p.notice ? (
         <div className="fx-notice">{p.notice}</div>

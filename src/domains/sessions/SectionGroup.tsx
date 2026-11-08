@@ -1,5 +1,6 @@
 import { type DragEvent, type ReactNode, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { sessionsDrag } from "./dragState";
 import { TitleEditor } from "./TitleEditor";
 import type { SessionSection } from "./types";
@@ -74,18 +75,18 @@ export function SectionGroup({
           sessionsDrag.current = null;
         }}
       >
-        <button
-          type="button"
-          className="sec-toggle"
+        <IconButton
+          size="xs"
+          className="ghost"
           onClick={onToggle}
           aria-expanded={!section.collapsed}
-          aria-label={section.collapsed ? "Expand section" : "Collapse section"}
+          label={section.collapsed ? "Expand section" : "Collapse section"}
         >
           <I.Chevron
-            size={13}
+            size={12}
             style={{ transform: section.collapsed ? "none" : "rotate(90deg)" }}
           />
-        </button>
+        </IconButton>
         {renaming ? (
           <TitleEditor
             initial={section.name}
@@ -97,22 +98,23 @@ export function SectionGroup({
         )}
         <span className="count">{count}</span>
         <span className="sec-actions">
-          <button
-            type="button"
+          <IconButton
+            size="xs"
+            className="ghost"
             onClick={() => setRenaming(true)}
-            aria-label="Rename section"
-            title="Rename"
+            label="Rename section"
           >
             <I.Pencil size={12} />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            size="xs"
+            className="ghost"
             onClick={onDelete}
-            aria-label="Delete section"
+            label="Delete section"
             title="Delete section (its sessions stay)"
           >
-            <I.X size={12} />
-          </button>
+            <I.Trash size={12} />
+          </IconButton>
         </span>
         <span className="sec-sort">{sortMenu}</span>
       </div>

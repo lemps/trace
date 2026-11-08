@@ -359,10 +359,6 @@
   color: var(--fg-0);
   font: inherit;
 }
-.ac-queued-btn.btn.icon {
-  width: var(--control-h-sm);
-  height: var(--control-h-sm);
-}
 .ac-queued-files {
   display: inline-flex;
   align-items: center;

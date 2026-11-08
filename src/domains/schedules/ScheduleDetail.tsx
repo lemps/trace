@@ -86,11 +86,11 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
             onBlur={() => setConfirmDelete(false)}
             title="Delete this prompt, its run history, and its worktree"
           >
-            <I.X size={13} /> {confirmDelete ? "Confirm delete" : "Delete"}
+            <I.Trash size={13} /> {confirmDelete ? "Confirm delete" : "Delete"}
           </button>
           {live ? (
             <button type="button" className="btn" onClick={() => void stopRun(live.id).catch(fail)}>
-              <I.X size={13} /> Stop run
+              <I.Stop size={13} /> Stop run
             </button>
           ) : (
             <button
@@ -98,7 +98,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
               className="btn primary"
               onClick={() => void runNow(prompt.id).catch(fail)}
             >
-              <I.Bolt size={13} /> Run now
+              <I.Play size={13} /> Run now
             </button>
           )}
         </div>

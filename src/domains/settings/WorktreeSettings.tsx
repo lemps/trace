@@ -1,6 +1,7 @@
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { listWorktrees, removeWorktree, type WorktreeInfo } from "@/ipc/worktrees";
 import { basename } from "@/platform/paths";
 
@@ -76,7 +77,7 @@ export function WorktreeSettings() {
             onClick={() => void removeMerged()}
             disabled={busy !== null}
           >
-            <I.Check size={13} /> Remove {removable.length} merged
+            <I.Trash size={13} /> Remove {removable.length} merged
           </button>
         )}
       </div>
@@ -94,16 +95,16 @@ export function WorktreeSettings() {
               {wt.running && <span className="wt-chip running">running</span>}
               {wt.merged && <span className="wt-chip merged">merged</span>}
               {wt.dirty && <span className="wt-chip dirty">uncommitted</span>}
-              <button
-                type="button"
-                className="repo-remove"
+              <IconButton
+                size="xs"
+                className="ghost repo-remove"
                 onClick={() => void remove(wt)}
                 disabled={wt.running || busy === wt.path}
-                aria-label={`Remove worktree ${wt.name}`}
+                label={`Remove worktree ${wt.name}`}
                 title={wt.running ? "Stop the agent first" : "Remove worktree + branch"}
               >
-                <I.X size={13} />
-              </button>
+                <I.Trash size={12} />
+              </IconButton>
             </div>
           ))}
         </div>

@@ -181,7 +181,7 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
         {multi && !narrow && !(group.tabs.length === 1 && active?.optional) && (
           <button
             type="button"
-            className="btn ghost icon pn-act"
+            className="btn ghost icon sm pn-act"
             aria-label="Close pane"
             title="Close pane — its tabs join the pane beside it"
             onClick={() => panes.apply((l) => closeGroup(l, group.id))}
@@ -193,7 +193,7 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
           trigger={({ toggle }) => (
             <button
               type="button"
-              className="btn ghost icon pn-act"
+              className="btn ghost icon sm pn-act"
               aria-label="Pane actions"
               title="Split, move or close this pane"
               onClick={toggle}
