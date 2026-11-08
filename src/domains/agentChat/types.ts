@@ -180,6 +180,16 @@ export interface SessionInfo {
   /** Subagents still working, background ones that outlived their turn included. */
   runningSubagents?: number;
   limits: LimitWindow[];
+  /** How full the main conversation's context window is; absent before a model call. */
+  context?: ContextUsage;
+}
+
+/** Tokens in the agent's context window, from its latest model call. */
+export interface ContextUsage {
+  used: number;
+  window: number;
+  /** The window is guessed from the model id: the agent hasn't reported it yet. */
+  estimated: boolean;
 }
 
 /** How an agent is hosted: this chat view, or its TUI in a terminal. */

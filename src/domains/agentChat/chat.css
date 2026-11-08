@@ -72,6 +72,36 @@
   color: var(--fg-3);
 }
 
+/* How full the context window is: a ring filled clockwise, then the percentage.
+   Neutral, red from 90%: amber, blue and green mean agent state. */
+.ac-context {
+  --ac-context-c: var(--fg-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-2);
+  cursor: default;
+}
+.ac-context.danger {
+  --ac-context-c: var(--c-danger);
+  color: var(--c-danger);
+}
+.ac-context-ring {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ac-context-c) calc(var(--pct, 0) * 1%),
+    var(--bg-3) 0
+  );
+  /* An alpha mask cuts the hole, so the ring sits on any theme's surface. */
+  mask: radial-gradient(circle, transparent 3px, black 3.5px);
+}
+.ac-context-pct {
+  font-family: var(--font-mono);
+}
+
 /* The conversation. */
 .ac-col {
   gap: 10px;

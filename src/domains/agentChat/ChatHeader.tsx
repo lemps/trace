@@ -1,9 +1,10 @@
+import { ContextGauge } from "./ContextGauge";
 import { formatCost, limitLabel, resetsIn } from "./format";
 import type { ChatTurn } from "./projection";
 import type { LimitWindow, SessionInfo } from "./types";
 
-// The chat's fact strip: which agent and model, the session's cost so far, and
-// the usage-limit windows the agent reports (how full, and when each resets).
+// The chat's fact strip: which agent and model, the session's cost so far, how
+// full the context window is, and the usage-limit windows the agent reports (how full, and when each resets).
 // Stopping the agent is the detail header's; interrupting a turn, the composer's.
 
 interface ChatHeaderProps {
@@ -31,6 +32,7 @@ export function ChatHeader({ info, turns }: ChatHeaderProps) {
         </span>
       )}
       <span className="ac-head-limits">
+        <ContextGauge context={info?.context} agent={info?.agent} />
         {(info?.limits ?? []).map((w) => (
           <Limit key={w.name} window={w} />
         ))}
