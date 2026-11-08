@@ -77,8 +77,7 @@ export function SessionDetail({
   const openIssue = useBoardStore((s) => s.openIssue);
 
   const roster = useMemo(() => agentRoster(session), [session]);
-  // PRs any of this session's agents raised. The side panel offers them once
-  // there is one; until then it holds just the orchestrator (SessionPanel).
+  // PRs any of this session's agents raised, shown in its Pull request tab.
   const turnIds = useMemo(() => roster.map((r) => r.workspaceId), [roster]);
   const prUrls = usePrWatch(session.id, turnIds);
   // Falls back to the session's own agent, which also self-heals the selection
@@ -304,7 +303,7 @@ export function SessionDetail({
         sessionId={session.id}
         activeWorkspaceId={active.workspaceId}
         turnIds={turnIds}
-        prUrls={prUrls}
+        hasPr={prUrls.length > 0}
         running={run.running}
       />
       {quickOpen}

@@ -4,7 +4,6 @@ import { AgentAvatar } from "@/components/AgentAvatar";
 import { I } from "@/components/Icon";
 import type { Issue } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
-import { PrRailSection } from "@/domains/prs/PrRailSection";
 import { StartedSessionsSection } from "@/domains/sessions/StartedSessions";
 import { TurnSection } from "./TurnSection";
 import { WorkspaceSection } from "./WorkspaceSection";
@@ -12,8 +11,8 @@ import { WorkspaceSection } from "./WorkspaceSection";
 interface ContextRailProps {
   issue: Issue;
   site: string | null;
-  /** The workspace's PRs (`usePrWatch`, owned by AgentDetail — the header uses them too). */
-  prUrls: string[];
+  /** Whether the workspace has a PR (it shows in the Pull request tab; this only steers the next step). */
+  hasPr: boolean;
   /** Re-reads the checkout when the agent starts (that's when the worktree appears). */
   running: boolean;
 }
@@ -59,10 +58,9 @@ function LinkedRow({ icon: Icon, keyText, sub, url }: LinkedRowProps) {
   );
 }
 
-// The ticket detail's right rail, ordered by how often it's looked at: the PRs
-// (they change constantly), where the agent is working, then the ticket's own
-// facts — under what the agent last said and what to do next.
-export function ContextRail({ issue, site, prUrls, running }: ContextRailProps) {
+// The ticket detail's right rail: what the agent last said and what to do next,
+// where it's working, then the ticket's own facts. Its PRs have their own tab.
+export function ContextRail({ issue, site, hasPr, running }: ContextRailProps) {
   // Providers that carry a web URL on the issue (Pylon's `link`) win; Jira's
   // browse URL is built from the site.
   const issueUrl = issue.browseUrl ?? jiraBrowseUrl(site, issue.key);
@@ -70,8 +68,7 @@ export function ContextRail({ issue, site, prUrls, running }: ContextRailProps) 
 
   return (
     <div className="detail-right">
-      <TurnSection workspaceId={issue.key} hasPr={prUrls.length > 0} />
-      <PrRailSection urls={prUrls} />
+      <TurnSection workspaceId={issue.key} hasPr={hasPr} />
       <WorkspaceSection workspaceId={issue.key} refreshKey={running} />
       <StartedSessionsSection workspaceId={issue.key} />
 
