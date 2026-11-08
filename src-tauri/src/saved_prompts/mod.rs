@@ -82,9 +82,9 @@ fn builtin(id: &str, name: &str, title: &str, body: &str, now: i64) -> SavedProm
 pub fn builtins(now: i64) -> Vec<SavedPrompt> {
     vec![
         builtin(
-            "builtin-review",
-            "review",
-            "Review my uncommitted changes",
+            "builtin-review-diff",
+            "review-diff",
+            "Review my changes",
             "Review my uncommitted changes (the working tree's diff and any untracked files) for \
              bugs and risks. For each finding, give the file and line, how serious it is and a \
              suggested fix. Don't change any code yet.",

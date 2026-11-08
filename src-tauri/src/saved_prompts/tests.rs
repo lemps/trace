@@ -53,7 +53,10 @@ fn names_are_slugged_and_checked() {
 #[test]
 fn a_new_install_lists_the_builtins() {
     let dir = TempDir::new();
-    assert_eq!(names(&list_at(&dir.file()).unwrap()), vec!["review", "pr"]);
+    assert_eq!(
+        names(&list_at(&dir.file()).unwrap()),
+        vec!["review-diff", "pr"]
+    );
     // Reading writes nothing.
     assert!(!dir.file().exists());
 }
@@ -66,7 +69,7 @@ fn saving_adds_and_keeps_the_builtins() {
     assert_eq!(saved.body, "Run the tests.");
     assert_eq!(saved.created_at, saved.updated_at);
     let list = list_at(&dir.file()).unwrap();
-    assert_eq!(names(&list), vec!["review", "pr", "tests"]);
+    assert_eq!(names(&list), vec!["review-diff", "pr", "tests"]);
 }
 
 #[test]
@@ -74,16 +77,16 @@ fn a_builtin_can_be_edited_and_deleted_for_good() {
     let dir = TempDir::new();
     let edited = save_at(
         &dir.file(),
-        &draft(Some("builtin-review"), "check", "Check it."),
+        &draft(Some("builtin-review-diff"), "check", "Check it."),
     )
     .unwrap();
-    assert_eq!(edited.id, "builtin-review");
+    assert_eq!(edited.id, "builtin-review-diff");
     delete_at(&dir.file(), "builtin-pr").unwrap();
     let list = list_at(&dir.file()).unwrap();
     assert_eq!(names(&list), vec!["check"]);
     assert_eq!(list[0].body, "Check it.");
     // Deleting the last one leaves an empty list, not the built-ins back.
-    delete_at(&dir.file(), "builtin-review").unwrap();
+    delete_at(&dir.file(), "builtin-review-diff").unwrap();
     assert!(list_at(&dir.file()).unwrap().is_empty());
 }
 

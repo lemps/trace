@@ -46,7 +46,7 @@ export function SavedPromptEditor({ initial, onDone }: SavedPromptEditorProps) {
               id={`${idPrefix}-name`}
               type="text"
               spellCheck={false}
-              placeholder="review"
+              placeholder="review-diff"
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             />
@@ -57,7 +57,7 @@ export function SavedPromptEditor({ initial, onDone }: SavedPromptEditorProps) {
           <input
             id={`${idPrefix}-title`}
             type="text"
-            placeholder="Review my uncommitted changes"
+            placeholder="Review my changes"
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
           />
