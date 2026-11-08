@@ -60,18 +60,19 @@ impl JournalSink for Sink {
 
     fn info(&self, info: SessionInfo) {
         let state = self.app.state::<AppState>();
-        let was_busy = state
+        let was_working = state
             .chat_agents
             .info(&self.workspace_id)
-            .is_some_and(|i| i.busy);
+            .is_some_and(|i| i.at_work());
         let info = state.chat_agents.note_info(&self.workspace_id, info);
-        // What a resume after a quit needs to know: was it mid-turn. Not the
+        // What a resume after a quit needs to know: was it still at work. Not the
         // turn that ends because trace is going down: that one was cut off.
         let going_down = state
             .shutting_down
             .load(std::sync::atomic::Ordering::SeqCst);
-        if info.busy != was_busy && !going_down {
-            crate::interrupted::record_busy(&self.workspace_id, info.busy);
+        let now_working = info.at_work();
+        if now_working != was_working && !going_down {
+            crate::interrupted::record_busy(&self.workspace_id, now_working);
         }
         let event = SessionInfoEvent {
             workspace_id: &self.workspace_id,
