@@ -151,11 +151,20 @@
   background: var(--code-bg, var(--bg-1));
   overflow-wrap: normal;
 }
+/* A tall block scrolls inside, under its head, rather than pushing the rest
+   of a reply off screen. Paper shows all of it (plans/plans-print.css). */
 .md-code pre {
   margin: 0;
+  max-height: 50vh;
+  overflow: auto;
   border: 0;
   border-radius: 0;
   background: none;
+}
+@media print {
+  .md-code pre {
+    max-height: none;
+  }
 }
 .md-code pre code {
   display: block;
