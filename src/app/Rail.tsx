@@ -68,6 +68,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
   // a tracker's pages show only while it's connected (`domains/sidebar/items.ts`).
   const trackers = useIssuesStore((s) => s.sessions);
   const entries = useSidebarStore((s) => s.entries);
+  const recentsFlyout = useSidebarStore((s) => s.recentsFlyout);
   const recentsDelay = useSidebarStore((s) => s.recentsDelay);
   const scheduledNeedsYou = useScheduledNeedsYou();
   const buddyOn = useBuddyStore((s) => s.enabled);
@@ -92,7 +93,8 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
       );
     }
     if (id === "sessions") {
-      // While Sessions is selected, resting on it slides out its recent sessions.
+      // While Sessions is selected, resting on it slides out its recent sessions
+      // (when that's turned on in Settings → Sidebar).
       return (
         <div
           key={id}
@@ -100,7 +102,7 @@ export function Rail({ nav, onNav, waitingCount }: RailProps) {
           style={{ "--rr-delay": `${recentsDelay}ms` } as CSSProperties}
         >
           <RailButton id={id} active={active} onNav={onNav} />
-          {active && <RailRecents />}
+          {active && recentsFlyout && <RailRecents />}
         </div>
       );
     }
