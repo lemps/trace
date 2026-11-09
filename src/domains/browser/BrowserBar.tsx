@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { type BrowserAction, type BrowserPage, browserAct } from "@/ipc/browser";
+import { copyPlain } from "@/ipc/clipboard";
 import { suggestions, typedUrl } from "./model";
 import { useBrowserStore, usePageLive } from "./store";
 
@@ -69,7 +70,7 @@ export function BrowserBar({ workspaceId, page, pages, composing, onComposed }: 
     setDraft(shown);
   };
   const copy = () =>
-    void navigator.clipboard.writeText(shown).then(
+    void copyPlain(shown).then(
       () => toast.success("Address copied"),
       () => toast.error("Couldn't copy the address")
     );

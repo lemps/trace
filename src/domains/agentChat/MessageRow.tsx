@@ -7,8 +7,9 @@ import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { PromptBubble } from "@/domains/transcript/PromptBubble";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useChatView } from "./chatContext";
+import { messageHtml, rangeHtml } from "./clipboardHtml";
 import { useDisclosure } from "./hooks/useDisclosure";
-import { editInComposer, messageMenu } from "./messageMenu";
+import { type Copied, editInComposer, messageMenu } from "./messageMenu";
 import { messageTime, messageTimeFull } from "./messageText";
 import type { Message } from "./types";
 
@@ -59,7 +60,7 @@ interface ShellProps extends MessageRowProps {
 function MessageShell({ message, at, mine = false, children }: ShellProps) {
   const { workspaceId } = useChatView();
   const ref = useRef<HTMLDivElement>(null);
-  const { menu, openAt, close } = useContextMenuAt<string | undefined>();
+  const { menu, openAt, close } = useContextMenuAt<Copied | undefined>();
   // Nothing to act on while it's still being written, or for a message of only files.
   const text = !message.streaming && message.text.trim() ? message.text : null;
   // Only what you wrote goes back in your composer (not a subagent's brief from its parent).
@@ -68,6 +69,8 @@ function MessageShell({ message, at, mine = false, children }: ShellProps) {
       ? () => editInComposer(workspaceId, text)
       : undefined;
   const onContextMenu = (e: MouseEvent<HTMLDivElement>) => openAt(selectionIn(ref.current))(e);
+  // The message as drawn, read when it's copied (it may have re-rendered since).
+  const html = () => (ref.current ? messageHtml(ref.current) : null);
   return (
     <>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: the menu's keyboard path is its bar's buttons (the context-menu key on one bubbles here) */}
@@ -90,7 +93,9 @@ function MessageShell({ message, at, mine = false, children }: ShellProps) {
               <I.Pencil size={12} />
             </IconButton>
           )}
-          {text && <CopyButton text={text} label="Copy message" className="ac-msg-btn" />}
+          {text && (
+            <CopyButton text={text} html={html} label="Copy message" className="ac-msg-btn" />
+          )}
           {!mine && text && at !== undefined && <MessageTime at={at} />}
         </div>
       </div>
@@ -98,7 +103,7 @@ function MessageShell({ message, at, mine = false, children }: ShellProps) {
         <ContextMenu
           x={menu.x}
           y={menu.y}
-          sections={messageMenu({ text, edit, selection: menu.target })}
+          sections={messageMenu({ text, html, edit, selection: menu.target })}
           onClose={close}
         />
       )}
@@ -114,13 +119,18 @@ function MessageTime({ at }: { at: number }) {
   );
 }
 
-/** The text selected inside `el`, if any: right-click offers to copy just that. */
-function selectionIn(el: HTMLElement | null): string | undefined {
+/**
+ * What's selected inside `el`, if anything: right-click offers to copy just that,
+ * formatted. Read at the right-click, as the menu taking focus can clear it.
+ */
+function selectionIn(el: HTMLElement | null): Copied | undefined {
   const sel = window.getSelection();
   if (!el || !sel || sel.isCollapsed || !sel.anchorNode || !el.contains(sel.anchorNode)) {
     return undefined;
   }
-  return sel.toString().trim() || undefined;
+  const text = sel.toString().trim();
+  if (!text) return undefined;
+  return { text, html: sel.rangeCount > 0 ? rangeHtml(sel.getRangeAt(0)) : null };
 }
 
 /** The agent's thinking: one line, unfolding to the text. Live thinking shows its latest line. */

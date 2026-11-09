@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { PopMenu } from "@/components/PopMenu";
+import { copyPlain, copyRich } from "@/ipc/clipboard";
 import {
   extractTable,
   type TableData,
@@ -18,36 +19,21 @@ import { useCopied } from "./useCopied";
 // also offers a Markdown pipe table. The control floats over the table's head
 // row, so it never widens the table.
 
-/** HTML for rich editors and TSV for cells, or TSV alone where HTML can't be written. */
-async function writeTable(data: TableData): Promise<void> {
-  const tsv = tableToTsv(data);
-  const canHtml =
-    typeof ClipboardItem !== "undefined" &&
-    typeof navigator.clipboard.write === "function" &&
-    (!("supports" in ClipboardItem) || ClipboardItem.supports("text/html"));
-  if (canHtml) {
-    try {
-      const item = new ClipboardItem({
-        "text/html": new Blob([tableToHtml(data)], { type: "text/html" }),
-        "text/plain": new Blob([tsv], { type: "text/plain" }),
-      });
-      await navigator.clipboard.write([item]);
-      return;
-    } catch {
-      // Fall back to the text alone, below.
-    }
-  }
-  await navigator.clipboard.writeText(tsv);
+/** HTML for rich editors and TSV for cells, in one clipboard write: each app takes what it reads. */
+function writeTable(data: TableData): Promise<void> {
+  return copyRich(tableToHtml(data), tableToTsv(data));
 }
 
 function TableCopy({ node }: { node: TableHast }) {
   const [copied, flash] = useCopied();
   // Extracted on click, not per render: a streaming reply re-renders its table often.
   const run = (write: (data: TableData) => Promise<void>) => {
-    write(extractTable(node)).then(flash, () => toast.error("Couldn't copy the table"));
+    write(extractTable(node)).then(flash, (e) =>
+      toast.error(`Couldn't copy the table: ${String(e)}`)
+    );
   };
   const copyTable = () => run(writeTable);
-  const copyMarkdown = () => run((d) => navigator.clipboard.writeText(tableToMarkdown(d)));
+  const copyMarkdown = () => run((d) => copyPlain(tableToMarkdown(d)));
   return (
     <div className="md-table-copy">
       <button

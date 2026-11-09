@@ -36,6 +36,8 @@ interface ComposerProps {
   slashCommands: readonly string[];
   /** The agent is up: an option picked goes to it, not to its next start. */
   running: boolean;
+  /** Set while the agent is stopped: sending starts it, and the message waits in the queue. */
+  onStart?: () => void;
 }
 
 /** A drag carries files from the desktop (not a pane tab or a card). */
@@ -59,6 +61,7 @@ export function Composer({
   toMain,
   slashCommands,
   running,
+  onStart,
 }: ComposerProps) {
   const actions = useChatActions();
   const text = useDraftText(workspaceId);
@@ -96,6 +99,12 @@ export function Composer({
   const deliver = (message: string, attachments: string[]) => {
     if (message === "" && attachments.length === 0) return;
     const { queues, sending, enqueue, setSending } = useAgentChatStore.getState();
+    // Writing to a stopped agent means wanting it: start it, and the queue sends this once it's up.
+    if (onStart) {
+      enqueue(workspaceId, message, attachments);
+      onStart();
+      return;
+    }
     if (busy || sending[workspaceId] || (queues[workspaceId]?.length ?? 0) > 0) {
       enqueue(workspaceId, message, attachments);
       return;
@@ -158,7 +167,7 @@ export function Composer({
 
   return (
     <div className="ac-composer-wrap">
-      <QueueList workspaceId={workspaceId} />
+      <QueueList workspaceId={workspaceId} stopped={!running} />
       {/* biome-ignore lint/a11y/noStaticElementInteractions: dropping files is a shortcut; the Attach button is the keyboard path */}
       <div
         className={`ac-composer${dropping ? " dropping" : ""}`}
@@ -173,11 +182,13 @@ export function Composer({
           className="ac-input"
           aria-label="Message the agent"
           placeholder={
-            busy
-              ? `Queue a message for when this turn ends${slashHint}`
-              : toMain
-                ? `Message the main agent${slashHint}`
-                : `Message the agent${slashHint}`
+            onStart
+              ? `Message the agent to start it${slashHint}`
+              : busy
+                ? `Queue a message for when this turn ends${slashHint}`
+                : toMain
+                  ? `Message the main agent${slashHint}`
+                  : `Message the agent${slashHint}`
           }
           rows={1}
           value={text}
@@ -204,6 +215,7 @@ export function Composer({
             working={working}
             hasDraft={hasDraft}
             canSend={canSend}
+            starts={onStart !== undefined}
             onSend={submit}
             onStop={onInterrupt}
           />

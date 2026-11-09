@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { copyPlain } from "@/ipc/clipboard";
 import type { PrThread } from "@/ipc/prWatch";
 import { PrChecks } from "./PrChecks";
 import { PrConversation } from "./PrConversation";
@@ -23,7 +24,7 @@ function shortRef(url: string): string {
 }
 
 function copyLink(url: string) {
-  void navigator.clipboard.writeText(url).then(
+  void copyPlain(url).then(
     () => toast.success("Copied PR link"),
     () => toast.error("Couldn't copy to clipboard")
   );
