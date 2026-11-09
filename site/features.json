@@ -35,7 +35,7 @@
         "Saved prompts sent as /name, from Settings → Agents",
         "Paste, drop or pick files; pictures show as thumbnails"
       ],
-      "alt": "In a chat session the Model picker is opened and Opus chosen, then Effort set to High and Mode to Plan. Typing / lists the saved prompts and /review is picked, a screenshot is pasted and shows as a thumbnail, and the message is sent; the context ring in the header fills in."
+      "alt": "In a chat session the Model picker is opened and Opus chosen, then Effort set to High and Mode to Plan. Typing /rep lists a saved prompt, Enter puts its text in the box, a screenshot is pasted and shows as a thumbnail, and the message is sent; the context ring sits in the chat header."
     },
     {
       "id": "fleet",
@@ -101,6 +101,13 @@
           "id": "gallery",
           "label": "Gallery",
           "alt": "An agent is asked to draw four icons for a CLI's sort modes and show them. When its turn ends a Gallery tab appears; it's opened to a grid of the four icons, the first opens full size, and the arrow keys step through the rest."
+        },
+        {
+          "id": "browser",
+          "kind": "still",
+          "label": "Browser",
+          "alt": "An agent's chat on the left and its Browser tab on the right, showing a local playground page for the tinyroute demo: its routes, with the new DELETE route marked, and a sample request.",
+          "caption": "The Browser tab: a local page beside the agent, in its own isolated view."
         }
       ]
     },
@@ -130,14 +137,7 @@
         "Sort by status, name, age or who started them, or keep your own order",
         "Stop & save snapshots a sandbox; Join picks one up from another computer"
       ],
-      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it.",
-      "more": [
-        {
-          "id": "sandbox",
-          "label": "Vercel Sandbox",
-          "alt": "Integrations → Vercel shows its readiness checklist: a token, a Claude login for sandboxes and a GitHub account that can push. In New session, Run on is switched from This computer to Vercel, and the repository list narrows to the repos with a GitHub origin."
-        }
-      ]
+      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it."
     },
     {
       "id": "orchestrator",
