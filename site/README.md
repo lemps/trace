@@ -148,7 +148,12 @@ Check each clip anyway before committing it. Clips should stay under 1.5 MB each
      at the moments `segments` cut at.
 2. Add its entry to `site/features.json` (id, label, title, text, points, alt: a
    sentence describing what the clip shows; `"kind": "still"` and a `caption` for a
-   screenshot). Its position in the list is its place on the page.
+   screenshot). Its position in the list is its place on the page. Optional:
+   - `more`: further clips stacked under the first, each `{ id, label, alt }` with
+     its own scene (`scenes/<id>.mjs`), for a section that covers several things;
+   - `placeholder`: `{ alt, caption }` to show `media/<id>.jpg` as a still until the
+     clip is recorded (a section that was a still before it became a clip).
 3. `node site/scripts/record.mjs <feature-id>`, then `node site/scripts/build-page.mjs`.
-   Until its media is recorded, a feature listed in `features.json` is left off the page
-   (the build says so), so a section can be written ahead of its clip.
+   Until its media is recorded, a clip listed in `features.json` is left off the page
+   (the build says so), and a section with none of its clips recorded is left off too,
+   so a section can be written ahead of its clip. `scripts/SCENES.md` plans each scene.
