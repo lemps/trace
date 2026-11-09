@@ -1,5 +1,6 @@
 import { toast } from "@/app/toast";
 import type { MenuSection } from "@/components/PopMenu";
+import { copyPlain } from "@/ipc/clipboard";
 import { type GalleryImage, galleryOpen, type OpenHow } from "@/ipc/gallery";
 
 const isSvg = (img: GalleryImage) => /\.svg$/i.test(img.name);
@@ -9,7 +10,7 @@ function open(ws: string, setId: string, img: GalleryImage, how: OpenHow) {
 }
 
 export function copyPath(img: GalleryImage) {
-  void navigator.clipboard.writeText(img.path).then(
+  void copyPlain(img.path).then(
     () => toast.success("Path copied"),
     () => toast.error("Couldn't copy the path")
   );

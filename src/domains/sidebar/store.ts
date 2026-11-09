@@ -3,6 +3,7 @@ import type { NavId } from "@/app/nav";
 import { DEFAULT_SIDEBAR, type SidebarEntry, sidebarItem, type Visibility } from "./items";
 import { loadSidebar, moveEntry, nudgeEntry, saveSidebar } from "./prefs";
 import { loadRecentsDelay, type RecentsDelay, saveRecentsDelay } from "./recentsDelay";
+import { loadRecentsFlyout, saveRecentsFlyout } from "./recentsFlyout";
 
 // The rail's items as the user arranged them. Loaded once; every change is saved
 // and re-renders the rail at once.
@@ -14,6 +15,9 @@ interface SidebarStore {
   move: (id: NavId, before: NavId | null) => void;
   nudge: (id: NavId, delta: -1 | 1) => void;
   reset: () => void;
+  /** Resting on Sessions slides out its recent sessions (off by default). */
+  recentsFlyout: boolean;
+  setRecentsFlyout: (on: boolean) => void;
   /** Milliseconds resting on Sessions before its recent sessions slide out. */
   recentsDelay: RecentsDelay;
   setRecentsDelay: (ms: RecentsDelay) => void;
@@ -39,6 +43,11 @@ export const useSidebarStore = create<SidebarStore>((set, get) => {
     },
     reset() {
       commit(DEFAULT_SIDEBAR);
+    },
+    recentsFlyout: loadRecentsFlyout(),
+    setRecentsFlyout(recentsFlyout) {
+      saveRecentsFlyout(recentsFlyout);
+      set({ recentsFlyout });
     },
     recentsDelay: loadRecentsDelay(),
     setRecentsDelay(recentsDelay) {

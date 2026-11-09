@@ -6,7 +6,9 @@ import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import {
+  TABLE_CELL_STYLE as C,
   extractTable,
+  TABLE_STYLE as T,
   type TableHast,
   tableToHtml,
   tableToMarkdown,
@@ -70,7 +72,10 @@ describe("extractTable", () => {
   it("handles a table with a head and no body", () => {
     const t = extractTable(tableOf("| a | b |\n| - | - |"));
     assert.equal(t.rows.length, 0);
-    assert.equal(tableToHtml(t), "<table><thead><tr><th>a</th><th>b</th></tr></thead></table>");
+    assert.equal(
+      tableToHtml(t),
+      `<table style="${T}"><thead><tr><th style="${C}">a</th><th style="${C}">b</th></tr></thead></table>`
+    );
   });
 });
 
@@ -108,8 +113,8 @@ describe("tableToHtml", () => {
     const t = extractTable(tableOf('| x | y |\n| - | :-: |\n| 1 < 2 & "q" | 2 |'));
     assert.equal(
       tableToHtml(t),
-      '<table><thead><tr><th>x</th><th style="text-align:center">y</th></tr></thead>' +
-        '<tbody><tr><td>1 &lt; 2 &amp; &quot;q&quot;</td><td style="text-align:center">2</td></tr></tbody></table>'
+      `<table style="${T}"><thead><tr><th style="${C}">x</th><th style="${C};text-align:center">y</th></tr></thead>` +
+        `<tbody><tr><td style="${C}">1 &lt; 2 &amp; &quot;q&quot;</td><td style="${C};text-align:center">2</td></tr></tbody></table>`
     );
   });
 

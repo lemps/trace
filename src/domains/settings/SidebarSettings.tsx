@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { navTracker } from "@/app/nav";
 import { Segmented } from "@/components/Segmented";
+import { Switch } from "@/components/Switch";
 import { useIssuesStore } from "@/domains/issues/store";
 import { sidebarItem } from "@/domains/sidebar/items";
 import { isDefaultSidebar } from "@/domains/sidebar/prefs";
@@ -19,12 +20,15 @@ const DELAY_OPTIONS = RECENTS_DELAYS.map((ms) => ({
 // Settings → Sidebar: every page the rail can show, in the rail's order. Each can be
 // hidden or shown, and dragged (or moved with the buttons / Alt+↑↓) into a new place;
 // Settings itself stays, at the bottom. Changes reach the rail at once. Below the
-// list, how long resting on Sessions waits before its recent sessions slide out.
+// list, whether resting on Sessions slides out your recent sessions (off by
+// default), and while it's on, how long it waits first.
 export function SidebarSettings() {
   const entries = useSidebarStore((s) => s.entries);
   const setVisibility = useSidebarStore((s) => s.setVisibility);
   const nudge = useSidebarStore((s) => s.nudge);
   const reset = useSidebarStore((s) => s.reset);
+  const recentsFlyout = useSidebarStore((s) => s.recentsFlyout);
+  const setRecentsFlyout = useSidebarStore((s) => s.setRecentsFlyout);
   const recentsDelay = useSidebarStore((s) => s.recentsDelay);
   const setRecentsDelay = useSidebarStore((s) => s.setRecentsDelay);
   const trackers = useIssuesStore((s) => s.sessions);
@@ -78,16 +82,24 @@ export function SidebarSettings() {
         })}
       </div>
       <SettingRow
-        label="Recent sessions delay"
-        hint="How long the pointer rests on Sessions before your recent sessions slide out."
+        label="Recent sessions"
+        hint="Resting the pointer on Sessions, while it's open, slides out the sessions you last opened."
       >
-        <Segmented
-          label="Recent sessions delay"
-          value={recentsDelay}
-          options={DELAY_OPTIONS}
-          onChange={setRecentsDelay}
-        />
+        <Switch on={recentsFlyout} onChange={setRecentsFlyout} label="Show recent sessions" />
       </SettingRow>
+      {recentsFlyout && (
+        <SettingRow
+          label="Recent sessions delay"
+          hint="How long the pointer rests on Sessions before your recent sessions slide out."
+        >
+          <Segmented
+            label="Recent sessions delay"
+            value={recentsDelay}
+            options={DELAY_OPTIONS}
+            onChange={setRecentsDelay}
+          />
+        </SettingRow>
+      )}
     </section>
   );
 }

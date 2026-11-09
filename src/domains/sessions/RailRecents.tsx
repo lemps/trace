@@ -14,7 +14,8 @@ const MAX = 8;
 // Sessions' own navigation, in the rail: while Sessions is selected, resting on
 // its button slides out the sessions you last opened (after a short delay, so
 // passing over it doesn't); moving away slides them back. The Rail mounts this
-// only on Sessions. A title is bold while its session has a finished turn you
+// only on Sessions, and only while Settings → Sidebar's "Recent sessions" is on
+// (off by default). A title is bold while its session has a finished turn you
 // haven't opened (`live/unreadStore`).
 export function RailRecents() {
   const sessions = useSessionsStore((s) => s.sessions);

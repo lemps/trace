@@ -71,7 +71,8 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
     () => ({ workspaceId, root, expandAll }),
     [workspaceId, root, expandAll]
   );
-  useQueueFlush(workspaceId, busy);
+  // Queued messages wait while it's stopped: a send that starts it goes once it's up.
+  useQueueFlush(workspaceId, busy || stopped);
 
   const interrupt = () =>
     void actions
@@ -109,7 +110,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
           // Its own band under the conversation, which scrolls above it.
           <div className="ac-stopped">
             <div className="ac-stopped-in">
-              <span>The agent isn't running. Start it to carry on this conversation.</span>
+              <span>The agent isn't running. Send a message or start it to carry on.</span>
               <button type="button" className="btn" onClick={onStart}>
                 <I.Play size={14} /> Start
               </button>
@@ -124,6 +125,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
           toMain={tab !== "main"}
           slashCommands={info?.slashCommands ?? []}
           running={!stopped}
+          onStart={stopped ? onStart : undefined}
         />
       </div>
     </ChatViewContext.Provider>
@@ -150,7 +152,7 @@ function Empty({
     <div className="tx-empty">
       <div className="ib-empty ac-empty">
         {stopped
-          ? "The agent isn't running. Start it, then send it a message."
+          ? "The agent isn't running. Send it a message to start it, or start it now."
           : "Nothing here yet. Your messages and the agent's work will show up here."}
         {stopped && onStart && (
           <button type="button" className="btn" onClick={onStart}>

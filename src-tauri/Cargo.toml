@@ -56,6 +56,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
 toml = "0.9"
 tempfile = "3"
+# ~2.3: 2.4+ needs tauri 2.12 (and @tauri-apps/api 2.12); bump them together.
+tauri-plugin-clipboard-manager = "~2.3.2"
 
 [target.'cfg(unix)'.dependencies]
 # Process signals
