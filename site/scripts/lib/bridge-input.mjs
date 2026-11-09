@@ -54,6 +54,45 @@ export function pointer(kind, x, y, opts = {}) {
     state.over = target;
   }
 
+  // Untrusted events don't set CSS :hover, so hover-revealed controls (a row's
+  // actions, a message's hover bar, pane chrome) would never show. Mirror every
+  // `:hover` rule as `[data-rec-hover]`, and mark what the pointer is over.
+  if (state.sheets !== document.styleSheets.length) {
+    state.sheets = document.styleSheets.length;
+    const out = [];
+    const walk = (rules, wrap) => {
+      for (const r of rules) {
+        if (r.selectorText?.includes(":hover")) {
+          const sel = r.selectorText.replace(/:hover/g, "[data-rec-hover]");
+          out.push(wrap(`${sel}{${r.style.cssText}}`));
+        } else if (r.cssRules && (r.media || r.conditionText)) {
+          const head = r.media ? `@media ${r.media.mediaText}` : `@supports ${r.conditionText}`;
+          walk(r.cssRules, (t) => wrap(`${head}{${t}}`));
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      if (sheet.ownerNode?.id === "rec-hover") continue;
+      try {
+        walk(sheet.cssRules, (t) => t);
+      } catch {}
+    }
+    let el = document.getElementById("rec-hover");
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "rec-hover";
+      document.head.append(el);
+    }
+    el.textContent = out.join("\n");
+    state.sheets = document.styleSheets.length;
+  }
+  for (const e of document.querySelectorAll("[data-rec-hover]")) {
+    if (!e.contains(target)) e.removeAttribute("data-rec-hover");
+  }
+  for (let e = target; e && e !== document.documentElement; e = e.parentElement) {
+    if (!e.hasAttribute("data-rec-hover")) e.setAttribute("data-rec-hover", "");
+  }
+
   if (kind === "move") {
     fire(target, "pointermove", ptr);
     fire(target, "mousemove", base);

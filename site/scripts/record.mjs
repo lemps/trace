@@ -73,13 +73,25 @@ try {
     }
     const d = await app.connect();
     try {
+      // A hidden page (screen locked, window minimised or on another Space) stops
+      // its animations: a detail would stay at its first, invisible keyframe.
+      if (await d.eval(() => document.visibilityState === "hidden")) {
+        throw new Error("trace's window isn't visible (is the screen locked?); keep it on screen while recording");
+      }
       await d.viewport(...clip.viewport);
-      // Hide the signed-in account's own usage meter: it isn't demo data.
+      // Hide the signed-in account's own usage meter: it isn't demo data. Hide
+      // passing toasts ("Deleted …", "Scheduled …") too, but never an error: a clip
+      // that would show one has gone wrong, and should be seen to.
       const hide = `(() => { const st = document.createElement("style"); st.id = "site-rec";
-        st.textContent = ".ac-head-limits{visibility:hidden!important}";
+        st.textContent = ".ac-head-limits,.toaster .toast:not(.error){visibility:hidden!important}";
         (document.head || document.documentElement).append(st); })()`;
       await d.send("Page.addScriptToEvaluateOnNewDocument", { source: `addEventListener("DOMContentLoaded", () => ${hide})` });
       if (!(await d.eval(() => !!document.getElementById("site-rec")))) await d.eval(hide);
+      // Agents start in Ask mode whatever the recording machine's Claude Code
+      // defaults to (its settings.json may say plan mode): the clips show approvals.
+      await d.eval(() => {
+        if (!localStorage.getItem("trace.agentArgs")) localStorage.setItem("trace.agentArgs", "--permission-mode default");
+      });
       if (clip.theme) await setTheme(d, clip.theme);
       await scene.setup?.(d);
       if (clip.kind === "still") {
