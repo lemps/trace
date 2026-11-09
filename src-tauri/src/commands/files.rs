@@ -7,6 +7,10 @@ use crate::worktree_files::{self, WorktreeFiles};
 #[tauri::command]
 pub async fn list_workspace_files(issue_key: String) -> Result<WorktreeFiles, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        if let Some(remote) = crate::commands::sandbox_files::with_remote(&issue_key, |r| r.list())
+        {
+            return remote;
+        }
         let (_repo, work_dir) = crate::workspace_dir::work_dir_for(&issue_key)?;
         worktree_files::list(&work_dir)
     })

@@ -78,6 +78,20 @@ pub fn write_home_file_argv(rel: &str, content: &str) -> Vec<String> {
     ])
 }
 
+/// A setup command line, run in the checkout through a login shell (so the
+/// image's PATH, `nvm` and the like are there). Its output all goes to stderr,
+/// where a failure's tail is read from: setup tools print errors either way.
+pub fn setup_argv(dir: &str, line: &str) -> Vec<String> {
+    argv(&[
+        "bash",
+        "-c",
+        r#"cd "$1" && exec bash -lc "$2" 1>&2"#,
+        "trace-setup",
+        dir,
+        line,
+    ])
+}
+
 /// tmux as trace needs it: no status bar under the TUI, the last client to
 /// resize sets the size (shared viewing), and the server goes when the agent does.
 pub const TMUX_CONF: &str = "set -g status off\nset -g window-size latest\nset -g exit-empty on\n";

@@ -54,6 +54,15 @@ pub(super) fn deliver(
         Out::Reply(value) => {
             process.write_line(&value.to_string());
         }
+        // `run` serves these when the agent has tools; otherwise say so.
+        Out::Mcp { request_id, .. } => {
+            let refused = serde_json::json!({
+                "type": "control_response",
+                "response": { "subtype": "error", "request_id": request_id,
+                              "error": "trace serves no tools to this agent." },
+            });
+            process.write_line(&refused.to_string());
+        }
     }
 }
 

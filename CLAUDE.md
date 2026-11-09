@@ -94,6 +94,7 @@ src-tauri/src/
 ├── interrupted.rs          # ledger of live agents; ones cut off by quit/update/crash are offered back
 ├── execution/              # where agents run: AgentHost port; this machine, or a cloud sandbox
 │                           #   (sandbox/ + vercel/: terminal in tmux, chat as a background command)
+├── mcp_auth/               # trace's own OAuth logins to the team's MCP servers, for sandboxes
 └── commands/               # thin wrappers: agent, session, schedules, issues, activity, pr, diff, tests, repos, editor
 ```
 

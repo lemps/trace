@@ -98,7 +98,9 @@ export function ClaudeLogin() {
             <span className="hint">{FIELD[choice].hint}</span>
           </div>
           <div className="ig-note">
-            It goes into each sandbox's environment, where anyone on your Vercel team can read it.
+            Vercel's network adds it to the sandbox's requests to Anthropic, so it never enters the
+            sandbox and the agent can't read it. It's stored with Vercel, in the sandbox's network
+            policy.
           </div>
           <div className="ig-form-foot">
             <button

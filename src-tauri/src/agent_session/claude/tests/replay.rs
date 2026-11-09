@@ -33,6 +33,7 @@ impl Run {
                 }
                 Out::Info(info) => self.info = info,
                 Out::Reply(v) => replies.push(v),
+                Out::Mcp { .. } => {}
             }
         }
         replies

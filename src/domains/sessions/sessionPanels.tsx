@@ -39,6 +39,8 @@ interface SessionPanelsArgs {
   onAddAgent: (cli: AgentCli, provider?: AgentProvider) => void;
   /** Why "+ agent" is off (a sandbox session, the companion cap); null = it works. */
   addBlocked: string | null;
+  /** The host reads the checkout for Files (`capabilities.files`): this computer, or a sandbox. */
+  hostFiles: boolean;
 }
 
 /**
@@ -47,14 +49,16 @@ interface SessionPanelsArgs {
  * and Pull request, each only with something to show (Files, Tests and Pull request
  * never in a plain folder, which has no git). Files and Terminal are the
  * worktree's, whichever agent is in front. A session on another host (a Vercel
- * Sandbox) has no local folder, so it has no Files, Terminal or Tests; it keeps
- * Pull request, since the sandbox pushes its branch to GitHub, where its PRs are found.
+ * Sandbox) has no local folder, so it has no Terminal or Tests; its Files are read
+ * in the sandbox when its host can (`hostFiles`), and it keeps Pull request, since
+ * the sandbox pushes its branch to GitHub, where its PRs are found.
  */
 export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
   const place = a.session.folder ? "folder" : "worktree";
-  // Files, Terminal and Tests read the local folder; a remote host has none.
+  // Terminal and Tests need the local folder; Files only a host that can read it.
   const isLocal = !a.session.host;
   const hasGit = isLocal && !a.session.folder;
+  const hasFiles = !a.session.folder && (isLocal || a.hostFiles);
   const hasPrs = hasGit || Boolean(a.session.host);
   const agents = a.roster.map(
     (entry, i): PanelDescriptor => ({
@@ -82,7 +86,7 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       section: "workspace",
     }),
     ...viewerTabs(a.active.workspaceId, a.viewers, "workspace"),
-    ...(hasGit ? [filesTab(a.session.id, a.workspace, "workspace")] : []),
+    ...(hasFiles ? [filesTab(a.session.id, a.workspace, "workspace")] : []),
     ...(isLocal ? [terminalTab(a.session.id, a.workspace, "workspace")] : []),
     ...(hasGit ? [testsTab(a.session.id, a.tests, "workspace")] : []),
     ...(hasPrs ? [prTab(a.prUrls, a.pr, "workspace")] : []),

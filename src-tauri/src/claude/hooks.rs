@@ -200,6 +200,20 @@ pub fn on_hook(app: &AppHandle, ws: &str, message: &str) {
         }
         crate::plans::transcript::scan(app, ws, name == "stop");
     }
+    relay(app, ws, name, payload, input);
+}
+
+/// A hook event from an agent in a sandbox (`execution::sandbox::events`):
+/// handled as [`on_hook`] does, less what reads its conversation file, which
+/// is in the sandbox rather than on this machine.
+pub fn on_sandbox_hook(app: &AppHandle, ws: &str, message: &str) {
+    let (name, payload) = message.split_once(' ').unwrap_or((message, ""));
+    relay(app, ws, name, payload, decode(payload));
+}
+
+/// What every hook event does, wherever its agent runs.
+fn relay(app: &AppHandle, ws: &str, name: &str, payload: &str, input: HookInput) {
+    let state = app.state::<crate::state::AppState>();
     if state.chat_agents.is_running(ws) && matches!(name, "permission" | "answered" | "needs-input")
     {
         return;

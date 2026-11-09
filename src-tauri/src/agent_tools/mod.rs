@@ -110,21 +110,26 @@ pub fn call(app: &AppHandle, name: &str, arguments: &Value, caller: &str) -> Too
     reply
 }
 
-/// The `--mcp-config` JSON for one agent: the endpoint, the token, and who it is.
+/// The `--mcp-config` JSON for one agent: the endpoint, the token, and who it
+/// is; and each MCP server switched on for this computer (Integrations → MCP
+/// servers), through trace's proxy on the same endpoint (`mcp_auth::proxy`).
 pub fn mcp_config_arg(server: &ToolServer, workspace_id: &str) -> String {
-    json!({
-        "mcpServers": {
-            "trace": {
-                "type": "http",
-                "url": format!("http://127.0.0.1:{}/mcp", server.port),
-                "headers": {
-                    "Authorization": format!("Bearer {}", server.token),
-                    "X-Trace-Workspace": workspace_id,
-                },
-            }
-        }
-    })
-    .to_string()
+    let entry = |path: &str| {
+        json!({
+            "type": "http",
+            "url": format!("http://127.0.0.1:{}{path}", server.port),
+            "headers": {
+                "Authorization": format!("Bearer {}", server.token),
+                "X-Trace-Workspace": workspace_id,
+            },
+        })
+    };
+    let mut servers = serde_json::Map::new();
+    for (name, slug) in crate::mcp_auth::local() {
+        servers.insert(name, entry(&format!("/mcp-proxy/{slug}")));
+    }
+    servers.insert("trace".to_string(), entry("/mcp"));
+    json!({ "mcpServers": servers }).to_string()
 }
 
 /// The permission rule that lets agents call these tools without a prompt.

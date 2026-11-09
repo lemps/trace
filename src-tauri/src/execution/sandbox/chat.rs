@@ -38,7 +38,9 @@ fn open<P: SandboxProvider>(
     launch: RemoteLaunch,
     say: &dyn Fn(&str),
 ) -> Result<Spawned, String> {
-    let ready = ready(&*provider, target, secrets, say)?;
+    let launch_env: std::collections::HashMap<String, String> =
+        launch.env.iter().cloned().collect();
+    let ready = ready(&*provider, target, secrets, &launch_env, say)?;
     let sid = ready.session_id.clone();
     let ws = launch.workspace_id.clone();
     if !ready.fresh {
@@ -54,7 +56,7 @@ fn open<P: SandboxProvider>(
             if !provider.command_done(&sid, &last).unwrap_or(true) {
                 say("Rejoining Claude, still running in its sandbox…");
                 let skip = chat_offsets::read(&ws, &last);
-                return Ok(attach(provider, sid, last, ws, skip, None));
+                return Ok(attach(provider, sid, last, ws, skip, None, false));
             }
             let _ = provider.kill_command(&sid, &last);
         }
@@ -86,9 +88,10 @@ fn open<P: SandboxProvider>(
         if resuming { "--resume" } else { "--session-id" }.to_string(),
         id,
     ]);
-    argv.extend(launch.extra_args);
-    let mut env: std::collections::HashMap<String, String> = launch.env.into_iter().collect();
-    env.extend(ready.env.clone());
+    // Its hooks tell the keep-alive whether it's working (`helpers`).
+    let extra = super::helpers::with_mcp_config(launch.extra_args, ready.mcp_config.as_deref());
+    argv.extend(super::helpers::with_hook_settings(extra));
+    let env = ready.agent_env(launch_env);
     let command = provider.start_command(&sid, &argv, &env, &ready.dir)?;
     let _ = provider.exec(
         &sid,
@@ -97,7 +100,7 @@ fn open<P: SandboxProvider>(
     );
 
     chat_offsets::write(&ws, &command, 0);
-    Ok(attach(provider, sid, command, ws, 0, first_prompt))
+    Ok(attach(provider, sid, command, ws, 0, first_prompt, true))
 }
 
 /// End a chat Claude left running in the sandbox, before a terminal starts one
@@ -124,6 +127,7 @@ fn attach<P: SandboxProvider>(
     workspace_id: String,
     skip: u64,
     first_prompt: Option<String>,
+    started: bool,
 ) -> Spawned {
     let (out_tx, out_rx) = channel();
     let (err_tx, err_rx) = channel();
@@ -133,9 +137,12 @@ fn attach<P: SandboxProvider>(
     let (rsid, rcmd) = (sid.clone(), command.clone());
     let skip_bytes = usize::try_from(skip).unwrap_or(usize::MAX);
     std::thread::spawn(move || follow(&*reader, &rsid, &rcmd, skip_bytes, &out_tx, &err_tx));
+    // Its turns come in-band; the log adds the PRs its `gh` opens.
+    let events = super::events::follow(provider.clone(), &sid, &workspace_id, None);
     Spawned {
         process: Box::new(SandboxChat {
             provider,
+            _events: events,
             session_id: sid,
             command,
             workspace_id,
@@ -145,6 +152,7 @@ fn attach<P: SandboxProvider>(
         stderr: Some(Box::new(ChannelReader::new(err_rx))),
         already_read: skip,
         first_prompt,
+        started,
     }
 }
 
@@ -211,6 +219,8 @@ fn unsent(bytes: &[u8], seen: usize, sent: usize) -> &[u8] {
 /// The chat command, as the adapter's process.
 struct SandboxChat<P: SandboxProvider> {
     provider: Arc<P>,
+    /// Reads the sandbox's event log while the chat is attached.
+    _events: Option<super::events::Follower<P>>,
     session_id: String,
     command: String,
     workspace_id: String,

@@ -13,6 +13,7 @@ use crate::agent_session::{JournalSink, SessionInfo};
 struct Calls {
     killed: bool,
     detached_at: Option<u64>,
+    written: Vec<String>,
 }
 
 struct FakeProcess {
@@ -22,7 +23,12 @@ struct FakeProcess {
 }
 
 impl ChatProcess for FakeProcess {
-    fn write_line(&mut self, _line: &str) -> bool {
+    fn write_line(&mut self, line: &str) -> bool {
+        self.calls
+            .lock()
+            .expect("calls")
+            .written
+            .push(line.to_string());
         true
     }
     fn close_stdin(&mut self) {}
@@ -74,12 +80,16 @@ fn drive(remote: bool, already_read: u64, cmds: Vec<Cmd>) -> (Calls, Vec<String>
         calls: calls.clone(),
         remote,
     });
+    // No tools, so nothing comes back into the loop.
+    let (back, _) = channel();
     run(
         rx,
         process,
         Translator::new(0, book::now_ms),
         sink.clone(),
         already_read,
+        None,
+        back,
     );
     let calls = std::mem::take(&mut *calls.lock().expect("calls"));
     let texts = sink.texts.lock().expect("texts").clone();
@@ -114,4 +124,64 @@ fn a_local_agent_asked_to_detach_is_stopped() {
     let (calls, _texts, _) = drive(false, 0, vec![Cmd::Detach, Cmd::Eof]);
     assert!(calls.killed);
     assert_eq!(calls.detached_at, None);
+}
+
+#[test]
+fn a_tool_call_is_answered_off_the_thread_as_a_control_response() {
+    use crate::agent_session::ToolsHost;
+    use serde_json::{json, Value};
+    let calls = Arc::new(Mutex::new(Calls::default()));
+    let (tx, rx) = channel();
+    let tools = ToolsHost(Arc::new(|m: &Value| {
+        Some(json!({ "jsonrpc": "2.0", "id": m["id"], "result": { "tools": [] } }))
+    }));
+    let process = Box::new(FakeProcess {
+        calls: calls.clone(),
+        remote: true,
+    });
+    let back = tx.clone();
+    let line = json!({ "type": "control_request", "request_id": "r1", "request": {
+        "subtype": "mcp_message", "server_name": "trace",
+        "message": { "jsonrpc": "2.0", "id": 7, "method": "tools/list" } } });
+    tx.send(Cmd::Line(line.to_string())).expect("send");
+    let sink = Arc::new(Collect::default());
+    let worker = std::thread::spawn(move || {
+        run(
+            rx,
+            process,
+            Translator::new(0, book::now_ms),
+            sink,
+            0,
+            Some(tools),
+            back,
+        )
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let reply = loop {
+        let written = calls.lock().expect("calls").written.clone();
+        if let Some(w) = written.into_iter().find(|w| w.contains("mcp_response")) {
+            break w;
+        }
+        assert!(std::time::Instant::now() < deadline, "no reply written");
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    };
+    let v: Value = serde_json::from_str(&reply).expect("json");
+    assert_eq!(v["response"]["request_id"], "r1");
+    assert_eq!(v["response"]["subtype"], "success");
+    assert_eq!(v["response"]["response"]["mcp_response"]["id"], 7);
+    tx.send(Cmd::Eof).expect("eof");
+    worker.join().expect("joined");
+}
+
+#[test]
+fn without_tools_an_mcp_request_is_refused() {
+    let line = serde_json::json!({ "type": "control_request", "request_id": "r2", "request": {
+        "subtype": "mcp_message", "server_name": "trace", "message": { "id": 1 } } });
+    let (calls, _, _) = drive(true, 0, vec![Cmd::Line(line.to_string()), Cmd::Eof]);
+    let refused = calls
+        .written
+        .iter()
+        .find(|w| w.contains("r2"))
+        .expect("answered");
+    assert!(refused.contains("\"error\""), "{refused}");
 }

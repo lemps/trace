@@ -257,3 +257,8 @@
   line-height: 1.5;
   color: var(--fg-2);
 }
+
+/* A short number field (minutes, hours) in a dialog's form. */
+.ig-sub .field input.ig-number {
+  width: 88px;
+}

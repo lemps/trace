@@ -21,6 +21,7 @@ pub mod helpers;
 pub mod interrupted;
 pub mod issues;
 pub mod jira;
+mod mcp_auth;
 pub mod plans;
 pub mod platform;
 pub mod preflight;
@@ -138,6 +139,13 @@ pub fn run() {
             commands::github::github_remove_account,
             commands::github::github_set_primary,
             commands::repo_setup::set_repo_github_account,
+            commands::mcp::mcp_servers,
+            commands::mcp::mcp_connect,
+            commands::mcp::mcp_add,
+            commands::mcp::mcp_set_use,
+            commands::mcp::mcp_disconnect,
+            commands::vercel::sandbox_lifetime,
+            commands::vercel::set_sandbox_lifetime,
             commands::vercel::vercel_status,
             commands::vercel::connect_vercel,
             commands::vercel::disconnect_vercel,

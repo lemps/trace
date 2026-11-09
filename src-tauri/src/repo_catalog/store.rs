@@ -27,6 +27,13 @@ impl Catalog {
         self.records.iter().find(|r| r.has_local(path))
     }
 
+    /// The record for `remote`, wherever it's checked out.
+    pub fn for_remote(&self, remote: &RemoteRepo) -> Option<&RepoRecord> {
+        self.records
+            .iter()
+            .find(|r| r.remote.as_ref().is_some_and(|ours| ours.same_as(remote)))
+    }
+
     /// Record a local checkout at `path`, joining the record for the same remote
     /// when there is one (one repo, many checkouts), else starting one.
     pub fn add_local(&mut self, path: &str, remote: Option<RemoteRepo>, branch: Option<String>) {

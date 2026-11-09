@@ -5,6 +5,7 @@
 pub mod auth;
 pub mod client;
 mod commands;
+mod policy;
 pub mod pty;
 
 use std::collections::HashMap;
@@ -12,8 +13,10 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 
+use crate::execution::sandbox::egress::{Egress, Injection};
 use crate::execution::sandbox::{
-    ExecOutput, OutputStream, PtyStream, SandboxInfo, SandboxProvider, SandboxSpec,
+    ExecOutput, OutputStream, Preview, PtyStream, SandboxInfo, SandboxProvider, SandboxSpec,
+    SelfService,
 };
 use auth::Connection;
 
@@ -21,6 +24,7 @@ use auth::Connection;
 /// enough to come back to, short enough not to fill a Hobby plan's storage.
 const SNAPSHOT_EXPIRY_MS: u64 = 7 * 24 * 60 * 60 * 1000;
 
+#[derive(Clone)]
 pub struct Vercel {
     conn: Connection,
 }
@@ -73,12 +77,46 @@ fn info(sandbox: &Value, session: Option<&Value>) -> SandboxInfo {
         saved,
         stops_at,
         saved_until,
+        previews: Vec::new(),
     }
+}
+
+/// The routes Vercel gives a sandbox's ports: `https://<subdomain>.vercel.run`,
+/// as the SDK's `domain(port)` makes it.
+fn previews(routes: &Value) -> Vec<Preview> {
+    let mut out: Vec<Preview> = routes
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|r| {
+            let port = u16::try_from(r["port"].as_u64()?).ok()?;
+            let sub = r["subdomain"].as_str()?;
+            let ok = !sub.is_empty() && sub.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+            ok.then(|| Preview {
+                port,
+                url: format!("https://{sub}.vercel.run"),
+            })
+        })
+        .collect();
+    // Vercel lists them in no particular order.
+    out.sort_by_key(|p| p.port);
+    out
+}
+
+/// A sandbox from a create or get response, with its routes.
+fn info_with_routes(v: &Value) -> SandboxInfo {
+    let mut i = info(&v["sandbox"], v.get("session"));
+    i.previews = previews(&v["routes"]);
+    i
 }
 
 impl SandboxProvider for Vercel {
     fn label(&self) -> &'static str {
         "Vercel"
+    }
+
+    fn shared(&self) -> std::sync::Arc<dyn SandboxProvider> {
+        std::sync::Arc::new(self.clone())
     }
 
     fn home(&self) -> &'static str {
@@ -102,9 +140,10 @@ impl SandboxProvider for Vercel {
             "keepLastSnapshots": { "count": 1, "deleteEvicted": true },
             "snapshotExpiration": SNAPSHOT_EXPIRY_MS,
             "tags": tags,
+            "ports": spec.ports,
         });
         let v = self.conn.api().post("/v3/sandboxes", &[], &body)?;
-        Ok(info(&v["sandbox"], Some(&v["session"])))
+        Ok(info_with_routes(&v))
     }
 
     fn find(&self, name: &str) -> Result<Option<SandboxInfo>, String> {
@@ -114,7 +153,7 @@ impl SandboxProvider for Vercel {
             .api()
             .get(&path, &[("projectId", &self.conn.project_id)])
         {
-            Ok(v) => Ok(Some(info(&v["sandbox"], v.get("session")))),
+            Ok(v) => Ok(Some(info_with_routes(&v))),
             Err(e) if e.status == 404 => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -127,7 +166,7 @@ impl SandboxProvider for Vercel {
             ("resume", "true"),
         ];
         let v = self.conn.api().get(&path, &query)?;
-        Ok(info(&v["sandbox"], v.get("session")))
+        Ok(info_with_routes(&v))
     }
 
     fn list(&self, key: &str, value: &str) -> Result<Vec<SandboxInfo>, String> {
@@ -240,6 +279,54 @@ impl SandboxProvider for Vercel {
         commands::wait(&self.conn.api(), session_id, command_id)
     }
 
+    /// The running session first, so it applies now, then the sandbox, so a
+    /// resume after a stop gets it too.
+    fn set_egress(&self, name: &str, session_id: &str, egress: &Egress) -> Result<(), String> {
+        let policy = policy::to_json(egress);
+        let api = self.conn.api();
+        let path = format!("/v2/sandboxes/sessions/{session_id}/network-policy");
+        api.post(&path, &[], &policy)?;
+        let query = [("projectId", self.conn.project_id.as_str())];
+        api.patch(
+            &format!("/v2/sandboxes/{name}"),
+            &query,
+            &json!({ "networkPolicy": policy }),
+        )?;
+        Ok(())
+    }
+
+    fn set_ports(&self, name: &str, ports: &[u16]) -> Result<Vec<Preview>, String> {
+        let query = [("projectId", self.conn.project_id.as_str())];
+        let v = self.conn.api().patch(
+            &format!("/v2/sandboxes/{name}"),
+            &query,
+            &json!({ "ports": ports }),
+        )?;
+        Ok(previews(&v["routes"]))
+    }
+
+    /// Only `POST` to this session's own extend and stop: any other call to
+    /// Vercel's API from the sandbox goes out without the token.
+    fn self_service(&self, session_id: &str) -> Option<SelfService> {
+        let path = |end: &str| format!("/v2/sandboxes/sessions/{session_id}/{end}");
+        let url = |end: &str| match self.conn.team_id.as_str() {
+            "" => format!("{}{}", client::API, path(end)),
+            team => format!("{}{}?teamId={team}", client::API, path(end)),
+        };
+        let inject = |end: &str| Injection {
+            domain: "api.vercel.com".to_string(),
+            headers: vec![("Authorization".to_string(), self.conn.bearer())],
+            path: Some(path(end)),
+            methods: vec!["POST".to_string()],
+            ..Injection::default()
+        };
+        Some(SelfService {
+            injections: vec![inject("extend-timeout"), inject("stop")],
+            extend_url: url("extend-timeout"),
+            stop_url: url("stop"),
+        })
+    }
+
     fn extend(&self, session_id: &str, by: Duration) -> Result<(), String> {
         let path = format!("/v2/sandboxes/sessions/{session_id}/extend-timeout");
         self.conn
@@ -256,63 +343,22 @@ impl SandboxProvider for Vercel {
 }
 
 #[cfg(test)]
+mod live_egress_tests;
+#[cfg(test)]
+mod live_events_tests;
+#[cfg(test)]
+mod live_files_tests;
+#[cfg(test)]
+mod live_keepalive_tests;
+#[cfg(test)]
+mod live_mcp_tests;
+#[cfg(test)]
+mod live_preview_tests;
+#[cfg(test)]
 mod live_tests;
+#[cfg(test)]
+mod live_tools_tests;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_listed_sandbox_reads_its_tags_and_session() {
-        let v = json!({
-            "name": "trace-abc", "status": "running", "currentSessionId": "sbx_1",
-            "createdAt": 1794139313082u64, "tags": { "trace": "session", "trace.ws": "abc" }
-        });
-        let i = info(&v, None);
-        assert!(i.is_running());
-        assert_eq!(i.session_id.as_deref(), Some("sbx_1"));
-        assert_eq!(i.labels.get("trace.ws").map(String::as_str), Some("abc"));
-    }
-
-    #[test]
-    fn a_created_sandbox_prefers_its_new_session() {
-        let i = info(
-            &json!({ "currentSessionId": "old" }),
-            Some(&json!({ "id": "new" })),
-        );
-        assert_eq!(i.session_id.as_deref(), Some("new"));
-    }
-
-    #[test]
-    fn a_running_sandbox_says_when_it_stops() {
-        let i = info(
-            &json!({ "status": "running", "currentSnapshotId": "snap_old" }),
-            Some(&json!({ "status": "running", "startedAt": 1_000u64, "timeout": 2_700_000u64 })),
-        );
-        assert_eq!(i.stops_at, Some(2_701_000));
-        assert_eq!(
-            i.saved_until, None,
-            "a running sandbox's snapshot isn't the save"
-        );
-        // A list has no session, so no stop time.
-        assert_eq!(info(&json!({ "status": "running" }), None).stops_at, None);
-    }
-
-    #[test]
-    fn a_stopped_sandbox_says_until_when_its_snapshot_is_kept() {
-        let stopped = json!({
-            "status": "stopped", "currentSnapshotId": "snap_1",
-            "statusUpdatedAt": 5_000u64, "snapshotExpiration": 604_800_000u64,
-        });
-        let i = info(
-            &stopped,
-            Some(&json!({ "status": "stopped", "timeout": 1u64 })),
-        );
-        assert!(i.saved);
-        assert_eq!(i.stops_at, None);
-        assert_eq!(i.saved_until, Some(604_805_000));
-        let unsaved = info(&json!({ "status": "stopped" }), None);
-        assert!(!unsaved.saved);
-        assert_eq!(unsaved.saved_until, None);
-    }
-}
+#[path = "info_tests.rs"]
+mod tests;

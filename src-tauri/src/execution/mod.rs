@@ -160,7 +160,7 @@ impl SessionHost {
     /// host's own [`AgentHost::capabilities`] reports.
     pub fn capabilities(&self) -> Capabilities {
         match self {
-            // The screen and the chat; hooks, tools and files can't reach trace.
+            // The screen, the chat, hooks (its event log) and Files (read remotely).
             SessionHost::Vercel { .. } => sandbox::host::CAPABILITIES,
         }
     }
@@ -205,14 +205,14 @@ mod tests {
     }
 
     #[test]
-    fn a_sandbox_session_offers_its_screen_and_the_chat() {
+    fn a_sandbox_session_offers_its_screen_chat_hooks_and_files() {
         let host = SessionHost::Vercel {
             sandbox: "trace-abc".into(),
             remote: None,
         };
         let caps = host.capabilities();
-        assert!(caps.chat);
-        assert!(!caps.transcript && !caps.files && !caps.turn_hooks);
+        assert!(caps.chat && caps.turn_hooks && caps.files && caps.agent_tools);
+        assert!(!caps.transcript && !caps.terminal && !caps.tests);
     }
 
     #[test]

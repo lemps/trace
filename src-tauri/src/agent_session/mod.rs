@@ -54,6 +54,24 @@ pub struct LaunchSpec {
     /// The workspace's picked effort and permission mode (its model is
     /// `model`, already resolved against the provider).
     pub options: AgentOptions,
+    /// trace's own tools, served over the agent's control channel, for an
+    /// agent the loopback endpoint can't reach (one in a sandbox). None: the
+    /// agent gets them through `--mcp-config` as usual, or not at all.
+    pub tools: Option<ToolsHost>,
+}
+
+/// Answers one MCP JSON-RPC message for trace's tools (`agent_tools::rpc`):
+/// the reply, or None for a notification. May wait on the user (a confirm
+/// card), so it's called off the agent's own thread.
+#[derive(Clone)]
+pub struct ToolsHost(pub std::sync::Arc<ToolsFn>);
+
+type ToolsFn = dyn Fn(&serde_json::Value) -> Option<serde_json::Value> + Send + Sync;
+
+impl std::fmt::Debug for ToolsHost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ToolsHost")
+    }
 }
 
 /// A user turn.

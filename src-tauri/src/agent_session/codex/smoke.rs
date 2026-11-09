@@ -76,6 +76,7 @@ fn a_real_codex_turn_approval_and_interrupt() {
         env: vec![],
         next_seq: 0,
         options: Default::default(),
+        tools: None,
     };
     let mut agent = CodexAdapter::launch(spec.clone(), Arc::new(Collect(Mutex::new(tx)))).unwrap();
     let say = |text: &str| UserMessage {

@@ -28,6 +28,7 @@ tokio = { version = "1", features = ["full"] }
 # Interactive PTY transport (hosts the real Claude TUI)
 portable-pty = "0.8"
 base64 = "0.22"
+sha2 = "0.10"
 
 # Loopback MCP endpoint serving trace's tools to its own agents
 tiny_http = "0.12"

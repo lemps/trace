@@ -76,6 +76,14 @@ export interface SandboxState {
   stopsAt: number | null;
   /** Epoch ms when the snapshot expires, when it says. */
   savedUntil: number | null;
+  /** Its ports' public URLs, for a dev server the agent runs. */
+  previews: SandboxPreview[];
+}
+
+/** A sandbox port reachable from outside, at a public URL. */
+export interface SandboxPreview {
+  port: number;
+  url: string;
 }
 
 /** Null when the session runs on this computer. */
@@ -86,4 +94,24 @@ export function sandboxState(workspaceId: string): Promise<SandboxState | null> 
 /** Adopt one as a local session with the same id. */
 export function joinRemoteSession(workspaceId: string): Promise<ScratchSession> {
   return invoke("join_remote_session", { workspaceId });
+}
+
+/** How long sandboxes run on their own (`execution/sandbox/lifetime.rs`). */
+export interface SandboxLifetime {
+  /** Idle this long, a sandbox stops (and saves). */
+  idleMinutes: number;
+  /** The longest one run lasts. */
+  maxHours: number;
+}
+
+export function sandboxLifetime(): Promise<SandboxLifetime> {
+  return invoke("sandbox_lifetime");
+}
+
+/** Saved within range; returns what was saved. Sessions get it from their next start. */
+export function setSandboxLifetime(
+  idleMinutes: number,
+  maxHours: number
+): Promise<SandboxLifetime> {
+  return invoke("set_sandbox_lifetime", { idleMinutes, maxHours });
 }

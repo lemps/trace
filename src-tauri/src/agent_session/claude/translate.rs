@@ -41,6 +41,26 @@ pub enum Out {
     Info(SessionInfo),
     /// A line to write to Claude's stdin.
     Reply(Value),
+    /// A message for trace's SDK MCP server, answered as a `control_response`
+    /// to `request_id` once its tool has run (`mcp_reply`).
+    Mcp {
+        request_id: String,
+        message: Value,
+    },
+}
+
+/// The SDK MCP server trace declares at `initialize` (`claude::mod`).
+pub const TOOLS_SERVER: &str = "trace";
+
+/// The `control_response` carrying an SDK MCP server's JSON-RPC reply.
+pub fn mcp_reply(request_id: &str, reply: Option<Value>) -> Value {
+    // A notification has no reply; Claude still waits on the request.
+    let reply = reply.unwrap_or_else(|| json!({ "jsonrpc": "2.0", "result": {}, "id": 0 }));
+    json!({
+        "type": "control_response",
+        "response": { "subtype": "success", "request_id": request_id,
+                      "response": { "mcp_response": reply } },
+    })
 }
 
 /// One agent's translation state: the rows still open and what they wait on.
@@ -320,8 +340,17 @@ impl Translator {
     fn control_request(&mut self, m: &Value, out: &mut Vec<Out>) {
         let request_id = str_at(m, "request_id").unwrap_or_default().to_string();
         let req = &m["request"];
+        if str_at(req, "subtype") == Some("mcp_message")
+            && str_at(req, "server_name") == Some(TOOLS_SERVER)
+        {
+            out.push(Out::Mcp {
+                request_id,
+                message: req["message"].clone(),
+            });
+            return;
+        }
         if str_at(req, "subtype") != Some("can_use_tool") {
-            // Hooks and SDK MCP servers would come this way; trace registers none.
+            // Hooks would come this way; trace registers none.
             out.push(Out::Reply(json!({
                 "type": "control_response",
                 "response": {"subtype": "error", "request_id": request_id,

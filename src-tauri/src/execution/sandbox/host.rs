@@ -3,18 +3,18 @@
 //! on the session's own thread (`session`), so the UI gets a terminal at once
 //! and watches the steps scroll by in it.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 use tauri::AppHandle;
 
-use super::{acquire, script, SandboxProvider};
+pub use super::ready::{ready, Ready};
+use super::{script, SandboxProvider};
 use crate::execution::credential::ClaudeCredential;
 use crate::execution::{AgentHost, Capabilities, HostError, LiveSession, SpawnSpec};
-use crate::github::token::{redact, Token};
+use crate::github::token::Token;
 use crate::helpers::slugify;
-use crate::repo_catalog::model::RemoteRepo;
+use crate::repo_catalog::model::{RemoteRepo, SetupConfig};
 
 /// How long a new sandbox may run. Vercel's Hobby plan stops a session at 45
 /// minutes whatever is asked; keep-alive (`session`) extends paid plans.
@@ -34,6 +34,8 @@ pub struct SandboxTarget {
     pub sandbox: String,
     pub remote: RemoteRepo,
     pub title: String,
+    /// The repo's worktree setup, run once after the clone (`setup`).
+    pub setup: SetupConfig,
 }
 
 /// What an agent in a sandbox is logged in with. Only ever sent as env.
@@ -65,15 +67,19 @@ impl<P: SandboxProvider> SandboxHost<P> {
     }
 }
 
-/// What a sandbox gives besides the screen: the chat. Its hooks and tools can't
-/// reach trace, and its files aren't on this machine.
+/// What a sandbox gives besides the screen: the chat (with trace's tools over
+/// its control channel), its hooks through the sandbox's event log (`events`),
+/// and the Files tab read through the provider.
 pub const CAPABILITIES: Capabilities = Capabilities {
-    turn_hooks: false,
+    // Through the sandbox's event log (`events`).
+    turn_hooks: true,
     transcript: false,
-    files: false,
+    // Read with git in the sandbox while it runs (`files`).
+    files: true,
     terminal: false,
     tests: false,
-    agent_tools: false,
+    // The chat's, over its control channel (`agent_session::ToolsHost`).
+    agent_tools: true,
     chat: true,
 };
 
@@ -119,149 +125,6 @@ pub fn labels(target: &SandboxTarget) -> Vec<(String, String)> {
     ]
 }
 
-/// A sandbox ready for an agent: running, its repo checked out, Claude set up.
-pub struct Ready {
-    /// The provider's id for this run of the sandbox.
-    pub session_id: String,
-    /// The repo's folder in it.
-    pub dir: String,
-    /// Made just now, so nothing has run in it yet.
-    pub fresh: bool,
-    /// What an agent in it is logged in with: Claude, and GitHub for `gh` and
-    /// pushes. Only ever passed as env.
-    pub env: HashMap<String, String>,
-    github: Option<Token>,
-}
-
-impl Ready {
-    /// Run a setup step, failing with its stderr (any token redacted).
-    pub fn run<P: SandboxProvider>(
-        &self,
-        provider: &P,
-        step: &str,
-        argv: Vec<String>,
-        env: &HashMap<String, String>,
-    ) -> Result<(), String> {
-        let out = provider.exec(&self.session_id, &argv, env)?;
-        if out.ok() {
-            return Ok(());
-        }
-        let why = crate::helpers::tail_chars(out.stderr.trim(), 400);
-        Err(redact(
-            &format!("{step} failed: {why}"),
-            self.github.as_ref(),
-        ))
-    }
-
-    /// Whether a quick check in the sandbox passes.
-    pub fn check<P: SandboxProvider>(
-        &self,
-        provider: &P,
-        argv: Vec<String>,
-    ) -> Result<bool, String> {
-        Ok(provider
-            .exec(&self.session_id, &argv, &HashMap::new())?
-            .ok())
-    }
-}
-
-/// Get the session's sandbox running with its repo checked out and Claude set
-/// up, whichever way the agent will run in it (terminal or chat). `say`
-/// reports each step.
-pub fn ready<P: SandboxProvider>(
-    provider: &P,
-    target: &SandboxTarget,
-    secrets: &Secrets,
-    say: &dyn Fn(&str),
-) -> Result<Ready, String> {
-    let github = match (&secrets.github, &secrets.pick_github) {
-        (Some(token), _) => Some(token.clone()),
-        (None, Some(prefer)) => crate::github::pick::for_repo(&target.remote, prefer).map(|c| {
-            say(&format!("GitHub account: {} ({}).", c.login, c.why));
-            c.token
-        }),
-        (None, None) => None,
-    };
-    let (session_id, how) = acquire::sandbox_session(provider, target, say)?;
-    let gh_env: HashMap<String, String> = github
-        .iter()
-        .map(|t| ("GH_TOKEN".to_string(), t.expose().to_string()))
-        .collect();
-    let mut env: HashMap<String, String> = secrets
-        .claude
-        .iter()
-        .flat_map(ClaudeCredential::env)
-        .collect();
-    env.extend(gh_env.clone());
-    let mut ready = Ready {
-        session_id,
-        dir: script::repo_dir(provider.home(), &target.remote),
-        fresh: how == acquire::Got::Created,
-        env,
-        github,
-    };
-    // A first start that failed partway (a clone refused, say) left the setup
-    // unfinished: clear what it made and do it again, rather than run Claude in
-    // a half-made checkout.
-    if !ready.fresh && !ready.check(provider, script::setup_done_argv(&ready.dir))? {
-        say("Its setup didn't finish last time, so doing it again…");
-        let clear = vec!["rm".to_string(), "-rf".to_string(), ready.dir.clone()];
-        ready.run(
-            provider,
-            "Clearing the half-made checkout",
-            clear,
-            &HashMap::new(),
-        )?;
-        ready.fresh = true;
-    }
-    if ready.fresh {
-        let (dir, none) = (&ready.dir, HashMap::new());
-        say(&format!("Cloning {}…", target.remote.full_name()));
-        let clone_env = script::clone_env(ready.github.as_ref());
-        ready.run(
-            provider,
-            "Cloning",
-            script::clone_argv(&target.remote, dir),
-            &clone_env,
-        )?;
-        let branch = session_branch(&target.workspace_id);
-        ready.run(
-            provider,
-            "Checking out the session's branch",
-            script::branch_argv(dir, &branch),
-            &none,
-        )?;
-        ready.run(
-            provider,
-            "Setting up tmux",
-            script::write_home_file_argv(".tmux.conf", script::TMUX_CONF),
-            &none,
-        )?;
-        let suffix = secrets
-            .claude
-            .as_ref()
-            .and_then(ClaudeCredential::approved_key_suffix);
-        let claude_json = script::claude_json(dir, suffix.as_deref());
-        ready.run(
-            provider,
-            "Setting up Claude",
-            script::write_home_file_argv(".claude.json", &claude_json),
-            &none,
-        )?;
-        if !gh_env.is_empty() {
-            // Best-effort: without it the agent can still work, just not push.
-            let _ = provider.exec(&ready.session_id, &script::git_identity_argv(), &gh_env);
-        }
-        ready.run(
-            provider,
-            "Finishing setup",
-            script::write_home_file_argv(script::SETUP_MARKER, "1"),
-            &none,
-        )?;
-    }
-    Ok(ready)
-}
-
 /// Get the sandbox ready and the agent running in it in tmux, for a terminal.
 /// Returns the provider's session id and the repo folder to attach in.
 pub fn prepare<P: SandboxProvider>(
@@ -271,7 +134,7 @@ pub fn prepare<P: SandboxProvider>(
     spec: &SpawnSpec,
     say: &dyn Fn(&str),
 ) -> Result<(String, String), String> {
-    let ready = ready(provider, target, secrets, say)?;
+    let ready = ready(provider, target, secrets, &spec.env, say)?;
     if !ready.check(provider, script::tmux_alive_argv())? {
         // After a stop, pick the conversation up where it was left.
         // One Claude per conversation: a chat left running on it goes first.
@@ -291,10 +154,12 @@ pub fn prepare<P: SandboxProvider>(
         } else {
             "Starting Claude…"
         });
-        let agent =
-            script::claude_argv(spec.model.as_deref(), &spec.extra_args, prompt, continuing);
-        let mut env = spec.env.clone();
-        env.extend(ready.env.clone());
+        // Its hooks write to the sandbox's event log, which trace reads (`events`).
+        let extra =
+            super::helpers::with_mcp_config(spec.extra_args.clone(), ready.mcp_config.as_deref());
+        let extra = super::helpers::with_hook_settings(extra);
+        let agent = script::claude_argv(spec.model.as_deref(), &extra, prompt, continuing);
+        let mut env = ready.agent_env(spec.env.clone());
         env.insert("TERM".to_string(), "xterm-256color".to_string());
         let argv = script::tmux_start_argv(&ready.dir, spec.cols, spec.rows, &agent);
         ready.run(provider, "Starting Claude", argv, &env)?;
