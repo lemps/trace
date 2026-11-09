@@ -105,18 +105,28 @@ fn run<P: SandboxProvider>(
     // words would land on its screen, so they're said only while it's ours.
     let ours = || still_ours(&app, &ws, run_id);
     match prepare(&*provider, &target, &secrets, &spec, &say) {
-        Ok((session_id, dir)) => match pump(&app, &*provider, &session_id, &dir, &spec, &rx) {
-            Ok(ended) => {
-                if let Some(line) = after(ended).filter(|_| ours()) {
-                    say(line);
+        Ok((session_id, dir)) => {
+            // Its turns, from the sandbox's event log, for as long as it's attached.
+            let (hook_app, hook_ws) = (app.clone(), ws.clone());
+            let on_hook: super::events::OnHook = Box::new(move |message| {
+                crate::claude::hooks::on_sandbox_hook(&hook_app, &hook_ws, message)
+            });
+            let events = super::events::follow(provider.clone(), &session_id, &ws, Some(on_hook));
+            let pumped = pump(&app, &*provider, &session_id, &dir, &spec, &rx);
+            drop(events);
+            match pumped {
+                Ok(ended) => {
+                    if let Some(line) = after(ended).filter(|_| ours()) {
+                        say(line);
+                    }
                 }
+                Err(why) if ours() => {
+                    fail(&why);
+                    say(AFTER_LOST);
+                }
+                Err(_) => {}
             }
-            Err(why) if ours() => {
-                fail(&why);
-                say(AFTER_LOST);
-            }
-            Err(_) => {}
-        },
+        }
         Err(why) if ours() => fail(&why),
         Err(_) => {}
     }

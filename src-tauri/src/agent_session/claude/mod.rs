@@ -18,6 +18,8 @@ pub mod translate;
 #[cfg(test)]
 mod run_tests;
 #[cfg(test)]
+mod sdk_mcp_smoke;
+#[cfg(test)]
 mod smoke;
 #[cfg(test)]
 mod tests;
@@ -53,6 +55,19 @@ enum Cmd {
     Stop,
     /// Let go and leave it running (a remote agent).
     Detach,
+    /// A tool of trace's ran: its `control_response`, to write to Claude.
+    McpReply(serde_json::Value),
+}
+
+/// Declares trace's tools as an SDK MCP server, which Claude then reaches
+/// through `mcp_message` control requests: written first to a Claude this run
+/// started, as the Agent SDK does.
+fn initialize() -> serde_json::Value {
+    serde_json::json!({
+        "type": "control_request",
+        "request_id": "trace-initialize",
+        "request": { "subtype": "initialize", "sdkMcpServers": [translate::TOOLS_SERVER] },
+    })
 }
 
 /// Said in the chat when it's left running.
@@ -82,7 +97,8 @@ impl ClaudeAdapter {
         let mut translator = Translator::new(spec.next_seq, book::now_ms);
         translator.seed_options(&spec.options);
         let process = spawned.process;
-        std::thread::spawn(move || run(rx, process, translator, sink, 0));
+        let (tools, back) = (spec.tools.clone(), tx.clone());
+        std::thread::spawn(move || run(rx, process, translator, sink, 0, tools, back));
         Ok(Self {
             tx,
             pid,
@@ -116,7 +132,10 @@ impl ClaudeAdapter {
                 env: spec.env.clone(),
             };
             match open(launch, &say) {
-                Ok(spawned) => {
+                Ok(mut spawned) => {
+                    if spec.tools.is_some() && spawned.started {
+                        spawned.process.write_line(&initialize().to_string());
+                    }
                     if let Some(text) = spawned.first_prompt {
                         let first = UserMessage {
                             text,
@@ -126,7 +145,16 @@ impl ClaudeAdapter {
                     }
                     pump(spawned.stdout, spawned.stderr, &out_tx);
                     let base = spawned.already_read;
-                    run(rx, spawned.process, tr.into_inner(), sink, base);
+                    let tools = spec.tools.clone();
+                    run(
+                        rx,
+                        spawned.process,
+                        tr.into_inner(),
+                        sink,
+                        base,
+                        tools,
+                        out_tx,
+                    );
                 }
                 Err(why) => {
                     let mut tr = tr.into_inner();
@@ -234,6 +262,9 @@ fn run(
     sink: Arc<dyn JournalSink>,
     // Stdout already read before this run (a rejoin), so offsets stay absolute.
     already_read: u64,
+    tools: Option<crate::agent_session::ToolsHost>,
+    // Back into this loop, for a tool's reply.
+    back: Sender<Cmd>,
 ) {
     let mut stopping = false;
     // Bytes of stdout turned into rows, for a rejoin to skip.
@@ -270,6 +301,10 @@ fn run(
                     process.close_stdin();
                     process.kill();
                 }
+                continue;
+            }
+            Cmd::McpReply(reply) => {
+                process.write_line(&reply.to_string());
                 continue;
             }
             Cmd::Stderr(line) => {
@@ -320,7 +355,23 @@ fn run(
             }
         };
         for out in outs {
-            deliver(out, sink.as_ref(), process.as_mut(), &mut paced);
+            match (out, &tools) {
+                // A tool can wait on the user: run it off this thread.
+                (
+                    Out::Mcp {
+                        request_id,
+                        message,
+                    },
+                    Some(tools),
+                ) => {
+                    let (tools, back) = (tools.clone(), back.clone());
+                    std::thread::spawn(move || {
+                        let reply = translate::mcp_reply(&request_id, (tools.0)(&message));
+                        let _ = back.send(Cmd::McpReply(reply));
+                    });
+                }
+                (out, _) => deliver(out, sink.as_ref(), process.as_mut(), &mut paced),
+            }
         }
     }
 }

@@ -59,6 +59,9 @@ pub struct Spawned {
     /// What to send it first, chosen by the host (which alone knows whether it
     /// rejoined, resumed or started fresh).
     pub first_prompt: Option<String>,
+    /// This run started the process, rather than rejoining one left running:
+    /// it hasn't been told anything yet (an `initialize`, say).
+    pub started: bool,
 }
 
 /// What a remote host needs to start a chat agent: the agent's arguments
@@ -110,6 +113,7 @@ impl LocalProcess {
             stderr: stderr.map(|s| Box::new(s) as Box<dyn Read + Send>),
             already_read: 0,
             first_prompt: None,
+            started: true,
         })
     }
 }

@@ -24,6 +24,7 @@ pub async fn browser_open(
     new_tab: bool,
     by: Opener,
 ) -> Result<Opened, String> {
+    let url = crate::commands::sandbox_preview::for_workspace(&workspace_id, url).await;
     browser::open(&app, &workspace_id, &url, title.as_deref(), new_tab, by)
 }
 
@@ -35,6 +36,7 @@ pub async fn browser_go(
     page_id: String,
     url: String,
 ) -> Result<BrowserPage, String> {
+    let url = crate::commands::sandbox_preview::for_workspace(&workspace_id, url).await;
     browser::go(&app, &workspace_id, &page_id, &url)
 }
 

@@ -39,6 +39,17 @@
   line-height: 1.5;
   color: var(--fg-2);
 }
+/* A preview's host shrinks before its open button does. */
+.sandbox-preview .v {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sandbox-preview .btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 /* Archived sessions — collapsible recycle bin */
 .archive-bin {
   margin-top: 22px;

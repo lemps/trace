@@ -10,9 +10,17 @@
 mod acquire;
 pub mod chat;
 mod chat_offsets;
+pub mod egress;
+pub mod events;
+pub mod files;
+pub mod helpers;
 pub mod host;
+pub mod preview;
+pub mod prs;
+mod ready;
 pub mod script;
 pub mod session;
+mod setup;
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -29,6 +37,32 @@ pub struct SandboxSpec {
     pub labels: Vec<(String, String)>,
     /// How long it may run before the provider stops it.
     pub timeout: Duration,
+    /// Ports a server in it can be reached on from outside (`Preview`).
+    pub ports: Vec<u16>,
+}
+
+/// Ports a sandbox is made with, for the dev servers agents usually start
+/// (Next and most Node servers, Vite, everything else). Each gets a public URL.
+pub const PREVIEW_PORTS: [u16; 3] = [3000, 5173, 8080];
+
+/// What lets a sandbox keep itself running while its agent works and stop
+/// itself once idle: the provider's API, for its own session alone.
+#[derive(Debug, Clone)]
+pub struct SelfService {
+    /// The token, added by the network for exactly these calls.
+    pub injections: Vec<egress::Injection>,
+    /// POST `{"duration": ms}` for more time.
+    pub extend_url: String,
+    /// POST to stop, which saves it.
+    pub stop_url: String,
+}
+
+/// A sandbox port reachable from outside, at a public URL.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Preview {
+    pub port: u16,
+    pub url: String,
 }
 
 /// A sandbox as a provider reports it.
@@ -52,6 +86,8 @@ pub struct SandboxInfo {
     pub stops_at: Option<u64>,
     /// Epoch ms when its snapshot expires, if it has one and the provider says.
     pub saved_until: Option<u64>,
+    /// Its ports' public URLs, when the provider says (a get does; a list doesn't).
+    pub previews: Vec<Preview>,
 }
 
 impl SandboxInfo {
@@ -156,6 +192,21 @@ pub trait SandboxProvider: Send + Sync + 'static {
     fn command_done(&self, session_id: &str, command_id: &str) -> Result<bool, String>;
     /// Wait for it to end: its exit code, when the provider knows it.
     fn wait_command(&self, session_id: &str, command_id: &str) -> Result<Option<i32>, String>;
+    /// Have the sandbox's network add these credentials to its outgoing
+    /// requests, for this run and every later one (`egress`). Err when the
+    /// provider or the plan can't, and the caller falls back to env.
+    fn set_egress(
+        &self,
+        name: &str,
+        session_id: &str,
+        egress: &egress::Egress,
+    ) -> Result<(), String>;
+    /// Expose exactly these ports (`Preview`), on the running session and
+    /// every later one: for a sandbox made before it had them.
+    fn set_ports(&self, name: &str, ports: &[u16]) -> Result<Vec<Preview>, String>;
+    /// How a sandbox calls the provider about itself (`helpers`'
+    /// `trace-keepalive`), with nothing of trace's running: None when it can't.
+    fn self_service(&self, session_id: &str) -> Option<SelfService>;
     /// Ask for more time, within the plan's limit.
     fn extend(&self, session_id: &str, by: Duration) -> Result<(), String>;
     fn stop(&self, session_id: &str) -> Result<(), String>;

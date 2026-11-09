@@ -76,6 +76,14 @@ export interface SandboxState {
   stopsAt: number | null;
   /** Epoch ms when the snapshot expires, when it says. */
   savedUntil: number | null;
+  /** Its ports' public URLs, for a dev server the agent runs. */
+  previews: SandboxPreview[];
+}
+
+/** A sandbox port reachable from outside, at a public URL. */
+export interface SandboxPreview {
+  port: number;
+  url: string;
 }
 
 /** Null when the session runs on this computer. */

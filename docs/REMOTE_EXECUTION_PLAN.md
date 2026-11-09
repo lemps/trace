@@ -105,9 +105,8 @@ trait SandboxProvider {
 
 1. **Create** from an image that already has `git`, `tmux` and `claude` (Vercel's default one
    does), or from a snapshot, so a start doesn't spend minutes installing.
-2. **Check out** the repo the way `github::checkout::RepoCheckout` does: clone at a branch with
-   trace's GitHub token passed only in the clone's env (`GIT_CONFIG_*` extraHeader), then run the
-   repo's setup commands.
+2. **Check out** the repo: clone at a branch, logged in by the network policy (or, without one,
+   with trace's GitHub token only in the clone's env), then run the repo's setup commands.
 3. **Run the agent in tmux:** `tmux new-session -d -s trace-<ws> claude …`, with
    `window-size latest` so whoever typed last sets the size (by default tmux shrinks everyone to
    the smallest client).
@@ -126,17 +125,25 @@ trait SandboxProvider {
 
 | Choice | How it reaches the agent | Notes |
 | --- | --- | --- |
-| **OAuth token** (default) | `CLAUDE_CODE_OAUTH_TOKEN` env at spawn | From `claude setup-token`. Uses the subscription. |
-| API key | `ANTHROPIC_API_KEY` env at spawn | Billed per token. |
+| **OAuth token** (default) | The sandbox's network policy; a placeholder `CLAUDE_CODE_OAUTH_TOKEN` in env | From `claude setup-token`. Uses the subscription. |
+| API key | The network policy (`x-api-key`); a placeholder `ANTHROPIC_API_KEY` in env | Billed per token. |
 | `/login` in the session | Typed by the user in the shared tmux | Stays in that sandbox only, so it's gone with it unless snapshotted. |
 
 - Stored Rust-side in a `0600` file like Jira's. It never crosses to the renderer and is never put
   in labels, args, logs or the manifest.
-- **What to warn the user about:** anything in the sandbox's env can be read by anyone with access
-  to the provider team, and by the agent itself. Settings says so where the token is entered.
-- Model providers (Moonshot, Wafer, DeepSeek) already work through env from
-  `launch::claude_wiring`, so they work in a sandbox the same way. Their keys go only to sandboxes
-  the user picked.
+- **No secret enters the sandbox** (`sandbox/egress.rs`). Vercel's firewall runs outside the
+  microVM and sets headers on matching HTTPS requests, overwriting what the code inside sent, so
+  each start (made, resumed or joined) puts the logins in the sandbox's network policy: GitHub
+  for `github.com` (git's Basic header) and `api.github.com`/`uploads.github.com` (Bearer), Claude
+  for `api.anthropic.com` (`Authorization` or `x-api-key`), and a model provider's key for its
+  endpoint's host. The agent's env holds placeholders, so `gh` and `claude` send a header for the
+  firewall to replace. Vercel keeps the policy for later sessions and only ever reports header
+  names back. Tried live on Hobby (`vercel_live_egress`): a private clone with no token, `gh`,
+  `git push`, `claude -p`, and the policy kept across stop and resume, with no secret in
+  `/proc/*/environ` or any config file. If the policy can't be set, the secrets go in the env as
+  before and the session says so.
+- The agent can still *use* those logins while it runs, as with any agent. What changes is that
+  it can't read, print or carry them off, and neither can anyone else with access to the team.
 
 ## Host 1: a peer trace over Tailscale
 
@@ -220,14 +227,37 @@ sandbox (spike 0.1, 2026-11-08, Hobby plan).
 - **GitHub account per repo:** trace can hold several GitHub accounts (`github::accounts`);
   `github::pick` chooses one for a sandbox: Settings → Repositories, the SSH alias
   (`github.com-<login>`), the owner, else whichever can push.
+- **The repo's setup runs in the sandbox** (`sandbox/setup.rs`): its commands, after the clone,
+  in a login shell with the agent's env (so a private package install is logged in through the
+  network). Files the setup copies from the main checkout (a `.env`) stay on this machine, and
+  the session says so.
+- **The sandbox's event log** (`sandbox/helpers.rs`, `sandbox/events.rs`): every start writes
+  two helpers into `~/.local/bin`, first on the image's PATH. `trace-hook` appends each hook
+  event to `~/.trace/events.log` as `<seq> <event> <base64 input>`, the message
+  `claude::hooks` takes from the render bridge locally; a terminal agent's `--settings` points
+  its hooks there. A `gh` shim logs the URL `gh pr create` prints as a `pr` event. While a
+  session is attached trace tails the log from the last `seq` it read
+  (`sandbox-event-offsets.json`): of what it missed it records every PR and passes on only the
+  newest turn event (where the agent stands now), then each event as it comes. PRs reported
+  this way (`sandbox-prs.json`) come before the branch's in the Pull request tab, so one from a
+  branch the agent named is found.
+- **Files** (`sandbox/files.rs`, `commands/sandbox_files.rs`): the change list, a file's diff,
+  its text and the file list are read with git in the running sandbox, one command each, in
+  the shapes the local readers give. A stopped sandbox has none to show.
+- **trace's tools in a sandbox chat** (`agent_session::ToolsHost`): the chat's Claude is told,
+  with an `initialize` control request as the Agent SDK sends, that `trace` is an SDK MCP
+  server, and then sends each MCP message as an `mcp_message` control request. trace answers it
+  with `agent_tools::rpc` and the renderer's tools, as the loopback endpoint does, off the
+  agent's thread (a tool can wait on a confirm card), and writes the reply as a
+  `control_response`. No port, no token, nothing on a command line. Tried with a real `claude`
+  here (`sdk_mcp_smoke`) and in a sandbox (`vercel_live_tools`, Claude Code 2.1.317).
+- **Previews** (`sandbox/preview.rs`, `SandboxPreviews`): each preview port has a public URL
+  for as long as the sandbox runs, so Details says they're public.
 - **What a Vercel session can't do:**
-  - Claude Code's hooks can't reach the render bridge, so a terminal's turns fall back to the
-    quiet timer (`board/waitingNotify.ts`). The chat doesn't need them.
-  - The loopback MCP agent tools aren't reachable.
-  - No Files, Transcript, Tests or Terminal tabs, and no extra agents (`Capabilities`).
-    The Pull request tab works: PRs are found by the session's branch
-    (`workspace/<slug>`) on GitHub (`gh pr list --repo --head`), so one the agent raises
-    from a branch it named itself isn't found.
+  - A terminal agent doesn't get trace's tools (only the chat has a control channel).
+  - A tool call made while no trace is attached waits until one is, and one that was pending
+    when the chat was disconnected isn't answered on rejoin.
+  - No Transcript, Tests or Terminal tabs, and no extra agents (`Capabilities`).
   - A permission prompt raised just before a chat is disconnected may not show on rejoin.
   - The chat needs a Claude login saved for sandboxes: with none, `/login` has nowhere to
     go, so a session made without one stays a terminal ("Open as chat" says why).
@@ -310,12 +340,107 @@ The roadmap's iPhone and Android apps aren't planned yet, but this work shouldn'
       (`vercel_live` in `execution/vercel/live_tests.rs`, with a cleanup guard).
 - [ ] Scheduled prompts on Vercel (see below), and the phone (Phase 4).
 
-### Phase 3: Richer remote sessions
+### Phase 3: Richer remote sessions (on a par with Conductor)
 
+Conductor's cloud workspaces run on Vercel Sandbox too (its runner only accepts `vercel`), so
+what it does on top of the platform is a fair bar. Read from its runner (v22, 2026-11-04):
+
+- **No secret in the VM.** `git`/`gh`/`git-askpass` wrappers fetch a short-lived GitHub token
+  per call from a `0600` Unix-socket broker and report a refused one by its hash; shells have
+  the Anthropic/OpenAI keys stripped.
+- **A checkpoint at each turn's start and end**: the whole working tree, untracked files
+  included, as a private ref through a temporary `GIT_INDEX_FILE`, never moving HEAD or touching
+  files. The turn's diff goes in the event stream; rewind forks the conversation
+  (`--resume-session-at`) and restores the checkpoint.
+- **Prepared VMs:** an install script baked into a snapshot, a setup script per repo, pinned
+  `claude`/`codex`/`gh` versions, and a fingerprint that decides when to rebuild.
+- **A durable outbox** of numbered events that survives the app being closed, the `gh` wrapper
+  linking a PR by the URL `gh pr create` printed, its own tools served in-process over the
+  agent's control channel, idle sleep after 5 min, port forwarding and previews, and moving a
+  cloud workspace's work to the Mac ("Spotlight").
+
+trace gets the same outcomes **without a backend**: the sandbox's network policy holds the
+tokens, files under `~/.trace/` in the sandbox are the outbox (read from an offset, like
+`chat_offsets`), and snapshots are the build cache. Each step ends by turning on a flag in
+`sandbox::host::CAPABILITIES`.
+
+- [x] **A. Secrets out of the VM.** Vercel's firewall injects headers outside the microVM
+      (`POST /v2/sandboxes/sessions/{id}/network-policy`, a `transform` per domain): GitHub
+      (`github.com` Basic for git, `api.github.com` Bearer for `gh`), Anthropic (`Authorization`
+      or `x-api-key`) and each model provider. The env holds only placeholders. Applied on every
+      create and resume; without injection on the plan, the old env path stays and the Vercel
+      checklist says so. Optional per-repo deny-all allowlist.
+- [~] **B. Checkpoints and Files.** *Files on Vercel: done.* Next, `trace-checkpoint` (ours,
+      same technique) under `refs/trace-checkpoints/`, at each turn's start and end, locally and
+      in a sandbox; a `PreToolUse` wait for the start one; "Changed in this turn" in the chat;
+      then undo a turn.
+- [~] **C. Prepared sandboxes.** *The repo's setup in the sandbox: done.* Next, a base snapshot
+      per repo (clone, setup, pinned Claude, trace's helpers, `~/.trace/manifest.json`), rebuilt
+      in the background when its fingerprint changes; a failed build keeps the old one.
+- [x] **D. The event log.** `~/.trace/events.log` with a monotonic `seq`: Claude's hooks and the
+      PRs `gh pr create` opens. trace tails it from its last `seq` on attach and passes turns to
+      `claude::hooks`, so a terminal on Vercel gets real turns, and what happened while trace
+      was closed is caught up on. Tried live: a real Claude's `Stop` hook arrives, a backlog
+      gives only its newest turn and every PR, a rejoin replays nothing.
+- [~] **E. Tools in the sandbox.** *trace's tools for a chat: done*, as an SDK MCP server over
+      its control channel (`mcp_message`), the way Conductor serves its own. Next, the team's
+      own MCP servers (below).
+- [x] **F. Lifetime unattended.** `trace-keepalive` runs in the sandbox (`sandbox/helpers/`),
+      started on every start, one at a time. Every minute: *working* is a terminal attached,
+      trace's heartbeat (the log follower touches `~/.trace/attached` every 2 min), or Claude
+      mid-turn or with background tasks (from the event log; chats get the hooks too). While
+      working it extends the session every 10 min; idle 5 min, it stops it (Vercel saves it,
+      Start resumes); a run lasts at most 6 h. Its calls carry no token: the network adds the
+      Vercel token only for `POST` to this session's own `extend-timeout` and `stop`
+      (`SandboxProvider::self_service`). Tried live: its extend gets 200, any other Vercel call
+      403; it extends while watched and stops once idle. On Hobby the extends fail past 45
+      minutes (Vercel's ceiling), so it matters on Pro, where a session runs up to 24 h.
+      Before this, a chat never extended its sandbox at all.
+- [x] **G. Previews.** Sandboxes are made with ports 3000, 5173 and 8080 (an older one gets
+      them on its next start); each has a public `https://<sub>.vercel.run` URL, listed in
+      Details with a button to open it in the Browser tab. `localhost:<port>` in a sandbox
+      session's Browser tab, from the agent's `open_browser` or the address bar, opens the
+      port's preview (`sandbox/preview.rs`). Tried live: a server bound to `0.0.0.0` and one
+      bound only to `127.0.0.1` both answer at their preview, and a port added to a running
+      sandbox gets a route.
+- [ ] **H. Continue locally / send to cloud.** Checkpoint, patch or pushed ref plus the
+      conversation JSONL, then `--resume` on the other side.
+- [ ] **I. Breadth.** Codex, Transcript from the sandbox's JSONL, Terminal as a second tmux
+      window, Tests through `exec`, attachments into `.context/`.
 - [ ] Peer: Files/diff, Transcript and Tests over the protocol.
-- [ ] Sandbox: the Terminal tab as a second tmux window, turn hooks (e.g. `trace-hook` writing
-      events into the session where trace can read them), Files/diff through `exec git diff`.
 - [ ] A second sandbox provider, to prove the port.
+
+### The team's MCP servers in a sandbox (E, next)
+
+What the team uses (Sentry, Metabase prod and stage, Atlassian, Pylon, hq-tools prod and stage,
+Brandfetch) is all **HTTP with OAuth**: no static headers in anyone's config, the tokens in each
+person's Claude Code keychain. All publish standard MCP OAuth metadata with PKCE; five take
+dynamic client registration, hq-tools takes a Client ID Metadata Document instead. A sandbox's
+Claude doesn't get claude.ai connectors with a `setup-token` login (tried: `claude mcp list` is
+empty), so trace has to bring them. Conductor does it with a backend that holds each OAuth
+token and a proxy URL per server, with a Conductor bearer on Claude's command line.
+
+trace, without a backend:
+
+1. **Which servers:** the HTTP ones in the user's Claude config (user scope, the repo's project
+   scope) and the repo's `.mcp.json`: names and URLs only. stdio servers (Figma, Blender) stay
+   local.
+2. **Connect once per person:** Integrations → MCP servers, a Connect per server. trace runs the
+   OAuth itself (resource and server metadata, registration or its own client metadata
+   document hosted on trace's site, PKCE in the browser, a loopback redirect) and keeps the
+   tokens Rust-side in a `0600` file. Never Claude Code's own tokens: refreshing those could
+   rotate them out from under the local CLI.
+3. **In a sandbox:** `--mcp-config` lists the servers by URL alone; the network policy adds
+   `Authorization: Bearer <access token>` per host and path. Terminal and chat alike, nothing in
+   the VM or on a command line, and Vercel only reports header names back.
+4. **Refresh:** trace refreshes before expiry while it's open and re-sends the policy to running
+   sandboxes, and on every start. With trace closed, a long run's MCP access lasts until its
+   access token expires (often an hour); a small relay holding the refresh tokens would lift
+   that, and is the same relay the phone needs.
+
+**Not copied:** a backend and its multi-user grants, the Agent SDK running in the VM (trace
+drives stream-json from the desktop, one implementation for both hosts), VNC/SSH, cgroup
+watchdogs, other harnesses.
 
 ### Later: scheduled prompts on Vercel
 

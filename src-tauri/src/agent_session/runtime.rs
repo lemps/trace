@@ -232,15 +232,25 @@ fn launch(
         store::append(&path, &row)?;
     }
     let model = wiring.model.clone();
+    // A remote Claude chat reaches trace's tools over its control channel
+    // instead of the loopback endpoint, allowed as they are locally.
+    let mut extra_args = wiring.extra_args;
+    let tools = (req.remote.is_some() && req.cli == "claude").then(|| {
+        let allow =
+            serde_json::json!({ "permissions": { "allow": [crate::agent_tools::ALLOW_RULE] } });
+        extra_args.extend(["--settings".to_string(), allow.to_string()]);
+        tools_host(app, &req.workspace_id)
+    });
     let spec = LaunchSpec {
         workspace_id: req.workspace_id.clone(),
         cwd: PathBuf::from(&req.cwd),
         model: wiring.model,
         resume: resume.clone(),
-        extra_args: wiring.extra_args,
+        extra_args,
         env: wiring.env.into_iter().collect(),
         next_seq: store::next_seq(&rows),
         options: options.clone(),
+        tools,
     };
     let sink = Arc::new(Sink {
         app: app.clone(),
@@ -263,6 +273,18 @@ fn launch(
         ..SessionInfo::default()
     });
     Ok(adapter)
+}
+
+/// trace's tools for `workspace_id`'s agent, answered as the loopback endpoint
+/// answers them (`agent_tools::server`), with the agent as the caller.
+fn tools_host(app: &AppHandle, workspace_id: &str) -> super::ToolsHost {
+    let (app, caller) = (app.clone(), workspace_id.to_string());
+    super::ToolsHost(Arc::new(move |message| {
+        let tools = crate::agent_tools::defs(&app);
+        crate::agent_tools::rpc::handle(message, &tools, |name, args| {
+            crate::agent_tools::call(&app, name, &args, &caller)
+        })
+    }))
 }
 
 /// Send a user turn to a running agent.

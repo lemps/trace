@@ -5,7 +5,7 @@
 use serde::Serialize;
 
 use crate::commands::session::owning_session;
-use crate::execution::sandbox::{SandboxInfo, SandboxProvider};
+use crate::execution::sandbox::{Preview, SandboxInfo, SandboxProvider};
 use crate::execution::vercel::{auth, Vercel};
 use crate::execution::SessionHost;
 
@@ -22,6 +22,8 @@ pub struct SandboxState {
     stops_at: Option<u64>,
     /// Epoch ms when the snapshot expires, if it says.
     saved_until: Option<u64>,
+    /// Its ports' public URLs, for a dev server the agent runs.
+    previews: Vec<Preview>,
 }
 
 fn state_of(found: Option<SandboxInfo>) -> SandboxState {
@@ -31,12 +33,14 @@ fn state_of(found: Option<SandboxInfo>) -> SandboxState {
             saved: info.saved,
             stops_at: info.stops_at,
             saved_until: info.saved_until,
+            previews: info.previews,
         },
         None => SandboxState {
             status: String::new(),
             saved: false,
             stops_at: None,
             saved_until: None,
+            previews: Vec::new(),
         },
     }
 }

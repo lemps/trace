@@ -4,8 +4,10 @@
 //! run `/login` inside the session.
 //!
 //! Kept in a user-only (`0600`) file like the tracker credentials. The secret
-//! reaches a sandbox only as an environment variable at spawn: never the
-//! renderer, a log, a label or a command line.
+//! goes into the sandbox's network policy (`sandbox::egress`), which adds it to
+//! requests outside the VM; only when that can't be set does it reach the
+//! sandbox as an environment variable. Never the renderer, a log, a label or a
+//! command line.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -68,6 +70,12 @@ impl ClaudeCredential {
             kind,
             secret: secret.to_string(),
         })
+    }
+
+    /// The secret itself, for the one header that carries it (a sandbox
+    /// network's injection, `sandbox::egress`) and nothing else.
+    pub fn secret(&self) -> &str {
+        &self.secret
     }
 
     /// The environment that logs an agent in.

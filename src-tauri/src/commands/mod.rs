@@ -29,6 +29,8 @@ pub mod recording;
 pub mod repo_guard;
 pub mod repo_setup;
 pub mod repos;
+pub mod sandbox_files;
+pub mod sandbox_preview;
 pub mod sandbox_state;
 pub mod saved_prompts;
 pub mod schedules;

@@ -24,6 +24,9 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       *Started:* Vercel sessions, terminal or chat, that survive a quit and resume after a stop
       ([remote execution](REMOTE_EXECUTION_PLAN.md)), with a readiness checklist, sandbox state and a
       PR tab ([#71](https://github.com/noble1911/trace/pull/71)); another trace over Tailscale is next.
+      *Next:* on a par with Conductor's cloud workspaces (Phase 3 of the plan): no token in the
+      sandbox (firewall-injected), the repo's setup and prepared snapshots, per-turn checkpoints
+      and Files, real turns and PR links from an event log, agent tools, previews.
 - [ ] **iPhone and Android apps.** Not planned yet; they'd speak the remote-execution peer protocol.
 - [x] **Rebindable shortcuts:** Settings → Shortcuts lists every shortcut in this OS's keys and
       rebinds them, refusing keys a terminal or the system needs and ones already taken.

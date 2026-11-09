@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/app/toast";
+import { useCapabilities } from "@/domains/agent/capabilities";
 import { useHasExited } from "@/domains/agent/exitedStore";
 import { useWorkspaceInfo } from "@/domains/agent/hooks/useWorkspaceInfo";
 import { agentLabel } from "@/domains/agent/providerLabel";
@@ -91,8 +92,9 @@ export function SessionDetail({
   const waiting = agentActivity[active.workspaceId] === "waiting";
   const plan = usePlanTab(active.workspaceId);
   const viewers = useViewerTabs(active.workspaceId);
-  // A plain folder has no git, and a remote host (Vercel) no local folder: nothing for Files.
-  const hasFiles = !session.folder && !session.host;
+  // A plain folder has no git; a remote host has Files only if it can read its checkout.
+  const caps = useCapabilities(session.id);
+  const hasFiles = !session.folder && (!session.host || caps?.files === true);
   const filesOn = useTabSettings((s) => isTabOn(s.off, "files"));
   const workspace = useWorkspaceTabs(session.id, hasFiles && filesOn);
   const tests = useTestsTab(session.id);
@@ -117,6 +119,7 @@ export function SessionDetail({
       prUrls,
       onAddAgent: (cli, provider) => onAddAgent(cli, provider),
       addBlocked: addAgentBlocker(session, MAX_COMPANIONS),
+      hostFiles: caps?.files === true,
     })
   );
   const owners = useMemo(

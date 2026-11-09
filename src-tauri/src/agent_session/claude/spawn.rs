@@ -103,6 +103,7 @@ mod tests {
             env: vec![],
             next_seq: 0,
             options,
+            tools: None,
         }
     }
 

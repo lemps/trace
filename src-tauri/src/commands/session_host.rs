@@ -35,11 +35,21 @@ fn sandbox_host(session: &ScratchSession, host: &SessionHost) -> Result<Host, St
                 .as_deref()
                 .and_then(github_remote)
                 .ok_or("This session doesn't say which GitHub repository to check out.")?;
+            // The repo's setup, found by its local checkout or else its remote.
+            let catalog = crate::repo_catalog::store::load();
+            let setup = session
+                .repo
+                .as_deref()
+                .and_then(|path| catalog.for_path(path))
+                .or_else(|| catalog.for_remote(&remote))
+                .map(|r| r.setup.clone())
+                .unwrap_or_default();
             let target = SandboxTarget {
                 workspace_id: session.id.clone(),
                 sandbox: sandbox.clone(),
                 remote,
                 title: session.title.clone(),
+                setup,
             };
             let secrets = Secrets {
                 github: None,
@@ -74,6 +84,8 @@ pub(crate) fn forget_remote(session: &ScratchSession) {
     let Some(SessionHost::Vercel { sandbox, .. }) = session.host.clone() else {
         return;
     };
+    crate::execution::sandbox::prs::forget(&session.id);
+    crate::execution::sandbox::events::forget(&session.id);
     let Some(conn) = auth::load() else {
         return;
     };
@@ -132,7 +144,14 @@ pub(crate) fn remote_prs(workspace_id: &str) -> Option<Vec<String>> {
     let SessionHost::Vercel { remote, .. } = session.host.as_ref()?;
     let remote = remote.as_deref().and_then(github_remote)?;
     let branch = crate::execution::sandbox::host::session_branch(&session.id);
-    Some(crate::github::links::repo_branch_prs(&remote, &branch))
+    // The ones its `gh` reported opening, then its branch's on GitHub.
+    let mut prs = crate::execution::sandbox::prs::of(&session.id);
+    for url in crate::github::links::repo_branch_prs(&remote, &branch) {
+        if !prs.contains(&url) {
+            prs.push(url);
+        }
+    }
+    Some(prs)
 }
 
 /// `owner/name` as a GitHub repo.

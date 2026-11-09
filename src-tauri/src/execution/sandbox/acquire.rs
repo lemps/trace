@@ -3,7 +3,7 @@
 //! depends on which it was.
 
 use super::host::{labels, SandboxTarget, SANDBOX_TIMEOUT};
-use super::{SandboxInfo, SandboxProvider, SandboxSpec};
+use super::{SandboxInfo, SandboxProvider, SandboxSpec, PREVIEW_PORTS};
 
 /// How the session's sandbox was got.
 #[derive(Debug, PartialEq, Eq)]
@@ -27,15 +27,22 @@ pub(super) fn sandbox_session<P: SandboxProvider>(
     if let Some(info) = &existing {
         if let (true, Some(id)) = (info.is_running(), info.session_id.clone()) {
             say(&format!("Joining its {} sandbox…", provider.label()));
+            with_previews(provider, target, info);
             return Ok((id, Got::Joined));
         }
         if info.persistent {
             say(&format!("Resuming its {} sandbox…", provider.label()));
             match provider.resume(&target.sandbox) {
-                Ok(SandboxInfo {
-                    session_id: Some(id),
-                    ..
-                }) => return Ok((id, Got::Resumed)),
+                Ok(
+                    resumed @ SandboxInfo {
+                        session_id: Some(_),
+                        ..
+                    },
+                ) => {
+                    with_previews(provider, target, &resumed);
+                    let id = resumed.session_id.unwrap_or_default();
+                    return Ok((id, Got::Resumed));
+                }
                 // Its snapshot expired, or it can't be resumed: start over.
                 Ok(_) | Err(_) => say("Couldn't resume it, so starting a new one."),
             }
@@ -48,11 +55,20 @@ pub(super) fn sandbox_session<P: SandboxProvider>(
         name: target.sandbox.clone(),
         labels: labels(target),
         timeout: SANDBOX_TIMEOUT,
+        ports: PREVIEW_PORTS.to_vec(),
     })?;
     let id = info
         .session_id
         .ok_or("The sandbox started without a session.")?;
     Ok((id, Got::Created))
+}
+
+/// A sandbox made before it had preview ports gets them. Best-effort: the
+/// session works without.
+fn with_previews<P: SandboxProvider>(provider: &P, target: &SandboxTarget, info: &SandboxInfo) {
+    if info.previews.is_empty() {
+        let _ = provider.set_ports(&target.sandbox, &PREVIEW_PORTS);
+    }
 }
 
 /// How long to wait for a sandbox mid-change (saving after a stop, starting).

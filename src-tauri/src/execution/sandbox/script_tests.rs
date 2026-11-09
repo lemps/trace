@@ -107,3 +107,13 @@ fn a_restarted_session_continues_its_conversation() {
     assert_eq!(argv, ["claude", "--continue"]);
     assert!(!claude_argv(None, &[], None, false).contains(&"--continue".to_string()));
 }
+
+#[test]
+fn a_setup_line_runs_in_the_checkout_as_an_argument() {
+    let argv = setup_argv("/vercel/trace", "npm ci && echo 'done'");
+    assert_eq!(argv[..2], ["bash", "-c"]);
+    // The line is passed, never spliced into the script, so its quotes are safe.
+    assert!(!argv[2].contains("npm"));
+    assert!(argv[2].contains(r#"bash -lc "$2""#));
+    assert_eq!(&argv[4..], ["/vercel/trace", "npm ci && echo 'done'"]);
+}

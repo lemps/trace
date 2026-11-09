@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use crate::execution::sandbox::ExecOutput;
 
-const API: &str = "https://api.vercel.com";
+pub(crate) const API: &str = "https://api.vercel.com";
 
 /// A failed call: the HTTP status (0 when nothing came back) and Vercel's message.
 #[derive(Debug)]
@@ -122,6 +122,18 @@ impl Api {
         body: &Value,
     ) -> Result<Value, ApiError> {
         send(self.request(reqwest::Method::POST, path, query)?.json(body))
+    }
+
+    pub fn patch(
+        &self,
+        path: &str,
+        query: &[(&str, &str)],
+        body: &Value,
+    ) -> Result<Value, ApiError> {
+        send(
+            self.request(reqwest::Method::PATCH, path, query)?
+                .json(body),
+        )
     }
 
     pub fn delete(&self, path: &str, query: &[(&str, &str)]) -> Result<Value, ApiError> {

@@ -40,6 +40,12 @@ impl Connection {
     pub fn api(&self) -> Api {
         Api::new(&self.token, &self.team_id)
     }
+
+    /// The token, for the one header that carries it: a sandbox network's
+    /// injection, scoped to that sandbox's own session (`self_service`).
+    pub(crate) fn bearer(&self) -> String {
+        format!("Bearer {}", self.token)
+    }
 }
 
 /// Check `token` and set the account up. Blocking.

@@ -1,5 +1,6 @@
 import { useNow } from "@/hooks/useNow";
 import { useSandboxState } from "./hooks/useSandboxState";
+import { SandboxPreviews } from "./SandboxPreviews";
 import { sandboxFacts } from "./sessionHost";
 import type { SessionHost } from "./types";
 
@@ -45,6 +46,9 @@ export function SandboxSection({ sessionId, host, attached }: SandboxSectionProp
         <span className="v plain">{facts?.state ?? "Checking…"}</span>
       </div>
       {facts && <div className="sandbox-note">{facts.detail}</div>}
+      {state?.status === "running" && (
+        <SandboxPreviews sessionId={sessionId} previews={state.previews ?? []} />
+      )}
     </div>
   );
 }

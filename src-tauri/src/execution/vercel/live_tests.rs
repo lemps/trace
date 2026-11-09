@@ -12,7 +12,7 @@ use crate::execution::sandbox::{script, PtyRead, SandboxProvider};
 use crate::execution::SpawnSpec;
 use crate::repo_catalog::model::RemoteRepo;
 
-fn token() -> Option<String> {
+pub(super) fn token() -> Option<String> {
     let path = dirs::home_dir()?.join(".config/trace-dev/vercel-token");
     std::fs::read_to_string(path).ok()
 }
@@ -53,6 +53,7 @@ fn vercel_live_session_end_to_end() {
             name: "Hello-World".into(),
         },
         title: "Live test: hello world!".into(),
+        setup: Default::default(),
     };
     let spec = SpawnSpec {
         workspace_id: id.clone(),
@@ -194,9 +195,9 @@ fn vercel_live_session_end_to_end() {
 
 /// Stops and deletes a test's sandbox however the test ends, so a failing run
 /// doesn't leave one running on the account.
-struct Cleanup {
-    provider: std::sync::Arc<Vercel>,
-    sandbox: String,
+pub(super) struct Cleanup {
+    pub(super) provider: std::sync::Arc<Vercel>,
+    pub(super) sandbox: String,
 }
 
 impl Drop for Cleanup {
@@ -277,6 +278,7 @@ fn vercel_live_chat_survives_a_disconnect() {
             name: "Hello-World".into(),
         },
         title: "Live chat test".into(),
+        setup: Default::default(),
     };
     let _cleanup = Cleanup {
         provider: provider.clone(),
@@ -378,4 +380,6 @@ fn vercel_live_chat_survives_a_disconnect() {
     third.process.close_stdin();
     third.process.kill();
     let _ = crate::claude::conversations::forget_session_id(&id);
+    // The chat's log follower noted its place: not this machine's to keep.
+    crate::execution::sandbox::events::forget(&id);
 }
