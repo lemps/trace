@@ -29,6 +29,12 @@ export interface TableData {
   align: Align[];
 }
 
+// A pasted table's own lines: rich editors (Notes, Mail, Slack) draw a table
+// with no borders unless it says so. Inline, since the paste carries no stylesheet,
+// and fixed colours, since it lands outside trace's themes.
+export const TABLE_STYLE = "border-collapse:collapse";
+export const TABLE_CELL_STYLE = "border:1px solid #d0d7de;padding:4px 8px";
+
 const isEl = (n: TableHast, tag: string) => n.type === "element" && n.tagName === tag;
 
 function escapeHtml(text: string): string {
@@ -130,9 +136,10 @@ export function tableToMarkdown({ headers, rows, align }: TableData): string {
 
 /** A bare <table>: no classes or styles but alignment, so the paste takes its new home's look. */
 export function tableToHtml({ headers, rows, align }: TableData): string {
-  const attr = (i: number) => (align[i] ? ` style="text-align:${align[i]}"` : "");
+  const attr = (i: number) =>
+    ` style="${TABLE_CELL_STYLE}${align[i] ? `;text-align:${align[i]}` : ""}"`;
   const tr = (cells: TableCell[], tag: "th" | "td") =>
     `<tr>${cells.map((c, i) => `<${tag}${attr(i)}>${c.html}</${tag}>`).join("")}</tr>`;
   const body = rows.length ? `<tbody>${rows.map((r) => tr(r, "td")).join("")}</tbody>` : "";
-  return `<table><thead>${tr(headers, "th")}</thead>${body}</table>`;
+  return `<table style="${TABLE_STYLE}"><thead>${tr(headers, "th")}</thead>${body}</table>`;
 }

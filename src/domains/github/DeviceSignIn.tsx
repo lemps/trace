@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { copyPlain } from "@/ipc/clipboard";
 import { githubDeviceCancel, githubDeviceStart, githubDeviceWait } from "@/ipc/github";
 import { useGitHubStore } from "./store";
 import type { DeviceStart } from "./types";
@@ -39,7 +40,7 @@ export function DeviceSignIn({ onCancel, onDone }: { onCancel: () => void; onDon
   }, [setStatus]);
 
   const copy = (code: string) =>
-    void navigator.clipboard.writeText(code).then(
+    void copyPlain(code).then(
       () => toast.success("Code copied"),
       () => toast.error("Couldn't copy the code")
     );

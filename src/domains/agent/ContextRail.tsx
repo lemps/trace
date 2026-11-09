@@ -5,6 +5,7 @@ import { I } from "@/components/Icon";
 import type { Issue } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import { StartedSessionsSection } from "@/domains/sessions/StartedSessions";
+import { copyPlain } from "@/ipc/clipboard";
 import { TurnSection } from "./TurnSection";
 import { WorkspaceSection } from "./WorkspaceSection";
 
@@ -18,7 +19,7 @@ interface ContextRailProps {
 }
 
 function copy(text: string) {
-  void navigator.clipboard.writeText(text).then(
+  void copyPlain(text).then(
     () => toast.success(`Copied ${text}`),
     () => toast.error("Couldn't copy to clipboard")
   );

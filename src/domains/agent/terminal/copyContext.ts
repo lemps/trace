@@ -1,5 +1,6 @@
 import type { Terminal } from "@xterm/xterm";
 import { toast } from "@/app/toast";
+import { copyPlain } from "@/ipc/clipboard";
 import { CONTEXT_LINES, formatContext, lastLines } from "./contextText";
 import { contextSource } from "./source";
 
@@ -18,16 +19,10 @@ export async function copyContext(key: string, term: Terminal): Promise<void> {
     toast.info("Nothing in this terminal to copy yet.");
     return;
   }
-  // The header needs an IPC round trip, but WebKit only lets the clipboard be written
-  // inside the key press or click: hand it a promise now, so the write starts in time.
-  const text = contextSource(key).then((source) => formatContext(source, body, isSelection));
   try {
-    if (typeof ClipboardItem === "undefined") {
-      await navigator.clipboard.writeText(await text);
-    } else {
-      const blob = text.then((t) => new Blob([t], { type: "text/plain" }));
-      await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
-    }
+    await copyPlain(
+      await contextSource(key).then((source) => formatContext(source, body, isSelection))
+    );
     toast.success(
       isSelection ? "Copied the selection with context." : "Copied the last lines with context."
     );
@@ -39,5 +34,5 @@ export async function copyContext(key: string, term: Terminal): Promise<void> {
 /** Copy the terminal's selection as it is. */
 export function copySelection(term: Terminal): void {
   if (!term.hasSelection()) return;
-  void navigator.clipboard.writeText(term.getSelection()).catch(() => {});
+  void copyPlain(term.getSelection()).catch(() => {});
 }

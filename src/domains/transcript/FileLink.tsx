@@ -1,6 +1,7 @@
 import { toast } from "@/app/toast";
 import { PopMenu } from "@/components/PopMenu";
 import { editorItems } from "@/domains/agent/editorItems";
+import { copyPlain } from "@/ipc/clipboard";
 import { basename } from "@/platform/paths";
 import { relativeTo } from "./toolSummary";
 
@@ -32,8 +33,7 @@ export function FileLink({ workspaceId, path, root }: FileLinkProps) {
               {
                 label: "Copy path",
                 onSelect: () => {
-                  void navigator.clipboard
-                    .writeText(path)
+                  void copyPlain(path)
                     .then(() => toast.success("Path copied"))
                     .catch((e) => toast.error(String(e)));
                 },

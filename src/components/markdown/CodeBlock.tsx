@@ -2,6 +2,7 @@ import { memo, type ReactNode, useMemo } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { copyPlain, copyRich } from "@/ipc/clipboard";
 import { type HastNode, highlightCode, useHighlighter } from "./highlight";
 import { useCopied } from "./useCopied";
 
@@ -25,6 +26,8 @@ function render(nodes: readonly HastNode[]): ReactNode[] {
 
 interface CopyButtonProps {
   text: string;
+  /** The same, formatted (read on click): copied beside `text` for apps that paste HTML. */
+  html?: () => string | null;
   label?: string;
   /** Its look: the code block's head by default; a chat message has its own. */
   className?: string;
@@ -33,14 +36,16 @@ interface CopyButtonProps {
 /** Copies `text`, then shows a check for a moment. Also on tool output and chat messages. */
 export function CopyButton({
   text,
+  html,
   label = "Copy code",
   className = "md-code-copy",
 }: CopyButtonProps) {
   const [copied, flash] = useCopied();
   const copy = () => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(flash, () => toast.error("Couldn't copy to the clipboard"));
+    const rich = html?.();
+    void (rich ? copyRich(rich, text) : copyPlain(text)).then(flash, (e) =>
+      toast.error(`Couldn't copy: ${String(e)}`)
+    );
   };
   return (
     <IconButton

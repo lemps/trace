@@ -61,6 +61,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
+        // Copies go through the system clipboard, not WebKit's (`src/ipc/clipboard.ts`).
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(app_state)
         // The Gallery's images; only trace's own webview is served (`gallery::protocol`).
         .register_asynchronous_uri_scheme_protocol(gallery::SCHEME, gallery::protocol::handle)
