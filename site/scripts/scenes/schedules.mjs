@@ -12,6 +12,8 @@ export const clip = {
 
 const fill = async (d, selector, text, delay = 22) => {
   await d.click(selector);
+  // Replace what the field already holds (CLI flags start from Settings → Agents).
+  await d.eval((s) => [...document.querySelectorAll(s)].find((e) => e.getClientRects().length)?.select(), selector);
   await d.type(text, delay);
 };
 

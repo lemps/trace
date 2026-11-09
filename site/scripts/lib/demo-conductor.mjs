@@ -14,7 +14,7 @@
 
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -38,6 +38,27 @@ const REPOS = [
     prompts: { custom_prompt_code_review: REVIEW },
   },
 ];
+
+/**
+ * Forget what an earlier take imported from the install in `dir`, in the demo
+ * config's trace folder `traceDir`: its sessions and its repos' catalog records
+ * (repos.json and the saved prompts are rewritten by demo-setup anyway). Run it
+ * while trace isn't running.
+ */
+export function forgetImport(traceDir, dir) {
+  const inside = (p) => typeof p === "string" && p.startsWith(dir);
+  const edit = (name, change) => {
+    const file = join(traceDir, name);
+    if (!existsSync(file)) return;
+    const next = change(JSON.parse(readFileSync(file, "utf8")));
+    writeFileSync(file, `${JSON.stringify(next, null, 2)}\n`, { mode: 0o600 });
+  };
+  edit("scratch.json", (list) => list.filter((s) => !inside(s.repo) && !inside(s.folder)));
+  edit("repo-catalog.json", (cat) => ({
+    ...cat,
+    records: (cat.records ?? []).filter((r) => !(r.checkouts ?? []).some((c) => inside(c.path))),
+  }));
+}
 
 /**
  * Build the fake install in `dir`. `source` is a demo repo's bare origin to clone

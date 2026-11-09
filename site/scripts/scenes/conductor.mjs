@@ -10,9 +10,9 @@ import { sleep } from "../lib/ui.mjs";
 
 export const clip = {
   segments: [
-    ["start+0.3", "preview", 1.2],
-    ["preview", "import", 1.5],
-    ["import", "end", 1.2],
+    ["start+0.3", "preview", 1.8],
+    ["preview", "import", 2.7],
+    ["import", "end", 2],
   ],
 };
 
@@ -41,13 +41,13 @@ export async function run(d, mark) {
   await d.click("[role=dialog] button", "Conductor is closed");
   await d.waitFor(() => !!document.querySelector(".ci-preview"), 30000);
   mark("preview");
-  await sleep(2600);
+  await sleep(2200);
   await scroll(d, 320);
-  await sleep(2200);
+  await sleep(1700);
   await scroll(d, 420);
-  await sleep(2200);
+  await sleep(1700);
   await scroll(d, 600);
-  await sleep(1800);
+  await sleep(1300);
   await d.click("[role=dialog] button", "Import ");
   mark("import");
   await d.waitFor(
