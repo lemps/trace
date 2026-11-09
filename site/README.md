@@ -15,9 +15,12 @@ site/
 ├── media/               <feature-id>.mp4 / .webm / .jpg (poster), recorded from the real app
 └── scripts/             recording and page-building scripts (not published)
     ├── record.mjs       the runner: node record.mjs <feature-id>... | --all
+    ├── demo-setup.mjs   creates the demo repos and demo config
     ├── build-page.mjs   writes index.html from features.json
     ├── page.template.html
-    ├── lib/             cdp.mjs (DevTools client), app.mjs (launch), encode.mjs (ffmpeg), ui.mjs (trace's controls)
+    ├── lib/             cdp.mjs (Windows driver), bridge*.mjs + ws-server.mjs (macOS driver),
+    │                    app.mjs (launch), encode.mjs (ffmpeg), ui.mjs (trace's controls),
+    │                    demo-*.mjs (the demo repos' files)
     └── scenes/          one self-contained scene per feature: <feature-id>.mjs
 ```
 
@@ -41,24 +44,41 @@ After changing `features.json` or `scripts/page.template.html`, rebuild the page
 
 ## Recording clips
 
-Clips come from the real app, driven over the WebView2 / Chrome DevTools Protocol,
-with **demo data only**. You need:
+Clips come from the real app with **demo data only**. On Windows the runner drives
+it over the WebView2 / Chrome DevTools Protocol (`lib/cdp.mjs`); on macOS, whose
+WKWebView has no automation port, over a recording build's own bridge
+(`lib/bridge.mjs`, below). The scenes are the same on both. You need:
 
-- **A trace build that reads its config from `TRACE_DEV_CONFIG_DIR`.** `main` doesn't
-  have this override. Add it locally (don't commit it): a `dev_config_dir()` in
-  `src-tauri/src/helpers.rs` that returns `TRACE_DEV_CONFIG_DIR` when it's set and
-  `dirs::config_dir()` otherwise, used by `trace_dir()` and by every other
-  `dirs::config_dir()` call under `src-tauri/src`. Build with
-  `npx tauri build --no-bundle`. The runner refuses to launch a build that doesn't
-  honour the variable: it checks that trace's `scheduler.lock` appears in the demo
-  config, and stops the build if it doesn't.
-- **A demo config.** An empty folder, plus `<it>/trace/repos.json` listing the demo
-  repos: `{"repos": ["<demo>/tinyroute", "<demo>/pixelsort", "<demo>/weatherline"]}`.
-  No credentials or tokens; never copy your own config.
-- **Demo repos.** Three small git repos the scenes use: `tinyroute` (a TypeScript HTTP
-  router with `node --test` tests), `pixelsort` (a Rust CLI) and `weatherline` (a
-  Python CLI). Give each a bare repo as `origin` (worktrees fetch from it), and on
-  Windows set `core.autocrlf input` in each so `git status` stays clean.
+- **A recording build of trace.** Only it reads `TRACE_DEV_CONFIG_DIR` (and
+  `TRACE_DEV_CONDUCTOR_DIR`, a demo Conductor install for the importer: it stands in
+  for Conductor's data and home folders, so `<it>/com.conductor.app/conductor.db`,
+  `<it>/.conductor/`, `<it>/conductor/workspaces/`). Release builds ignore both. Build
+  it from the repo root:
+
+  ```sh
+  npx tauri build --no-bundle --features recording --config src-tauri/tauri.recording.conf.json
+  ```
+
+  The `recording` Cargo feature adds the config overrides and the recorder's
+  commands; the conf builds the frontend with `npm run build:recording`
+  (`vite build --mode recording`, which sets `VITE_TRACE_RECORDING=1` from
+  `.env.recording`) and gives the build its own identifier, so its WebKit storage is
+  apart from your trace's. The binary is `src-tauri/target/release/trace`. Don't
+  ship it, and don't enable either flag in the release workflow:
+  `npm run check:recording` builds the frontend as a release does and fails if the
+  bridge is in it (`-- --exe <binary>` also checks a built binary has none of the
+  Rust side). The runner refuses to launch a build that doesn't honour the demo
+  config: it checks that trace's `scheduler.lock` appears there, and stops the build
+  if it doesn't (on macOS it also won't start a binary without the recording hooks).
+- **The demo data**: `TRACE_SITE_WORK=<dir> node site/scripts/demo-setup.mjs`. It
+  creates three small git repos the scenes use, each with a few commits and a bare
+  `origin` (worktrees fetch from it): `tinyroute` (a TypeScript HTTP router with
+  `node --test` tests), `pixelsort` (a Rust CLI) and `weatherline` (a Python CLI),
+  in `<dir>/demo`, and the demo config, `<dir>/config/trace/repos.json` listing them.
+  Point `TRACE_DEV_CONFIG_DIR` at `<dir>/config`. It's safe to run again (existing
+  repos are kept; `--reset` starts them over), uses no credentials, commits as a demo
+  identity, and copies nothing from your own config. Keep `<dir>` outside your home
+  folder: the repos' paths show on screen, and the runner stops on your home path.
 - **ffmpeg** with libx264 and libvpx (any static build), as `TRACE_FFMPEG` or on PATH.
 - **Claude Code**, signed in. The chat, subagent, inbox, fleet, sessions and
   orchestrator scenes run real, short prompts in the demo repos.
@@ -67,11 +87,37 @@ Environment:
 
 | Variable | What |
 | --- | --- |
-| `TRACE_EXE` | the build to launch, if none is listening on the debug port |
+| `TRACE_EXE` | the build to launch (Windows: if none is listening on the debug port; macOS: always, a recording build) |
 | `TRACE_DEV_CONFIG_DIR` | the demo config folder |
 | `TRACE_SITE_WORK` | a work folder outside the repo: WebView2 profile, frames |
-| `TRACE_CDP_PORT` | the debug port (default 9600) |
+| `TRACE_CDP_PORT` | the debug port (Windows; default 9600) |
 | `TRACE_FFMPEG` | ffmpeg (default `ffmpeg`) |
+
+### How the macOS driver works
+
+- **The bridge.** The runner starts a WebSocket server on `127.0.0.1`, on a random
+  port, with a random token, and launches the recording build with both
+  (`TRACE_RECORDING_PORT`, `TRACE_RECORDING_TOKEN`). trace takes them out of its
+  environment at start-up, so nothing it spawns inherits them, and its page
+  (`src/recording/bridge.ts`) connects, says hello with the token, and runs the
+  functions the scenes send. Every message carries the token; it's never logged or
+  saved. The server accepts only loopback connections from trace's origin. As the
+  token lasts one run, each run launches trace afresh and quits it at the end.
+  trace's CSP is off (`"csp": null`), so the recording conf has nothing to relax.
+- **Input** is synthesised in the page (`lib/bridge-input.mjs`): pointer and mouse
+  events at an element's centre (hover enter/leave included), `execCommand
+  ("insertText")` for typing, which React's inputs and xterm's hidden textarea both
+  take, and key events with modifiers. They're untrusted events, so CSS `:hover`
+  doesn't show, and the browser's own default actions are done by the driver
+  (focus on click, wheel scrolling, the context menu).
+- **Frames** are WKWebView's own snapshots of the page, at 2× (2560×1600 for a
+  1280×800 clip), written as PNGs by trace; the encoder scales them to 1280. No
+  Screen Recording permission is needed. It holds 20 fps, the clips' rate (about 50
+  at most). Keep trace's window on screen while recording.
+- **Stills** (`d.screenshot(file)`) show the window as you see it: the Browser tab's
+  pages are native child webviews, not part of the page, so each visible one is
+  snapshotted too and laid over the page with ffmpeg. Clips don't do this: in a
+  recorded clip a Browser page is an empty pane, so show it in a still.
 
 The runner records at 1280×800, hides the signed-in account's usage meter, and
 stops without encoding if your home folder or user name ever shows on screen.
