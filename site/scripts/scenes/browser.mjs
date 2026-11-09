@@ -3,7 +3,7 @@
 // child webview, so a recorded clip would show an empty pane; a still includes
 // it (the macOS driver snapshots it and lays it over the page).
 import { createServer } from "node:http";
-import { ROUTER, ensureSession, openTab, paneMenu, resetPanes, sleep } from "../lib/ui.mjs";
+import { ROUTER, ensureSession, ensureStarted, openTab, paneMenu, resetPanes, sleep } from "../lib/ui.mjs";
 
 export const clip = { kind: "still" };
 
@@ -60,6 +60,8 @@ export async function setup(d) {
   const port = await serve();
   await ensureSession(d, ROUTER);
   await resetPanes(d);
+  // Running, so the composer shows the model and mode in use rather than a Start banner.
+  await ensureStarted(d);
   // Empty, the tab offers an address bar; with a page already open (a retake), its
   // own bar navigates it. Either way it's `.bw-address-input`.
   await openTab(d, "Browser");
