@@ -137,7 +137,14 @@
         "Sort by status, name, age or who started them, or keep your own order",
         "Stop & save snapshots a sandbox; Join picks one up from another computer"
       ],
-      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it."
+      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it.",
+      "more": [
+        {
+          "id": "sandbox",
+          "label": "Vercel Sandbox",
+          "alt": "The Vercel dialog checklist shows the Vercel token, a Claude login for sandboxes and a GitHub account all ready. A new session is set to run on Vercel in the noble1911/trace repo; it starts a sandbox, clones the repo and starts Claude, while Details reads Vercel Sandbox, Running. Asked what the site recorder does, Claude reads site/README.md inside the sandbox and answers."
+        }
+      ]
     },
     {
       "id": "orchestrator",
