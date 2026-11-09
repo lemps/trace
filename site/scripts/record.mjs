@@ -15,13 +15,15 @@
 //
 // Env: see lib/app.mjs (TRACE_EXE, TRACE_DEV_CONFIG_DIR, TRACE_SITE_WORK, TRACE_CDP_PORT)
 // and TRACE_FFMPEG (an ffmpeg binary; default "ffmpeg" on PATH).
+// Drivers: Windows over WebView2's DevTools protocol (lib/cdp.mjs); macOS over a
+// recording build's bridge (lib/bridge.mjs), launched afresh and stopped each run.
 
 import { readdirSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ensureApp } from "./lib/app.mjs";
-import { connect, sleep } from "./lib/cdp.mjs";
+import { sleep } from "./lib/cdp.mjs";
 import { encodeClip, encodeStill } from "./lib/encode.mjs";
 import { setTheme } from "./lib/ui.mjs";
 
@@ -46,11 +48,16 @@ const report = (r) => {
   for (const f of r.tooBig) console.warn(`  WARNING: ${f} is over 1.5 MB; shorten the clip or speed up a segment`);
 };
 
-// Text that must never be on screen: your home folder and user name.
-const private_ = [homedir(), userInfo().username].filter((s) => s && s.length > 2);
+// Text that must never be on screen: your home folder, and your user name as a
+// word (a short name like "ron" is inside everyday words such as "front").
+const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const private_ = [
+  [homedir(), new RegExp(escape(homedir()), "i")],
+  [userInfo().username, new RegExp(`(?<![\\p{L}\\p{N}])${escape(userInfo().username)}(?![\\p{L}\\p{N}])`, "iu")],
+].filter(([s]) => s && s.length > 2);
 const leaks = async (d) => {
   const text = await d.eval(() => document.body.innerText).catch(() => "");
-  return private_.filter((p) => text.toLowerCase().includes(p.toLowerCase()));
+  return private_.filter(([, re]) => re.test(text)).map(([s]) => s);
 };
 
 const app = flag("--encode-only") ? null : await ensureApp();
@@ -64,7 +71,7 @@ try {
       if (clip.kind === "video") report(encodeClip(frames, join(media, id), clip));
       continue;
     }
-    const d = await connect();
+    const d = await app.connect();
     try {
       await d.viewport(...clip.viewport);
       // Hide the signed-in account's own usage meter: it isn't demo data.
@@ -119,5 +126,5 @@ try {
     }
   }
 } finally {
-  if (app && flag("--quit")) await app.stop();
+  if (app && (flag("--quit") || app.quitAfter)) await app.stop();
 }

@@ -8,7 +8,7 @@
 // Marks keep the cuts right when a re-take runs faster or slower.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ffmpeg = () => process.env.TRACE_FFMPEG || "ffmpeg";
@@ -83,4 +83,24 @@ export function encodeStill(png, out) {
   execFileSync(ffmpeg(), ["-hide_banner", "-loglevel", "error", "-y", "-i", png,
     "-vf", "scale='min(1280,iw)':-2:flags=lanczos", "-q:v", "4", jpg], { stdio: "inherit" });
   return { sizes: { [jpg]: statSync(jpg).size }, tooBig: [] };
+}
+
+/**
+ * Lay each layer's PNG over the screenshot `png` at its place on the page (CSS
+ * pixels, scaled by `dpr`), then delete the layers' files. The macOS driver's
+ * stills use it for the Browser tab's pages, which are separate webviews.
+ */
+export function composite(png, layers, dpr) {
+  const px = (n) => Math.round(n * dpr);
+  const inputs = ["-i", png, ...layers.flatMap((l) => ["-i", l.file])];
+  const steps = layers.map(({ area }, i) => {
+    const from = i ? `[o${i}]` : "[0:v]";
+    const scaled = `[${i + 1}:v]scale=${px(area.width)}:${px(area.height)}[l${i}]`;
+    return `${scaled};${from}[l${i}]overlay=${px(area.x)}:${px(area.y)}[o${i + 1}]`;
+  });
+  const tmp = `${png}.tmp.png`;
+  execFileSync(ffmpeg(), ["-hide_banner", "-loglevel", "error", "-y", ...inputs, "-filter_complex", steps.join(";"),
+    "-map", `[o${layers.length}]`, "-frames:v", "1", tmp], { stdio: "inherit" });
+  renameSync(tmp, png);
+  for (const l of layers) rmSync(l.file, { force: true });
 }
