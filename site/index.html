@@ -81,16 +81,17 @@
         <div class="wrap">
           <ol>
             <li><a href="#chat"><span class="n">01</span>Agents as a chat</a></li>
-            <li><a href="#fleet"><span class="n">02</span>Fleet</a></li>
-            <li><a href="#inbox"><span class="n">03</span>Inbox</a></li>
-            <li><a href="#panes"><span class="n">04</span>Panes, Files and Terminal</a></li>
-            <li><a href="#plan"><span class="n">05</span>Plans, Browser and Gallery</a></li>
-            <li><a href="#tickets"><span class="n">06</span>Tickets and pull requests</a></li>
-            <li><a href="#sessions"><span class="n">07</span>Run it anywhere</a></li>
-            <li><a href="#orchestrator"><span class="n">08</span>Orchestrator</a></li>
-            <li><a href="#schedules"><span class="n">09</span>Scheduled prompts</a></li>
-            <li><a href="#conductor"><span class="n">10</span>Coming from Conductor</a></li>
-            <li><a href="#appearance"><span class="n">11</span>Make it yours</a></li>
+            <li><a href="#composer"><span class="n">02</span>The composer</a></li>
+            <li><a href="#fleet"><span class="n">03</span>Fleet</a></li>
+            <li><a href="#inbox"><span class="n">04</span>Inbox</a></li>
+            <li><a href="#panes"><span class="n">05</span>Panes, Files and Terminal</a></li>
+            <li><a href="#plan"><span class="n">06</span>Plans, Browser and Gallery</a></li>
+            <li><a href="#tickets"><span class="n">07</span>Tickets and pull requests</a></li>
+            <li><a href="#sessions"><span class="n">08</span>Run it anywhere</a></li>
+            <li><a href="#orchestrator"><span class="n">09</span>Orchestrator</a></li>
+            <li><a href="#schedules"><span class="n">10</span>Scheduled prompts</a></li>
+            <li><a href="#conductor"><span class="n">11</span>Coming from Conductor</a></li>
+            <li><a href="#appearance"><span class="n">12</span>Make it yours</a></li>
           </ol>
         </div>
       </nav>
@@ -130,10 +131,36 @@
         </div>
       </section>
 
+      <section class="feature" id="composer" aria-labelledby="composer-title">
+        <div class="wrap">
+          <div class="copy">
+            <p class="label"><b>02</b> The composer</p>
+            <h2 id="composer-title">Pick the model, effort and mode as you write</h2>
+            <p>A chat agent's composer keeps its model, effort and permission mode, switched live where the CLI allows. Type / for slash commands and your saved prompts, attach files and pictures, and leave a message half-written: it's still there after a restart. A ring in the chat header shows how full the context is.</p>
+            <ul class="points">
+              <li>Mode: Ask, Accept edits, Plan or Full access, kept for each agent</li>
+              <li>Saved prompts sent as /name, from Settings → Agents</li>
+              <li>Paste, drop or pick files; pictures show as thumbnails</li>
+            </ul>
+          </div>
+          <div class="media">
+            <figure>
+              <div class="frame">
+                <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/composer.jpg" aria-label="The composer" aria-describedby="composer-desc">
+                  <source data-src="media/composer.mp4" type="video/mp4" />
+                  <source data-src="media/composer.webm" type="video/webm" />
+                </video>
+              </div>
+              <figcaption id="composer-desc"><span class="visually-hidden">What the clip shows: </span>In a chat session the Model picker is opened and Opus chosen, then Effort set to High and Mode to Plan. Typing /rep lists a saved prompt, Enter puts its text in the box, a screenshot is pasted and shows as a thumbnail, and the message is sent; the context ring sits in the chat header.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
       <section class="feature" id="fleet" aria-labelledby="fleet-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>02</b> Fleet</p>
+            <p class="label"><b>03</b> Fleet</p>
             <h2 id="fleet-title">Every running agent at a glance</h2>
             <p>Fleet is a table of every live agent: its state, how long it's been there, its repo and branch, changes, PR and latest line. Rows stay put when an agent changes state, so you never lose your place, and an agent on a long task can leave a one-line progress note there.</p>
             <ul class="points">
@@ -159,7 +186,7 @@
       <section class="feature" id="inbox" aria-labelledby="inbox-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>03</b> Inbox</p>
+            <p class="label"><b>04</b> Inbox</p>
             <h2 id="inbox-title">One inbox for every question and approval</h2>
             <p>When any agent needs you, from the board, a session or a scheduled prompt, it lands in the Inbox with its question or the exact change it wants to make. Answer it there and the agent carries on; you don't have to find its tab first.</p>
             <ul class="points">
@@ -185,7 +212,7 @@
       <section class="feature" id="panes" aria-labelledby="panes-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>04</b> Panes, Files and Terminal</p>
+            <p class="label"><b>05</b> Panes, Files and Terminal</p>
             <h2 id="panes-title">Chat, Files and Terminal, arranged like an IDE</h2>
             <p>Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. A tab shows up when there's something in it and hides with its ×; layouts are remembered per workspace. Quick Open finds any file in the worktree, and the terminal finds in its scrollback and has a menu on every file path.</p>
             <ul class="points">
@@ -229,7 +256,7 @@
       <section class="feature" id="plan" aria-labelledby="plan-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>05</b> Plans, Browser and Gallery</p>
+            <p class="label"><b>06</b> Plans, Browser and Gallery</p>
             <h2 id="plan-title">What the agent planned and made, beside the chat</h2>
             <p>When an agent leaves plan mode or publishes a plan, spec or report, it opens in the Plan tab: Markdown set like a page, or HTML in a sandbox, with every version kept. An agent can also open its dev server in the Browser tab, an isolated view that gets nothing of trace's, or show you a folder of images in the Gallery.</p>
             <ul class="points">
@@ -239,6 +266,24 @@
             </ul>
           </div>
           <div class="media">
+            <figure>
+              <div class="frame">
+                <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/plan.jpg" aria-label="Plans, Browser and Gallery" aria-describedby="plan-desc">
+                  <source data-src="media/plan.mp4" type="video/mp4" />
+                  <source data-src="media/plan.webm" type="video/webm" />
+                </video>
+              </div>
+              <figcaption id="plan-desc"><span class="visually-hidden">What the clip shows: </span>An agent is asked to publish a plan for adding middleware to a router. When its turn ends a Plan tab appears with a dot; it's opened, the document is scrolled from its goal to its tests, and the list of plans slides out from the left edge.</figcaption>
+            </figure>
+            <figure>
+              <div class="frame">
+                <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/gallery.jpg" aria-label="Gallery" aria-describedby="gallery-desc">
+                  <source data-src="media/gallery.mp4" type="video/mp4" />
+                  <source data-src="media/gallery.webm" type="video/webm" />
+                </video>
+              </div>
+              <figcaption id="gallery-desc"><span class="visually-hidden">What the clip shows: </span>An agent is asked to draw four icons for a CLI's sort modes and show them. When its turn ends a Gallery tab appears; it's opened to a grid of the four icons, the first opens full size, and the arrow keys step through the rest.</figcaption>
+            </figure>
             <figure>
               <div class="frame"><img src="media/browser.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="An agent's chat on the left and its Browser tab on the right, showing a local playground page for the tinyroute demo: its routes, with the new DELETE route marked, and a sample request." /></div>
               <figcaption>The Browser tab: a local page beside the agent, in its own isolated view.</figcaption>
@@ -250,7 +295,7 @@
       <section class="feature" id="tickets" aria-labelledby="tickets-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>06</b> Tickets and pull requests</p>
+            <p class="label"><b>07</b> Tickets and pull requests</p>
             <h2 id="tickets-title">From a Jira or Pylon ticket to a pull request</h2>
             <p>Connect Jira, Pylon or both, and each adds its board to the sidebar exactly as your tracker shows it. Start an agent on a card and it gets a new worktree and a kickoff prompt built from the ticket and its comments. When it raises a PR, the Pull request tab follows its checks and conversation, and Merge is in the header.</p>
             <ul class="points">
@@ -271,7 +316,7 @@
       <section class="feature" id="sessions" aria-labelledby="sessions-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>07</b> Run it anywhere</p>
+            <p class="label"><b>08</b> Run it anywhere</p>
             <h2 id="sessions-title">Sessions in a worktree, a folder or a Vercel Sandbox</h2>
             <p>Sessions are agents that aren't tied to a ticket. Each runs in its own git worktree of a repo you've added, in a folder you pick, or in a new empty folder that goes with it. Connect Vercel and a session can run in a Vercel Sandbox instead: Leave running keeps it working after you quit, and Start joins it again.</p>
             <ul class="points">
@@ -297,7 +342,7 @@
       <section class="feature" id="orchestrator" aria-labelledby="orchestrator-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>08</b> Orchestrator</p>
+            <p class="label"><b>09</b> Orchestrator</p>
             <h2 id="orchestrator-title">Ask what your agents are doing</h2>
             <p>The orchestrator sits in the side panel and knows your board and sessions. Ask it for a status round-up, what's blocked, or to nudge an agent; every action it takes waits for your confirm. Stats chart your agents and their work.</p>
             <ul class="points">
@@ -314,7 +359,7 @@
                   <source data-src="media/orchestrator.webm" type="video/webm" />
                 </video>
               </div>
-              <figcaption id="orchestrator-desc"><span class="visually-hidden">What the clip shows: </span>The orchestrator is asked what the agents are doing. It replies with who needs you, which agents are ready and a chart of agents by state, then its Stats tab is opened.</figcaption>
+              <figcaption id="orchestrator-desc"><span class="visually-hidden">What the clip shows: </span>The orchestrator is asked what the agents are doing. It replies with a round-up: which agents are ready, which stopped and when, and the totals, then its Stats tab is opened.</figcaption>
             </figure>
           </div>
         </div>
@@ -323,7 +368,7 @@
       <section class="feature" id="schedules" aria-labelledby="schedules-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>09</b> Scheduled prompts</p>
+            <p class="label"><b>10</b> Scheduled prompts</p>
             <h2 id="schedules-title">Prompts that run themselves, when there's something to do</h2>
             <p>Run a prompt every few minutes, daily, weekly, monthly or on a cron expression, each run a fresh conversation in the prompt's own worktree. A precheck command decides whether a run goes ahead, so a nightly job can skip the nights nothing changed. Continue as session picks up where any run left off.</p>
             <ul class="points">
@@ -349,7 +394,7 @@
       <section class="feature" id="conductor" aria-labelledby="conductor-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>10</b> Coming from Conductor</p>
+            <p class="label"><b>11</b> Coming from Conductor</p>
             <h2 id="conductor-title">Coming from Conductor? Bring your work with you</h2>
             <p>Settings → Repositories → Import from Conductor reads Conductor's database without changing it and shows what it found, with a checkbox each. Repos come over with their setup scripts, live workspaces move in as sessions that carry on the same conversation, and custom prompts become saved prompts.</p>
             <ul class="points">
@@ -375,7 +420,7 @@
       <section class="feature" id="appearance" aria-labelledby="appearance-title">
         <div class="wrap">
           <div class="copy">
-            <p class="label"><b>11</b> Make it yours</p>
+            <p class="label"><b>12</b> Make it yours</p>
             <h2 id="appearance-title">Themes, fonts, density, sidebar and shortcuts</h2>
             <p>Dark, Light, Midnight, Paper or System, an accent colour, interface size and density, fonts for the UI, terminal and chat, each with a live preview. Density changes the whole app, and Compact tightens the chat's layout too. Order and hide the sidebar's pages, rebind every shortcut, and press ? for the cheat sheet.</p>
             <ul class="points">

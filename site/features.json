@@ -149,7 +149,7 @@
         "Charts of agents by state, and session stats",
         "Actions behind a confirm card"
       ],
-      "alt": "The orchestrator is asked what the agents are doing. It replies with who needs you, which agents are ready and a chart of agents by state, then its Stats tab is opened."
+      "alt": "The orchestrator is asked what the agents are doing. It replies with a round-up: which agents are ready, which stopped and when, and the totals, then its Stats tab is opened."
     },
     {
       "id": "schedules",
