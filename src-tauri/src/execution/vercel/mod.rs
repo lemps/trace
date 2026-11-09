@@ -24,6 +24,7 @@ use auth::Connection;
 /// enough to come back to, short enough not to fill a Hobby plan's storage.
 const SNAPSHOT_EXPIRY_MS: u64 = 7 * 24 * 60 * 60 * 1000;
 
+#[derive(Clone)]
 pub struct Vercel {
     conn: Connection,
 }
@@ -112,6 +113,10 @@ fn info_with_routes(v: &Value) -> SandboxInfo {
 impl SandboxProvider for Vercel {
     fn label(&self) -> &'static str {
         "Vercel"
+    }
+
+    fn shared(&self) -> std::sync::Arc<dyn SandboxProvider> {
+        std::sync::Arc::new(self.clone())
     }
 
     fn home(&self) -> &'static str {
@@ -313,6 +318,7 @@ impl SandboxProvider for Vercel {
             headers: vec![("Authorization".to_string(), self.conn.bearer())],
             path: Some(path(end)),
             methods: vec!["POST".to_string()],
+            ..Injection::default()
         };
         Some(SelfService {
             injections: vec![inject("extend-timeout"), inject("stop")],
@@ -344,6 +350,8 @@ mod live_events_tests;
 mod live_files_tests;
 #[cfg(test)]
 mod live_keepalive_tests;
+#[cfg(test)]
+mod live_mcp_tests;
 #[cfg(test)]
 mod live_preview_tests;
 #[cfg(test)]

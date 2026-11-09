@@ -257,3 +257,49 @@
   line-height: 1.5;
   color: var(--fg-2);
 }
+
+/* A short number field (minutes, hours) in a dialog's form. */
+.ig-sub .field input.ig-number {
+  width: 88px;
+}
+
+/* MCP servers: name, host, state, then Connect or Disconnect; a client ID field below. */
+.mcp-server {
+  border-bottom: 1px solid var(--border-faint);
+}
+.mcp-server-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  font-size: var(--text-ui);
+}
+.mcp-name {
+  overflow: hidden;
+  color: var(--fg-1);
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mcp-host {
+  overflow: hidden;
+  color: var(--fg-3);
+  font-size: var(--text-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mcp-state {
+  color: var(--fg-2);
+  font-size: var(--text-meta);
+}
+/* "Waiting…" fits without the row jumping. */
+.mcp-connect {
+  min-width: 84px;
+}
+.mcp-client {
+  padding-bottom: 12px;
+}
+.mcp-client .hint code {
+  font-family: var(--font-mono);
+}

@@ -18,6 +18,7 @@ pub mod github;
 pub mod groups;
 pub mod interrupted;
 pub mod issues;
+pub mod mcp;
 pub mod orchestrator;
 pub mod plans;
 pub mod pr;

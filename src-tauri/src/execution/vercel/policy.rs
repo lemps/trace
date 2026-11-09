@@ -21,6 +21,8 @@ pub fn to_json(egress: &Egress) -> Value {
         let mut rule = json!({ "transform": [{ "headers": headers }] });
         if let Some(path) = &injection.path {
             rule["match"] = json!({ "path": { "exact": path } });
+        } else if let Some(prefix) = &injection.path_prefix {
+            rule["match"] = json!({ "path": { "startsWith": prefix } });
         }
         if !injection.methods.is_empty() {
             rule["match"]["method"] = json!(injection.methods);
@@ -55,6 +57,7 @@ mod tests {
                     headers: vec![("X-Other".into(), "o".into())],
                     path: Some("/v1/x".into()),
                     methods: vec!["POST".into()],
+                    ..Injection::default()
                 },
             ],
         };
@@ -68,6 +71,23 @@ mod tests {
                 ],
                 "*": [],
             }})
+        );
+    }
+
+    #[test]
+    fn an_mcp_servers_token_goes_to_its_path_and_below() {
+        let egress = Egress {
+            injections: vec![Injection {
+                domain: "terminal.obsidianos.com".into(),
+                headers: vec![("Authorization".into(), "Bearer m".into())],
+                path_prefix: Some("/api/v1/hq/mcp".into()),
+                ..Injection::default()
+            }],
+        };
+        let v = to_json(&egress);
+        assert_eq!(
+            v["allow"]["terminal.obsidianos.com"][0]["match"],
+            json!({ "path": { "startsWith": "/api/v1/hq/mcp" } })
         );
     }
 

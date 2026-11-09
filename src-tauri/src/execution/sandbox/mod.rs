@@ -15,12 +15,14 @@ pub mod events;
 pub mod files;
 pub mod helpers;
 pub mod host;
+pub mod lifetime;
 pub mod preview;
 pub mod prs;
 mod ready;
 pub mod script;
 pub mod session;
 mod setup;
+mod watch;
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -146,6 +148,8 @@ pub trait PtyStream: Send {
 pub trait SandboxProvider: Send + Sync + 'static {
     /// Shown to the user: "Vercel".
     fn label(&self) -> &'static str;
+    /// A handle of its own, for a thread that outlives the caller (`watch`).
+    fn shared(&self) -> std::sync::Arc<dyn SandboxProvider>;
     /// The home directory in its sandboxes, where repos are cloned.
     fn home(&self) -> &'static str;
     /// A persistent sandbox: stopping it keeps a snapshot to resume from.

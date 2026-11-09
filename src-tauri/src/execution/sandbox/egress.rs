@@ -40,6 +40,9 @@ pub struct Injection {
     pub headers: Vec<(String, String)>,
     /// Only requests to exactly this path.
     pub path: Option<String>,
+    /// Only requests to paths starting with this one (an MCP server's
+    /// endpoint, which may redirect to a trailing slash).
+    pub path_prefix: Option<String>,
     /// Only requests with one of these methods; empty for any.
     pub methods: Vec<String>,
 }
@@ -54,7 +57,11 @@ impl fmt::Debug for Injection {
     /// The domain, path and header names: the values are the secrets.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let names: Vec<&str> = self.headers.iter().map(|(n, _)| n.as_str()).collect();
-        let path = self.path.as_deref().unwrap_or("");
+        let path = self
+            .path
+            .as_deref()
+            .or(self.path_prefix.as_deref())
+            .unwrap_or("");
         write!(f, "{}{path} [{}]", self.domain, names.join(", "))
     }
 }

@@ -3,9 +3,12 @@ import { useGitHubStore } from "@/domains/github/store";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useTailscaleStatus } from "@/domains/tailscale/store";
 import { useVercelStatus } from "@/domains/vercel/store";
+import { mcpServers } from "@/ipc/mcp";
 import { GitHubDialog } from "./GitHubDialog";
 import { GITHUB } from "./github";
 import { IntegrationDialog } from "./IntegrationDialog";
+import { McpDialog } from "./McpDialog";
+import { MCP } from "./mcp";
 import { INTEGRATIONS, type Integration } from "./registry";
 import { TailscaleDialog } from "./TailscaleDialog";
 import { TAILSCALE } from "./tailscale";
@@ -54,8 +57,17 @@ export function IntegrationsView() {
   const [vercelOpen, setVercelOpen] = useState(false);
   const tailscale = useTailscaleStatus();
   const [tailscaleOpen, setTailscaleOpen] = useState(false);
+  const [mcpOpen, setMcpOpen] = useState(false);
+  const [mcpConnected, setMcpConnected] = useState(false);
 
   useEffect(() => void checkGitHub(), [checkGitHub]);
+  // Re-read when its dialog closes: connecting happens there.
+  useEffect(() => {
+    if (mcpOpen) return;
+    mcpServers()
+      .then((list) => setMcpConnected(list.some((s) => s.connected)))
+      .catch(() => {});
+  }, [mcpOpen]);
 
   const card = (i: Integration) => (
     <IntegrationCard
@@ -94,6 +106,10 @@ export function IntegrationsView() {
   (githubLogin ? connected : available).push(githubCard);
   (vercel ? connected : available).push(vercelCard);
   (tailscale?.state === "running" ? connected : available).push(tailscaleCard);
+  const mcpCard = (
+    <IntegrationCard key="mcp" {...MCP} connected={mcpConnected} onOpen={() => setMcpOpen(true)} />
+  );
+  (mcpConnected ? connected : available).push(mcpCard);
   const section = (title: string, items: ReactNode[]) =>
     items.length > 0 && (
       <section className="ig-section">
@@ -109,7 +125,8 @@ export function IntegrationsView() {
           <h1>Integrations</h1>
           <div className="desc">
             Connect a tracker to add its board to the rail, GitHub to check out repos, Vercel to run
-            sessions in a Vercel Sandbox, or Tailscale to see your other computers.
+            sessions in a Vercel Sandbox, your MCP servers for agents there, or Tailscale to see
+            your other computers.
           </div>
         </div>
       </div>
@@ -123,6 +140,7 @@ export function IntegrationsView() {
       {githubOpen && <GitHubDialog onClose={() => setGithubOpen(false)} />}
       {vercelOpen && <VercelDialog onClose={() => setVercelOpen(false)} />}
       {tailscaleOpen && <TailscaleDialog onClose={() => setTailscaleOpen(false)} />}
+      {mcpOpen && <McpDialog onClose={() => setMcpOpen(false)} />}
     </div>
   );
 }

@@ -382,15 +382,16 @@ tokens, files under `~/.trace/` in the sandbox are the outbox (read from an offs
       `claude::hooks`, so a terminal on Vercel gets real turns, and what happened while trace
       was closed is caught up on. Tried live: a real Claude's `Stop` hook arrives, a backlog
       gives only its newest turn and every PR, a rejoin replays nothing.
-- [~] **E. Tools in the sandbox.** *trace's tools for a chat: done*, as an SDK MCP server over
-      its control channel (`mcp_message`), the way Conductor serves its own. Next, the team's
-      own MCP servers (below).
+- [x] **E. Tools in the sandbox.** trace's tools for a chat, as an SDK MCP server over its
+      control channel (`mcp_message`), the way Conductor serves its own; and the team's own MCP
+      servers, logged in to by trace and their tokens added by the network (below).
 - [x] **F. Lifetime unattended.** `trace-keepalive` runs in the sandbox (`sandbox/helpers/`),
       started on every start, one at a time. Every minute: *working* is a terminal attached,
       trace's heartbeat (the log follower touches `~/.trace/attached` every 2 min), or Claude
       mid-turn or with background tasks (from the event log; chats get the hooks too). While
-      working it extends the session every 10 min; idle 5 min, it stops it (Vercel saves it,
-      Start resumes); a run lasts at most 6 h. Its calls carry no token: the network adds the
+      working it extends the session every 10 min; idle for a while it stops it (Vercel saves
+      it, Start resumes); a run has a cap. Both are settings (Integrations → Vercel,
+      `sandbox/lifetime.rs`): 10 minutes idle and 6 hours by default. Its calls carry no token: the network adds the
       Vercel token only for `POST` to this session's own `extend-timeout` and `stop`
       (`SandboxProvider::self_service`). Tried live: its extend gets 200, any other Vercel call
       403; it extends while watched and stops once idle. On Hobby the extends fail past 45
@@ -410,33 +411,36 @@ tokens, files under `~/.trace/` in the sandbox are the outbox (read from an offs
 - [ ] Peer: Files/diff, Transcript and Tests over the protocol.
 - [ ] A second sandbox provider, to prove the port.
 
-### The team's MCP servers in a sandbox (E, next)
+### The team's MCP servers in a sandbox (`mcp_auth/`)
 
 What the team uses (Sentry, Metabase prod and stage, Atlassian, Pylon, hq-tools prod and stage,
 Brandfetch) is all **HTTP with OAuth**: no static headers in anyone's config, the tokens in each
-person's Claude Code keychain. All publish standard MCP OAuth metadata with PKCE; five take
-dynamic client registration, hq-tools takes a Client ID Metadata Document instead. A sandbox's
-Claude doesn't get claude.ai connectors with a `setup-token` login (tried: `claude mcp list` is
-empty), so trace has to bring them. Conductor does it with a backend that holds each OAuth
-token and a proxy URL per server, with a Conductor bearer on Claude's command line.
+person's Claude Code keychain. A sandbox's Claude doesn't get claude.ai connectors with a
+`setup-token` login (tried: `claude mcp list` is empty), so trace brings them. Conductor does it
+with a backend that holds each OAuth token, and a proxy URL per server with a Conductor bearer
+on Claude's command line. trace, without a backend:
 
-trace, without a backend:
-
-1. **Which servers:** the HTTP ones in the user's Claude config (user scope, the repo's project
-   scope) and the repo's `.mcp.json`: names and URLs only. stdio servers (Figma, Blender) stay
-   local.
-2. **Connect once per person:** Integrations → MCP servers, a Connect per server. trace runs the
-   OAuth itself (resource and server metadata, registration or its own client metadata
-   document hosted on trace's site, PKCE in the browser, a loopback redirect) and keeps the
-   tokens Rust-side in a `0600` file. Never Claude Code's own tokens: refreshing those could
-   rotate them out from under the local CLI.
-3. **In a sandbox:** `--mcp-config` lists the servers by URL alone; the network policy adds
-   `Authorization: Bearer <access token>` per host and path. Terminal and chat alike, nothing in
-   the VM or on a command line, and Vercel only reports header names back.
-4. **Refresh:** trace refreshes before expiry while it's open and re-sends the policy to running
-   sandboxes, and on every start. With trace closed, a long run's MCP access lasts until its
-   access token expires (often an hour); a small relay holding the refresh tokens would lift
-   that, and is the same relay the phone needs.
+1. **Which servers** (`servers.rs`): the HTTP ones in `~/.claude.json` (user and project
+   scopes) and the repos' `.mcp.json`, names and URLs only. stdio servers stay local.
+2. **Connect once per person** (Integrations → MCP servers, `flow.rs`, `oauth.rs`): trace is
+   its own OAuth client. Resource and server metadata (RFC 9728, 8414), dynamic registration
+   where the server offers it (RFC 7591), else a client trace was registered as once
+   (`flow::KNOWN_CLIENTS`, or a client ID pasted in the dialog), PKCE (S256) in the browser,
+   the resource named (RFC 8707), and the browser back at the fixed
+   `http://127.0.0.1:47321/callback`. Tokens in a `0600` file (`store.rs`, `mcp-logins.json`),
+   never Claude Code's own (refreshing those could rotate them out from under the local CLI).
+   Discovery tried live against all eight: six register themselves; hq-tools prod and stage
+   need trace registered with each, once; Brandfetch gives no refresh token.
+3. **In a sandbox** (`for_sandbox`, `sandbox/ready.rs`): Claude gets `--mcp-config` with the
+   servers by URL alone, and the network policy adds each token for its host and path
+   (`startsWith`). Terminal and chat alike. Tried live: a header reaches a server's path and
+   below and nothing else on its host, a server given by URL alone works through the
+   sandbox's network, and an injected token reaches the server (Context7 rejected a made-up
+   one).
+4. **Refresh** (`sandbox/watch.rs`): while trace is open, every 5 minutes, tokens within 10
+   minutes of expiring are refreshed and the policy sent again if it changed. With trace
+   closed, an MCP login lasts as long as its last token (often an hour); a server whose login
+   expired is left out of the next start, which says so.
 
 **Not copied:** a backend and its multi-user grants, the Agent SDK running in the VM (trace
 drives stream-json from the desktop, one implementation for both hosts), VNC/SSH, cgroup

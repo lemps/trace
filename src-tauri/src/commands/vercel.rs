@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::commands::session::ScratchSession;
 use crate::execution::credential::{self, ClaudeCredential, CredentialKind};
+use crate::execution::sandbox::lifetime::{self, Lifetime};
 use crate::execution::sandbox::SandboxProvider;
 use crate::execution::vercel::{auth, Vercel};
 
@@ -40,6 +41,21 @@ async fn blocking<T: Send + 'static>(
     tauri::async_runtime::spawn_blocking(f)
         .await
         .map_err(|e| format!("The Vercel call didn't finish: {e}"))?
+}
+
+/// How long sandboxes run on their own: idle before stopping, and at most.
+#[tauri::command]
+pub fn sandbox_lifetime() -> Lifetime {
+    lifetime::load()
+}
+
+/// Save them (within range); sessions get them from their next start.
+#[tauri::command]
+pub fn set_sandbox_lifetime(idle_minutes: u32, max_hours: u32) -> Result<Lifetime, String> {
+    lifetime::save(Lifetime {
+        idle_minutes,
+        max_hours,
+    })
 }
 
 #[tauri::command]

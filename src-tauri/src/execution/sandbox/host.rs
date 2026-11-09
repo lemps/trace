@@ -155,7 +155,9 @@ pub fn prepare<P: SandboxProvider>(
             "Starting Claude…"
         });
         // Its hooks write to the sandbox's event log, which trace reads (`events`).
-        let extra = super::helpers::with_hook_settings(spec.extra_args.clone());
+        let extra =
+            super::helpers::with_mcp_config(spec.extra_args.clone(), ready.mcp_config.as_deref());
+        let extra = super::helpers::with_hook_settings(extra);
         let agent = script::claude_argv(spec.model.as_deref(), &extra, prompt, continuing);
         let mut env = ready.agent_env(spec.env.clone());
         env.insert("TERM".to_string(), "xterm-256color".to_string());

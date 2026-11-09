@@ -24,6 +24,11 @@ pub struct Ready {
     pub env: HashMap<String, String>,
     /// The network carries the logins, so the VM holds only placeholders.
     pub injected: bool,
+    /// `--mcp-config` for the agent: the MCP servers trace is logged in to, by
+    /// URL alone (`mcp_auth`). None when there are none, or no network logins.
+    pub mcp_config: Option<String>,
+    /// What the network policy was made from, to make it again (`watch`).
+    pub sources: Sources,
     github: Option<Token>,
 }
 
@@ -70,6 +75,35 @@ impl Ready {
     }
 }
 
+/// What a sandbox's network policy is made from, besides the MCP logins and
+/// the provider's own (each read fresh when it's made).
+#[derive(Clone, Default)]
+pub struct Sources {
+    pub github: Option<Token>,
+    pub claude: Option<ClaudeCredential>,
+    pub endpoint: Option<egress::Injection>,
+}
+
+/// The whole policy for `session_id`, made now: logins, the provider's own,
+/// and the MCP servers' tokens (refreshed if they're close to expiring).
+pub fn policy<P: SandboxProvider + ?Sized>(
+    provider: &P,
+    session_id: &str,
+    sources: &Sources,
+) -> egress::Egress {
+    let mut e = egress::for_secrets(sources.github.as_ref(), sources.claude.as_ref());
+    e.injections.extend(sources.endpoint.clone());
+    e.injections.extend(
+        provider
+            .self_service(session_id)
+            .into_iter()
+            .flat_map(|s| s.injections),
+    );
+    e.injections
+        .extend(crate::mcp_auth::for_sandbox().injections);
+    e
+}
+
 /// Get the session's sandbox running with its repo checked out and Claude set
 /// up, whichever way the agent will run in it (terminal or chat). `say`
 /// reports each step.
@@ -93,6 +127,14 @@ pub fn ready<P: SandboxProvider>(
     let service = provider.self_service(&session_id);
     let mut extra: Vec<egress::Injection> = egress::endpoint(launch_env).into_iter().collect();
     extra.extend(service.iter().flat_map(|s| s.injections.clone()));
+    // The team's MCP servers trace is logged in to, each token for its server.
+    let mcp = crate::mcp_auth::for_sandbox();
+    extra.extend(mcp.injections.clone());
+    let sources = Sources {
+        github: github.clone(),
+        claude: secrets.claude.clone(),
+        endpoint: egress::endpoint(launch_env),
+    };
     let logins = egress::apply(
         provider,
         &target.sandbox,
@@ -114,8 +156,17 @@ pub fn ready<P: SandboxProvider>(
         fresh: how == acquire::Got::Created,
         env: logins.env,
         injected: logins.injected,
+        // Without the network carrying their tokens, they'd only refuse.
+        mcp_config: mcp.config.filter(|_| logins.injected),
+        sources,
         github,
     };
+    if !mcp.left_out.is_empty() {
+        say(&format!(
+            "Not adding {}: the login expired. Connect again in Integrations → MCP servers.",
+            mcp.left_out.join(", ")
+        ));
+    }
     // On every start, so a sandbox an older trace made gets the current ones.
     ready.run(
         provider,
@@ -193,6 +244,15 @@ pub fn ready<P: SandboxProvider>(
     if let (true, Some(service)) = (logins.injected, &service) {
         keep_alive(provider, &ready, service);
     }
+    if logins.injected {
+        // Its MCP tokens expire within the hour: renew them while trace is open.
+        super::watch::watch(
+            provider.shared(),
+            &target.sandbox,
+            &ready.session_id,
+            ready.sources.clone(),
+        );
+    }
     Ok(ready)
 }
 
@@ -203,7 +263,7 @@ fn keep_alive<P: SandboxProvider>(provider: &P, ready: &Ready, service: &super::
     let _ = provider.start_command(
         &ready.session_id,
         &super::helpers::keepalive_argv(),
-        &super::helpers::keepalive_env(service),
+        &super::helpers::keepalive_env(service, super::lifetime::load()),
         provider.home(),
     );
 }

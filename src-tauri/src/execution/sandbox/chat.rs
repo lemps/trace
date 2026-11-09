@@ -89,7 +89,8 @@ fn open<P: SandboxProvider>(
         id,
     ]);
     // Its hooks tell the keep-alive whether it's working (`helpers`).
-    argv.extend(super::helpers::with_hook_settings(launch.extra_args));
+    let extra = super::helpers::with_mcp_config(launch.extra_args, ready.mcp_config.as_deref());
+    argv.extend(super::helpers::with_hook_settings(extra));
     let env = ready.agent_env(launch_env);
     let command = provider.start_command(&sid, &argv, &env, &ready.dir)?;
     let _ = provider.exec(

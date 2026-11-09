@@ -93,7 +93,7 @@ fn vercel_live_keepalive_extends_while_working_and_stops_when_idle() {
         &sid,
         "mkdir -p ~/.trace && touch ~/.trace/attached",
     );
-    let mut env = helpers::keepalive_env(&service);
+    let mut env = helpers::keepalive_env(&service, Default::default());
     env.extend([
         ("TRACE_KEEPALIVE_EVERY".to_string(), "5".to_string()),
         ("TRACE_EXTEND_EVERY".to_string(), "0".to_string()),

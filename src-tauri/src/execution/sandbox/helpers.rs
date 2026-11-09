@@ -7,21 +7,15 @@
 //! image's PATH, so nothing has to change the agent's.
 
 use std::collections::HashMap;
-use std::time::Duration;
 
 use serde_json::json;
 
+use super::lifetime::Lifetime;
 use super::SelfService;
 
 const TRACE_HOOK: &str = include_str!("helpers/trace-hook.sh");
 const GH_SHIM: &str = include_str!("helpers/gh.sh");
 const KEEPALIVE: &str = include_str!("helpers/trace-keepalive.sh");
-
-/// How long a sandbox runs on unattended once its agent has nothing to do,
-/// before it stops (and saves). Conductor's choice too.
-pub const IDLE_STOP: Duration = Duration::from_secs(5 * 60);
-/// The longest one run of a sandbox lasts, working or not.
-pub const MAX_RUN: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// Where the helpers go, under `$HOME`.
 pub const BIN: &str = ".local/bin";
@@ -43,29 +37,44 @@ pub fn install_argv() -> Vec<String> {
     .collect()
 }
 
-/// Start the keep-alive, unless one is running already (it checks).
+/// Start the keep-alive, in place of one already running: each start brings
+/// the current settings (`lifetime`).
 pub fn keepalive_argv() -> Vec<String> {
     vec![
         "bash".to_string(),
         "-c".to_string(),
-        format!(r#"exec "$HOME/{BIN}/trace-keepalive""#),
+        format!(
+            r#"p="$HOME/.trace/keepalive.pid"; [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null; rm -f "$p"; exec "$HOME/{BIN}/trace-keepalive""#
+        ),
     ]
 }
 
 /// What the keep-alive is told: where to ask for time and to stop, and when.
-pub fn keepalive_env(service: &SelfService) -> HashMap<String, String> {
+pub fn keepalive_env(service: &SelfService, lifetime: Lifetime) -> HashMap<String, String> {
+    let secs = |d: std::time::Duration| d.as_secs().to_string();
     HashMap::from([
         (
             "TRACE_KEEPALIVE_EXTEND".to_string(),
             service.extend_url.clone(),
         ),
         ("TRACE_KEEPALIVE_STOP".to_string(), service.stop_url.clone()),
-        (
-            "TRACE_IDLE_SECS".to_string(),
-            IDLE_STOP.as_secs().to_string(),
-        ),
-        ("TRACE_MAX_SECS".to_string(), MAX_RUN.as_secs().to_string()),
+        ("TRACE_IDLE_SECS".to_string(), secs(lifetime.idle())),
+        ("TRACE_MAX_SECS".to_string(), secs(lifetime.max_run())),
     ])
+}
+
+/// `args` with `--mcp-config <config>` in, before any `--settings` (which ends
+/// `--mcp-config`'s list, as `claude::launch` relies on).
+pub fn with_mcp_config(mut args: Vec<String>, config: Option<&str>) -> Vec<String> {
+    let Some(config) = config else {
+        return args;
+    };
+    let at = args
+        .iter()
+        .position(|a| a == "--settings")
+        .unwrap_or(args.len());
+    args.splice(at..at, ["--mcp-config".to_string(), config.to_string()]);
+    args
 }
 
 /// `args` with the hooks in its `--settings`: merged into one already there
@@ -122,6 +131,33 @@ mod tests {
         );
         assert!(argv[5].contains("events.log"));
         assert!(argv[6].contains("pr create"));
+        assert!(argv[7].contains("TRACE_KEEPALIVE_EXTEND"));
+    }
+
+    #[test]
+    fn mcp_servers_go_before_the_settings_that_end_their_list() {
+        let args = vec!["--settings".to_string(), "{}".to_string()];
+        let out = with_mcp_config(args, Some(r#"{"mcpServers":{}}"#));
+        assert_eq!(out[0], "--mcp-config");
+        assert_eq!(out[2], "--settings");
+        assert!(with_mcp_config(vec![], None).is_empty());
+    }
+
+    #[test]
+    fn hooks_join_a_chats_settings_rather_than_adding_a_second() {
+        let args = vec![
+            "--model".to_string(),
+            "x".to_string(),
+            "--settings".to_string(),
+            r#"{"permissions":{"allow":["mcp__trace"]}}"#.to_string(),
+        ];
+        let out = with_hook_settings(args);
+        assert_eq!(out.iter().filter(|a| *a == "--settings").count(), 1);
+        let v: serde_json::Value = serde_json::from_str(&out[3]).expect("json");
+        assert_eq!(v["permissions"]["allow"][0], "mcp__trace");
+        assert!(v["hooks"]["Stop"].is_array());
+        let fresh = with_hook_settings(vec!["--model".to_string(), "x".to_string()]);
+        assert_eq!(fresh[2], "--settings");
     }
 
     #[test]
