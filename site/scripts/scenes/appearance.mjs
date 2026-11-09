@@ -2,7 +2,7 @@
 // and the keyboard shortcut cheat sheet. Starts and ends in Dark.
 import { setTheme, sleep } from "../lib/ui.mjs";
 
-export const clip = { segments: [["start+0.3", "done", 1.15]] };
+export const clip = { segments: [["start+0.3", "done", 1.4]] };
 
 export async function setup(d) {
   await setTheme(d, "Dark");

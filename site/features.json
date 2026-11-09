@@ -123,7 +123,7 @@
       ],
       "alt": "On a Jira board, a card is dragged to In Progress and its agent starts in a new worktree with the ticket as its brief. The agent's Pull request tab then shows its checks passing and a review comment, and the Merge button waits in the header.",
       "placeholder": {
-        "alt": "trace's Integrations page with three cards: Jira, Pylon and GitHub.",
+        "alt": "trace's Integrations page: Jira, Pylon, GitHub and Vercel ready to connect, and Tailscale.",
         "caption": "Shown without a tracker connected: no ticket data is made up for this page."
       }
     },

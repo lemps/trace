@@ -9,31 +9,42 @@ all of them, including the scenes marked **keep**. *Keep* means the scene's scri
 storyboard are still right once the shared helpers below are fixed. *Rewrite* means
 the scene itself has to change. *New* means there's no scene yet.
 
-| # | Section (`features.json` id) | Scene file | State |
-|---|---|---|---|
-| | Hero (still) | `scenes/hero.mjs` | keep |
-| 1 | Agents as a chat (`chat`) | `scenes/chat.mjs` | rewrite |
-| | ↳ more: Subagents | `scenes/subagents.mjs` | keep |
-| 2 | The composer (`composer`) | `scenes/composer.mjs` | **new** |
-| 3 | Fleet (`fleet`) | `scenes/fleet.mjs` | keep |
-| 4 | Inbox (`inbox`) | `scenes/inbox.mjs` | keep |
-| 5 | Panes, Files and Terminal (`panes`) | `scenes/panes.mjs` | keep |
-| | ↳ more: Files and Quick Open | `scenes/files.mjs` | keep |
-| | ↳ more: Terminal extras | `scenes/terminal.mjs` | keep |
-| 6 | Plans, Browser and Gallery (`plan`) | `scenes/plan.mjs` | keep (never recorded) |
-| | ↳ more: Gallery | `scenes/gallery.mjs` | keep (never recorded) |
-| 7 | Tickets and pull requests (`tickets`) | `scenes/tickets.mjs` | rewrite (still → clip) |
-| 8 | Run it anywhere (`sessions`) | `scenes/sessions.mjs` | keep |
-| | ↳ more: Vercel Sandbox | `scenes/sandbox.mjs` | **new** |
-| 9 | Orchestrator (`orchestrator`) | `scenes/orchestrator.mjs` | keep |
-| 10 | Scheduled prompts (`schedules`) | `scenes/schedules.mjs` | rewrite (setup only) |
-| 11 | Coming from Conductor (`conductor`) | `scenes/conductor.mjs` | **new** |
-| 12 | Make it yours (`appearance`) | `scenes/appearance.mjs` | keep |
+| # | Section (`features.json` id) | Scene file | State | Recorded (9 Nov, new UI) |
+|---|---|---|---|---|
+| | Hero (still) | `scenes/hero.mjs` | keep | not yet |
+| 1 | Agents as a chat (`chat`) | `scenes/chat.mjs` | **rewritten** | yes |
+| | ↳ more: Subagents | `scenes/subagents.mjs` | keep (Explore subagents now) | yes |
+| 2 | The composer (`composer`) | `scenes/composer.mjs` | **written** | not yet |
+| 3 | Fleet (`fleet`) | `scenes/fleet.mjs` | keep | not yet |
+| 4 | Inbox (`inbox`) | `scenes/inbox.mjs` | keep (Answer only if shown) | not yet |
+| 5 | Panes, Files and Terminal (`panes`) | `scenes/panes.mjs` | keep | not yet |
+| | ↳ more: Files and Quick Open | `scenes/files.mjs` | keep | not yet |
+| | ↳ more: Terminal extras | `scenes/terminal.mjs` | keep | not yet |
+| 6 | Plans, Browser and Gallery (`plan`) | `scenes/plan.mjs` | keep | not yet |
+| | ↳ more: Gallery | `scenes/gallery.mjs` | keep | not yet |
+| | ↳ more: Browser (still) | `scenes/browser.mjs` | **written** | yes |
+| 7 | Tickets and pull requests (`tickets`) | `scenes/tickets.mjs` | placeholder still (needs demo Jira + GitHub) | still re-shot |
+| 8 | Run it anywhere (`sessions`) | `scenes/sessions.mjs` | keep | not yet |
+| | ~~↳ more: Vercel Sandbox~~ | — | dropped from `features.json` until there's a demo Vercel account | — |
+| 9 | Orchestrator (`orchestrator`) | `scenes/orchestrator.mjs` | keep | not yet |
+| 10 | Scheduled prompts (`schedules`) | `scenes/schedules.mjs` | **fixed** (confirm, CLI flags, grep) | not yet |
+| 11 | Coming from Conductor (`conductor`) | `scenes/conductor.mjs` | **written** | yes |
+| 12 | Make it yours (`appearance`) | `scenes/appearance.mjs` | keep | yes |
 
-That's 12 keep, 3 rewrite and 3 new: 18 scenes in all. A section's `more` clips are
-separate scenes with their own media (`record.mjs subagents` and so on). The build shows
-whichever are recorded, and leaves a section off until at least one is. `tickets` has a
-`placeholder`, so the old still of the Integrations page shows until its clip exists.
+**Status, 9 Nov.** The helpers below are fixed (`lib/ui.mjs`), and the macOS driver
+mirrors `:hover`, so hover bars and row actions show. "Not yet" scenes have run-ready
+scripts but weren't recorded: the recording machine's screen locked partway, and a
+hidden WKWebView page stops `requestAnimationFrame` and CSS animations, so details
+stay at their first, invisible keyframe and xterm draws nothing. The runner now
+refuses a hidden page. Record the rest with the screen unlocked, in this order (later
+scenes reuse earlier sessions, and a Browser page or a Conductor import changes what
+others show): composer, hero, panes, files, terminal, plan, gallery, sessions, inbox,
+fleet, orchestrator, schedules; then `demo-setup.mjs --conductor` and conductor last.
+
+A section's `more` clips are separate scenes with their own media (`record.mjs
+subagents` and so on). The build shows whichever are recorded, and leaves a section off
+until at least one is. `tickets` has a `placeholder`, so a still of the Integrations
+page shows until its clip exists.
 
 ## Fix these helpers first (`lib/ui.mjs`)
 
@@ -105,11 +116,11 @@ need more:
 
 | Needed for | What |
 |---|---|
-| composer | `<config>/trace/saved-prompts.json`: `{"prompts":[{"id":"review","name":"review","title":"Code review","body":"Review the changes on this branch for bugs and missing tests. Reply with a short list."}]}`, plus a small PNG to paste (e.g. a screenshot of tinyroute's README rendered) |
+| composer | `<config>/trace/saved-prompts.json` with a `repro` prompt (`demo-setup.mjs` writes it; `/review` would clash with Claude Code's own command). The pasted screenshot is drawn on a canvas in the page, so nothing comes from the clipboard |
 | tickets, sandbox | A **demo GitHub** account or org that owns a copy of `tinyroute`, with an Actions workflow running `node --test`. trace signed in to it (Integrations → GitHub). `gh` signed in to it too, through a demo `GH_CONFIG_DIR` set for the trace process, because PR watching still uses `gh` |
 | tickets | A **demo Jira Cloud** site (free plan) with one Kanban project, e.g. `TINY`, holding three or four tickets about tinyroute. Connect it in Integrations → Jira, so the token lands in the demo config |
 | sandbox | A **demo Vercel** token (Hobby). "Run on" only shows while Vercel is connected |
-| conductor | A fake Conductor install (see that section) and a local-only override for its path |
+| conductor | `demo-setup.mjs --conductor`, and `TRACE_DEV_CONDUCTOR_DIR=<work>/conductor` (a recording build only) |
 
 Never use your own accounts. The leak check only looks for your home folder and user
 name; it can't see a real email, avatar or org. Check those frames by eye.
@@ -160,8 +171,8 @@ defaults: set them back through the pickers, since picks are kept per workspace.
 1. Click `button[aria-label^="Model:"]`; the menu opens. Pick **Opus**.
 2. `Effort:` → **High**. `Mode:` → **Plan**; the pill turns accent.
 3. Type `/`. The slash menu lists the agent's commands and the saved prompts. Type
-   `rev`, then Enter: the saved prompt's text fills the composer.
-4. Paste the PNG. A thumbnail chip appears.
+   `/rep`, then Enter: the `repro` saved prompt's text fills the composer.
+4. Paste a screenshot (a failing `curl` against the router, drawn on a canvas in the page). A thumbnail chip appears.
 5. Enter sends. The sent bubble shows the thumbnail, the slot turns to Stop, and the
    ring in the header moves. Cut before the turn ends.
 
@@ -169,7 +180,7 @@ Marks: `model`, `slash`, `pasted`, `sent`.
 **Risks:**
 - There's no file input to set: Attach opens a native dialog. Paste by dispatching a
   `ClipboardEvent("paste", { clipboardData })` with a `DataTransfer` holding a `File`
-  on `textarea.ac-input`. Pass its bytes in as base64 through `d.eval`. `onPaste` reads
+  on `textarea.ac-input`; `composer.mjs` builds the `File` from a canvas in the page. `onPaste` reads
   `clipboardData.files` (`agentChat/Composer.tsx:130`). Try CDP
   `Input.dispatchDragEvent` as the fallback.
 - A model pick while the agent runs is sent live, which can take a moment to show.
@@ -212,10 +223,11 @@ fixes.
   plans slides out.
 - **gallery:** four SVG icons → `show_images` → Gallery tab → full size → arrow keys.
 
-**Risk: the Browser tab can't be recorded this way.** It's a native child webview laid
-over the pane, and `Page.startScreencast` on the main webview shows a blank area where
-it is. The section's copy mentions Browser, but neither clip shows it. Recording it
-would need OS-level screen capture.
+**The Browser tab is a still** (`browser.mjs`, in `plan`'s `more`): a native child
+webview isn't in a recorded clip, but the macOS driver's stills snapshot it and lay it
+over the page. The scene serves a tinyroute playground on `localhost` from the runner,
+opens it from the empty tab's address bar (no agent turn) and splits it right of the
+chat.
 
 ### 7. Tickets and pull requests: `tickets.mjs`, rewrite (still → clip)
 
@@ -302,34 +314,24 @@ test run", Daily, allowed tools, precheck, **Schedule**, then its detail.
 4. **Import N items** → the summary: Imported, and what was skipped and why (the run
    script, archived workspaces). Then **Done**.
 
-Marks: `preview`, `imported`.
+Marks: `preview`, `import`, `summary`.
 
-Demo data: a fake `conductor.db`. Build it with a small script, using the columns the
-importer's own test fixtures use (`src-tauri/src/conductor_import/tests.rs`,
-`db.rs` tests, `prompt_tests.rs`):
-- `repos`, pointing at copies of `pixelsort` and `weatherline` (e.g. under
-  `<demo>/conductor/`), so they're new to trace, with `storage_version` 2;
-- `workspaces`: one live and two archived;
-- `sessions`: the live workspace's `claude_session_id`;
-- `settings`: `default_model` and the like.
+Demo data: `demo-setup.mjs --conductor` (`lib/demo-conductor.mjs`) builds it in
+`<work>/conductor`, which a recording build reads through `TRACE_DEV_CONDUCTOR_DIR`:
+- `repos`: `storefront` and `docs-site`, clones of tinyroute under
+  `<work>/conductor/repos`, so they're new to trace, with `storage_version` 2, setup
+  and run scripts, and `review` / `pr` custom prompts;
+- `workspaces`: `storefront/lisbon` live, a real worktree at `.conductor/lisbon`, and
+  two archived ones with no folder;
+- `sessions`: lisbon's, whose `claude_session_id` is a real one-turn `claude -p`
+  conversation, so the preview marks it **Resumable**;
+- `settings`: only `default_open_in`. No `conductor_api_token` or `claude_env_vars` rows.
 
-The live workspace is a real git worktree at `<root>/.conductor/<city>`; version 2 keeps
-it under the repo, not your home. Its transcript should be a real one: run `claude -p
-"Say hi"` once in that folder, and use its session id. **Never** add
-`conductor_api_token` or `claude_env_vars` rows.
-
-**Risks:**
-- **Privacy: the importer reads your real Conductor.** `conductor_import::db_path()` uses
-  `dirs::data_dir()`, and `preview()` uses `dirs::home_dir()`. The README's local
-  override only covers `config_dir()`. Extend that local-only change so `db_path()`
-  reads `<TRACE_DEV_CONFIG_DIR>/com.conductor.app/conductor.db`. Without it, the
-  recording machine's own Conductor data shows on screen; on Windows, nothing is found
-  and the button stays hidden.
-- The preview prints each repo's full `rootPath`. Keep the demo folders outside your
-  home folder, or the leak check stops the take.
-- Importing moves the worktree and adds repos, sessions and saved prompts. Each take
-  has to restore the fake install and remove what the last one imported.
-- The transcript lives in the real `~/.claude/projects`, as every demo session's does.
+Run `--conductor` again before each take: it rebuilds the install and forgets what the
+last take imported (its sessions and catalog records); repos.json and the saved prompts
+are rewritten anyway. The demo config's clone folder is `<work>/clones`, since the
+default (`~/src`) showed the home folder on Settings → Repositories behind the dialog.
+The transcripts live in the real `~/.claude/projects`, as every demo session's do.
 
 ### 12. Make it yours: `appearance.mjs`, keep
 
