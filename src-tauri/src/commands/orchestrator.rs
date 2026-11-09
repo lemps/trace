@@ -15,10 +15,7 @@ use crate::claude::env::{build_effective_cli_env, MODEL_OVERRIDE_ENV_PREFIXES};
 use crate::helpers::persist;
 
 fn key_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("anthropic-key")
+    crate::helpers::trace_dir().join("anthropic-key")
 }
 
 /// The saved Anthropic API key, or `None` if unset.

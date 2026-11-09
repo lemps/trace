@@ -42,10 +42,7 @@ pub struct SessionGroups {
 }
 
 fn groups_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("session-groups.json")
+    crate::helpers::trace_dir().join("session-groups.json")
 }
 
 /// The frontend holds the whole structure and saves it back whole.

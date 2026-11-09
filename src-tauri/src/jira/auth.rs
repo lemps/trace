@@ -63,8 +63,5 @@ pub fn clear() -> Result<(), String> {
 }
 
 fn session_path() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("jira-session.json")
+    crate::helpers::trace_dir().join("jira-session.json")
 }

@@ -21,10 +21,7 @@ use crate::state::{AppState, StartGuard};
 // surface a clear error if the saved folder is no longer a git repo.
 
 fn repo_path_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("repo-path")
+    crate::helpers::trace_dir().join("repo-path")
 }
 
 /// Load the legacy single-repo path, if any — read once to migrate into the

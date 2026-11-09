@@ -86,10 +86,7 @@ mod tests {
 }
 
 fn config_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("repos.json")
+    crate::helpers::trace_dir().join("repos.json")
 }
 
 /// What a missing `repos.json` means. First run: migrate the old single-repo file
