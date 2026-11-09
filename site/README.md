@@ -79,9 +79,21 @@ WKWebView has no automation port, over a recording build's own bridge
   repos are kept; `--reset` starts them over), uses no credentials, commits as a demo
   identity, and copies nothing from your own config. Keep `<dir>` outside your home
   folder: the repos' paths show on screen, and the runner stops on your home path.
+  It also writes the composer scene's saved prompts (`saved-prompts.json`). With
+  `--conductor` it builds a fake Conductor install in `<dir>/conductor` for the
+  `conductor` scene (`lib/demo-conductor.mjs`): a database with only the columns the
+  importer reads and none of its secret rows, two repos, and a live workspace whose
+  worktree exists and whose conversation is one short `claude -p` turn. Point
+  `TRACE_DEV_CONDUCTOR_DIR` at it, and run `--conductor` again before each take of
+  that scene: importing moves the workspace and adds the repos.
 - **ffmpeg** with libx264 and libvpx (any static build), as `TRACE_FFMPEG` or on PATH.
-- **Claude Code**, signed in. The chat, subagent, inbox, fleet, sessions and
-  orchestrator scenes run real, short prompts in the demo repos.
+- **Claude Code**, signed in. The chat, subagent, composer, inbox, fleet, sessions,
+  plan, gallery and orchestrator scenes run real, short prompts in the demo repos.
+  The runner starts agents with `--permission-mode default` (Settings → Agents'
+  extra flags, in the recording build's own storage), so a `defaultMode` in your
+  Claude Code settings doesn't change the clips. Other settings still apply: an
+  output style, say, or plugins' subagent types. Prompts that could write outside
+  the worktree (plan mode writes to `~/.claude/plans`) leave files there.
 
 Environment:
 
@@ -89,6 +101,7 @@ Environment:
 | --- | --- |
 | `TRACE_EXE` | the build to launch (Windows: if none is listening on the debug port; macOS: always, a recording build) |
 | `TRACE_DEV_CONFIG_DIR` | the demo config folder |
+| `TRACE_DEV_CONDUCTOR_DIR` | the fake Conductor install (`demo-setup.mjs --conductor`); only the `conductor` scene needs it |
 | `TRACE_SITE_WORK` | a work folder outside the repo: WebView2 profile, frames |
 | `TRACE_CDP_PORT` | the debug port (Windows; default 9600) |
 | `TRACE_FFMPEG` | ffmpeg (default `ffmpeg`) |
@@ -107,22 +120,32 @@ Environment:
 - **Input** is synthesised in the page (`lib/bridge-input.mjs`): pointer and mouse
   events at an element's centre (hover enter/leave included), `execCommand
   ("insertText")` for typing, which React's inputs and xterm's hidden textarea both
-  take, and key events with modifiers. They're untrusted events, so CSS `:hover`
-  doesn't show, and the browser's own default actions are done by the driver
-  (focus on click, wheel scrolling, the context menu).
+  take, and key events with modifiers. They're untrusted events, so the browser's
+  own default actions are done by the driver (focus on click, wheel scrolling, the
+  context menu), and CSS `:hover` is too: every `:hover` rule is mirrored as
+  `[data-rec-hover]`, set on what the pointer is over, so hover-revealed controls
+  (a row's Archive, a message's hover bar, pane chrome) show.
 - **Frames** are WKWebView's own snapshots of the page, at 2× (2560×1600 for a
   1280×800 clip), written as PNGs by trace; the encoder scales them to 1280. No
   Screen Recording permission is needed. It holds 20 fps, the clips' rate (about 50
-  at most). Keep trace's window on screen while recording.
+  at most). Keep trace's window on screen and the screen unlocked while recording:
+  a hidden page stops its animations (a session's detail would stay at its first,
+  invisible keyframe) and xterm's drawing, so the runner refuses to record one. It
+  brings the window to the front through System Events at launch and again whenever
+  something covers it, and warns if that happened during a take: check that clip.
+- **Typing** puts back what macOS's smart dashes and quotes rewrite (`--` to `—`,
+  `"` to `“`), so flags, titles and prompts arrive as typed.
 - **Stills** (`d.screenshot(file)`) show the window as you see it: the Browser tab's
   pages are native child webviews, not part of the page, so each visible one is
   snapshotted too and laid over the page with ffmpeg. Clips don't do this: in a
   recorded clip a Browser page is an empty pane, so show it in a still.
 
-The runner records at 1280×800, hides the signed-in account's usage meter, and
-stops without encoding if your home folder or user name ever shows on screen.
-Check each clip anyway before committing it. Clips should stay under 1.5 MB each
-(the runner warns); the page's media is about 5 MB in total.
+The runner records at 1280×800, hides the signed-in account's usage meter and
+passing toasts (errors stay visible), and stops without encoding if your home
+folder or user name ever shows on screen. A recording build never checks for
+updates, so no update toast lands in a take. Check each clip anyway before
+committing it. Clips should stay under 1.5 MB each (the runner warns); the page's
+media is about 6–8 MB in total.
 
 ### Re-recording a feature
 
@@ -148,7 +171,12 @@ Check each clip anyway before committing it. Clips should stay under 1.5 MB each
      at the moments `segments` cut at.
 2. Add its entry to `site/features.json` (id, label, title, text, points, alt: a
    sentence describing what the clip shows; `"kind": "still"` and a `caption` for a
-   screenshot). Its position in the list is its place on the page.
+   screenshot). Its position in the list is its place on the page. Optional:
+   - `more`: further clips stacked under the first, each `{ id, label, alt }` with
+     its own scene (`scenes/<id>.mjs`), for a section that covers several things;
+   - `placeholder`: `{ alt, caption }` to show `media/<id>.jpg` as a still until the
+     clip is recorded (a section that was a still before it became a clip).
 3. `node site/scripts/record.mjs <feature-id>`, then `node site/scripts/build-page.mjs`.
-   Until its media is recorded, a feature listed in `features.json` is left off the page
-   (the build says so), so a section can be written ahead of its clip.
+   Until its media is recorded, a clip listed in `features.json` is left off the page
+   (the build says so), and a section with none of its clips recorded is left off too,
+   so a section can be written ahead of its clip. `scripts/SCENES.md` plans each scene.

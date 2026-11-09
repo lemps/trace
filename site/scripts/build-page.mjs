@@ -19,32 +19,48 @@ const { hero, features: listed } = JSON.parse(readFileSync(join(site, "features.
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const num = (i) => String(i + 1).padStart(2, "0");
+const has = (file) => existsSync(join(site, "media", file));
 
-// A section waits for its clip: one listed in features.json before it's recorded
-// (`record.mjs <id>`) is left off the page, so the published page never shows a
-// frame with nothing in it. Recording it and building again brings it in.
-const mediaOf = (f) => (f.kind === "still" ? [`${f.id}.jpg`] : [`${f.id}.mp4`, `${f.id}.webm`, `${f.id}.jpg`]);
-const features = listed.filter((f) => {
-  const missing = mediaOf(f).filter((file) => !existsSync(join(site, "media", file)));
-  if (missing.length > 0) console.warn(`${f.id}: left off the page until it's recorded (no media/${missing.join(", media/")}): run record.mjs ${f.id}`);
-  return missing.length === 0;
+// A clip waits for its recording: one listed in features.json before it's recorded
+// (`record.mjs <id>`) is left off, so the published page never shows a frame with
+// nothing in it. A section shows its first clip plus any `more` clips (stacked
+// below it) that are recorded, and is left off while none is. A clip with a
+// `placeholder` shows media/<id>.jpg as a still, with the placeholder's alt and
+// caption, until its video is recorded.
+const ready = (m) => {
+  if (m.kind === "still") return has(`${m.id}.jpg`) ? m : null;
+  if (has(`${m.id}.mp4`) && has(`${m.id}.webm`) && has(`${m.id}.jpg`)) return m;
+  if (m.placeholder && has(`${m.id}.jpg`)) return { ...m, kind: "still", ...m.placeholder };
+  return null;
+};
+const features = listed.flatMap((f) => {
+  const all = [{ ...f, more: undefined }, ...(f.more ?? []).map((m) => ({ label: f.label, ...m }))];
+  const clips = all.map(ready).filter(Boolean);
+  for (const m of all.filter((m) => !clips.some((c) => c.id === m.id))) {
+    console.warn(`${f.id}: media/${m.id} is left off the page until it's recorded: run record.mjs ${m.id}`);
+  }
+  return clips.length > 0 ? [{ ...f, clips }] : [];
 });
 
 const index = features
   .map((f, i) => `            <li><a href="#${f.id}"><span class="n">${num(i)}</span>${esc(f.label)}</a></li>`)
   .join("\n");
 
-const media = (f) =>
-  f.kind === "still"
-    ? `<div class="frame"><img src="media/${f.id}.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="${esc(f.alt)}" /></div>
-            <figcaption>${esc(f.caption ?? "")}</figcaption>`
-    : `<div class="frame">
-              <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/${f.id}.jpg" aria-label="${esc(f.label)}" aria-describedby="${f.id}-desc">
-                <source data-src="media/${f.id}.mp4" type="video/mp4" />
-                <source data-src="media/${f.id}.webm" type="video/webm" />
-              </video>
-            </div>
-            <figcaption id="${f.id}-desc"><span class="visually-hidden">What the clip shows: </span>${esc(f.alt)}</figcaption>`;
+const media = (m) =>
+  m.kind === "still"
+    ? `<figure>
+              <div class="frame"><img src="media/${m.id}.jpg" width="1280" height="800" loading="lazy" decoding="async" alt="${esc(m.alt)}" /></div>
+              <figcaption>${esc(m.caption ?? "")}</figcaption>
+            </figure>`
+    : `<figure>
+              <div class="frame">
+                <video data-clip muted loop playsinline preload="none" width="1280" height="800" poster="media/${m.id}.jpg" aria-label="${esc(m.label)}" aria-describedby="${m.id}-desc">
+                  <source data-src="media/${m.id}.mp4" type="video/mp4" />
+                  <source data-src="media/${m.id}.webm" type="video/webm" />
+                </video>
+              </div>
+              <figcaption id="${m.id}-desc"><span class="visually-hidden">What the clip shows: </span>${esc(m.alt)}</figcaption>
+            </figure>`;
 
 const sections = features
   .map(
@@ -58,9 +74,9 @@ const sections = features
 ${f.points.map((p) => `              <li>${esc(p)}</li>`).join("\n")}
             </ul>
           </div>
-          <figure>
-            ${media(f)}
-          </figure>
+          <div class="media">
+            ${f.clips.map(media).join("\n            ")}
+          </div>
         </div>
       </section>`,
   )

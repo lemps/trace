@@ -1,13 +1,13 @@
 // The orchestrator: ask what your agents are doing, then its stats.
 // Needs Settings → Assistant set to "Claude CLI (-p mode)" or an API key; setup picks the CLI.
-import { ROUTER, ensureSession, pick, rail, sleep } from "../lib/ui.mjs";
+import { ROUTER, ensureSession, ensureStarted, pick, rail, sleep } from "../lib/ui.mjs";
 import { SORTER } from "./subagents.mjs";
 
 export const clip = {
   segments: [
     ["start+0.3", "asked", 1],
     ["asked", "answered", 2.5],
-    ["answered", "end", 1],
+    ["answered", "end", 1.4],
   ],
 };
 
@@ -16,8 +16,11 @@ export async function setup(d) {
   await d.eval(() => location.reload());
   await sleep(4000);
   await d.viewport(1280, 800);
+  // Running, so the round-up has agents that are Ready, not just stopped ones.
   await ensureSession(d, ROUTER);
+  await ensureStarted(d);
   await ensureSession(d, { ...SORTER, seed: "Explain src/sort.rs in two sentences. Don't edit anything." });
+  await ensureStarted(d);
   await d.click('button[aria-label="Settings"]');
   await sleep(600);
   await d.click("main button", "Assistant");

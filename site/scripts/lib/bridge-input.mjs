@@ -54,6 +54,45 @@ export function pointer(kind, x, y, opts = {}) {
     state.over = target;
   }
 
+  // Untrusted events don't set CSS :hover, so hover-revealed controls (a row's
+  // actions, a message's hover bar, pane chrome) would never show. Mirror every
+  // `:hover` rule as `[data-rec-hover]`, and mark what the pointer is over.
+  if (state.sheets !== document.styleSheets.length) {
+    state.sheets = document.styleSheets.length;
+    const out = [];
+    const walk = (rules, wrap) => {
+      for (const r of rules) {
+        if (r.selectorText?.includes(":hover")) {
+          const sel = r.selectorText.replace(/:hover/g, "[data-rec-hover]");
+          out.push(wrap(`${sel}{${r.style.cssText}}`));
+        } else if (r.cssRules && (r.media || r.conditionText)) {
+          const head = r.media ? `@media ${r.media.mediaText}` : `@supports ${r.conditionText}`;
+          walk(r.cssRules, (t) => wrap(`${head}{${t}}`));
+        }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      if (sheet.ownerNode?.id === "rec-hover") continue;
+      try {
+        walk(sheet.cssRules, (t) => t);
+      } catch {}
+    }
+    let el = document.getElementById("rec-hover");
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "rec-hover";
+      document.head.append(el);
+    }
+    el.textContent = out.join("\n");
+    state.sheets = document.styleSheets.length;
+  }
+  for (const e of document.querySelectorAll("[data-rec-hover]")) {
+    if (!e.contains(target)) e.removeAttribute("data-rec-hover");
+  }
+  for (let e = target; e && e !== document.documentElement; e = e.parentElement) {
+    if (!e.hasAttribute("data-rec-hover")) e.setAttribute("data-rec-hover", "");
+  }
+
   if (kind === "move") {
     fire(target, "pointermove", ptr);
     fire(target, "mousemove", base);
@@ -103,14 +142,21 @@ export function pointer(kind, x, y, opts = {}) {
 export function insertText(text) {
   const el = document.activeElement;
   if (!el || el === document.body) throw new Error("nothing is focused to type into");
-  if (document.execCommand("insertText", false, text)) return;
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    const proto = Object.getPrototypeOf(el);
-    const { selectionStart: s, selectionEnd: e, value } = el;
-    Object.getOwnPropertyDescriptor(proto, "value").set.call(el, value.slice(0, s) + text + value.slice(e));
+  const field = (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && !el.closest(".xterm");
+  const { selectionStart: s, selectionEnd: e, value } = field ? el : {};
+  const expected = field ? value.slice(0, s) + text + value.slice(e) : null;
+  const set = () => {
+    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, expected);
     el.setSelectionRange(s + text.length, s + text.length);
     el.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+  };
+  if (document.execCommand("insertText", false, text)) {
+    // macOS's smart dashes and quotes rewrite typed text ("--" to "—", '"' to "“"),
+    // which would change a flag or a title: put back what was typed.
+    if (field && el.value !== expected) set();
+    return;
   }
+  if (field) set();
 }
 
 /** Press one key on the focused element, with modifiers: 1 Alt, 2 Ctrl, 4 Meta, 8 Shift. */

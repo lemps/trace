@@ -3,12 +3,18 @@
 //   <work>/demo/tinyroute, pixelsort, weatherline   the demo repos (lib/demo-repos.mjs)
 //   <work>/demo/remotes/<name>.git                  a bare `origin` for each
 //   <work>/config/trace/repos.json                  the demo config, listing them
+//   <work>/config/trace/saved-prompts.json          the composer scene's saved prompts
+//   <work>/conductor/                               with --conductor: a fake Conductor
+//                                                   install (lib/demo-conductor.mjs)
 //
-//   TRACE_SITE_WORK=<dir> node site/scripts/demo-setup.mjs [--reset]
+//   TRACE_SITE_WORK=<dir> node site/scripts/demo-setup.mjs [--reset] [--conductor]
 //
 // Safe to run again: a repo that's already there is left as it is (with any
-// worktrees the scenes made), and repos.json is rewritten. --reset deletes
-// <work>/demo and starts the repos over. It uses no credentials and copies
+// worktrees the scenes made), and repos.json and saved-prompts.json are rewritten.
+// --reset deletes <work>/demo and starts the repos over. --conductor (re)builds the
+// Conductor install, for TRACE_DEV_CONDUCTOR_DIR=<work>/conductor; run it again
+// before each take of the conductor scene, which imports it. It runs one short
+// `claude -p` turn in the live workspace, so the import can resume it. It uses no credentials and copies
 // nothing from your own config: commits are by a demo identity, and git runs
 // without your global config. Then record with
 //   TRACE_DEV_CONFIG_DIR=<work>/config
@@ -16,9 +22,10 @@
 // path is ever on screen, and the demo repos' paths are.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { buildConductor, forgetImport } from "./lib/demo-conductor.mjs";
 import { DEMO_REPOS } from "./lib/demo-repos.mjs";
 
 const work = process.env.TRACE_SITE_WORK;
@@ -99,4 +106,39 @@ mkdirSync(join(config, "trace"), { recursive: true, mode: 0o700 });
 const repos = { repos: DEMO_REPOS.map(({ name }) => join(demo, name)) };
 writeFileSync(join(config, "trace", "repos.json"), `${JSON.stringify(repos, null, 2)}\n`, { mode: 0o600 });
 
+// New clones go in <work>/clones: the default, ~/src, would put your home folder
+// on Settings → Repositories. Kept in repo-catalog.json, whose records stay as they are.
+const catalogFile = join(config, "trace", "repo-catalog.json");
+const catalog = existsSync(catalogFile) ? JSON.parse(readFileSync(catalogFile, "utf8")) : {};
+catalog.cloneRoot = join(root, "clones");
+writeFileSync(catalogFile, `${JSON.stringify(catalog, null, 2)}\n`, { mode: 0o600 });
+
+// The composer scene types `/rep` for this one; review-diff is one of trace's built-ins.
+const at = Date.UTC(2026, 4, 25);
+const prompt = (id, name, title, body) => ({ id, name, title, body, createdAt: at, updatedAt: at });
+const saved = {
+  prompts: [
+    prompt(
+      "demo-repro",
+      "repro",
+      "Reproduce and plan a fix",
+      "The attached screenshot shows a bug. Reproduce it with a failing test, find the cause, and plan the fix.",
+    ),
+    prompt(
+      "builtin-review-diff",
+      "review-diff",
+      "Review my changes",
+      "Review my uncommitted changes for bugs and risks. For each finding, give the file and line, how serious it is and a suggested fix.",
+    ),
+  ],
+};
+writeFileSync(join(config, "trace", "saved-prompts.json"), `${JSON.stringify(saved, null, 2)}\n`, { mode: 0o600 });
+
 console.log(`\ndemo config: ${config}\n  TRACE_DEV_CONFIG_DIR=${config}`);
+
+if (process.argv.includes("--conductor")) {
+  const dir = join(root, "conductor");
+  forgetImport(join(config, "trace"), dir);
+  buildConductor({ dir, source: join(demo, "remotes", "tinyroute.git"), git });
+  console.log(`conductor install: ${dir}\n  TRACE_DEV_CONDUCTOR_DIR=${dir}`);
+}

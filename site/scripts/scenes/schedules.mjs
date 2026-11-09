@@ -5,13 +5,15 @@ const NAME = "Morning test run";
 
 export const clip = {
   segments: [
-    ["start+0.5", "scheduled", 1.25],
-    ["scheduled", "end", 1],
+    ["start+0.5", "scheduled", 1.5],
+    ["scheduled", "end", 1.3],
   ],
 };
 
 const fill = async (d, selector, text, delay = 22) => {
   await d.click(selector);
+  // Replace what the field already holds (CLI flags start from Settings → Agents).
+  await d.eval((s) => [...document.querySelectorAll(s)].find((e) => e.getClientRects().length)?.select(), selector);
   await d.type(text, delay);
 };
 
@@ -22,7 +24,8 @@ export async function setup(d) {
     await d.click("main *", NAME);
     await sleep(800);
     await d.click("button", "Delete");
-    await d.click("button", "Confirm delete");
+    // The inline confirm's button is Delete again (btn danger).
+    await d.click("button.danger", "Delete");
     await sleep(1000);
     await rail(d, "Scheduled prompts");
   }
@@ -50,7 +53,7 @@ export async function run(d, mark) {
   });
   await sleep(1200);
   // The precheck is the mono field after the CLI flags.
-  await fill(d, "[role=dialog] label.field input.sched-mono[placeholder^='e.g. ']", "git fetch -q && git status -sb | findstr behind", 20);
+  await fill(d, "[role=dialog] label.field input.sched-mono[placeholder^='e.g. ']", `git fetch -q && git status -sb | ${process.platform === "win32" ? "findstr" : "grep"} behind`, 20);
   await sleep(1500);
   await d.click("[role=dialog] button", "Schedule");
   mark("scheduled");

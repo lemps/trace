@@ -4,12 +4,24 @@ import { sleep } from "./cdp.mjs";
 
 export { sleep };
 
+/**
+ * Whether an element matching `selector` is on screen. Hidden details stay
+ * mounted (a session's terminal keeps running), so presence alone says little.
+ */
+export const shown = (d, selector) =>
+  d.eval((s) => [...document.querySelectorAll(s)].some((e) => e.getClientRects().length > 0), selector);
+
 /** Open a rail page by the start of its label ("Inbox", "Fleet", "Sessions", …). */
 export async function rail(d, label) {
   await d.click(`button[aria-label^="${label}"]`);
   // Move off the rail, or its recents flyout slides out over the page.
   await d.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 700, y: 60 });
   await sleep(700);
+  // An open detail stays over the page it now returns to: go back to the page.
+  if (await shown(d, '.detail-top button[aria-label^="Back to"]')) {
+    await d.click('.detail-top button[aria-label^="Back to"]');
+    await sleep(700);
+  }
 }
 
 /** Set the select whose options include `value` (React-safe). */
@@ -55,12 +67,12 @@ async function hasSession(d, title) {
 
 /** The Sessions page's list (from a session's detail, its Back button). */
 export async function sessionsList(d) {
-  if (await d.eval(() => !!document.querySelector('button[aria-label="Back to Sessions"]'))) {
+  if (await shown(d, 'button[aria-label="Back to Sessions"]')) {
     await d.click('button[aria-label="Back to Sessions"]');
     await sleep(600);
   }
   await rail(d, "Sessions");
-  if (await d.eval(() => !!document.querySelector('button[aria-label="Back to Sessions"]'))) {
+  if (await shown(d, 'button[aria-label="Back to Sessions"]')) {
     await d.click('button[aria-label="Back to Sessions"]');
     await sleep(600);
   }
@@ -69,7 +81,13 @@ export async function sessionsList(d) {
 /** Open a session from the Sessions page. */
 export async function openSession(d, title) {
   for (let i = 0; i < 3; i++) {
-    const open = () => d.eval((t) => document.querySelector(".detail-top")?.innerText.includes(t) ?? false, title);
+    // Details stay mounted while hidden, so only a header on screen counts.
+    const open = () =>
+      d.eval(
+        (t) =>
+          [...document.querySelectorAll(".detail-top")].some((e) => e.getClientRects().length && e.innerText.includes(t)),
+        title,
+      );
     if (await open()) return;
     await sessionsList(d);
     await d.click("main .sr-title", title);
@@ -79,17 +97,37 @@ export async function openSession(d, title) {
   throw new Error(`couldn't open session "${title}"`);
 }
 
-/** Archive every session with this title, so a scene can start from a fresh one. */
+/** The centre of the Sessions row titled `title`, or of `inner` inside it. */
+const rowPoint = (d, title, inner = null) =>
+  d.eval(
+    (t, sel) => {
+      const row = [...document.querySelectorAll("main .session-row")].find(
+        (r) => r.querySelector(".sr-title")?.textContent.trim() === t,
+      );
+      if (!row) return null;
+      row.scrollIntoView({ block: "nearest" });
+      const r = (sel ? row.querySelector(sel) : row)?.getBoundingClientRect();
+      return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
+    },
+    title,
+    inner,
+  );
+
+/**
+ * Archive every session with this title, so a scene can start from a fresh one.
+ * Archive is the Sessions row's hover button, with no confirm. It's transparent
+ * until hover but laid out, so after resting on the row a click lands.
+ */
 export async function archiveSessions(d, title) {
-  while (await hasSession(d, title)) {
-    await openSession(d, title);
-    await d.click('.detail-top button[aria-label="Archive session"], button[aria-label="Archive session"]');
-    await sleep(600);
-    const confirm = await d.eval(() =>
-      [...document.querySelectorAll("button")].some((b) => /^(Archive|Confirm)/.test(b.innerText.trim()) && b.offsetParent),
-    );
-    if (confirm) await d.click("button", "Archive").catch(() => d.click("button", "Confirm"));
-    await sleep(1200);
+  for (let i = 0; i < 10 && (await hasSession(d, title)); i++) {
+    const row = await rowPoint(d, title);
+    if (!row) return;
+    await d.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: row.x, y: row.y });
+    await sleep(250);
+    const btn = await rowPoint(d, title, '.sr-actions button[aria-label="Archive"]');
+    if (!btn) throw new Error(`no Archive button on the "${title}" row`);
+    await d.mouse(btn.x, btn.y);
+    await sleep(1000);
   }
 }
 
@@ -138,13 +176,31 @@ export async function ensureSession(d, { title, repo, seed }) {
   return true;
 }
 
-/** The open detail's agent state words ("Working", "Ready", "Permission · Edit", …). */
-const stateWords = (d) =>
-  d.eval(() => [...document.querySelectorAll(".detail-top span[aria-label]")].map((e) => e.getAttribute("aria-label")).join("|"));
+/**
+ * The open detail's agent state words, from its header's status pill: "Working",
+ * "Ready", "Stopped", "No recent update", or what it needs ("Question",
+ * "Permission · Edit", "Turn finished").
+ */
+export const stateWords = (d) =>
+  d.eval(() =>
+    [...document.querySelectorAll(".detail-top .light-pill .light-text")]
+      .filter((e) => e.getClientRects().length)
+      .map((e) => e.textContent.trim())
+      .join("|"),
+  );
+
+/** An approval card's Allow once; a question card's Answer is primary-needs too. */
+const ALLOW = ".ac-ask:not(.ac-question) .ac-ask-actions .btn.primary-needs";
 
 /** Wait until the open session's agent needs you (a question or an approval). */
 export const waitNeedsYou = (d, timeout = 180000) =>
-  d.waitFor(() => /Needs you|Permission|Question/.test(document.querySelector(".detail-top")?.innerText ?? ""), timeout);
+  d.waitFor(
+    () =>
+      [...document.querySelectorAll(".detail-top")].some(
+        (e) => e.getClientRects().length && /Needs you|Permission|Question/.test(e.innerText),
+      ),
+    timeout,
+  );
 
 /**
  * Follow the open chat agent until its turn ends, answering each approval with
@@ -154,16 +210,23 @@ export async function followTurn(d, mark, { readMs = 1600, maxMs = 240000, answe
   const end = Date.now() + maxMs;
   let sawWork = false;
   while (Date.now() < end) {
-    const s = await d.eval(() => ({
-      ask: !!document.querySelector(".ac-ask .btn.primary-needs"),
-      text: [...document.querySelectorAll(".detail-top span[aria-label]")].map((e) => e.getAttribute("aria-label")).join("|"),
-    }));
-    const busy = /Working|Needs|Permission|Question/.test(s.text);
+    const s = await d.eval(
+      (allow) => ({
+        ask: [...document.querySelectorAll(allow)].some((e) => e.getClientRects().length),
+        text: [...document.querySelectorAll(".detail-top .light-pill .light-text")]
+          .filter((e) => e.getClientRects().length)
+          .map((e) => e.textContent)
+          .join("|"),
+      }),
+      ALLOW,
+    );
+    // "Turn finished" is the quiet timer's needs-you: the turn is over.
+    const busy = /Working|Needs you|Permission|Question|Plan approval/.test(s.text);
     if (busy) sawWork = true;
     if (s.ask && answer) {
       mark("approval");
       await sleep(readMs);
-      await d.click(".ac-ask .btn.primary-needs");
+      await d.click(ALLOW);
       mark("allowed");
       await sleep(400);
       continue;
@@ -196,7 +259,7 @@ export async function paneMenu(d, index) {
  * starts a shell; Tests starts a run.
  */
 export async function openTab(d, label, pane = 0) {
-  if (await d.eval((l) => !!document.querySelector(`button[aria-label="${l}"]`), label)) {
+  if (await shown(d, `button[aria-label="${label}"]`)) {
     await d.click(`button[aria-label="${label}"]`);
   } else {
     await paneMenu(d, pane);
@@ -211,7 +274,7 @@ export async function openTab(d, label, pane = 0) {
  * it next; it's still laid out while folded, so a click without this goes through.
  */
 export async function openSidebar(d) {
-  if (await d.eval(() => !!document.querySelector(".detail aside.as.pinned"))) return;
+  if (await shown(d, ".detail aside.as.pinned")) return;
   await d.hover(".detail aside.as .as-strip");
   await d.waitFor(() => !!document.querySelector(".detail aside.as.open"));
   await sleep(350);
@@ -220,7 +283,7 @@ export async function openSidebar(d) {
 /** Put the open session back to one pane, with any leftover shell ended. */
 export async function resetPanes(d) {
   // A shell's tab only hides on ×; `exit` ends the shell, and the tab goes with it.
-  if (await d.eval(() => !!document.querySelector('button[aria-label="Terminal"]'))) {
+  if (await shown(d, 'button.detail-tab[aria-label="Terminal"]')) {
     await d.click('button[aria-label="Terminal"]');
     await sleep(500);
     await d.click(".xterm");
@@ -232,8 +295,31 @@ export async function resetPanes(d) {
     await d.click("[role=menuitem]", "Reset layout");
     await sleep(800);
   }
-  await d.click('button[aria-label="claude"]');
+  // A page another scene opened (the browser still) stays; its × only hides the tab.
+  if (await shown(d, 'button[aria-label="Hide Browser"]')) {
+    await d.click('button[aria-label="Hide Browser"]');
+    await sleep(500);
+  }
+  await d.click('button.detail-tab[aria-label="Claude"]');
   await sleep(1000);
+  // Running, so the composer shows the model and mode in use, not a Start banner.
+  await ensureStarted(d);
+  // A resumed agent hasn't reported its model yet: pick them, so the pickers say.
+  if (await shown(d, '.ac-composer button.ac-opt[aria-label="Model: Default model"]')) {
+    await choose(d, "Model", "Opus");
+    await choose(d, "Effort", "High");
+    await choose(d, "Mode", "Ask");
+  }
+}
+
+/** Open a composer picker (Model, Effort, Mode) and pick `item` from its menu. */
+export async function choose(d, picker, item) {
+  await d.click(`.ac-composer button.ac-opt[aria-label^="${picker}:"]`);
+  await sleep(900);
+  await d.hover("[role=menu] [role=menuitem]", item);
+  await sleep(450);
+  await d.click("[role=menu] [role=menuitem]", item);
+  await sleep(800);
 }
 
 /** Arrange chat | Files over Terminal from the panes' menus. */
@@ -252,7 +338,7 @@ export async function ideLayout(d, pause = 1000) {
   await paneMenu(d, -1);
   await d.click("[role=menuitem]", "Split down");
   await sleep(pause);
-  await d.click('button[aria-label="claude"]');
+  await d.click('button.detail-tab[aria-label="Claude"]');
   await sleep(pause);
   // The shell started as the tab opened; only a failed start leaves the button.
   if (await d.eval(() => document.body.innerText.includes("Open terminal"))) await d.click("button", "Open terminal");
@@ -292,4 +378,24 @@ export async function termPoint(d, text) {
     15000,
     text,
   );
+}
+
+/**
+ * Rest the pointer on the last visible element matching `selector` (the latest
+ * reply, the newest row), scrolled into view, so its hover-revealed controls show.
+ */
+export async function hoverLast(d, selector) {
+  const p = await d.waitFor(
+    (sel) => {
+      const els = [...document.querySelectorAll(sel)].filter((e) => e.getBoundingClientRect().height > 0);
+      const e = els.at(-1);
+      if (!e) return null;
+      e.scrollIntoView({ block: "nearest" });
+      const r = e.getBoundingClientRect();
+      return { x: r.x + Math.min(r.width / 2, 200), y: r.y + Math.min(r.height / 2, 14) };
+    },
+    15000,
+    selector,
+  );
+  await d.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y });
 }

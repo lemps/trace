@@ -31,5 +31,7 @@ export async function run(d, mark) {
   await sleep(1200);
   await d.key("Enter");
   mark("opened");
+  // Off the list, so it folds away and the diff shows in full.
+  await d.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 900, y: 420 });
   await sleep(3000);
 }

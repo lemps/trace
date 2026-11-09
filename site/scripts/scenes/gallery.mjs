@@ -11,9 +11,9 @@ const PROMPT =
 
 export const clip = {
   segments: [
-    ["typing-0.3", "sent", 1.4],
-    ["sent", "shown", 4],
-    ["shown", "end", 1],
+    ["typing-0.3", "sent", 2.4],
+    ["sent", "shown", 10],
+    ["shown", "end", 1.5],
   ],
 };
 

@@ -19,6 +19,11 @@ pub struct UpdateInfo {
 /// Check the release feed for a newer build. `Ok(None)` means up to date.
 #[tauri::command]
 pub async fn check_app_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
+    // A recording build (the homepage's clips) never offers an update, so no
+    // "update available" toast lands in a take.
+    if cfg!(feature = "recording") {
+        return Ok(None);
+    }
     let updater = app
         .updater()
         .map_err(|e| format!("Updater unavailable: {e}"))?;

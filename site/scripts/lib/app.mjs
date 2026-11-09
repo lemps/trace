@@ -14,7 +14,7 @@
 //   TRACE_SITE_WORK        a work folder outside the repo (WebView2 profile, frames)
 //   TRACE_CDP_PORT         the debug port (default 9600; Windows)
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { startBridge } from "./bridge.mjs";
@@ -123,6 +123,21 @@ async function launchMac() {
     await stop();
     throw e;
   }
+  // Bring the window to the front: a covered window is a hidden page, whose
+  // animations stop. The runner calls raise() again whenever the page is hidden.
+  let warned = false;
+  const raise = () => {
+    try {
+      execFileSync("osascript", [
+        "-e",
+        `tell application "System Events" to set frontmost of (first process whose unix id is ${child.pid}) to true`,
+      ]);
+    } catch {
+      if (!warned) console.warn("  couldn't bring trace's window to the front; keep it uncovered while recording");
+      warned = true;
+    }
+  };
+  raise();
   await sleep(2000);
-  return { launched: true, stop, connect: () => bridge.connect(), quitAfter: true };
+  return { launched: true, stop, raise, connect: () => bridge.connect(), quitAfter: true };
 }

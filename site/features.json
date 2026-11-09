@@ -1,7 +1,7 @@
 {
   "hero": {
-    "title": "Run your coding agents side by side, and see what each one is doing.",
-    "lede": "trace is a desktop app for Claude Code and Codex. Start an agent on a ticket or a quick idea; each gets its own git worktree, and you follow them all from one calm window: chat, files, terminal, inbox and fleet.",
+    "title": "Run many coding agents at once, and see what each one needs.",
+    "lede": "trace is a desktop app for Claude Code and Codex. Start agents on tickets, quick ideas or a schedule, each in its own git worktree or a Vercel Sandbox. Read each one as a chat, answer them all from one inbox, and see the whole fleet at a glance.",
     "media": "hero",
     "alt": "trace showing an agent's chat on the left, the files it changed with their diff on the right, and a terminal below running the tests: three passing."
   },
@@ -10,111 +10,134 @@
       "id": "chat",
       "label": "Agents as a chat",
       "title": "Claude and Codex, as a conversation you can read",
-      "text": "Agents run as a formatted chat rather than a wall of terminal output: Markdown replies, a card per tool call, the diff of every edit, and permission prompts answered right where they appear.",
+      "text": "Agents run as a formatted chat rather than a wall of terminal output: Markdown replies, a card per tool call, the diff of every edit, and permission prompts answered where they appear. When an agent fans work out, each subagent gets a live card and its own tab.",
       "points": [
-        "Claude Code and Codex, in chat or in their own terminal",
-        "Tool runs fold into one line once a turn ends",
-        "Allow once, always, or deny, without leaving the conversation"
+        "Subagents as live cards, opened in a tab or beside the chat",
+        "Insight asides as callout cards; long tool output folds, with Show all",
+        "Copy any message from its hover bar, or a table for docs and spreadsheets"
       ],
-      "alt": "A prompt asks the agent to add a delete() helper and a test. Read cards appear for the files it looks at, then an edit waits for permission; Allow once is clicked, the diff appears, the tests run, and the agent replies in Markdown that all three tests pass."
+      "alt": "A prompt asks the agent to add a delete() helper and a test. Tool cards appear as it reads the files, an edit waits for permission and Allow once is clicked, then the diff, the test run and a Markdown reply with a table of the tests; pointing at the reply shows its Copy button.",
+      "more": [
+        {
+          "id": "subagents",
+          "label": "Subagents",
+          "alt": "The agent starts two subagents in parallel. Two cards show them running; one is opened beside the chat, where its brief, a Read call and then its finished report appear while the other card turns to Done."
+        }
+      ]
     },
     {
-      "id": "subagents",
-      "label": "Subagents",
-      "title": "Subagents get live cards, their own tabs, and a pane beside you",
-      "text": "When an agent fans work out, each subagent shows as a live card with its state, tool count and time. Open one in its own tab, or beside the chat to watch its brief, calls and report come in.",
+      "id": "composer",
+      "label": "The composer",
+      "title": "Pick the model, effort and mode as you write",
+      "text": "A chat agent's composer keeps its model, effort and permission mode, switched live where the CLI allows. Type / for slash commands and your saved prompts, attach files and pictures, and leave a message half-written: it's still there after a restart. A ring in the chat header shows how full the context is.",
       "points": [
-        "Background subagents keep the agent working, and stoppable",
-        "Each subagent's brief and report, in full",
-        "Stop one without stopping the rest"
+        "Mode: Ask, Accept edits, Plan or Full access, kept for each agent",
+        "Saved prompts sent as /name, from Settings → Agents",
+        "Paste, drop or pick files; pictures show as thumbnails"
       ],
-      "alt": "The agent starts two subagents in parallel. Two cards show them running; one is opened beside the chat, where its brief, a Read call and then its finished report appear while the other card turns to Done."
-    },
-    {
-      "id": "panes",
-      "label": "Split panes",
-      "title": "Chat, Files and Terminal, arranged like an IDE",
-      "text": "Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. A tab shows up when there's something in it and steps aside with its ×; the ⋯ menu lists them all. Layouts are remembered per workspace.",
-      "points": [
-        "Split right, split down, or drag a tab to any edge",
-        "Tabs come and go with their content; × hides, never deletes",
-        "Turn off the tabs you never use in Settings → Tabs"
-      ],
-      "alt": "From a single chat pane, Files is split to the right and Terminal moved below it. A shell opens in the agent's worktree, npm test runs and passes, and the changed test file's diff is shown."
-    },
-    {
-      "id": "plan",
-      "label": "Plans and documents",
-      "title": "What the agent planned, as a document you can read",
-      "text": "When an agent leaves plan mode or publishes a plan, spec or report, it opens in the Plan tab beside the chat: Markdown set like a page, or HTML in a sandbox. Each document keeps its versions, so you can compare a revision with the one before.",
-      "points": [
-        "Plan mode, published documents and the live task list in one tab",
-        "Versions, with a diff between any two",
-        "Copy, save as Markdown or HTML, or save as PDF"
-      ],
-      "alt": "An agent is asked to publish a plan for adding middleware to a router. When its turn ends a Plan tab appears with a dot; it's opened, the document is scrolled from its goal to its tests, and the list of plans slides out from the left edge."
-    },
-    {
-      "id": "gallery",
-      "label": "Gallery and Browser",
-      "title": "See what the agent made, without leaving the app",
-      "text": "An agent can show you a folder of images, like screenshots, charts or icons, in the Gallery tab, or open its dev server in the Browser tab. Images update as files are written; pages run in their own isolated view that gets nothing of trace's.",
-      "points": [
-        "Thumbnails that fill in as files appear, full size with zoom and compare",
-        "Open a folder or a page yourself, from the ⋯ menu",
-        "Agents use show_images and open_browser; turn either off in Settings"
-      ],
-      "alt": "An agent is asked to draw four icons for a CLI's sort modes and show them. When its turn ends a Gallery tab appears; it's opened to a grid of the four icons, the first opens full size, and the arrow keys step through the rest."
-    },
-    {
-      "id": "tickets",
-      "kind": "still",
-      "label": "Board and ticket agents",
-      "title": "Start an agent from a Jira or Pylon ticket",
-      "text": "Connect Jira, Pylon or both, and each adds its board to the sidebar exactly as your tracker shows it. Start work on a card and trace opens an agent in a new worktree for that ticket; moves sync back to the tracker. Everything else works with no tracker at all.",
-      "points": [
-        "Your board's own columns, filters and sprints",
-        "Dragging a card to in progress starts its agent",
-        "GitHub sign-in to browse and clone your repos"
-      ],
-      "alt": "trace's Integrations page with three cards: Jira, Pylon and GitHub.",
-      "caption": "Shown without a tracker connected: no ticket data is made up for this page."
-    },
-    {
-      "id": "sessions",
-      "label": "Sessions and worktrees",
-      "title": "Every agent in its own worktree, and you can see who started it",
-      "text": "Sessions are agents that aren't tied to a ticket. Each runs in its own git worktree of a repo you've added, or in any folder. Lists sort by status, name, age or who started them, or keep your own order.",
-      "points": [
-        "Started by you, another agent, the orchestrator or a schedule",
-        "Sections and drag to reorder",
-        "Branch and diff counts on every row"
-      ],
-      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it."
-    },
-    {
-      "id": "inbox",
-      "label": "Inbox",
-      "title": "One inbox for every question and approval",
-      "text": "When any agent needs you, it lands in the Inbox with its question or the exact change it wants to make. Answer it there and the agent carries on; you don't have to find its tab first.",
-      "points": [
-        "Questions with options, or your own answer",
-        "Approvals with the full command or edit",
-        "Notifications and an optional sound"
-      ],
-      "alt": "The Inbox lists agents that need you. A question about default units is answered with Metric, then an agent's edit adding a --json flag is approved, and the next request arrives."
+      "alt": "In a chat session the Model picker is opened and Opus chosen, then Effort set to High and Mode to Plan. Typing /rep lists a saved prompt, Enter puts its text in the box, a screenshot is pasted and shows as a thumbnail, and the message is sent; the context ring sits in the chat header."
     },
     {
       "id": "fleet",
       "label": "Fleet",
       "title": "Every running agent at a glance",
-      "text": "Fleet is a table of every live agent: its state, how long it's been there, its repo and branch, changes, PR and latest line. Rows stay put when an agent changes state, so you never lose your place.",
+      "text": "Fleet is a table of every live agent: its state, how long it's been there, its repo and branch, changes, PR and latest line. Rows stay put when an agent changes state, so you never lose your place, and an agent on a long task can leave a one-line progress note there.",
       "points": [
         "Filter by Needs you, Working or Ready",
         "Opened order, or drag to reorder",
-        "The latest thing each agent said"
+        "The latest thing each agent said, or the note it left"
       ],
       "alt": "The Fleet table with five agents: some Ready, two needing you and one Working. Filters for Needs you and Working are tried, and the working agent finishes while its row stays in place."
+    },
+    {
+      "id": "inbox",
+      "label": "Inbox",
+      "title": "One inbox for every question and approval",
+      "text": "When any agent needs you, from the board, a session or a scheduled prompt, it lands in the Inbox with its question or the exact change it wants to make. Answer it there and the agent carries on; you don't have to find its tab first.",
+      "points": [
+        "Questions with options, or your own answer",
+        "Approvals with the full command or edit",
+        "J and K to move, 1–9 to answer, E to dismiss"
+      ],
+      "alt": "The Inbox lists agents that need you. A question about default units is answered with Metric, then an agent's edit adding a --json flag is approved, and the next request arrives."
+    },
+    {
+      "id": "panes",
+      "label": "Panes, Files and Terminal",
+      "title": "Chat, Files and Terminal, arranged like an IDE",
+      "text": "Every agent's tabs can sit side by side or stacked: the conversation, the files it changed, and a shell in the same worktree. A tab shows up when there's something in it and hides with its ×; layouts are remembered per workspace. Quick Open finds any file in the worktree, and the terminal finds in its scrollback and has a menu on every file path.",
+      "points": [
+        "Split right, split down, or drag a tab to any edge",
+        "Quick Open: ⌘P on macOS, Ctrl+Shift+P on Windows and Linux",
+        "Copy Context: the last 100 lines, headed with the agent and worktree"
+      ],
+      "alt": "From a single chat pane, Files is split to the right and Terminal moved below it. A shell opens in the agent's worktree, npm test runs and passes, and the changed test file's diff is shown.",
+      "more": [
+        {
+          "id": "files",
+          "label": "Files and Quick Open",
+          "alt": "In an agent's Files tab, All files shows the worktree's tree and a file is opened. Quick Open is then brought up, a few letters narrow it to router.test.ts, and Enter opens that file with its diff."
+        },
+        {
+          "id": "terminal",
+          "label": "Terminal extras",
+          "alt": "In an agent's shell, git status lists the two changed files. Right-clicking a file path opens a menu with Open in VS Code, IntelliJ or Cursor, Show in folder, Copy path, Copy context and Find; Find then highlights each match for router in the scrollback."
+        }
+      ]
+    },
+    {
+      "id": "plan",
+      "label": "Plans, Browser and Gallery",
+      "title": "What the agent planned and made, beside the chat",
+      "text": "When an agent leaves plan mode or publishes a plan, spec or report, it opens in the Plan tab: Markdown set like a page, or HTML in a sandbox, with every version kept. An agent can also open its dev server in the Browser tab, an isolated view that gets nothing of trace's, or show you a folder of images in the Gallery.",
+      "points": [
+        "Versions of each document, with the changes between any two",
+        "Copy, save as Markdown, HTML or PDF, or send to an agent as context",
+        "Gallery thumbnails fill in as files appear, with zoom and compare"
+      ],
+      "alt": "An agent is asked to publish a plan for adding middleware to a router. When its turn ends a Plan tab appears with a dot; it's opened, the document is scrolled from its goal to its tests, and the list of plans slides out from the left edge.",
+      "more": [
+        {
+          "id": "gallery",
+          "label": "Gallery",
+          "alt": "An agent is asked to draw four icons for a CLI's sort modes and show them. When its turn ends a Gallery tab appears; it's opened to a grid of the four icons, the first opens full size, and the arrow keys step through the rest."
+        },
+        {
+          "id": "browser",
+          "kind": "still",
+          "label": "Browser",
+          "alt": "An agent's chat on the left and its Browser tab on the right, showing a local playground page for the tinyroute demo: its routes, with the new DELETE route marked, and a sample request.",
+          "caption": "The Browser tab: a local page beside the agent, in its own isolated view."
+        }
+      ]
+    },
+    {
+      "id": "tickets",
+      "label": "Tickets and pull requests",
+      "title": "From a Jira or Pylon ticket to a pull request",
+      "text": "Connect Jira, Pylon or both, and each adds its board to the sidebar exactly as your tracker shows it. Start an agent on a card and it gets a new worktree and a kickoff prompt built from the ticket and its comments. When it raises a PR, the Pull request tab follows its checks and conversation, and Merge is in the header.",
+      "points": [
+        "Your board's own columns, filters and sprints",
+        "Moving a card moves the ticket; auto-start is a setting",
+        "Checks and review threads, with what's new since you looked"
+      ],
+      "alt": "On a Jira board, a card is dragged to In Progress and its agent starts in a new worktree with the ticket as its brief. The agent's Pull request tab then shows its checks passing and a review comment, and the Merge button waits in the header.",
+      "placeholder": {
+        "alt": "trace's Integrations page: Jira, Pylon, GitHub and Vercel ready to connect, and Tailscale.",
+        "caption": "Shown without a tracker connected: no ticket data is made up for this page."
+      }
+    },
+    {
+      "id": "sessions",
+      "label": "Run it anywhere",
+      "title": "Sessions in a worktree, a folder or a Vercel Sandbox",
+      "text": "Sessions are agents that aren't tied to a ticket. Each runs in its own git worktree of a repo you've added, in a folder you pick, or in a new empty folder that goes with it. Connect Vercel and a session can run in a Vercel Sandbox instead: Leave running keeps it working after you quit, and Start joins it again.",
+      "points": [
+        "Started by you, another agent, the orchestrator or a schedule",
+        "Sort by status, name, age or who started them, or keep your own order",
+        "Stop & save snapshots a sandbox; Join picks one up from another computer"
+      ],
+      "alt": "The Sessions list is sorted by who started each session, which nests a session another agent started under that agent's session, then by status, then back to manual order. The agent-started session is opened, showing its repo, worktree branch and who started it."
     },
     {
       "id": "orchestrator",
@@ -126,13 +149,13 @@
         "Charts of agents by state, and session stats",
         "Actions behind a confirm card"
       ],
-      "alt": "The orchestrator is asked what the agents are doing. It replies with who needs you, which agents are ready and a chart of agents by state, then its Stats tab is opened."
+      "alt": "The orchestrator is asked what the agents are doing. It replies with a round-up: which agents are ready, which stopped and when, and the totals, then its Stats tab is opened."
     },
     {
       "id": "schedules",
       "label": "Scheduled prompts",
       "title": "Prompts that run themselves, when there's something to do",
-      "text": "Run a prompt every few minutes, daily, weekly, monthly or on a cron expression, each run in a fresh worktree. A precheck command decides whether a run goes ahead, so a nightly job can skip the nights nothing changed.",
+      "text": "Run a prompt every few minutes, daily, weekly, monthly or on a cron expression, each run a fresh conversation in the prompt's own worktree. A precheck command decides whether a run goes ahead, so a nightly job can skip the nights nothing changed. Continue as session picks up where any run left off.",
       "points": [
         "Variables like {lastRunAt}, {date} and {repo}",
         "Run history with each run's conversation",
@@ -141,37 +164,25 @@
       "alt": "A new scheduled prompt called Morning test run is filled in: a prompt, a daily schedule, allowed tools and a precheck command that only runs it when the branch is behind. It's saved and its detail shows the precheck."
     },
     {
-      "id": "files",
-      "label": "Files and Quick Open",
-      "title": "Find any file in the worktree in a keystroke",
-      "text": "The Files tab shows the worktree's tree and what the agent changed. The list folds away beside the diff and slides out when you point at it. Quick Open fuzzy-searches the whole worktree, and opens a file in the Files tab or in your own editor.",
+      "id": "conductor",
+      "label": "Coming from Conductor",
+      "title": "Coming from Conductor? Bring your work with you",
+      "text": "Settings → Repositories → Import from Conductor reads Conductor's database without changing it and shows what it found, with a checkbox each. Repos come over with their setup scripts, live workspaces move in as sessions that carry on the same conversation, and custom prompts become saved prompts.",
       "points": [
-        "Changes or all files, with filters",
-        "Quick Open: Ctrl+Shift+P on Windows and Linux, ⌘P on macOS",
-        "Open in your editor from any file"
+        "Each workspace marked Resumable, Transcript missing or Folder missing",
+        "Conductor's API token and saved environment are never read",
+        "New to trace? The first run checks git, claude and gh, with fixes"
       ],
-      "alt": "In an agent's Files tab, All files shows the worktree's tree and a file is opened. Quick Open is then brought up, a few letters narrow it to router.test.ts, and Enter opens that file with its diff."
-    },
-    {
-      "id": "terminal",
-      "label": "Terminal extras",
-      "title": "A terminal that knows what it's showing",
-      "text": "Find in the scrollback, a menu on links and file paths (open, copy, open in editor), and Copy Context, which copies the selection or the last 100 lines headed with the agent and worktree, ready to paste into another agent.",
-      "points": [
-        "Find: Ctrl+Shift+F on Windows and Linux, ⌘F on macOS",
-        "Right-click for the same menu",
-        "Copy Context for handing work between agents"
-      ],
-      "alt": "In an agent's shell, git status lists the two changed files. Right-clicking a file path opens a menu with Open in VS Code, IntelliJ or Cursor, Show in folder, Copy path, Copy context and Find; Find then highlights each match for router in the scrollback."
+      "alt": "In Settings → Repositories, Import from Conductor is opened and Conductor is closed is clicked. The preview lists two repos with their setup translated, a live workspace marked Resumable and two custom prompts as saved prompts; the import runs, and its summary lists what came over and what was skipped."
     },
     {
       "id": "appearance",
       "label": "Make it yours",
       "title": "Themes, fonts, density, sidebar and shortcuts",
-      "text": "Dark, Light, Midnight, Paper or System, an accent colour, interface size and density, fonts for the UI, terminal and chat, each with a live preview. Order and hide the sidebar's pages, rebind every shortcut, and press ? for the cheat sheet.",
+      "text": "Dark, Light, Midnight, Paper or System, an accent colour, interface size and density, fonts for the UI, terminal and chat, each with a live preview. Density changes the whole app, and Compact tightens the chat's layout too. Order and hide the sidebar's pages, rebind every shortcut, and press ? for the cheat sheet.",
       "points": [
-        "Live previews while you choose",
-        "Terminal schemes and cursor styles",
+        "Live previews, terminal schemes and cursor styles",
+        "One icon per action, named with its shortcut on hover",
         "Every shortcut rebindable, shown in menus and the cheat sheet"
       ],
       "alt": "Settings → Appearance: the theme switches from Dark to Light, Paper and Midnight and back, with the previews updating; the accent and density change; then the Sidebar settings and the keyboard shortcut cheat sheet open."

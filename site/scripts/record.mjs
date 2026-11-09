@@ -72,14 +72,42 @@ try {
       continue;
     }
     const d = await app.connect();
+    // A page hidden for a while may not answer at all: give up on it after 3 s.
+    const visible = () =>
+      Promise.race([d.eval(() => document.visibilityState !== "hidden"), sleep(3000).then(() => false)]);
+    // Raise the window again whenever something covers it, and count the times
+    // that happens during a take: those frames may have stopped.
+    let covered = 0;
+    let taking = false;
+    const keep = setInterval(async () => {
+      if (await visible()) return;
+      if (taking) covered++;
+      app.raise?.();
+    }, 1000);
     try {
+      // A hidden page (screen locked, window minimised or on another Space) stops
+      // its animations: a detail would stay at its first, invisible keyframe.
+      for (let i = 0; i < 20 && !(await visible()); i++) {
+        app.raise?.();
+        await sleep(500);
+      }
+      if (!(await visible())) {
+        throw new Error("trace's window isn't visible (is the screen locked?); keep it on screen while recording");
+      }
       await d.viewport(...clip.viewport);
-      // Hide the signed-in account's own usage meter: it isn't demo data.
+      // Hide the signed-in account's own usage meter: it isn't demo data. Hide
+      // passing toasts ("Deleted …", "Scheduled …") too, but never an error: a clip
+      // that would show one has gone wrong, and should be seen to.
       const hide = `(() => { const st = document.createElement("style"); st.id = "site-rec";
-        st.textContent = ".ac-head-limits{visibility:hidden!important}";
+        st.textContent = ".ac-head-limits .ac-limit,.toaster .toast:not(.error){visibility:hidden!important}";
         (document.head || document.documentElement).append(st); })()`;
       await d.send("Page.addScriptToEvaluateOnNewDocument", { source: `addEventListener("DOMContentLoaded", () => ${hide})` });
       if (!(await d.eval(() => !!document.getElementById("site-rec")))) await d.eval(hide);
+      // Agents start in Ask mode whatever the recording machine's Claude Code
+      // defaults to (its settings.json may say plan mode): the clips show approvals.
+      await d.eval(() => {
+        if (!localStorage.getItem("trace.agentArgs")) localStorage.setItem("trace.agentArgs", "--permission-mode default");
+      });
       if (clip.theme) await setTheme(d, clip.theme);
       await scene.setup?.(d);
       if (clip.kind === "still") {
@@ -105,14 +133,17 @@ try {
         check();
       };
       const watch = setInterval(check, 1000);
+      taking = true;
       try {
         await scene.run(d, mark);
       } finally {
         clearInterval(watch);
+        taking = false;
         await check();
         console.log(`  frames: ${await stop()}`);
         writeFileSync(join(frames, "marks.json"), JSON.stringify(marks));
       }
+      if (covered) console.warn(`  WARNING: trace's window was covered ${covered} time(s) during the take; check the clip`);
       if (found.size) {
         console.error(`  STOP: the screen showed private text (${[...found].join(", ")}); not encoding ${id}`);
         process.exitCode = 1;
@@ -122,6 +153,7 @@ try {
       console.log(`  length ${r.length.toFixed(1)}s`);
       report(r);
     } finally {
+      clearInterval(keep);
       d.close();
     }
   }
