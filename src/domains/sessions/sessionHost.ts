@@ -154,3 +154,22 @@ export function sandboxFacts(s: SandboxStateLike, attached: boolean, now: number
   }
   return { state: sandboxStatusLabel(status), detail: "As Vercel reports it." };
 }
+
+/** How long to wait before asking Vercel again about a sandbox that has settled. */
+export const SANDBOX_POLL_MS = 60_000;
+/** …and about one that's on its way somewhere (starting, saving, not there yet). */
+export const SANDBOX_POLL_FAST_MS = 5_000;
+
+/**
+ * When to ask Vercel about the sandbox again. Soon while it's moving: starting,
+ * saving, or not there yet although the agent is running (Start makes the
+ * sandbox after the agent attaches, so the first answer is often "none").
+ * Otherwise once a minute. `status` is null before the first answer.
+ */
+export function sandboxPollMs(status: string | null, attached: boolean): number {
+  const s = status?.trim().toLowerCase() ?? null;
+  if (s === null) return SANDBOX_POLL_FAST_MS;
+  if (["pending", "starting", "stopping", "snapshotting"].includes(s)) return SANDBOX_POLL_FAST_MS;
+  if (s === "" && attached) return SANDBOX_POLL_FAST_MS;
+  return SANDBOX_POLL_MS;
+}
