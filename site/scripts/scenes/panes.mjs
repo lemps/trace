@@ -3,8 +3,8 @@ import { ROUTER, ensureSession, ideLayout, openSidebar, resetPanes, sleep } from
 
 export const clip = {
   segments: [
-    ["start+0.5", "npm test", 1.4],
-    ["npm test", "end", 1.2],
+    ["start+0.5", "npm test", 1.8],
+    ["npm test", "end", 1.6],
   ],
 };
 

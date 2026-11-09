@@ -290,8 +290,31 @@ export async function resetPanes(d) {
     await d.click("[role=menuitem]", "Reset layout");
     await sleep(800);
   }
+  // A page another scene opened (the browser still) stays; its × only hides the tab.
+  if (await shown(d, 'button[aria-label="Hide Browser"]')) {
+    await d.click('button[aria-label="Hide Browser"]');
+    await sleep(500);
+  }
   await d.click('button.detail-tab[aria-label="Claude"]');
   await sleep(1000);
+  // Running, so the composer shows the model and mode in use, not a Start banner.
+  await ensureStarted(d);
+  // A resumed agent hasn't reported its model yet: pick them, so the pickers say.
+  if (await shown(d, '.ac-composer button.ac-opt[aria-label="Model: Default model"]')) {
+    await choose(d, "Model", "Opus");
+    await choose(d, "Effort", "High");
+    await choose(d, "Mode", "Ask");
+  }
+}
+
+/** Open a composer picker (Model, Effort, Mode) and pick `item` from its menu. */
+export async function choose(d, picker, item) {
+  await d.click(`.ac-composer button.ac-opt[aria-label^="${picker}:"]`);
+  await sleep(900);
+  await d.hover("[role=menu] [role=menuitem]", item);
+  await sleep(450);
+  await d.click("[role=menu] [role=menuitem]", item);
+  await sleep(800);
 }
 
 /** Arrange chat | Files over Terminal from the panes' menus. */

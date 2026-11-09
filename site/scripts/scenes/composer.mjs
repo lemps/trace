@@ -3,27 +3,17 @@
 // Needs the demo's saved prompt `repro` (demo-setup.mjs writes saved-prompts.json).
 // Starts a fresh Claude chat session in tinyroute each take, seeded with one short
 // turn so the context ring has a value.
-import { archiveSessions, followTurn, ensureStarted, newSession, sendChat, sleep } from "../lib/ui.mjs";
+import { archiveSessions, choose, ensureStarted, followTurn, newSession, sendChat, sleep } from "../lib/ui.mjs";
 
 const SESSION = { title: "Router: composer", repo: "tinyroute" };
 const SEED = "Read src/router.ts and say in one line what it exports.";
 
 export const clip = {
   segments: [
-    ["start+0.3", "sent+1.2", 1.15],
-    ["sent+1.2", "end", 1.6],
+    ["start+0.3", "sent+1.2", 1.4],
+    ["sent+1.2", "end", 2],
   ],
 };
-
-/** Open a composer picker (Model, Effort, Mode) and pick `item` from its menu. */
-async function choose(d, picker, item) {
-  await d.click(`.ac-composer button.ac-opt[aria-label^="${picker}:"]`);
-  await sleep(900);
-  await d.hover("[role=menu] [role=menuitem]", item);
-  await sleep(450);
-  await d.click("[role=menu] [role=menuitem]", item);
-  await sleep(800);
-}
 
 /**
  * Paste a screenshot into the composer. It's drawn on a canvas in the page (a
