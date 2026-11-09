@@ -5,11 +5,11 @@ export const SORTER = { title: "Review the sorter", repo: "pixelsort" };
 
 export const clip = {
   segments: [
-    ["typing-0.2", "sent", 1.7],
-    ["sent", "cards", 3],
-    ["cards", "beside+0.6", 1.2],
-    ["beside+0.6", "turn ended+0.4", 4],
-    ["turn ended+0.4", "end", 1],
+    ["typing-0.2", "sent", 2.2],
+    ["sent", "cards", 5],
+    ["cards", "beside+0.6", 2.4],
+    ["beside+0.6", "turn ended+0.4", 16],
+    ["turn ended+0.4", "end", 1.5],
   ],
 };
 
@@ -24,7 +24,7 @@ export async function run(d, mark) {
   mark("typing");
   await sendChat(
     d,
-    "Start two subagents in parallel: one explains src/sort.rs in three bullets, the other reviews src/main.rs for bugs. Don't edit anything. Then summarise both.",
+    "Start two Explore subagents in parallel, in the foreground: one explains src/sort.rs in three bullets, the other reviews src/main.rs for bugs. Don't edit anything. Then summarise both.",
     22,
   );
   mark("sent");
