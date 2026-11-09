@@ -1,38 +1,56 @@
 import { useEffect, useState } from "react";
 import { type SandboxState, sandboxState } from "@/ipc/vercel";
-
-/** How often to re-ask Vercel while the Details are open. */
-const POLL_MS = 60_000;
+import { sandboxPollMs } from "../sessionHost";
 
 /**
- * A sandbox session's sandbox as Vercel reports it, re-read every minute while
- * the window is visible and whenever `refreshKey` changes (the agent starting or
- * stopping is when it moves). Null until the first answer, or if Vercel can't be
- * reached: the Details then say they're checking rather than guess.
+ * A sandbox session's sandbox as Vercel reports it, read again while the window
+ * is visible: every few seconds while it's on its way (starting, saving, or not
+ * there yet with the agent running), once a minute once it has settled
+ * (`sandboxPollMs`), and at once when `attached` changes or the window regains
+ * focus. Null until the first answer, or if Vercel can't be reached: the Details
+ * then say they're checking rather than guess.
  */
-export function useSandboxState(workspaceId: string, refreshKey: unknown): SandboxState | null {
+export function useSandboxState(workspaceId: string, attached: boolean): SandboxState | null {
   const [state, setState] = useState<SandboxState | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey is a deliberate re-read trigger
   useEffect(() => {
     let cancelled = false;
-    const load = () => {
-      if (document.visibilityState !== "visible") return;
+    let timer = 0;
+    let last: string | null = null;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(load, sandboxPollMs(last, attached));
+    };
+    function load() {
+      if (cancelled) return;
+      if (document.visibilityState !== "visible") {
+        schedule();
+        return;
+      }
       sandboxState(workspaceId)
         .then((s) => {
-          if (!cancelled) setState(s);
+          if (cancelled) return;
+          // No answer (Vercel unreachable, or no sandbox) counts as none.
+          last = s?.status ?? "";
+          setState(s);
         })
         .catch(() => {
           // Best-effort: keep the last answer rather than flash an error.
+        })
+        .finally(() => {
+          if (!cancelled) schedule();
         });
-    };
+    }
     load();
-    const timer = window.setInterval(load, POLL_MS);
-    window.addEventListener("focus", load);
+    const now = () => {
+      window.clearTimeout(timer);
+      load();
+    };
+    window.addEventListener("focus", now);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
-      window.removeEventListener("focus", load);
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", now);
     };
-  }, [workspaceId, refreshKey]);
+  }, [workspaceId, attached]);
   return state;
 }

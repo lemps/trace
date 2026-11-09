@@ -6,7 +6,10 @@ import {
   hostHint,
   hostPlace,
   SANDBOX_NO_AGENTS,
+  SANDBOX_POLL_FAST_MS,
+  SANDBOX_POLL_MS,
   sandboxFacts,
+  sandboxPollMs,
   sandboxRepoNote,
   sandboxRepos,
   sandboxStatusLabel,
@@ -139,5 +142,21 @@ describe("sandboxFacts", () => {
     assert.equal(sandboxFacts({ ...base, status: "pending" }, false, now).state, "Starting");
     assert.equal(sandboxFacts({ ...base, status: "" }, false, now).state, "No sandbox");
     assert.equal(sandboxFacts({ ...base, status: "failed" }, false, now).state, "Sandbox failed");
+  });
+});
+
+describe("sandboxPollMs", () => {
+  it("asks again soon while the sandbox is on its way", () => {
+    assert.equal(sandboxPollMs(null, false), SANDBOX_POLL_FAST_MS);
+    assert.equal(sandboxPollMs("pending", true), SANDBOX_POLL_FAST_MS);
+    assert.equal(sandboxPollMs("snapshotting", false), SANDBOX_POLL_FAST_MS);
+  });
+  it("asks again soon when the agent runs but no sandbox is reported yet", () => {
+    assert.equal(sandboxPollMs("", true), SANDBOX_POLL_FAST_MS);
+  });
+  it("settles to once a minute", () => {
+    assert.equal(sandboxPollMs("running", true), SANDBOX_POLL_MS);
+    assert.equal(sandboxPollMs("stopped", false), SANDBOX_POLL_MS);
+    assert.equal(sandboxPollMs("", false), SANDBOX_POLL_MS);
   });
 });
