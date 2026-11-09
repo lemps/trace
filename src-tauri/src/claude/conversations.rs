@@ -18,10 +18,7 @@ use crate::helpers::persist::{self, Style};
 // skipped here.
 
 fn sessions_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("sessions.json")
+    crate::helpers::trace_dir().join("sessions.json")
 }
 
 /// Every load→mutate→save cycle on `sessions.json`. Two agents starting concurrently

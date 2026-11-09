@@ -1,0 +1,10 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "com.obsidianos.trace.recording",
+  "build": {
+    "beforeBuildCommand": "npm run build:recording"
+  },
+  "bundle": {
+    "active": false
+  }
+}

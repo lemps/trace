@@ -24,6 +24,11 @@ mod linux;
 mod macos;
 #[cfg(target_os = "macos")]
 mod macos_pdf;
+#[cfg(all(target_os = "macos", feature = "recording"))]
+mod macos_snapshot;
+// Elsewhere the recorder drives the webview's own DevTools protocol.
+#[cfg(all(not(target_os = "macos"), feature = "recording"))]
+impl ports::PageSnapshot for Os {}
 #[cfg(unix)]
 mod unix;
 #[cfg(windows)]

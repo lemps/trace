@@ -84,6 +84,8 @@ objc2-web-kit = { version = "0.3", default-features = false, features = [
     "objc2-app-kit",
     "WKWebView",
 ] }
+# Recording builds only (`recording` feature): WKWebView snapshots for the site's clips.
+block2 = { version = "0.6", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 # Checking whether a process is alive; job objects stop a precheck's whole tree
@@ -100,3 +102,19 @@ windows = "0.61"
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+# The homepage clip recorder's build (site/README.md, "Recording clips"). Off by
+# default, and never enabled by the release workflow: it reads a demo config dir
+# from the environment, and lets a local script drive the page and capture frames.
+recording = [
+    "dep:block2",
+    "objc2-foundation/NSData",
+    "objc2-foundation/NSError",
+    "objc2-foundation/NSValue",
+    "objc2-web-kit/block2",
+    "objc2-web-kit/objc2-core-foundation",
+    "objc2-web-kit/WKSnapshotConfiguration",
+    "objc2-app-kit/NSBitmapImageRep",
+    "objc2-app-kit/NSGraphics",
+    "objc2-app-kit/NSImage",
+    "objc2-app-kit/NSImageRep",
+]

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:recording": "tsc && vite build --mode recording",
+    "check:recording": "node scripts/check-recording-bundle.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "check": "biome check src",

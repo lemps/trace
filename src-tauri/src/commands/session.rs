@@ -98,10 +98,7 @@ impl ScratchSession {
 const ARCHIVE_RETENTION_SECS: u64 = 14 * 24 * 60 * 60;
 
 fn sessions_file() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("scratch.json")
+    crate::helpers::trace_dir().join("scratch.json")
 }
 
 pub(crate) fn read() -> Result<Vec<ScratchSession>, String> {

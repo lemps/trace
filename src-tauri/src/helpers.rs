@@ -9,12 +9,23 @@ use std::path::{Component, Path, PathBuf};
 use uuid::Uuid;
 
 /// trace's config/data dir (`~/Library/Application Support/trace` on macOS). The
-/// home for persisted JSON and the generated agent tooling. Mirrors the
-/// `dirs::config_dir().join("trace")` pattern used in `commands/*`.
+/// home for persisted JSON and the generated agent tooling: every file trace keeps
+/// is found from here, so nothing else asks `dirs` for the config dir.
 pub fn trace_dir() -> PathBuf {
-    dirs::config_dir()
+    config_root()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("trace")
+}
+
+/// The OS config dir that `trace/` sits in. Only the homepage recorder's build
+/// (`recording` feature) can point it at a demo folder; release builds don't read
+/// the variable at all.
+fn config_root() -> Option<PathBuf> {
+    #[cfg(feature = "recording")]
+    if let Some(dir) = crate::recording::demo_config_dir() {
+        return Some(dir);
+    }
+    dirs::config_dir()
 }
 
 /// The last `max` chars of `text`, on a char boundary: where a command's

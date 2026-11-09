@@ -105,8 +105,5 @@ pub fn clear() -> Result<(), String> {
 }
 
 fn session_path() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join("pylon-session.json")
+    crate::helpers::trace_dir().join("pylon-session.json")
 }

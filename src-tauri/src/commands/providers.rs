@@ -125,10 +125,7 @@ fn is_deepseek(spec: &ProviderSpec) -> bool {
 }
 
 fn key_path(spec: &ProviderSpec) -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("trace")
-        .join(spec.key_file)
+    crate::helpers::trace_dir().join(spec.key_file)
 }
 
 /// The saved API key for a provider, or `None` if unset. Rust-side only.
