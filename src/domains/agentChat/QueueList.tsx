@@ -4,14 +4,19 @@ import { IconButton } from "@/components/IconButton";
 import { useAgentChatStore, useQueue } from "./store";
 
 // Messages typed while the agent works, waiting their turn: sent in order, one
-// per turn, each editable or removable until it goes.
+// per turn, each editable or removable until it goes. While the agent is stopped
+// they wait for it to start (a send to a stopped agent starts it).
 
-export function QueueList({ workspaceId }: { workspaceId: string }) {
+export function QueueList({ workspaceId, stopped }: { workspaceId: string; stopped: boolean }) {
   const queue = useQueue(workspaceId);
   if (queue.length === 0) return null;
   return (
     <div className="ac-queue">
-      <div className="ac-queue-label">Queued · sent in order as each turn ends</div>
+      <div className="ac-queue-label">
+        {stopped
+          ? "Queued · sent once the agent starts"
+          : "Queued · sent in order as each turn ends"}
+      </div>
       {queue.map((q, i) => (
         <QueuedRow
           key={q.id}
