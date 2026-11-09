@@ -30,11 +30,26 @@ use model::{Defaults, Preview, RepoPreview};
 
 /// Where Conductor keeps its database (macOS: Application Support).
 pub fn db_path() -> Option<PathBuf> {
+    #[cfg(feature = "recording")]
+    if let Some(dir) = crate::recording::demo_conductor_dir() {
+        return Some(dir.join("com.conductor.app").join("conductor.db"));
+    }
     Some(
         dirs::data_dir()?
             .join("com.conductor.app")
             .join("conductor.db"),
     )
+}
+
+/// The home folder Conductor's settings (`~/.conductor`) and central workspaces
+/// (`~/conductor/workspaces`) are under. The recorder's build can stand a demo
+/// folder in for it, holding the database too, so a clip imports a fake install.
+fn conductor_home() -> Option<PathBuf> {
+    #[cfg(feature = "recording")]
+    if let Some(dir) = crate::recording::demo_conductor_dir() {
+        return Some(dir);
+    }
+    dirs::home_dir()
 }
 
 /// Whether Conductor has been used on this computer.
@@ -47,7 +62,7 @@ pub fn preview() -> Result<Preview, String> {
     let db = db_path()
         .filter(|p| p.is_file())
         .ok_or("Conductor's database isn't on this computer.")?;
-    let home = dirs::home_dir().ok_or("No home folder.")?;
+    let home = conductor_home().ok_or("No home folder.")?;
     let known = crate::commands::repos::all_repos();
     // An unreadable prompts file shouldn't block the rest: saving reports it.
     let saved = crate::saved_prompts::list().unwrap_or_default();

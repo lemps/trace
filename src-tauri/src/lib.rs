@@ -25,6 +25,9 @@ pub mod plans;
 pub mod platform;
 pub mod preflight;
 pub mod pylon;
+// The homepage clip recorder's hooks; never in a release build (site/README.md).
+#[cfg(feature = "recording")]
+pub mod recording;
 pub mod repo_catalog;
 pub mod saved_prompts;
 pub mod schedule;
@@ -40,6 +43,9 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Before any thread starts, so nothing trace spawns inherits the driver's token.
+    #[cfg(feature = "recording")]
+    recording::take_launch_env();
     helpers::secure_config_dir();
     let app_state = AppState::new();
 
@@ -237,6 +243,16 @@ pub fn run() {
             commands::providers::set_wafer_key,
             commands::providers::deepseek_key_configured,
             commands::providers::set_deepseek_key,
+            #[cfg(feature = "recording")]
+            commands::recording::recording_bridge,
+            #[cfg(feature = "recording")]
+            commands::recording::recording_viewport,
+            #[cfg(feature = "recording")]
+            commands::recording::recording_snapshot,
+            #[cfg(feature = "recording")]
+            commands::recording::recording_capture_start,
+            #[cfg(feature = "recording")]
+            commands::recording::recording_capture_stop,
         ]))
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

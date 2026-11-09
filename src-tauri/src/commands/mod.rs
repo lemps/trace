@@ -24,6 +24,8 @@ pub mod pr;
 pub mod pr_watch;
 pub mod preflight;
 pub mod providers;
+#[cfg(feature = "recording")]
+pub mod recording;
 pub mod repo_guard;
 pub mod repo_setup;
 pub mod repos;

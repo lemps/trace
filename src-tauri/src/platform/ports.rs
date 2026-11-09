@@ -168,3 +168,40 @@ pub trait PdfPrinter {
     /// Start printing `webview`'s page to `path`; the receiver gets the outcome.
     fn print_to_pdf(webview: &tauri::Webview, path: &Path) -> Receiver<Result<(), String>>;
 }
+
+/// Called once with how a snapshot went.
+#[cfg(feature = "recording")]
+pub type SnapshotDone = Box<dyn FnOnce(Result<(), String>) + Send + 'static>;
+
+/// A rectangle in points (CSS pixels at zoom 1), origin top-left.
+#[cfg(feature = "recording")]
+#[derive(Clone, Copy, Debug, serde::Serialize)]
+pub struct Area {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+/// Snapshots of trace's own webviews, for the homepage clip recorder (`recording`
+/// builds only; on Windows it records over WebView2's DevTools protocol instead).
+#[cfg(feature = "recording")]
+pub trait PageSnapshot {
+    /// Render `area` of `webview` (in the view's own coordinates; all of it when
+    /// `None`) to a PNG at `path`, then call `done`. Returns at once.
+    fn snapshot_png(
+        webview: &tauri::Webview,
+        path: PathBuf,
+        area: Option<Area>,
+        done: SnapshotDone,
+    ) {
+        let _ = (webview, path, area);
+        done(Err("Page snapshots are macOS-only.".to_string()));
+    }
+
+    /// Where `webview` is in its window's content, or `None` while it's hidden.
+    fn frame_in_window(webview: &tauri::Webview) -> Option<Area> {
+        let _ = webview;
+        None
+    }
+}
