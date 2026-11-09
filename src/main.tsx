@@ -99,6 +99,13 @@ const DevPage =
 // The dev page runs in a plain browser too, where the native window calls would throw.
 if (!DevPage) initAppearance();
 
+// Recording builds only (VITE_TRACE_RECORDING=1; site/README.md): the homepage
+// clip recorder's automation bridge. Vite inlines the flag, so every other build
+// drops this and the module (`npm run check:recording` checks the bundle).
+if (import.meta.env.VITE_TRACE_RECORDING === "1") {
+  void import("@/recording/bridge").then((m) => m.startRecordingBridge());
+}
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ErrorBoundary
