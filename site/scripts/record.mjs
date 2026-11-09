@@ -55,8 +55,12 @@ const private_ = [
   [homedir(), new RegExp(escape(homedir()), "i")],
   [userInfo().username, new RegExp(`(?<![\\p{L}\\p{N}])${escape(userInfo().username)}(?![\\p{L}\\p{N}])`, "iu")],
 ].filter(([s]) => s && s.length > 2);
+// TRACE_SITE_ALLOW: exact strings the owner agreed may show (comma-separated, such
+// as an account name that contains the user name); only those are ignored.
+const allowed = (process.env.TRACE_SITE_ALLOW ?? "").split(",").filter(Boolean);
 const leaks = async (d) => {
-  const text = await d.eval(() => document.body.innerText).catch(() => "");
+  let text = await d.eval(() => document.body.innerText).catch(() => "");
+  for (const a of allowed) text = text.split(a).join(" ");
   return private_.filter(([, re]) => re.test(text)).map(([s]) => s);
 };
 

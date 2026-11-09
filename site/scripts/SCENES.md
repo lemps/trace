@@ -25,7 +25,7 @@ the scene itself has to change. *New* means there's no scene yet.
 | | ↳ more: Browser (still) | `scenes/browser.mjs` | **written** | yes |
 | 7 | Tickets and pull requests (`tickets`) | `scenes/tickets.mjs` | placeholder still (needs demo Jira + GitHub) | still re-shot |
 | 8 | Run it anywhere (`sessions`) | `scenes/sessions.mjs` | keep | yes |
-| | ~~↳ more: Vercel Sandbox~~ | — | dropped from `features.json` until there's a demo Vercel account | — |
+| | ↳ more: Vercel Sandbox | `scenes/sandbox.mjs` | **written**: needs real Vercel, Claude and GitHub logins (see the scene) | yes |
 | 9 | Orchestrator (`orchestrator`) | `scenes/orchestrator.mjs` | keep | yes |
 | 10 | Scheduled prompts (`schedules`) | `scenes/schedules.mjs` | **fixed** (confirm, CLI flags, grep) | yes |
 | 11 | Coming from Conductor (`conductor`) | `scenes/conductor.mjs` | **written** | yes |
