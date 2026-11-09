@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Markdown } from "@/components/Markdown";
 import { Segmented } from "@/components/Segmented";
 import { type FileDiff, readWorkspaceFile } from "@/ipc/diff";
+import { MarkdownPreview } from "./files/MarkdownPreview";
 import type { Change } from "./files/tree";
 import { ViewerHeader } from "./files/ViewerHeader";
 
@@ -73,11 +73,7 @@ export function FileView({ fd, workspaceId, change, onReveal }: FileViewProps) {
         </div>
       );
     }
-    return (
-      <div className="md-doc">
-        <Markdown text={content} />
-      </div>
-    );
+    return <MarkdownPreview workspaceId={workspaceId} text={content} />;
   };
 
   return (

@@ -125,6 +125,8 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
 - [ ] **File previews:** images, PDFs and Markdown next to the agent. Images have started: the
       Gallery tab shows folders of images an agent points you at with `show_images`, with a
       full-size viewer and side-by-side compare (`domains/gallery`, `src-tauri/src/gallery/`).
+      Markdown has too: the Files tab's Preview draws a `.md` file the way the Plan tab draws a
+      document, on a centred reading column (`agent/files/MarkdownPreview.tsx`).
 - [ ] **Dictation:** speak into the prompt or terminal.
 - [x] **Terminal extras:** find in scrollback (⌘F / Ctrl+Shift+F), a menu on links and file paths
       (Open, Copy, Open in editor) and on right-click, and Copy Context (the selection or last 100
