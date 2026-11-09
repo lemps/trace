@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+use super::catalog::Auth;
 use super::oauth::{self, Client, Tokens};
 use crate::helpers::persist::{self, Style};
 
@@ -38,8 +39,49 @@ impl std::fmt::Debug for Grant {
     }
 }
 
+/// A server added in trace, and where its agents get it.
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Added {
+    pub name: String,
+    pub url: String,
+    pub auth: Auth,
+    /// For `Key`: the header and the pasted value.
+    #[serde(default)]
+    pub key: Option<(String, String)>,
+    /// Agents on this computer get it, through trace's proxy (`proxy`).
+    pub local: bool,
+    /// Agents in a cloud sandbox get it, the token added by its network.
+    pub remote: bool,
+}
+
+impl std::fmt::Debug for Added {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Added({} {} {:?}, local {}, remote {}, key {})",
+            self.name,
+            self.url,
+            self.auth,
+            self.local,
+            self.remote,
+            self.key.is_some()
+        )
+    }
+}
+
+impl Added {
+    /// Its address on trace's proxy: `/mcp-proxy/<slug>`.
+    pub fn slug(&self) -> String {
+        crate::helpers::slugify(&self.name)
+    }
+}
+
 #[derive(Default, Serialize, Deserialize)]
 struct File {
+    /// By server URL: what's been added, and how it's used.
+    #[serde(default)]
+    servers: BTreeMap<String, Added>,
     /// By server URL.
     #[serde(default)]
     grants: BTreeMap<String, Grant>,
@@ -64,6 +106,46 @@ pub fn now_ms() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+}
+
+/// Every server added in trace.
+pub fn added() -> Vec<Added> {
+    read().servers.into_values().collect()
+}
+
+/// Add (or replace) one. Its name must be one no other added server has.
+pub fn add(server: Added) -> Result<(), String> {
+    update(|f| {
+        let clash = f
+            .servers
+            .values()
+            .any(|s| s.url != server.url && s.slug() == server.slug());
+        if clash || server.slug() == "trace" {
+            return Err(format!("There's already a server called {}.", server.name));
+        }
+        f.servers.insert(server.url.clone(), server);
+        Ok(())
+    })?
+}
+
+/// Where its agents get it.
+pub fn set_use(url: &str, local: bool, remote: bool) -> Result<(), String> {
+    update(|f| match f.servers.get_mut(url) {
+        Some(s) => {
+            s.local = local;
+            s.remote = remote;
+            Ok(())
+        }
+        None => Err("That server isn't added.".to_string()),
+    })?
+}
+
+/// Remove it and trace's login to it.
+pub fn remove(url: &str) -> Result<(), String> {
+    update(|f| {
+        f.servers.remove(url);
+        f.grants.remove(url);
+    })
 }
 
 /// Every server trace is logged in to.
@@ -98,12 +180,6 @@ pub fn grant_from(name: &str, url: &str, d: &oauth::Discovered, t: Tokens) -> Gr
 pub fn save(grant: &Grant) -> Result<(), String> {
     update(|f| {
         f.grants.insert(grant.url.clone(), grant.clone());
-    })
-}
-
-pub fn forget(url: &str) -> Result<(), String> {
-    update(|f| {
-        f.grants.remove(url);
     })
 }
 

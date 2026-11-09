@@ -3,12 +3,10 @@ import { useGitHubStore } from "@/domains/github/store";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useTailscaleStatus } from "@/domains/tailscale/store";
 import { useVercelStatus } from "@/domains/vercel/store";
-import { mcpServers } from "@/ipc/mcp";
 import { GitHubDialog } from "./GitHubDialog";
 import { GITHUB } from "./github";
 import { IntegrationDialog } from "./IntegrationDialog";
-import { McpDialog } from "./McpDialog";
-import { MCP } from "./mcp";
+import { McpTab } from "./McpTab";
 import { INTEGRATIONS, type Integration } from "./registry";
 import { TailscaleDialog } from "./TailscaleDialog";
 import { TAILSCALE } from "./tailscale";
@@ -41,7 +39,13 @@ function IntegrationCard({ name, logo, description, connected, preview, onOpen }
   );
 }
 
-// Connect and disconnect the services trace works with, one card each. Connecting a
+const TABS = [
+  { id: "services", label: "Integrations" },
+  { id: "mcp", label: "MCP servers" },
+] as const;
+
+// Two tabs. Integrations: the services trace works with, one card each. MCP servers:
+// the tools trace's agents get (`McpTab`). Connect and disconnect a service here. Connecting a
 // tracker adds its board to the rail; disconnecting takes it away. GitHub is about
 // code rather than a board: signed in with trace's own token, it opens the repo browser.
 // Vercel is somewhere sessions run: connected, New session offers it. Tailscale is a
@@ -57,17 +61,9 @@ export function IntegrationsView() {
   const [vercelOpen, setVercelOpen] = useState(false);
   const tailscale = useTailscaleStatus();
   const [tailscaleOpen, setTailscaleOpen] = useState(false);
-  const [mcpOpen, setMcpOpen] = useState(false);
-  const [mcpConnected, setMcpConnected] = useState(false);
+  const [tab, setTab] = useState<"services" | "mcp">("services");
 
   useEffect(() => void checkGitHub(), [checkGitHub]);
-  // Re-read when its dialog closes: connecting happens there.
-  useEffect(() => {
-    if (mcpOpen) return;
-    mcpServers()
-      .then((list) => setMcpConnected(list.some((s) => s.connected)))
-      .catch(() => {});
-  }, [mcpOpen]);
 
   const card = (i: Integration) => (
     <IntegrationCard
@@ -106,10 +102,6 @@ export function IntegrationsView() {
   (githubLogin ? connected : available).push(githubCard);
   (vercel ? connected : available).push(vercelCard);
   (tailscale?.state === "running" ? connected : available).push(tailscaleCard);
-  const mcpCard = (
-    <IntegrationCard key="mcp" {...MCP} connected={mcpConnected} onOpen={() => setMcpOpen(true)} />
-  );
-  (mcpConnected ? connected : available).push(mcpCard);
   const section = (title: string, items: ReactNode[]) =>
     items.length > 0 && (
       <section className="ig-section">
@@ -124,23 +116,37 @@ export function IntegrationsView() {
         <div>
           <h1>Integrations</h1>
           <div className="desc">
-            Connect a tracker to add its board to the rail, GitHub to check out repos, Vercel to run
-            sessions in a Vercel Sandbox, your MCP servers for agents there, or Tailscale to see
-            your other computers.
+            Connect the services trace works with, and the MCP servers that give its agents your
+            tools, here and in Vercel sandboxes.
           </div>
         </div>
       </div>
+      <div className="detail-tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`detail-tab${tab === t.id ? " active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
       <div className="page-body">
-        <div className="ig-wrap">
-          {section("Connected integrations", connected)}
-          {section("Available integrations", available)}
-        </div>
+        {tab === "services" ? (
+          <div className="ig-wrap">
+            {section("Connected integrations", connected)}
+            {section("Available integrations", available)}
+          </div>
+        ) : (
+          <McpTab />
+        )}
       </div>
       {open && <IntegrationDialog integration={open} onClose={() => setOpen(null)} />}
       {githubOpen && <GitHubDialog onClose={() => setGithubOpen(false)} />}
       {vercelOpen && <VercelDialog onClose={() => setVercelOpen(false)} />}
       {tailscaleOpen && <TailscaleDialog onClose={() => setTailscaleOpen(false)} />}
-      {mcpOpen && <McpDialog onClose={() => setMcpOpen(false)} />}
     </div>
   );
 }

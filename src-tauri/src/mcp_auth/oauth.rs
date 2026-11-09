@@ -149,6 +149,24 @@ fn strings(v: &Value) -> Vec<String> {
         .collect()
 }
 
+/// Whether `server` asks for a login: it answers an unauthenticated MCP
+/// `initialize` with 401. A server that can't be reached counts as no.
+pub fn needs_login(server: &str) -> bool {
+    let body = json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "params": { "protocolVersion": "2025-06-18", "capabilities": {},
+                    "clientInfo": { "name": "trace", "version": env!("CARGO_PKG_VERSION") } } });
+    http()
+        .ok()
+        .and_then(|c| {
+            c.post(server)
+                .header("Accept", "application/json, text/event-stream")
+                .json(&body)
+                .send()
+                .ok()
+        })
+        .is_some_and(|r| r.status() == reqwest::StatusCode::UNAUTHORIZED)
+}
+
 /// Register trace with a server that lets clients register themselves.
 pub fn register(endpoint: &str) -> Result<Client, String> {
     let body = json!({

@@ -141,6 +141,8 @@ pub fn run() {
             commands::repo_setup::set_repo_github_account,
             commands::mcp::mcp_servers,
             commands::mcp::mcp_connect,
+            commands::mcp::mcp_add,
+            commands::mcp::mcp_set_use,
             commands::mcp::mcp_disconnect,
             commands::vercel::sandbox_lifetime,
             commands::vercel::set_sandbox_lifetime,

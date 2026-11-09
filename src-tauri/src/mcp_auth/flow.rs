@@ -50,14 +50,33 @@ fn client(d: &oauth::Discovered, given: Option<&str>) -> Result<Client, String> 
     Ok(c)
 }
 
-/// Log trace in to `name` at `url` through the browser. Blocking, for minutes
-/// at most: run it off the async runtime.
+/// Log trace in to `name` at `url` through the browser, and add it (keeping
+/// its switches if it was added before). Blocking, for minutes at most: run
+/// it off the async runtime.
 pub fn connect(
     app: &AppHandle,
     name: &str,
     url: &str,
     client_id: Option<&str>,
+    source: super::Source,
 ) -> Result<Grant, String> {
+    let grant = login(app, name, url, client_id)?;
+    let before = super::added().into_iter().find(|a| a.url == url);
+    let (local, remote) = before
+        .map(|a| (a.local, a.remote))
+        .unwrap_or_else(|| super::default_use(source));
+    store::add(store::Added {
+        name: name.to_string(),
+        url: url.to_string(),
+        auth: super::catalog::Auth::Oauth,
+        key: None,
+        local,
+        remote,
+    })?;
+    Ok(grant)
+}
+
+fn login(app: &AppHandle, name: &str, url: &str, client_id: Option<&str>) -> Result<Grant, String> {
     let d = oauth::discover(url)?;
     let client = client(&d, client_id)?;
     let server = tiny_http::Server::http(("127.0.0.1", REDIRECT_PORT)).map_err(|_| {

@@ -411,7 +411,22 @@ tokens, files under `~/.trace/` in the sandbox are the outbox (read from an offs
 - [ ] Peer: Files/diff, Transcript and Tests over the protocol.
 - [ ] A second sandbox provider, to prove the port.
 
-### The team's MCP servers in a sandbox (`mcp_auth/`)
+### MCP servers for trace's agents (`mcp_auth/`, Integrations → MCP servers)
+
+Integrations has two tabs: the services trace works with, and **MCP servers**: a card per
+server, from a curated list of popular ones (`catalog.rs`, each checked live: they log in with
+self-registering OAuth, or are open, or take a key), the HTTP ones in your Claude config, and
+any you add by URL ("Add your own…": OAuth if the server asks, else open, or a pasted key in a
+header). Each connected server has two switches: **this computer** (on by default except for
+servers your Claude config already gives local agents) and **sandboxes** (on by default).
+
+- **This computer:** agents get each server in their `--mcp-config` beside trace's own tools,
+  at `http://127.0.0.1:<port>/mcp-proxy/<name>` on the same loopback endpoint and token
+  (`proxy.rs`). The proxy drops trace's token, adds the server's login, fresh, and streams the
+  answer back; an upstream 401 becomes "connect it again in trace" rather than an OAuth dance
+  the agent can't finish. Tried live: a server's key goes up and trace's token doesn't, path,
+  query and the MCP session header are kept, and Context7 answers `initialize` through it.
+- **Sandboxes:** as below.
 
 What the team uses (Sentry, Metabase prod and stage, Atlassian, Pylon, hq-tools prod and stage,
 Brandfetch) is all **HTTP with OAuth**: no static headers in anyone's config, the tokens in each

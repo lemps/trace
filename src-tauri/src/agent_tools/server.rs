@@ -47,6 +47,11 @@ fn serve(app: &AppHandle, token: &str, port: u16, mut request: Request) {
         let _ = request.respond(Response::empty(401));
         return;
     }
+    // The MCP servers switched on for this computer (`mcp_auth::proxy`).
+    if request.url().starts_with("/mcp-proxy/") {
+        crate::mcp_auth::proxy::serve(request);
+        return;
+    }
     if request.url().split('?').next() != Some("/mcp") {
         let _ = request.respond(Response::empty(404));
         return;

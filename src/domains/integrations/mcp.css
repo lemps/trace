@@ -1,0 +1,71 @@
+/* Integrations → MCP servers (McpTab, McpServerDialog, AddMcpDialog). */
+
+.mcp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.mcp-section-note {
+  margin: -8px 0 12px;
+}
+
+/* A server's mark: a brand icon tinted with the theme, or its first letter. */
+.mcp-logo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+}
+.mcp-mark {
+  width: 22px;
+  height: 22px;
+  background: var(--fg-1);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+.mcp-letter {
+  font-size: var(--text-detail-title);
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+.mcp-card-name {
+  font-family: var(--font-mono);
+}
+.mcp-card-use {
+  margin-top: 6px;
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+
+/* A server's dialog: which agents get it, one switch each. */
+.mcp-use {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+  gap: 16px;
+}
+.mcp-use-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mcp-use-label {
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+.mcp-use-hint {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.ig-dialog .field .hint code {
+  font-family: var(--font-mono);
+}
