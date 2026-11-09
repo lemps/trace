@@ -142,8 +142,9 @@ looked" is **weight** (a bold title); **colour + count** is only for Needs you.
 
 - **Left = navigation, and it lives in the rail.** The rail is 56px of icons and
   badges. A view's own navigation (recent sessions) is a flyout from that view's
-  rail button while the view is selected (~350ms rest, slides back on leave;
-  `RailRecents`, `.rail-group`). One surface per job; no columns docked beside the rail.
+  rail button while the view is selected, once the user turns it on (it's off by
+  default; Settings → Sidebar sets it and the rest before it slides out; it slides
+  back on leave; `RailRecents`, `.rail-group`). One surface per job; no columns docked beside the rail.
 - **Right = the helper beside your work**: one `<SidePanel>` (`components/SidePanel`)
   docked on the window's right edge, showing **one view at a time**:
 
