@@ -72,11 +72,25 @@ try {
       continue;
     }
     const d = await app.connect();
+    // A page hidden for a while may not answer at all: give up on it after 3 s.
+    const visible = () =>
+      Promise.race([d.eval(() => document.visibilityState !== "hidden"), sleep(3000).then(() => false)]);
+    // Raise the window again whenever something covers it, and count the times
+    // that happens during a take: those frames may have stopped.
+    let covered = 0;
+    let taking = false;
+    const keep = setInterval(async () => {
+      if (await visible()) return;
+      if (taking) covered++;
+      app.raise?.();
+    }, 1000);
     try {
       // A hidden page (screen locked, window minimised or on another Space) stops
       // its animations: a detail would stay at its first, invisible keyframe.
-      const visible = () => d.eval(() => document.visibilityState !== "hidden");
-      for (let i = 0; i < 20 && !(await visible()); i++) await sleep(500);
+      for (let i = 0; i < 20 && !(await visible()); i++) {
+        app.raise?.();
+        await sleep(500);
+      }
       if (!(await visible())) {
         throw new Error("trace's window isn't visible (is the screen locked?); keep it on screen while recording");
       }
@@ -119,14 +133,17 @@ try {
         check();
       };
       const watch = setInterval(check, 1000);
+      taking = true;
       try {
         await scene.run(d, mark);
       } finally {
         clearInterval(watch);
+        taking = false;
         await check();
         console.log(`  frames: ${await stop()}`);
         writeFileSync(join(frames, "marks.json"), JSON.stringify(marks));
       }
+      if (covered) console.warn(`  WARNING: trace's window was covered ${covered} time(s) during the take; check the clip`);
       if (found.size) {
         console.error(`  STOP: the screen showed private text (${[...found].join(", ")}); not encoding ${id}`);
         process.exitCode = 1;
@@ -136,6 +153,7 @@ try {
       console.log(`  length ${r.length.toFixed(1)}s`);
       report(r);
     } finally {
+      clearInterval(keep);
       d.close();
     }
   }

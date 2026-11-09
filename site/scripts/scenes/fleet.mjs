@@ -1,17 +1,24 @@
 // Fleet: every running agent at a glance; rows keep their place as states change.
-import { ROUTER, ensureSession, rail, sendChat, sleep } from "../lib/ui.mjs";
+import { ROUTER, ensureSession, ensureStarted, rail, sendChat, sleep } from "../lib/ui.mjs";
 import { seedWaiting } from "./inbox.mjs";
 import { SORTER } from "./subagents.mjs";
 
-export const clip = { segments: [["start+0.3", "end-0.1", 1]] };
+export const clip = { segments: [["start+0.3", "end-0.1", 1.2]] };
 
 export async function setup(d) {
   // Ready agents, two waiting on you, and one we set working just before the take.
   await ensureSession(d, ROUTER);
+  await ensureStarted(d);
   await ensureSession(d, { ...SORTER, seed: "Explain src/sort.rs in two sentences. Don't edit anything." });
   await seedWaiting(d);
   await ensureSession(d, SORTER);
-  await sendChat(d, "Suggest three more test cases for sort_row in a short list. Read the code first; don't write any files.", 2);
+  await ensureStarted(d);
+  // The progress note shows beside it on Fleet (trace's update_user tool).
+  await sendChat(
+    d,
+    "First call trace's update_user tool with \"Reading sort.rs for test ideas\". Then suggest three more test cases for sort_row in a short list. Read the code first; don't write any files.",
+    2,
+  );
   await sleep(1500);
   await rail(d, "Fleet");
   await sleep(1000);

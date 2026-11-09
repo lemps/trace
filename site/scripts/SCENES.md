@@ -11,35 +11,48 @@ the scene itself has to change. *New* means there's no scene yet.
 
 | # | Section (`features.json` id) | Scene file | State | Recorded (9 Nov, new UI) |
 |---|---|---|---|---|
-| | Hero (still) | `scenes/hero.mjs` | keep | not yet |
+| | Hero (still) | `scenes/hero.mjs` | keep | yes |
 | 1 | Agents as a chat (`chat`) | `scenes/chat.mjs` | **rewritten** | yes |
 | | ↳ more: Subagents | `scenes/subagents.mjs` | keep (Explore subagents now) | yes |
-| 2 | The composer (`composer`) | `scenes/composer.mjs` | **written** | not yet |
-| 3 | Fleet (`fleet`) | `scenes/fleet.mjs` | keep | not yet |
-| 4 | Inbox (`inbox`) | `scenes/inbox.mjs` | keep (Answer only if shown) | not yet |
-| 5 | Panes, Files and Terminal (`panes`) | `scenes/panes.mjs` | keep | not yet |
-| | ↳ more: Files and Quick Open | `scenes/files.mjs` | keep | not yet |
-| | ↳ more: Terminal extras | `scenes/terminal.mjs` | keep | not yet |
-| 6 | Plans, Browser and Gallery (`plan`) | `scenes/plan.mjs` | keep | not yet |
-| | ↳ more: Gallery | `scenes/gallery.mjs` | keep | not yet |
+| 2 | The composer (`composer`) | `scenes/composer.mjs` | **written** | yes |
+| 3 | Fleet (`fleet`) | `scenes/fleet.mjs` | keep | yes |
+| 4 | Inbox (`inbox`) | `scenes/inbox.mjs` | keep (Answer only if shown) | yes |
+| 5 | Panes, Files and Terminal (`panes`) | `scenes/panes.mjs` | keep | yes |
+| | ↳ more: Files and Quick Open | `scenes/files.mjs` | keep | yes |
+| | ↳ more: Terminal extras | `scenes/terminal.mjs` | keep | yes |
+| 6 | Plans, Browser and Gallery (`plan`) | `scenes/plan.mjs` | keep | yes |
+| | ↳ more: Gallery | `scenes/gallery.mjs` | keep | yes |
 | | ↳ more: Browser (still) | `scenes/browser.mjs` | **written** | yes |
 | 7 | Tickets and pull requests (`tickets`) | `scenes/tickets.mjs` | placeholder still (needs demo Jira + GitHub) | still re-shot |
-| 8 | Run it anywhere (`sessions`) | `scenes/sessions.mjs` | keep | not yet |
+| 8 | Run it anywhere (`sessions`) | `scenes/sessions.mjs` | keep | yes |
 | | ~~↳ more: Vercel Sandbox~~ | — | dropped from `features.json` until there's a demo Vercel account | — |
-| 9 | Orchestrator (`orchestrator`) | `scenes/orchestrator.mjs` | keep | not yet |
-| 10 | Scheduled prompts (`schedules`) | `scenes/schedules.mjs` | **fixed** (confirm, CLI flags, grep) | not yet |
+| 9 | Orchestrator (`orchestrator`) | `scenes/orchestrator.mjs` | keep | yes |
+| 10 | Scheduled prompts (`schedules`) | `scenes/schedules.mjs` | **fixed** (confirm, CLI flags, grep) | yes |
 | 11 | Coming from Conductor (`conductor`) | `scenes/conductor.mjs` | **written** | yes |
 | 12 | Make it yours (`appearance`) | `scenes/appearance.mjs` | keep | yes |
 
-**Status, 9 Nov.** The helpers below are fixed (`lib/ui.mjs`), and the macOS driver
-mirrors `:hover`, so hover bars and row actions show. "Not yet" scenes have run-ready
-scripts but weren't recorded: the recording machine's screen locked partway, and a
-hidden WKWebView page stops `requestAnimationFrame` and CSS animations, so details
-stay at their first, invisible keyframe and xterm draws nothing. The runner now
-refuses a hidden page. Record the rest with the screen unlocked, in this order (later
-scenes reuse earlier sessions, and a Browser page or a Conductor import changes what
-others show): composer, hero, panes, files, terminal, plan, gallery, sessions, inbox,
-fleet, orchestrator, schedules; then `demo-setup.mjs --conductor` and conductor last.
+**Status, 9 Nov.** Everything above is recorded on the new UI. The helpers below
+are fixed (`lib/ui.mjs`), and the macOS driver mirrors `:hover`, so hover bars and
+row actions show. To record again, take them in this order, since later scenes reuse
+earlier sessions and a Browser page or a Conductor import changes what others show:
+chat, subagents, composer, hero, panes, files, terminal, browser, plan, gallery,
+sessions, inbox, fleet, orchestrator, schedules, appearance, tickets; then
+`demo-setup.mjs --conductor` and conductor last.
+
+Lessons from this round:
+- **Keep the window visible.** A hidden WKWebView page (screen locked, window covered)
+  stops `requestAnimationFrame` and CSS animations: details stay at their first,
+  invisible keyframe and xterm draws nothing, and after a while the page stops
+  answering at all. The runner raises the window through System Events whenever it's
+  covered, warns when that happened during a take, and refuses a page it can't show.
+- **macOS rewrites typed text**: `--` becomes `—` and `"` becomes `“`, which changed
+  session titles and prompts. The driver puts back what was typed.
+- **Agents start stopped** after each launch. Scenes that need a running agent
+  (`resetPanes`, sessions, fleet, orchestrator) start it, and `resetPanes` picks
+  Opus / High / Ask so a resumed agent's pickers don't read "Default model".
+- **Switching rail page keeps an open detail** over the new page; `rail()` goes back
+  to the page.
+- Each composer take's plan-mode turn writes a plan to `~/.claude/plans`: delete it.
 
 A section's `more` clips are separate scenes with their own media (`record.mjs
 subagents` and so on). The build shows whichever are recorded, and leaves a section off

@@ -17,6 +17,11 @@ export async function rail(d, label) {
   // Move off the rail, or its recents flyout slides out over the page.
   await d.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 700, y: 60 });
   await sleep(700);
+  // An open detail stays over the page it now returns to: go back to the page.
+  if (await shown(d, '.detail-top button[aria-label^="Back to"]')) {
+    await d.click('.detail-top button[aria-label^="Back to"]');
+    await sleep(700);
+  }
 }
 
 /** Set the select whose options include `value` (React-safe). */

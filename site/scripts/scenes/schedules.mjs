@@ -5,8 +5,8 @@ const NAME = "Morning test run";
 
 export const clip = {
   segments: [
-    ["start+0.5", "scheduled", 1.25],
-    ["scheduled", "end", 1],
+    ["start+0.5", "scheduled", 1.5],
+    ["scheduled", "end", 1.3],
   ],
 };
 

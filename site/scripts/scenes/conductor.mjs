@@ -10,9 +10,9 @@ import { sleep } from "../lib/ui.mjs";
 
 export const clip = {
   segments: [
-    ["start+0.3", "preview", 1.8],
-    ["preview", "import", 2.7],
-    ["import", "end", 2],
+    ["start+0.3", "preview", 1.2],
+    ["preview", "import", 1.5],
+    ["import", "end", 1.2],
   ],
 };
 

@@ -130,7 +130,11 @@ Environment:
   Screen Recording permission is needed. It holds 20 fps, the clips' rate (about 50
   at most). Keep trace's window on screen and the screen unlocked while recording:
   a hidden page stops its animations (a session's detail would stay at its first,
-  invisible keyframe), so the runner refuses to record one.
+  invisible keyframe) and xterm's drawing, so the runner refuses to record one. It
+  brings the window to the front through System Events at launch and again whenever
+  something covers it, and warns if that happened during a take: check that clip.
+- **Typing** puts back what macOS's smart dashes and quotes rewrite (`--` to `—`,
+  `"` to `“`), so flags, titles and prompts arrive as typed.
 - **Stills** (`d.screenshot(file)`) show the window as you see it: the Browser tab's
   pages are native child webviews, not part of the page, so each visible one is
   snapshotted too and laid over the page with ffmpeg. Clips don't do this: in a
