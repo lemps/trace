@@ -1,18 +1,19 @@
-import { useBoardStore } from "@/domains/board/store";
+import { useLiveStore } from "@/domains/live/store";
 import { STATUS_LABEL } from "./describe";
 import { runWorkspaceId } from "./ids";
 import type { ScheduleRun } from "./types";
 
 /**
- * Whether a live run is stuck on the user right now. The backend flags a run
- * once Claude asks for a human, but only the renderer's quiet-timer knows the
- * agent is *still* waiting (vs. carrying on after the user answered).
+ * Whether a live run is stuck on the user right now: its agent has a dialog open
+ * (the hook-reported ask, `live/sync`), which only an answer, a new prompt or the
+ * turn ending clears. Not the quiet timer: any output reads as "working", and the
+ * note this shows above the terminal resizes it, so the TUI's repaint knocked the
+ * note away and the quiet brought it back, over and over (the run viewer flickered).
+ * The backend's `needsInput` stays set after an answer, so it can't say "still".
  */
 export function useRunNeedsYou(run: ScheduleRun | undefined): boolean {
-  const waiting = useBoardStore((s) =>
-    run ? s.agentActivity[runWorkspaceId(run.id)] === "waiting" : false
-  );
-  return !!run && run.status === "running" && run.needsInput && waiting;
+  const asking = useLiveStore((s) => (run ? s.info[runWorkspaceId(run.id)]?.ask != null : false));
+  return !!run && run.status === "running" && asking;
 }
 
 // Status dot + label for one run.
