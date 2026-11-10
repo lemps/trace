@@ -70,7 +70,8 @@ working, and stoppable, after their turn ends.
 
 - `launch(spec, sink)`: start the agent (fresh, or resuming its saved conversation) and stream
   rows into the `JournalSink`.
-- `send(message)`: a user turn. While a turn runs, the UI queues it.
+- `send(message)`: a user turn. Sent while a turn runs, it steers that turn: Claude reads it after
+  its current tool call (one `result` for both), Codex gets `turn/steer`.
 - `answer(request_id, answer)`: resolve an approval or question.
 - `interrupt()`: stop the current turn and every running subagent, background ones included; keep
   the agent. `stop_subagent(callId)`: stop one subagent. `stop()`: end the agent.
@@ -279,8 +280,10 @@ context-window size, Codex's own slash commands.
 - Tool calls pair with their output and show one summary line, expanding to the detail.
 - Diff cards, plan cards, and inline approval and question cards answered in place.
 - Assistant text streams in and renders as Markdown, with file links that open in an editor.
-- A composer: Enter sends, messages typed during a turn queue (editable, reorderable), `/`
-  lists the agent's slash commands.
+- A composer: Enter sends; during a turn it steers it (`hooks/useDeliver`). ⌥Enter queues the
+  message for when the turn ends (queued ones are editable, and Send now puts one into the running
+  turn), ⌘Enter / Ctrl+Enter interrupts the turn and sends it first. The send button's caret lists
+  the three while the agent works. `/` lists the agent's slash commands.
 - Stopping: while anything runs (a turn, or subagents after it) the last row is "Working…" with
   the subagent count and Interrupt, and Esc interrupts wherever focus is while the chat is on
   screen (not from another text box or with a menu open; `hooks/useChatKeys`). A running

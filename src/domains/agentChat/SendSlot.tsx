@@ -1,8 +1,11 @@
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { PopMenu } from "@/components/PopMenu";
+import { useHint } from "@/platform/shortcuts";
+import type { DeliverHow } from "./hooks/useDeliver";
 
 interface SendSlotProps {
-  /** A turn is running: a message waits in the queue rather than going now. */
+  /** A turn is running: a message sent now joins it. */
   busy: boolean;
   /** Anything runs (a turn, or subagents after it): there's something to stop. */
   working: boolean;
@@ -12,13 +15,14 @@ interface SendSlotProps {
   canSend: boolean;
   /** The agent is stopped: sending starts it first. */
   starts?: boolean;
-  onSend: () => void;
+  onSend: (how?: DeliverHow) => void;
   onStop: () => void;
 }
 
-// The composer's one primary (trace-ui §2 rule 5): Send, Queue while a turn runs,
-// and Stop while the agent works and there's nothing to send. It's one square slot,
-// so swapping never shifts the pickers beside it. Esc stops a turn whichever it shows.
+// The composer's one primary (trace-ui §2 rule 5): Send, and Stop while the agent
+// works and there's nothing to send. Typing while it works makes it a split
+// button: Send now steers the running turn, and the caret also offers Queue (for
+// when the turn ends) and Interrupt and send. Esc stops a turn whichever it shows.
 export function SendSlot({
   busy,
   working,
@@ -40,15 +44,87 @@ export function SendSlot({
       </IconButton>
     );
   }
+  if (working && !starts) {
+    return <SteerSplit busy={busy} canSend={canSend} onSend={onSend} />;
+  }
   return (
     <IconButton
       className="primary ac-send"
-      label={starts ? "Start and send" : busy ? "Queue" : "Send"}
+      label={starts ? "Start and send" : "Send"}
       shortcut="chatSend"
       disabled={!canSend}
-      onClick={onSend}
+      onClick={() => onSend("now")}
     >
-      {busy ? <I.ListPlus size={14} /> : <I.Send size={14} />}
+      <I.Send size={14} />
     </IconButton>
+  );
+}
+
+interface SteerSplitProps {
+  busy: boolean;
+  canSend: boolean;
+  onSend: (how: DeliverHow) => void;
+}
+
+/** Send now ▾, while the agent works and something is typed. */
+function SteerSplit({ busy, canSend, onSend }: SteerSplitProps) {
+  const nowHint = useHint("chatSend");
+  const queueHint = useHint("chatQueue");
+  const interruptHint = useHint("chatInterruptSend");
+  return (
+    <div className="split-btn ac-send-split">
+      <IconButton
+        className="primary"
+        label="Send now"
+        shortcut="chatSend"
+        disabled={!canSend}
+        onClick={() => onSend("now")}
+      >
+        <I.Send size={14} />
+      </IconButton>
+      <PopMenu
+        trigger={({ toggle }) => (
+          <button
+            type="button"
+            className="btn primary"
+            onClick={toggle}
+            disabled={!canSend}
+            aria-haspopup="menu"
+            aria-label="More ways to send"
+            title="More ways to send"
+          >
+            <span className="caret ac-send-caret">
+              <I.Chevron size={12} />
+            </span>
+          </button>
+        )}
+        sections={[
+          {
+            items: [
+              {
+                label: "Send now",
+                detail: busy
+                  ? "It reads this after its current step"
+                  : "Starts a turn while its subagents work",
+                hint: nowHint,
+                onSelect: () => onSend("now"),
+              },
+              {
+                label: "Queue",
+                detail: busy ? "Sent when this turn ends" : "Sent in order after what's queued",
+                hint: queueHint,
+                onSelect: () => onSend("queue"),
+              },
+              {
+                label: "Interrupt and send",
+                detail: busy ? "Stops the turn, then sends this" : "Stops its subagents first",
+                hint: interruptHint,
+                onSelect: () => onSend("interrupt"),
+              },
+            ],
+          },
+        ]}
+      />
+    </div>
   );
 }
