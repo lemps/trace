@@ -165,6 +165,17 @@ the same model, provider and extra args as a terminal agent would, plus trace's 
 hooks (`brands::wiring` → `claude::launch` for Claude). The kickoff brief (or, resuming a conversation
 cut off by a quit, the "carry on" nudge) is sent as the first chat message once the agent is up.
 
+**History from outside a chat run.** Headless Claude resumes a conversation without replaying it,
+so the journal only holds what chat runs saw. Turns taken in the terminal (before a switch to chat,
+or between two chat runs) are read from Claude Code's conversation file instead: every entry whose
+`entrypoint` isn't `sdk-cli` (a chat run's) becomes rows, ids prefixed `hist:`, through the
+formatted transcript's parser (`agent_session::claude::history`). `agent_session::backfill` merges
+them among the journal's rows by time and renumbers them in one locked rewrite, when a view reads the
+journal with no agent running and when a chat agent starts (which then emits `agent-journal` with
+`reset`, replacing the view's copy). Rows already there are skipped by id, a conversation no longer
+than at its last sync isn't read again, and only the newest 4000 rows of history are kept, whole turns.
+Codex isn't covered yet.
+
 **Stop, restart, state.** `stop_agent` stops either kind; `agent_running` and `live_workspaces`
 include chat agents, so every Stop button, the command palette and reload adoption work
 unchanged. A chat agent's exit emits `agent-run-state` and updates the interrupted ledger like a

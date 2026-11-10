@@ -110,11 +110,15 @@ pub fn stop_chat_subagent(
     runtime::stop_subagent(&state, &workspace_id, &call_id)
 }
 
-/// The workspace's journal, each row at its latest revision, in order.
+/// The workspace's journal, each row at its latest revision, in order. Off the
+/// main thread: bringing it up to date can read a long conversation file.
 #[tauri::command]
-pub fn load_journal(
+pub async fn load_journal(
     state: State<'_, AppState>,
     workspace_id: String,
 ) -> Result<Vec<JournalRow>, String> {
-    runtime::load(&state, &workspace_id)
+    let running = runtime::is_running(&state, &workspace_id);
+    tauri::async_runtime::spawn_blocking(move || runtime::load(&workspace_id, running))
+        .await
+        .map_err(|e| format!("Couldn't read the conversation: {e}"))?
 }

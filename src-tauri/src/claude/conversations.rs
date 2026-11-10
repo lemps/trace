@@ -76,6 +76,24 @@ pub(crate) fn conversation_path(cwd: &str, session_id: &str) -> Option<PathBuf> 
     )
 }
 
+/// The file of `workspace_id`'s saved conversation, in `cwd`'s project when it's
+/// known, else whichever project holds it (ids are UUIDs, so at most one does):
+/// reading a journal knows only the workspace.
+pub(crate) fn saved_conversation_file(workspace_id: &str, cwd: Option<&str>) -> Option<PathBuf> {
+    let id = session_id_for(workspace_id)?;
+    if let Some(path) = cwd.and_then(|cwd| conversation_path(cwd, &id)) {
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    let projects = dirs::home_dir()?.join(".claude").join("projects");
+    std::fs::read_dir(projects)
+        .ok()?
+        .flatten()
+        .map(|dir| dir.path().join(format!("{id}.jsonl")))
+        .find(|path| path.is_file())
+}
+
 /// The saved conversation a start in `cwd` would `--resume`, without pinning a
 /// fresh one: what `claude_session_ids` returns as its resume id.
 pub(crate) fn resumable(workspace_id: &str, cwd: &str) -> Option<String> {

@@ -34,6 +34,8 @@ interface AgentChatState {
   /** The chat pane's tab: `"main"`, or the call id of the subagent shown. */
   tab: Record<string, string>;
   applyRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
+  /** Replace the journal: the backend renumbered it (terminal turns added to it). */
+  resetRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
   setInfo: (workspaceId: string, info: SessionInfo) => void;
   setTransport: (workspaceId: string, transport: Transport) => void;
   setBrands: (brands: string[]) => void;
@@ -76,6 +78,10 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
         paused: { ...s.paused, [workspaceId]: false },
       };
     }),
+  resetRows: (workspaceId, rows) =>
+    set((s) => ({
+      journals: { ...s.journals, [workspaceId]: upsertRows(EMPTY_JOURNAL, rows) },
+    })),
   setInfo: (workspaceId, info) =>
     set((s) => ({
       info: { ...s.info, [workspaceId]: info },
