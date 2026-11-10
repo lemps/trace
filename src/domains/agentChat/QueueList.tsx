@@ -1,13 +1,23 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import type { Deliver } from "./hooks/useDeliver";
 import { useAgentChatStore, useQueue } from "./store";
 
-// Messages typed while the agent works, waiting their turn: sent in order, one
-// per turn, each editable or removable until it goes. While the agent is stopped
-// they wait for it to start (a send to a stopped agent starts it).
+// Messages queued while the agent works, waiting their turn: sent in order, one
+// per turn, each editable or removable until it goes. While a turn runs, one can
+// be sent now instead, into that turn. While the agent is stopped they wait for
+// it to start (a send to a stopped agent starts it).
 
-export function QueueList({ workspaceId, stopped }: { workspaceId: string; stopped: boolean }) {
+interface QueueListProps {
+  workspaceId: string;
+  stopped: boolean;
+  /** A turn is running: a queued message can join it now. */
+  busy: boolean;
+  deliver: Deliver;
+}
+
+export function QueueList({ workspaceId, stopped, busy, deliver }: QueueListProps) {
   const queue = useQueue(workspaceId);
   if (queue.length === 0) return null;
   return (
@@ -25,6 +35,14 @@ export function QueueList({ workspaceId, stopped }: { workspaceId: string; stopp
           text={q.text}
           files={q.attachments.length}
           n={i + 1}
+          onSendNow={
+            busy
+              ? () => {
+                  useAgentChatStore.getState().removeQueued(workspaceId, q.id);
+                  deliver(q.text, q.attachments, "now");
+                }
+              : undefined
+          }
         />
       ))}
     </div>
@@ -38,9 +56,11 @@ interface QueuedRowProps {
   /** How many files go with it. */
   files: number;
   n: number;
+  /** Set while a turn runs: send it into that turn instead of after it. */
+  onSendNow?: () => void;
 }
 
-function QueuedRow({ workspaceId, id, text, files, n }: QueuedRowProps) {
+function QueuedRow({ workspaceId, id, text, files, n, onSendNow }: QueuedRowProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const { editQueued, removeQueued } = useAgentChatStore.getState();
   const save = () => {
@@ -80,6 +100,11 @@ function QueuedRow({ workspaceId, id, text, files, n }: QueuedRowProps) {
             }
           }}
         />
+      )}
+      {draft === null && onSendNow && (
+        <IconButton size="sm" label="Send it now" onClick={onSendNow}>
+          <I.Send size={14} />
+        </IconButton>
       )}
       {draft === null && (
         <IconButton size="sm" label="Edit the queued message" onClick={() => setDraft(text)}>

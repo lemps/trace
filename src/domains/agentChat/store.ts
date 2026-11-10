@@ -38,7 +38,8 @@ interface AgentChatState {
   setTransport: (workspaceId: string, transport: Transport) => void;
   setBrands: (brands: string[]) => void;
   markLoaded: (workspaceId: string) => void;
-  enqueue: (workspaceId: string, text: string, attachments?: string[]) => void;
+  /** Add a message to the end of the queue, or with `first`, ahead of the rest. */
+  enqueue: (workspaceId: string, text: string, attachments?: string[], first?: boolean) => void;
   editQueued: (workspaceId: string, id: string, text: string) => void;
   removeQueued: (workspaceId: string, id: string) => void;
   /** Put a message that failed to send back at the front of the queue, and pause it. */
@@ -91,11 +92,12 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
     ),
   setBrands: (brands) => set({ brands }),
   markLoaded: (workspaceId) => set((s) => ({ loaded: { ...s.loaded, [workspaceId]: true } })),
-  enqueue: (workspaceId, text, attachments = []) =>
+  enqueue: (workspaceId, text, attachments = [], first = false) =>
     set((s) => {
       nextQueued += 1;
       const queued = { id: `q${nextQueued}`, text, attachments };
-      const queue = [...(s.queues[workspaceId] ?? []), queued];
+      const rest = s.queues[workspaceId] ?? [];
+      const queue = first ? [queued, ...rest] : [...rest, queued];
       return { queues: { ...s.queues, [workspaceId]: queue } };
     }),
   editQueued: (workspaceId, id, text) =>

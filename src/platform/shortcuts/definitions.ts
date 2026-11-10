@@ -186,11 +186,26 @@ export const SHORTCUTS: ShortcutDef[] = [
   },
   {
     id: "chatSend",
-    label: "Send, or queue it while the agent works",
+    label: "Send; while the agent works, it reads it after its current step",
     group: "chat",
     scope: "chat",
     ...both(["Enter"]),
     isFixed: true,
+  },
+  {
+    id: "chatQueue",
+    label: "Queue the message for when the agent's turn ends",
+    group: "chat",
+    scope: "chat",
+    ...both(["Alt+Enter"]),
+  },
+  {
+    id: "chatInterruptSend",
+    label: "Interrupt the agent's turn and send the message",
+    group: "chat",
+    scope: "chat",
+    mac: ["Meta+Enter"],
+    pc: ["Ctrl+Enter"],
   },
   {
     id: "chatNewline",

@@ -247,10 +247,19 @@
   background: var(--bg-3);
 }
 
-/* Send / Queue / Stop share this one square slot (`SendSlot`), so the pickers
-   beside it never move when it swaps. */
-.btn.icon.ac-send {
+/* Send and Stop share this one square slot (`SendSlot`), so the pickers beside it
+   never move when it swaps. Typing while the agent works adds the caret. */
+.btn.icon.ac-send,
+.ac-send-split {
   margin-left: 4px;
+}
+/* The composer sits at the bottom of the pane: its menu opens upwards. */
+.ac-send-split .pop-menu-pop {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+.ac-send-split .caret.ac-send-caret {
+  transform: rotate(-90deg);
 }
 
 /* Slash commands, above the composer. */
