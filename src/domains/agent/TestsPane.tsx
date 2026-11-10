@@ -1,3 +1,4 @@
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { useTestsStore } from "./testsStore";
 
@@ -18,8 +19,9 @@ export function TestsPane({ workspaceId }: { workspaceId: string }) {
   return (
     <div className="tab-pane">
       <div className="tests-bar">
-        <button type="button" className="btn primary" onClick={go} disabled={running}>
-          <I.Beaker size={14} /> {running ? "Running…" : run ? "Re-run tests" : "Run tests"}
+        <button type="button" className="btn" onClick={go} disabled={running}>
+          <I.Play size={14} />
+          <BusyLabel busy={running} idle={run ? "Re-run tests" : "Run tests"} working="Running…" />
         </button>
         {run && (
           <div className="tests-summary" style={{ margin: 0 }}>

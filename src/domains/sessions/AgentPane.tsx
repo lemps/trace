@@ -1,4 +1,4 @@
-import { I } from "@/components/Icon";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { ChatSurface } from "@/domains/agent/ChatSurface";
 import { agentLabel } from "@/domains/agent/providerLabel";
 import { ChatAgentPane } from "@/domains/agentChat/ChatAgentPane";
@@ -31,7 +31,7 @@ export function AgentPane({ workspaceId, cli, run, hint }: AgentPaneProps) {
         <div className="empty-state">
           <div className="inner">
             <span className="ic">
-              <I.Sparkles size={28} />
+              <I.Sparkles size={ICON_SIZE.empty} />
             </span>
             <div className="title">Start {agentLabel(cli)}</div>
             <div className="hint">{hint}</div>

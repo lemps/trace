@@ -50,7 +50,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
     `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${stateOf(s)}, ${calls(s.toolCount)}`;
   const keys = useStepKeys(subagents, inPanes, active);
   return (
-    <div className="ac-tabs" role="tablist" aria-label="Main chat and subagents">
+    <div className="detail-tabs" role="tablist" aria-label="Main chat and subagents">
       <div className="tab-fit" ref={fitRef}>
         <ChatTab
           id="main"
@@ -62,7 +62,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
           title={keys.title("main", "Main chat")}
           ariaKeys={keys.aria("main")}
         >
-          <I.Chat size={13} />
+          <I.Chat size={12} />
           <span className="ac-tab-label" data-fit-label>
             Main
           </span>
@@ -102,7 +102,7 @@ export function ChatTabs({ subagents, inPanes, active, onPick }: ChatTabsProps) 
                 count={rest.length}
                 open={open}
                 toggle={toggle}
-                className={`ac-tab${open ? " on" : ""}`}
+                className={`detail-tab${open ? " active" : ""}`}
               />
             )}
             sections={[

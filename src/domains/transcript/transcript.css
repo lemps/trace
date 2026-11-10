@@ -68,8 +68,9 @@
   border-radius: var(--radius);
   background: var(--bg-2);
   color: var(--fg-0);
-  font-size: var(--text-body);
-  line-height: 1.5;
+  /* Its text is prose (`.md.prose`, which sizes itself); a command and "Show
+     more" take the prose's leading. */
+  line-height: var(--chat-line-height, 1.6);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -108,8 +109,7 @@
 .tx-bubble .md .ac-p {
   white-space: pre-wrap;
 }
-.tx-notice,
-.tx-working {
+.tx-notice {
   align-self: center;
   max-width: 90%;
   font-size: var(--text-meta);
@@ -137,12 +137,6 @@
   font-size: var(--text-meta);
   color: var(--fg-3);
 }
-.tx-latest {
-  position: absolute;
-  right: 20px;
-  bottom: 12px;
-  gap: 6px;
-}
 
 /* Tool runs: one bordered block per run, one line per call. */
 .tx-run {
@@ -156,7 +150,8 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  height: 32px;
+  /* A head you click to unfold is a control. */
+  height: var(--control-h);
   padding: 0 10px;
   font-size: var(--text-ui);
   color: var(--fg-2);
@@ -319,25 +314,6 @@
 }
 .tx-output:hover .md-code-copy {
   opacity: 1;
-}
-.tx-diff .del {
-  color: var(--c-danger);
-}
-.tx-diff .add {
-  color: var(--state-ready);
-}
-.tx-todos {
-  margin: 0;
-  padding-left: 18px;
-  font-size: var(--text-ui);
-  color: var(--fg-2);
-}
-.tx-todos li.completed {
-  color: var(--fg-3);
-  text-decoration: line-through;
-}
-.tx-todos li.in_progress {
-  color: var(--fg-0);
 }
 
 /* Transcript | Terminal, at the right end of the detail tab bar. */

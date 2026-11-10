@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { DeviceSignIn } from "./DeviceSignIn";
 import { useGitHubStore } from "./store";
@@ -97,7 +98,8 @@ export function GitHubSignIn({ onSignedIn, onCancel }: GitHubSignInProps) {
           disabled={!canSubmit}
           onClick={submit}
         >
-          <I.Key size={14} /> {signingIn ? "Checking…" : "Sign in with token"}
+          <I.Key size={14} />{" "}
+          <BusyLabel busy={signingIn} idle="Sign in with token" working="Checking…" />
         </button>
       </div>
     </div>

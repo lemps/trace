@@ -37,7 +37,16 @@ export function cardMenu({
     {
       items: [
         { label: "Open", onSelect: onOpen },
-        ...(onStart ? [{ label: "Start agent", onSelect: onStart }] : []),
+        // The card's own Start button, worded for a menu: same action, same why.
+        ...(onStart
+          ? [
+              {
+                label: "Start agent",
+                title: `Start an agent on ${issueKey} with the ticket brief`,
+                onSelect: onStart,
+              },
+            ]
+          : []),
       ],
     },
     { items: links },

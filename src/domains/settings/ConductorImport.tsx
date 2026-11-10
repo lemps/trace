@@ -56,7 +56,7 @@ export function ConductorImport({ onImported }: ConductorImportProps) {
   return (
     <>
       <button type="button" className="btn" onClick={() => setOpen(true)}>
-        <I.Download size={14} /> Import from Conductor
+        <I.Download size={14} /> Import from Conductor…
       </button>
       {open && <ImportDialog onClose={() => setOpen(false)} onImported={onImported} />}
     </>

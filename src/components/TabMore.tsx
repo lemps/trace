@@ -5,7 +5,7 @@ interface TabMoreProps {
   count: number;
   open: boolean;
   toggle: () => void;
-  /** The strip's own tab look (`detail-tab`, `ac-tab`). */
+  /** The strip's own tab look (`detail-tab`). */
   className: string;
 }
 

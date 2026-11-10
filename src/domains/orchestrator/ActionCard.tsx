@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
-import { actionSummary, runWriteTool, WRITE_TOOL_NAMES } from "./mutations";
+import { actionSummary, actionVerb, runWriteTool, WRITE_TOOL_NAMES } from "./mutations";
 
 // An inline, confirm-gated board action requested by the assistant via a
 // ```action spec block (the CLI/-p path's equivalent of the SDK's tool use).
 // Runs the SAME runWriteTool the SDK tools call, so the effect and the gate are
 // identical — only the request mechanism (a text block vs a tool_use) differs.
+// Drawn as the agent chat's ask card (`.ac-card.ac-ask`); once answered it
+// shrinks to the agent chat's one-line receipt.
 type Phase = "idle" | "running" | "done" | "declined";
 
 export function ActionCard({ raw }: { raw: string }) {
@@ -36,25 +38,80 @@ export function ActionCard({ raw }: { raw: string }) {
     setPhase("done");
   };
 
-  return (
-    <div className="orch-action">
-      <div className="orch-action-head">
-        <I.Bolt size={12} />
-        {actionSummary(action, spec)}
+  const summary = actionSummary(action, spec);
+  // The check marks what you chose (as the agent chat's receipt does); the
+  // result says how it went.
+  if (phase === "done") {
+    return (
+      <div className="ac-receipt orch-receipt">
+        <I.Check size={12} />
+        <span className="orch-receipt-text">{result}</span>
       </div>
-      {phase === "idle" && (
-        <div className="orch-action-foot">
-          <button type="button" className="oc-cancel" onClick={() => setPhase("declined")}>
-            Skip
-          </button>
-          <button type="button" className="oc-go" onClick={() => void run()}>
-            Confirm
-          </button>
-        </div>
-      )}
-      {phase === "running" && <div className="orch-action-result">Running…</div>}
-      {phase === "done" && <div className="orch-action-result">{result}</div>}
-      {phase === "declined" && <div className="orch-action-result muted">Skipped.</div>}
+    );
+  }
+  if (phase === "declined") {
+    return (
+      <div className="ac-receipt">
+        <I.X size={12} />
+        <span className="ac-receipt-what">Skipped</span>
+        <span className="ac-receipt-of">{summary}</span>
+      </div>
+    );
+  }
+  return (
+    <ConfirmCard
+      summary={summary}
+      verb={actionVerb(action)}
+      cancelLabel="Skip"
+      busy={phase === "running"}
+      onCancel={() => setPhase("declined")}
+      onGo={() => void run()}
+    />
+  );
+}
+
+interface ConfirmCardProps {
+  summary: string;
+  /** The go button's word: the action's verb ("Move", "Start"). */
+  verb: string;
+  cancelLabel?: string;
+  /** The action is running: both buttons wait. */
+  busy?: boolean;
+  /** Extra classes (where the card sits). */
+  className?: string;
+  onCancel: () => void;
+  onGo: () => void;
+}
+
+/**
+ * The human gate before an action runs, as the agent chat's ask card: what it
+ * will do, then Cancel and the action's verb (`.btn.primary-needs`, amber,
+ * because it's waiting on you). Used inline (an ```action block) and above the
+ * composer (an SDK tool call parked on `pendingConfirm`).
+ */
+export function ConfirmCard({
+  summary,
+  verb,
+  cancelLabel = "Cancel",
+  busy = false,
+  className,
+  onCancel,
+  onGo,
+}: ConfirmCardProps) {
+  return (
+    <div className={`ac-card ac-ask orch-ask${className ? ` ${className}` : ""}`}>
+      <div className="ac-card-head">
+        <I.Bolt size={14} />
+        <span className="ac-card-title">{summary}</span>
+      </div>
+      <div className="ac-ask-actions">
+        <button type="button" className="btn" disabled={busy} onClick={onCancel}>
+          {cancelLabel}
+        </button>
+        <button type="button" className="btn primary-needs" disabled={busy} onClick={onGo}>
+          {verb}
+        </button>
+      </div>
     </div>
   );
 }

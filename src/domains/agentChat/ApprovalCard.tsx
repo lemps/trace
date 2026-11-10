@@ -1,11 +1,15 @@
 import { I } from "@/components/Icon";
+import { StatusLight } from "@/components/StatusLight";
+import { toolLabel } from "@/domains/live/ask";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useAnswer } from "./hooks/useAnswer";
 import type { Approval, ApprovalKind, ApprovalOption } from "./types";
 
-// A permission request, answered in place: what the agent wants to do, then one
-// button per option (allow once is the primary, deny the destructive one). Once
-// resolved it shrinks to a one-line receipt of what was chosen.
+// A permission request, answered in place: what it asks for ("Permission · Bash",
+// as the agent's light says it everywhere), what the agent wants to do, then one
+// button per option (allow once is the amber answer, deny a plain button: it
+// refuses, it doesn't destroy). Once resolved it shrinks to a one-line receipt of
+// what was chosen.
 
 interface ApprovalCardProps {
   approval: Approval;
@@ -16,7 +20,7 @@ interface ApprovalCardProps {
 const BUTTON: Record<ApprovalKind, string> = {
   allowOnce: "btn primary-needs",
   allowAlways: "btn",
-  deny: "btn danger",
+  deny: "btn",
 };
 
 const RECEIPT: Record<ApprovalKind, string> = {
@@ -25,6 +29,11 @@ const RECEIPT: Record<ApprovalKind, string> = {
   deny: "Denied",
 };
 
+/** What the card asks for, in the words the agent's light uses (`live/ask.ts`). */
+function askLabel(tool: string): string {
+  return tool === "ExitPlanMode" ? "Plan approval" : `Permission · ${toolLabel(tool)}`;
+}
+
 export function ApprovalCard({ approval, attached = false }: ApprovalCardProps) {
   const { busy, submit } = useAnswer(approval.requestId);
   const { resolution } = approval;
@@ -32,11 +41,10 @@ export function ApprovalCard({ approval, attached = false }: ApprovalCardProps) 
   return (
     <div className={`ac-card ac-ask${attached ? " attached" : ""}`}>
       <div className="ac-card-head">
-        <I.Shield size={14} />
+        <StatusLight light="attention" variant="pill" label={askLabel(approval.tool)} />
         <span className="ac-card-title">
           <ChatMarkdown text={approval.title} inline />
         </span>
-        {!attached && <span className="ac-card-meta">{approval.tool}</span>}
       </div>
       {approval.detail && <pre className="tx-code ac-cmd">{approval.detail}</pre>}
       <div className="ac-ask-actions">
@@ -69,12 +77,12 @@ function Receipt({ approval }: { approval: Approval }) {
     text = option ? RECEIPT[option.kind] : optionId;
     note = resolution.answer.note;
   }
-  // Only an allow earns the check. Denied is a red ×; cancelled (or an option we
+  // Only an allow earns the check. Denied is a red ban; cancelled (or an option we
   // can't name) is a grey one, so it never reads as allowed.
   const allowed = kind === "allowOnce" || kind === "allowAlways";
   return (
     <div className={`ac-receipt${kind === "deny" ? " denied" : ""}`}>
-      {allowed ? <I.Check size={12} /> : <I.X size={12} />}
+      {allowed ? <I.Check size={12} /> : <I.Ban size={12} />}
       <span className="ac-receipt-what">{text}</span>
       <span className="ac-receipt-of">
         <ChatMarkdown text={approval.title} inline />

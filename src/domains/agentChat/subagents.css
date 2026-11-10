@@ -1,42 +1,12 @@
 /* Subagents in a chat (`ac-`): the tab strip, a subagent's card in the main
    timeline, and its own read-only view. */
 
-/* Tabs: Main, then one per subagent. Same look as the detail view's tab row. */
-.ac-tabs {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  height: var(--control-h);
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border-faint);
-}
-.ac-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  max-width: 260px;
-  height: 100%;
-  padding: 0 10px;
-  font-size: var(--text-ui);
-  color: var(--fg-3);
-  border-bottom: 1px solid transparent;
-  margin-bottom: -1px;
-}
-.ac-tab:hover {
-  color: var(--fg-1);
-}
-.ac-tab.on {
-  color: var(--fg-0);
-  border-bottom-color: var(--fg-0);
-}
-.ac-tab:focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: -2px;
-}
+/* Tabs: Main, then one per subagent, in the shared tab row (`.detail-tabs` /
+   `.detail-tab`, agent/detail.css). What's here is only what a subagent's tab
+   holds: a long label ends in "…", and a finished one's ×. */
 .ac-tab-label {
   min-width: 0;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -48,9 +18,6 @@
   min-width: 0;
   white-space: nowrap;
 }
-.ac-tab > svg {
-  flex-shrink: 0;
-}
 /* A finished subagent's close (`IconButton` xs), tucked against its tab (as a pane
    tab's is). It keeps its slot but is clear until the tab is hovered or focused, so
    labels never shift; always there without a hovering pointer. */
@@ -60,8 +27,8 @@
   opacity: 0;
   transition: opacity 0.12s;
 }
-.ac-tab:hover + .ac-tab-close,
-.ac-tab:focus-visible + .ac-tab-close,
+.detail-tab:hover + .ac-tab-close,
+.detail-tab:focus-visible + .ac-tab-close,
 .ac-tab-close:hover,
 .ac-tab-close:focus-visible {
   opacity: 1;
@@ -74,9 +41,6 @@
 .btn.icon.ac-tab-close:hover:not(:disabled) {
   color: var(--fg-0);
   background: var(--bg-3);
-}
-.ac-tab.more {
-  color: var(--fg-2);
 }
 .ac-mark {
   display: inline-flex;
@@ -104,7 +68,7 @@
 .ac-agent {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-1);
 }
@@ -123,7 +87,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: var(--control-h);
   padding: 0 4px 0 10px;
   font-size: var(--text-ui);
   color: var(--fg-1);
@@ -186,7 +150,7 @@
 .ac-agent-line {
   /* Spacing below is a margin: padding inside the clamped box would show part
      of a third line. */
-  padding: 0 12px 0 31px;
+  padding: 0 12px 0 32px;
   margin-bottom: 10px;
   min-height: calc(2 * 1.45em);
   font-size: var(--text-meta);
@@ -209,11 +173,13 @@
   display: flex;
   flex-direction: column;
 }
+/* A strip, like the chat's header (`.ac-head`): the same 36px, so stacked
+   strips agree. */
 .ac-subview-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 16px;
   border-bottom: 1px solid var(--border-faint);
   font-size: var(--text-ui);
@@ -241,9 +207,6 @@
   border-radius: var(--radius);
   background: var(--bg-1);
 }
-.ac-report {
-  border-color: var(--border);
-}
 .ac-brief-label {
   font-size: var(--text-label);
   text-transform: uppercase;
@@ -258,10 +221,11 @@
 .ac-working-subs {
   color: var(--fg-3);
 }
-/* "Open beside" on a subagent card: `.btn.icon.sm`, beside Stop. */
+/* "Open beside" on a subagent's card and in its view's head: `IconButton` sm,
+   beside Stop. */
 .btn.icon.ac-agent-beside {
   color: var(--fg-2);
 }
-.btn.icon.ac-agent-beside:hover {
+.btn.icon.ac-agent-beside:hover:not(:disabled) {
   color: var(--fg-0);
 }

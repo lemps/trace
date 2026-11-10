@@ -1,3 +1,4 @@
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { type PreflightCheck, requiredProblems } from "./checks";
 import { useSetupStore } from "./store";
@@ -33,7 +34,7 @@ export function PreflightList() {
   const again = (
     <button type="button" className="btn" disabled={checking} onClick={() => void check()}>
       <I.Refresh size={14} />
-      {checking ? "Checking…" : "Check again"}
+      <BusyLabel busy={checking} idle="Check again" working="Checking…" />
     </button>
   );
 

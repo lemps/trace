@@ -35,7 +35,7 @@
 }
 .orch-chat-soon .t {
   color: var(--fg-1);
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   font-weight: 500;
 }
 .orch-chat-soon .h {
@@ -67,7 +67,7 @@
   background: var(--bg-2);
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
-  padding: 7px 10px;
+  padding: 6px 10px;
   font-size: var(--text-ui);
   color: var(--fg-0);
 }
@@ -76,7 +76,7 @@
   outline: none;
 }
 .orch-goal-input::placeholder {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 .orch-scope {
   font-size: var(--text-meta);
@@ -92,11 +92,13 @@
   flex-direction: column;
   gap: 4px;
 }
+/* A count worth a look ("2 PRs open for review"), not agent state or a fault: neutral,
+   so amber stays "needs you" (trace-ui §2). */
 .orch-flag {
-  font-size: calc(var(--text-ui) - 0.5px);
-  color: var(--c-prog);
-  background: var(--c-prog-bg);
-  border: 1px solid var(--c-prog-border);
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
 }
@@ -113,7 +115,7 @@
 }
 .stat-cell .v {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-detail-title) + 1px);
+  font-size: var(--text-detail-title);
   font-weight: 600;
   color: var(--fg-0);
 }

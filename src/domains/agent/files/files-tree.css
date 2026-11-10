@@ -91,31 +91,6 @@
 .fx-filter input::placeholder {
   color: var(--fg-3);
 }
-/* The viewer header's "Open in ▾" (its icon tools are `.btn.ghost.icon.sm`). */
-.fx-tool {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  gap: 6px;
-  height: var(--control-h-sm);
-  padding: 0 8px;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-ui);
-  color: var(--fg-2);
-}
-.fx-tool:hover,
-.fx-tool.on {
-  background: var(--bg-3);
-  color: var(--fg-0);
-}
-.fx-caret {
-  display: inline-flex;
-  color: var(--fg-3);
-}
-.fx-caret svg {
-  transform: rotate(90deg);
-}
-
 .fx-notice {
   padding: 0 4px;
 }

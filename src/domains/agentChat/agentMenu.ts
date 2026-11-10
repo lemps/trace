@@ -38,7 +38,11 @@ export function useAgentMenuItems({
   // A sandbox with no Claude login saved can only /login in its terminal.
   const noLogin = useSandboxChatBlocker(workspaceId);
   const idleBlocker = useSwitchBlocker(workspaceId, to);
-  const why = to === "chat" && noLogin ? noLogin : idleBlocker && `when idle: ${idleBlocker}`;
+  // Why a move can't happen now, as the item's second line: "Only while idle: it's working".
+  const why =
+    to === "chat" && noLogin
+      ? `${noLogin.charAt(0).toUpperCase()}${noLogin.slice(1)}`
+      : idleBlocker && `Only while idle: ${idleBlocker}`;
   const items: MenuItem[] = [];
   const run = (work: Promise<void>) =>
     void work.catch((e) => toast.error(`Couldn't do that: ${String(e)}`));
@@ -49,7 +53,8 @@ export function useAgentMenuItems({
     const label = to === "terminal" ? "Open in terminal" : "Open as chat";
     items.push({
       id: "switch",
-      label: why ? `${label} (${why})` : label,
+      label,
+      detail: why || undefined,
       disabled: Boolean(why),
       onSelect: () => run(running ? restart(to) : start(to)),
     });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { ConfirmPrompt } from "@/components/InlineConfirm";
 import { type MenuItem, MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { StatusLight } from "@/components/StatusLight";
@@ -97,15 +98,14 @@ export function SessionHeader({
         ) : (
           <div className="ttl">
             {session.title}
-            <button
-              type="button"
-              className="ttl-edit"
+            <IconButton
+              size="xs"
+              className="ghost ttl-edit"
+              label="Rename session"
               onClick={() => setRenaming(true)}
-              aria-label="Rename session"
-              title="Rename"
             >
               <I.Pencil size={12} />
-            </button>
+            </IconButton>
           </div>
         )}
       </div>
@@ -145,7 +145,9 @@ export function SessionHeader({
           onDisconnect={onDisconnect}
         />
         <PopMenu
-          trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
+          trigger={({ open, toggle }) => (
+            <MoreTrigger open={open} toggle={toggle} label="More actions" />
+          )}
           sections={[
             // A remote host's files aren't on this computer to open.
             ...(session.host
@@ -161,7 +163,7 @@ export function SessionHeader({
                 ...(active.companion
                   ? [
                       {
-                        label: `Remove ${active.label} agent…`,
+                        label: `Remove ${active.label} agent`,
                         danger: true,
                         onSelect: () => setConfirmRemove(true),
                       },

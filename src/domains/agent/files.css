@@ -4,7 +4,7 @@
 .diff-pane {
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   line-height: 1.55;
 }
 .diff-line {
@@ -81,7 +81,7 @@
   padding: 20px;
   color: var(--fg-3);
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 
 /* A whole file (no diff): one line-number column, then the text. */

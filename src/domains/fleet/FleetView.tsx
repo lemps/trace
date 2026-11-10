@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useState } from "react";
+import { FilterChip } from "@/components/FilterChip";
 import { useBoardStore } from "@/domains/board/store";
 import { type LiveEntry, useLiveEntries } from "@/domains/live/entries";
 import { ResetOrderButton } from "@/domains/live/ResetOrderButton";
@@ -70,15 +71,14 @@ export function FleetView({ onOpen }: FleetViewProps) {
         </div>
         <div className="fl-filters">
           {FILTERS.map((f) => (
-            <button
+            <FilterChip
               key={f.id}
-              type="button"
-              aria-pressed={filter === f.id}
-              className={`filter-chip${filter === f.id ? " active" : ""}`}
+              active={filter === f.id}
+              count={count(f.id)}
               onClick={() => setFilter(f.id)}
             >
-              {f.label} <span className="mono">{count(f.id)}</span>
-            </button>
+              {f.label}
+            </FilterChip>
           ))}
           <ResetOrderButton />
         </div>

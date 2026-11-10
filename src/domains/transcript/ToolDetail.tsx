@@ -1,55 +1,42 @@
 import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
+import { DiffCard } from "@/domains/agentChat/DiffCard";
+import { PlanCard } from "@/domains/agentChat/PlanCard";
+import { commandOf, fields, planOf, str } from "@/domains/agentChat/toolSummary";
+import type { FileDiff } from "@/domains/agentChat/types";
 import type { ToolStep } from "./blocks";
 import { ToolOutput } from "./ToolOutput";
-import { str, todosOf } from "./toolSummary";
 
 // What an expanded tool row shows: the part of the call worth reading (the
-// command, the edit as a diff, the todo list) and what came back.
+// command, the edit, the task list) and what came back. Edits and task lists
+// are the chat's own cards (`DiffCard`, `PlanCard`), so both views draw them alike.
 
 /** Calls that answer in the agent's own Markdown: a subagent's report. */
 const PROSE_RESULT = new Set(["Task", "Agent"]);
 
-function EditDiff({ before, after }: { before: string; after: string }) {
-  return (
-    <pre className="tx-code tx-diff">
-      {before.split("\n").map((line, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: lines of a fixed snapshot
-        <span key={`o${i}`} className="del">
-          {`- ${line}\n`}
-        </span>
-      ))}
-      {after.split("\n").map((line, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: lines of a fixed snapshot
-        <span key={`n${i}`} className="add">
-          {`+ ${line}\n`}
-        </span>
-      ))}
-    </pre>
-  );
-}
-
-function edits(input: unknown): { before: string; after: string }[] {
-  const single = { before: str(input, "old_string"), after: str(input, "new_string") };
-  if (single.before || single.after) return [single];
-  const list =
-    input && typeof input === "object" && "edits" in input
-      ? (input as { edits: unknown }).edits
-      : [];
-  if (!Array.isArray(list)) return [];
-  return list.map((e) => ({ before: str(e, "old_string"), after: str(e, "new_string") }));
+/** An Edit's change, or each of a MultiEdit's, as the chat's diff rows. */
+function editDiffs(input: unknown): FileDiff[] {
+  const path = str(input, "file_path");
+  const one = (e: unknown): FileDiff => ({
+    path,
+    change: "edit",
+    before: str(e, "old_string"),
+    after: str(e, "new_string"),
+  });
+  const list = fields(input).edits;
+  return Array.isArray(list) ? list.map(one) : [one(input)];
 }
 
 /** The call's own content: what it ran or wrote. */
 function CallBody({ name, input }: { name: string; input: unknown }) {
   if (name === "Bash" || name === "PowerShell") {
-    return <pre className="tx-code">{str(input, "command")}</pre>;
+    return <pre className="tx-code ac-cmd">{commandOf(input)}</pre>;
   }
   if (name === "Edit" || name === "MultiEdit") {
     return (
       <>
-        {edits(input).map((e, i) => (
+        {editDiffs(input).map((diff, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: a call's edits never reorder
-          <EditDiff key={i} before={e.before} after={e.after} />
+          <DiffCard key={i} diff={diff} />
         ))}
       </>
     );
@@ -57,17 +44,7 @@ function CallBody({ name, input }: { name: string; input: unknown }) {
   if (name === "Write") {
     return <pre className="tx-code">{str(input, "content")}</pre>;
   }
-  if (name === "TodoWrite") {
-    return (
-      <ul className="tx-todos">
-        {todosOf(input).map((t) => (
-          <li key={t.content} className={t.status}>
-            <ChatMarkdown text={t.content} inline />
-          </li>
-        ))}
-      </ul>
-    );
-  }
+  if (name === "TodoWrite") return <PlanCard plan={planOf(input)} />;
   if (name === "Read") return null;
   const prompt = str(input, "prompt");
   // A subagent's brief is the agent's own Markdown.

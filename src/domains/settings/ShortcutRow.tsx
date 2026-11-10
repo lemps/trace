@@ -78,11 +78,7 @@ export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: Sho
           </button>
         )}
         {isOverridden && !isRecording && (
-          <IconButton
-            label={`Reset ${def.label} to its default`}
-            title="Reset to default"
-            onClick={() => reset(def.id)}
-          >
+          <IconButton label={`Reset ${def.label} to its default`} onClick={() => reset(def.id)}>
             <I.RotateCcw size={14} />
           </IconButton>
         )}

@@ -31,7 +31,7 @@
 }
 .test-suite .duration {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .test-suite.fail {
@@ -72,7 +72,7 @@
   gap: 18px;
   margin-bottom: 16px;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 .tests-summary .item {
   color: var(--fg-2);

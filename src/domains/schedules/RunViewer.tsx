@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { Markdown } from "@/components/Markdown";
+import { Segmented } from "@/components/Segmented";
 import { PtyTerminal } from "@/domains/agent/PtyTerminal";
 import { disposeTerminal, fitTerminal } from "@/domains/agent/terminalRegistry";
 import { useBoardStore } from "@/domains/board/store";
@@ -153,41 +154,54 @@ function RunViews({ run, prompt, live }: RunViewsProps) {
   return (
     <>
       <div className="sched-views">
-        {run.summary && (
-          <button
-            type="button"
-            className={`sched-view${view === "summary" ? " active" : ""}`}
-            onClick={() => setView("summary")}
-            title="Claude's closing message for this run"
-          >
-            <I.Sparkles size={12} /> Summary
-          </button>
-        )}
-        <button
-          type="button"
-          className={`sched-view${view === "log" ? " active" : ""}`}
-          onClick={() => setView("log")}
-        >
-          <I.Chat size={12} /> Conversation
-        </button>
-        <button
-          type="button"
-          className={`sched-view${view === "terminal" ? " active" : ""}`}
-          onClick={() => setView("terminal")}
-          title={
-            live ? "Type here to answer the agent" : "The recorded terminal (last screen only)"
-          }
-        >
-          <I.Terminal size={12} /> Terminal
-        </button>
-        <button
-          type="button"
-          className={`sched-view${view === "prompt" ? " active" : ""}`}
-          onClick={() => setView("prompt")}
-          title="The prompt this run was sent, and how it runs"
-        >
-          <I.File size={12} /> Prompt
-        </button>
+        <Segmented<RunView>
+          label="Show"
+          value={view}
+          options={[
+            ...(run.summary
+              ? [
+                  {
+                    value: "summary" as const,
+                    label: (
+                      <>
+                        <I.Sparkles size={14} /> Summary
+                      </>
+                    ),
+                    title: "Claude's closing message for this run",
+                  },
+                ]
+              : []),
+            {
+              value: "log",
+              label: (
+                <>
+                  <I.Chat size={14} /> Conversation
+                </>
+              ),
+            },
+            {
+              value: "terminal",
+              label: (
+                <>
+                  <I.Terminal size={14} /> Terminal
+                </>
+              ),
+              title: live
+                ? "Type here to answer the agent"
+                : "The recorded terminal (last screen only)",
+            },
+            {
+              value: "prompt",
+              label: (
+                <>
+                  <I.File size={14} /> Prompt
+                </>
+              ),
+              title: "The prompt this run was sent, and how it runs",
+            },
+          ]}
+          onChange={setView}
+        />
       </div>
 
       {view === "summary" && run.summary && (

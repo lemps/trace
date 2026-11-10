@@ -10,14 +10,14 @@
 .chart-title {
   font-size: var(--text-label);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--fg-3);
   font-weight: 600;
   margin-bottom: 10px;
 }
 .chart-err {
   margin: 8px 0;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   font-style: italic;
   color: var(--fg-3);
 }
@@ -45,12 +45,12 @@
   display: grid;
   place-items: center;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-body) + 0.5px);
+  font-size: var(--text-body);
   font-weight: 600;
   color: var(--fg-0);
 }
 .chart-donut-legend {
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   color: var(--fg-2);
 }
 
@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 .chart-hbar-label {
   width: 84px;
@@ -92,7 +92,7 @@
   flex-shrink: 0;
   text-align: right;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 
@@ -114,7 +114,7 @@
 }
 .chart-vbar-val {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-label) - 0.5px);
+  font-size: var(--text-label);
   color: var(--fg-3);
 }
 .chart-vbar-track {
@@ -132,7 +132,7 @@
 }
 .chart-vbar-label {
   max-width: 100%;
-  font-size: calc(var(--text-label) - 1px);
+  font-size: var(--text-label);
   color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;

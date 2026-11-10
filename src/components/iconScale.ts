@@ -1,8 +1,11 @@
 // The icon scale (trace-ui §4): icon sizes follow the control heights, and the
 // stroke is compensated so a glyph draws the same line weight at every size.
 
-/** The three icon sizes: `xs` controls and in-row pills, `.btn` and `sm` controls, the rail/nav/empty states. */
-export const ICON_SIZE = { xs: 12, sm: 14, md: 16 } as const;
+/**
+ * The icon sizes: `xs` controls and in-row pills, `.btn` and `sm` controls, the rail/nav and
+ * small in-panel empties, and the glyph over a full-page or full-pane `.empty-state`.
+ */
+export const ICON_SIZE = { xs: 12, sm: 14, md: 16, empty: 28 } as const;
 
 export type IconSize = (typeof ICON_SIZE)[keyof typeof ICON_SIZE];
 

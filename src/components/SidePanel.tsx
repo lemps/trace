@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useAriaKeys, useTitleWithHint } from "@/platform/shortcuts";
 import { I } from "./Icon";
+import { IconButton } from "./IconButton";
 
 /** One thing the panel can show — "Pull requests", "Orchestrator". */
 export interface SideView {
@@ -96,15 +97,9 @@ export function SidePanel({ views, active, open, onShow, onClose }: SidePanelPro
             ))}
           </div>
         )}
-        <button
-          type="button"
-          className="btn icon"
-          onClick={onClose}
-          title="Hide panel"
-          aria-label="Hide panel"
-        >
+        <IconButton size="sm" label="Hide panel" onClick={onClose}>
           <I.Sidebar size={14} />
-        </button>
+        </IconButton>
       </div>
       <div className="sp-body">{current.content}</div>
     </aside>

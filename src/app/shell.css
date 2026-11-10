@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   color: var(--fg-2);
 }
 .topbar .crumbs .sep {
@@ -47,7 +47,7 @@
   border-radius: var(--radius-sm);
   color: var(--fg-3);
   width: 280px;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   position: relative;
 }
 /* Results dropdown, anchored under the search box. */
@@ -66,7 +66,7 @@
   z-index: 100;
 }
 .sr-group {
-  font-size: calc(var(--text-label) - 0.5px);
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--fg-3);
@@ -95,7 +95,7 @@
   margin-left: auto;
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-label) - 0.5px);
+  font-size: var(--text-label);
   color: var(--fg-3);
   padding: 0 5px;
   border: 1px solid var(--border);
@@ -122,7 +122,7 @@
 .sr-sub {
   flex: 1;
   min-width: 0;
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   font-family: var(--font-mono);
   color: var(--fg-3);
   white-space: nowrap;
@@ -252,7 +252,7 @@
   box-sizing: border-box;
   box-shadow: none;
   color: var(--on-needs);
-  font-size: calc(var(--text-label) - 1px);
+  font-size: var(--text-label);
   font-weight: 600;
   line-height: 15px;
   text-align: center;
@@ -264,7 +264,7 @@
   background: linear-gradient(135deg, var(--fg-4), var(--bg-3));
   display: grid;
   place-items: center;
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-1);
   font-weight: 600;
   margin-top: 12px;

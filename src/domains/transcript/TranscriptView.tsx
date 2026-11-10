@@ -1,14 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
-import { StatusLight } from "@/components/StatusLight";
+import { useEffect, useMemo, useState } from "react";
 import { ChatMarkdown } from "@/domains/agentChat/ChatMarkdown";
 import { ChatViewContext } from "@/domains/agentChat/chatContext";
+import { useFollowScroll } from "@/domains/agentChat/hooks/useFollowScroll";
+import { LatestButton } from "@/domains/agentChat/LatestButton";
+import { TurnEnd, WorkingRow } from "@/domains/agentChat/TurnBits";
 import { useBoardStore } from "@/domains/board/store";
 import { useAgentLight } from "@/domains/live/store";
 import type { AgentCli } from "@/ipc/agent";
+import type { TranscriptItem } from "@/ipc/transcript";
 import { workspaceInfo } from "@/ipc/workspace";
-import { type Block, formatDuration, toBlocks } from "./blocks";
+import { type Block, toBlocks, turnStartedAt } from "./blocks";
 import { PromptBubble } from "./PromptBubble";
 import { ToolRun } from "./ToolRun";
 import { useTranscriptFeed } from "./useTranscriptFeed";
@@ -17,9 +18,6 @@ interface TranscriptViewProps {
   workspaceId: string;
   cli: AgentCli;
 }
-
-/** Within this many px of the bottom counts as "following along". */
-const STICK_PX = 48;
 
 function Empty({ text }: { text: string }) {
   return (
@@ -44,14 +42,8 @@ export function TranscriptView({ workspaceId, cli }: TranscriptViewProps) {
 
 function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
   const feed = useTranscriptFeed(workspaceId);
-  const light = useAgentLight(workspaceId);
-  const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
   const blocks = useMemo(() => toBlocks(feed.items), [feed.items]);
   const [root, setRoot] = useState<string | null>(null);
-  const view = useMemo(() => ({ workspaceId, root, expandAll: false }), [workspaceId, root]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [following, setFollowing] = useState(true);
-  const followingRef = useRef(true);
 
   // Paths inside the workspace read better relative to it.
   useEffect(() => {
@@ -66,40 +58,41 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
     };
   }, [workspaceId]);
 
-  // New items while following: keep the newest in view (before paint, no jump).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run whenever blocks change
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (el && followingRef.current) el.scrollTop = el.scrollHeight;
-  }, [blocks]);
-
-  // The cover holds focus while this loads; once there's something to scroll,
-  // the scroller takes it, so arrows and Page keys move it.
-  const hasBlocks = feed.loaded && blocks.length > 0;
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (hasBlocks && el && document.activeElement === el.closest(".tx-cover")) el.focus();
-  }, [hasBlocks]);
-
-  const onScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const near = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_PX;
-    followingRef.current = near;
-    setFollowing(near);
-  };
-  const jumpToLatest = () => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  };
-
   if (!feed.loaded) return <Empty text="Reading the conversation…" />;
   if (blocks.length === 0) {
     return (
       <Empty text="Nothing here yet. The transcript fills in as soon as the agent's first message lands." />
     );
   }
+  return (
+    <TranscriptList workspaceId={workspaceId} items={feed.items} blocks={blocks} root={root} />
+  );
+}
+
+interface TranscriptListProps {
+  workspaceId: string;
+  items: readonly TranscriptItem[];
+  blocks: Block[];
+  root: string | null;
+}
+
+// Mounted once there is something to show, so the scroller exists when the
+// follow-scroll hook and the jump button measure it.
+function TranscriptList({ workspaceId, items, blocks, root }: TranscriptListProps) {
+  const light = useAgentLight(workspaceId);
+  const running = useBoardStore((s) => s.runningAgents.has(workspaceId));
+  const view = useMemo(() => ({ workspaceId, root, expandAll: false }), [workspaceId, root]);
   const working = light === "working";
+  // Follows new blocks (and the Working line coming and going) while at the bottom.
+  const { scrollRef, following, onScroll, jumpToLatest } = useFollowScroll(blocks, working);
+
+  // The cover holds focus while this loads; once there's something to scroll,
+  // the scroller takes it, so arrows and Page keys move it.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && document.activeElement === el.closest(".tx-cover")) el.focus();
+  }, [scrollRef]);
+
   return (
     <ChatViewContext.Provider value={view}>
       <div className="tx-wrap">
@@ -114,25 +107,13 @@ function ClaudeTranscript({ workspaceId }: { workspaceId: string }) {
                 isCurrent={working && i === blocks.length - 1}
               />
             ))}
-            {working && (
-              <div className="tx-working">
-                <StatusLight light="working" variant="word" />
-              </div>
-            )}
+            {working && <WorkingRow since={turnStartedAt(items)} subagents={0} />}
             <div className="tx-foot">
               {running ? "Reply in the terminal" : "Stopped — Start it from the header to carry on"}
             </div>
           </div>
         </div>
-        {!following && (
-          <IconButton
-            className="jump-latest tx-latest"
-            label="Jump to latest"
-            onClick={jumpToLatest}
-          >
-            <I.ArrowDown size={14} />
-          </IconButton>
-        )}
+        <LatestButton scrollRef={scrollRef} show={!following} onJump={jumpToLatest} />
       </div>
     </ChatViewContext.Provider>
   );
@@ -176,11 +157,7 @@ function BlockView({ block, workspaceId, root, isCurrent }: BlockViewProps) {
     case "notice":
       return <div className="tx-notice">{block.item.text}</div>;
     case "turnEnd":
-      return (
-        <div className="tx-turn-end">
-          <span>Worked for {formatDuration(block.item.durationMs)}</span>
-        </div>
-      );
+      return <TurnEnd state="completed" durationMs={block.item.durationMs} />;
     case "tools":
       return (
         <ToolRun steps={block.steps} workspaceId={workspaceId} root={root} isCurrent={isCurrent} />

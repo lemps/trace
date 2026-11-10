@@ -1,5 +1,5 @@
 import { I } from "@/components/Icon";
-import { PopMenu } from "@/components/PopMenu";
+import { SplitButton } from "@/components/SplitButton";
 import { defaultTransport, useHasChat } from "@/domains/agentChat/transport";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { AGENT_OPTIONS, isChosen } from "./agentOptions";
@@ -28,52 +28,42 @@ export function StartSplitButton({
 }: StartSplitButtonProps) {
   const canChat = useHasChat(cli);
   const shown = canChat ? (transport ?? defaultTransport(cli)) : "terminal";
+  const name = agentLabel(cli, provider);
   return (
-    <div className="split-btn">
+    <SplitButton
+      primary
+      menuLabel="Choose which agent to start"
+      sections={[
+        {
+          title: "Agent",
+          items: AGENT_OPTIONS.map((o) => ({
+            label: o.label,
+            checked: isChosen(o, cli, provider),
+            onSelect: () => onChoose(o.cli, o.provider),
+          })),
+        },
+        {
+          title: "Shows as",
+          items: [
+            {
+              label: "Chat",
+              detail: canChat ? undefined : `Not available for ${name}`,
+              checked: shown === "chat",
+              disabled: !canChat,
+              onSelect: () => onChooseTransport("chat"),
+            },
+            {
+              label: "Terminal",
+              checked: shown === "terminal",
+              onSelect: () => onChooseTransport("terminal"),
+            },
+          ],
+        },
+      ]}
+    >
       <button type="button" className="btn primary" onClick={onStart}>
-        <I.Play size={14} /> Start {agentLabel(cli, provider)}
+        <I.Play size={14} /> Start {name}
       </button>
-      <PopMenu
-        trigger={({ toggle }) => (
-          <button
-            type="button"
-            className="btn primary"
-            onClick={toggle}
-            title="Choose which agent to start"
-            aria-label="Choose which agent to start"
-          >
-            <span className="caret">
-              <I.Chevron size={12} />
-            </span>
-          </button>
-        )}
-        sections={[
-          {
-            title: "Agent",
-            items: AGENT_OPTIONS.map((o) => ({
-              label: o.label,
-              checked: isChosen(o, cli, provider),
-              onSelect: () => onChoose(o.cli, o.provider),
-            })),
-          },
-          {
-            title: "Shows as",
-            items: [
-              {
-                label: canChat ? "Chat" : `Chat (not available for ${agentLabel(cli, provider)})`,
-                checked: shown === "chat",
-                disabled: !canChat,
-                onSelect: () => onChooseTransport("chat"),
-              },
-              {
-                label: "Terminal",
-                checked: shown === "terminal",
-                onSelect: () => onChooseTransport("terminal"),
-              },
-            ],
-          },
-        ]}
-      />
-    </div>
+    </SplitButton>
   );
 }

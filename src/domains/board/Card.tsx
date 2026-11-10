@@ -86,9 +86,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
         <div className="row">
           <span className={`priority ${issue.priority}`} />
           <span className="ticket-id">{issue.key}</span>
-          <span
-            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
+          <span className="card-end">
             {live ? (
               <StatusLight
                 light={light}
@@ -101,7 +99,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
               canStart && (
                 <button
                   type="button"
-                  className="card-go"
+                  className="btn xs"
                   onClick={onKickoff}
                   title={`Start an agent on ${issue.key} with the ticket brief`}
                 >

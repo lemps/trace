@@ -31,7 +31,7 @@ export function imageMenu(ws: string, setId: string, img: GalleryImage): MenuSec
         {
           label: "Open in default app",
           disabled: svg,
-          title: svg ? "SVGs aren't opened outside trace: their app may run scripts" : undefined,
+          detail: svg ? "SVGs stay in trace: their app may run scripts" : undefined,
           onSelect: () => open(ws, setId, img, "open"),
         },
       ],

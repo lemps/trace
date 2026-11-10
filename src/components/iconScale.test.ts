@@ -17,6 +17,13 @@ describe("strokeFor", () => {
     assert.equal(strokeFor(12), 2.2);
   });
 
+  it("keeps the empty-state glyph at about 1.1px too", () => {
+    assert.equal(ICON_SIZE.empty, 28);
+    assert.ok(strokeFor(ICON_SIZE.empty) < strokeFor(ICON_SIZE.md));
+    const px = (strokeFor(ICON_SIZE.empty) * ICON_SIZE.empty) / 24;
+    assert.ok(Math.abs(px - ICON_LINE_PX) < 0.01, `empty draws ${px}px`);
+  });
+
   it("falls back to the default size's stroke for a nonsense size", () => {
     assert.equal(strokeFor(0), strokeFor(16));
     assert.equal(strokeFor(Number.NaN), strokeFor(16));

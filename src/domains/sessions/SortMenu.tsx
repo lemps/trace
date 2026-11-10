@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { MenuCaret } from "@/components/MenuCaret";
 import { PopMenu } from "@/components/PopMenu";
 import { useHint } from "@/platform/shortcuts";
 import { SORT_MODES, type SortMode, sortLabel } from "./sortSessions";
@@ -19,16 +20,18 @@ export function SortMenu({ mode, onPick }: SortMenuProps) {
       trigger={({ open, toggle }) => (
         <button
           type="button"
-          className={`sl-sort${open ? " open" : ""}`}
+          className="sl-sort"
           onClick={(e) => {
             e.stopPropagation();
             toggle();
           }}
           aria-haspopup="menu"
           aria-expanded={open}
-          title={`Sort this list (${sortLabel(mode)})`}
+          aria-label={`Sort: ${sortLabel(mode)}`}
+          title="Sort"
         >
           <I.Sort size={12} /> {sortLabel(mode)}
+          <MenuCaret size="xs" />
         </button>
       )}
       sections={[

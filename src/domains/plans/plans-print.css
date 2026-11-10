@@ -1,15 +1,21 @@
 /* ============ A Plan document on paper (domains/plans/PrintSheet) ============
    The sheet is in the page only while a PDF is being made. In print it's all
    there is: the app around it is hidden, and it carries the light theme
-   (data-theme on the sheet), so a dark trace still prints black on white. */
+   (data-theme on the sheet), so a dark trace still prints black on white.
+   Its Markdown is `.md.prose`, so font, heading ratios, line height and gap
+   follow Settings → Appearance → Chat & transcript exactly as the Plan tab
+   does; paper sets only the base size. */
 
-/* On screen the sheet is laid out out of sight, at about a page's text width, so
-   an HTML document's frame can be measured to its full height before printing. */
+/* On screen the sheet is laid out out of sight, as wide as a page's text, so an
+   HTML document's frame can be measured to its full height before printing:
+   A4 less the 0.6in margins either side (platform/*_pdf.rs), ≈ 678px. A4 is the
+   narrowest common paper, so on Letter the frame is measured a little narrower
+   than it prints, which only ever makes it taller than it needs, never cut. */
 .plan-print {
   position: fixed;
   top: 0;
   left: -10000px;
-  width: 7in;
+  width: calc(210mm - 1.2in);
   visibility: hidden;
   pointer-events: none;
 }
@@ -37,43 +43,57 @@
     color: var(--fg-0);
     font-family: var(--font-sans);
   }
+  /* One quiet line, as the Plan tab's own header is chrome: the document's
+     own H1 is its title on paper. Spacing in em, so it keeps to the line. */
   .plan-print-head {
-    margin-bottom: 18px;
-    padding-bottom: 10px;
+    margin-bottom: 1.75em;
+    padding-bottom: 0.6em;
     border-bottom: 1px solid var(--border);
+    font-size: 8.5pt;
+    line-height: 1.4;
+    color: var(--fg-2);
   }
-  .plan-print-head h1 {
-    margin: 0 0 4px;
-    font-size: 20pt;
+  .plan-print-title {
     font-weight: 600;
     color: var(--fg-0);
   }
-  .plan-print-meta {
-    font-size: 9pt;
-    color: var(--fg-2);
-  }
-  .plan-print-md {
-    --md-size: 10.5pt;
-    --md-code-size: 9pt;
-    --md-line: 1.55;
-    --md-gap: 9px;
+  /* Three classes, to win over `.md.prose`'s own --md-* (two). The paper base
+     size; code stays in proportion to it (a px code size from Settings would
+     be the screen's, not paper's). Everything else is the screen's. */
+  .plan-print .md.prose {
+    --md-size: 9.5pt;
+    --md-code-size: 0.85em;
     color: var(--fg-0);
   }
-  /* Code and tables don't scroll on paper: they wrap and break across pages. */
-  .plan-print-md pre,
-  .plan-print-md code {
+  /* Code doesn't scroll on paper: it wraps (long tokens too) and breaks
+     across pages. */
+  .plan-print .md pre,
+  .plan-print .md code {
     white-space: pre-wrap !important;
     overflow: visible !important;
   }
-  .plan-print-md h1,
-  .plan-print-md h2,
-  .plan-print-md h3 {
+  .plan-print .md pre {
+    overflow-wrap: anywhere;
+  }
+  .plan-print .md h1,
+  .plan-print .md h2,
+  .plan-print .md h3 {
     break-after: avoid;
   }
-  .plan-print-md pre,
-  .plan-print-md tr,
-  .plan-print-md img {
+  .plan-print .md pre,
+  .plan-print .md tr,
+  .plan-print .md img {
     break-inside: avoid;
+  }
+  /* Paper keeps the content, not its controls: a code block's copy, a table's
+     copy menu, and any control added later. A task list's checkbox is content.
+     A code block's language label stays; a head with no language goes. */
+  .plan-print .md :is(button, select, textarea, input:not([type="checkbox"])),
+  .plan-print .md .md-table-copy {
+    display: none !important;
+  }
+  .plan-print .md-code-head:has(.md-code-lang:empty) {
+    display: none;
   }
   .plan-print-frame {
     display: block;

@@ -1,4 +1,5 @@
-import { I } from "./Icon";
+import { IconButton } from "./IconButton";
+import { MenuCaret } from "./MenuCaret";
 import { PopMenu } from "./PopMenu";
 
 interface FontFieldProps {
@@ -43,16 +44,14 @@ export function FontField({ value, onChange, suggestions, defaultFamily, label }
       <PopMenu
         align="right"
         trigger={({ open, toggle }) => (
-          <button
-            type="button"
-            className={`btn icon${open ? " active" : ""}`}
-            onClick={toggle}
-            title={`Choose ${label.toLowerCase()}`}
-            aria-label={`Choose ${label.toLowerCase()}`}
+          <IconButton
+            label={`Choose ${label.toLowerCase()}`}
+            aria-haspopup="menu"
             aria-expanded={open}
+            onClick={toggle}
           >
-            <I.Chevron size={14} style={{ transform: "rotate(90deg)" }} />
-          </button>
+            <MenuCaret />
+          </IconButton>
         )}
         sections={[{ items }]}
       />

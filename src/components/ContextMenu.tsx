@@ -1,14 +1,8 @@
-import {
-  type KeyboardEvent,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDismiss } from "@/hooks/useDismiss";
-import { MenuItemBody, type MenuSection } from "./PopMenu";
+import { MenuList } from "./MenuList";
+import type { MenuSection } from "./PopMenu";
 
 interface ContextMenuProps {
   /** Where the pointer was (client coordinates). */
@@ -16,17 +10,25 @@ interface ContextMenuProps {
   y: number;
   sections: MenuSection[];
   onClose: () => void;
+  /**
+   * Where focus goes after Escape or a pick (before the item runs). Defaults to what
+   * had focus when it opened; a terminal passes its xterm, so keys keep reaching it.
+   */
+  returnFocus?: () => void;
 }
 
-// PopMenu's popover, opened at the pointer by a right-click (or the context-menu key)
-// instead of under a trigger. Kept inside the window; takes focus so arrows move
-// through it and Esc closes it.
-export function ContextMenu({ x, y, sections, onClose }: ContextMenuProps) {
+// PopMenu's body (`MenuList`), opened at the pointer by a right-click (or the
+// context-menu key, `useContextMenuAt`) instead of under a trigger. Kept inside the
+// window; takes focus so arrows move through it and Esc closes it — which also keeps
+// Esc from reaching a terminal under it, where it would interrupt the agent.
+export function ContextMenu({ x, y, sections, onClose, returnFocus }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [opener] = useState(() =>
+    document.activeElement instanceof HTMLElement ? document.activeElement : null
+  );
   const close = useCallback(() => onClose(), [onClose]);
   useDismiss(ref, true, close);
-  const visible = sections.filter((s) => s.items.length > 0);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -40,53 +42,21 @@ export function ContextMenu({ x, y, sections, onClose }: ContextMenuProps) {
     if (pos) ref.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
   }, [pos]);
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
-    } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      const items = [
-        ...(ref.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? []),
-      ];
-      const at = items.indexOf(document.activeElement as HTMLButtonElement);
-      const next = (at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
-      items[next]?.focus();
-    }
+  const closeAndReturn = () => {
+    onClose();
+    if (returnFocus) returnFocus();
+    else if (opener?.isConnected) opener.focus();
   };
 
   // On the body: a transformed ancestor (a detail's entrance) would offset `fixed`.
   return createPortal(
-    <div
+    <MenuList
       ref={ref}
-      className="pop-menu-pop ctx-menu"
-      role="menu"
+      className="ctx-menu"
       style={pos ?? { visibility: "hidden", left: x, top: y }}
-      onKeyDown={onKeyDown}
-    >
-      {visible.map((section, i) => (
-        <div key={section.title ?? i} className="pop-menu-section">
-          {section.title && <div className="pop-menu-head">{section.title}</div>}
-          {section.items.map((item, j) => (
-            <button
-              key={item.id ?? (typeof item.label === "string" ? item.label : j)}
-              type="button"
-              role="menuitem"
-              className={`pop-menu-item${item.danger ? " danger" : ""}${item.muted ? " muted" : ""}`}
-              disabled={item.disabled}
-              title={item.title}
-              onClick={() => {
-                onClose();
-                item.onSelect();
-              }}
-            >
-              <MenuItemBody item={item} />
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>,
+      sections={sections}
+      onClose={closeAndReturn}
+    />,
     document.body
   );
 }

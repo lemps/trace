@@ -1,4 +1,6 @@
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { relTime } from "@/domains/sessions/time";
 import type { CleanupReport } from "@/ipc/cleanup";
 
@@ -23,12 +25,21 @@ export function CleanupPreview({ report, busy, onRun }: CleanupPreviewProps) {
         <span className="hint">
           {deletable.length === 0
             ? "Matching workspaces are being kept:"
-            : `The next pass deletes ${deletable.length} workspace${deletable.length === 1 ? "" : "s"}:`}
+            : `The next pass deletes ${countLabel(deletable.length)}:`}
         </span>
         {deletable.length > 0 && (
-          <button type="button" className="btn" onClick={onRun} disabled={busy}>
-            <I.Archive size={14} /> {busy ? "Cleaning up…" : "Clean up now"}
-          </button>
+          <InlineConfirm
+            label={
+              <>
+                <I.Trash size={14} />{" "}
+                <BusyLabel busy={busy} idle="Clean up now" working="Cleaning up…" />
+              </>
+            }
+            disabled={busy}
+            message={`Delete ${countLabel(deletable.length)} now?`}
+            confirmLabel={`Delete ${deletable.length}`}
+            onConfirm={onRun}
+          />
         )}
       </div>
       <div className="repo-list">
@@ -50,3 +61,5 @@ export function CleanupPreview({ report, busy, onRun }: CleanupPreviewProps) {
     </div>
   );
 }
+
+const countLabel = (n: number) => `${n} workspace${n === 1 ? "" : "s"}`;

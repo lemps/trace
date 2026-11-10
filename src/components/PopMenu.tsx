@@ -1,9 +1,11 @@
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useDismiss } from "@/hooks/useDismiss";
 import { I } from "./Icon";
-import { IconButton } from "./IconButton";
+import { IconButton, type IconButtonProps } from "./IconButton";
+import { MenuList } from "./MenuList";
 
 export interface MenuItem {
+  /** The plain action ("Open as chat"): never a disabled reason, which goes in `detail`. */
   label: ReactNode;
   onSelect: () => void;
   /** Stable key when `label` isn't a string. */
@@ -14,11 +16,11 @@ export interface MenuItem {
   disabled?: boolean;
   /** Greyed but still pickable: a tab with nothing in it yet, which opens empty. */
   muted?: boolean;
-  /** A second, quieter line under the label. */
+  /** A second, quieter line under the label: what it does, or why it's disabled. */
   detail?: string;
   /** A shortcut's current binding (`useHint`), shown at the item's end. */
   hint?: string;
-  /** Why it's disabled, or more about what it does. */
+  /** More about what it does, as a tooltip. */
   title?: string;
 }
 
@@ -28,80 +30,72 @@ export interface MenuSection {
 }
 
 interface PopMenuProps {
-  /** Renders the button that opens the menu. */
+  /**
+   * Renders the button that opens the menu. It sets `aria-haspopup="menu"` and
+   * `aria-expanded={open}` (a `.btn` then looks pressed while open: `menu.css`).
+   */
   trigger: (p: { open: boolean; toggle: () => void }) => ReactNode;
   sections: MenuSection[];
   /** Which edge of the trigger the popover lines up with. */
   align?: "left" | "right";
+  /** Open above the trigger (a composer at a pane's foot). */
+  up?: boolean;
 }
 
-// A trigger plus a small popover of actions, dismissed by an outside click,
-// Escape, or picking an item. The one menu primitive behind the header's split
-// Start button and ⋯ overflow, and the session tab bar's "+ agent".
-export function PopMenu({ trigger, sections, align = "right" }: PopMenuProps) {
+// A trigger plus a small popover of actions (`MenuList`), dismissed by an outside
+// click, Escape, or picking an item. Behind every ⋯, split button caret
+// (`SplitButton`) and picker.
+export function PopMenu({ trigger, sections, align = "right", up = false }: PopMenuProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   useDismiss(wrapRef, open, close);
-  const visible = sections.filter((s) => s.items.length > 0);
+  // Only when focus is in the menu (arrowed or tabbed into): a mouse pick in WebKit
+  // never focuses the item, and focus left where it was (a text box) stays there.
+  const closeToTrigger = useCallback(() => {
+    const wrap = wrapRef.current;
+    const inMenu = wrap?.querySelector(".pop-menu-pop")?.contains(document.activeElement);
+    setOpen(false);
+    if (inMenu) wrap?.querySelector<HTMLElement>("button")?.focus();
+  }, []);
 
   return (
     <div className="pop-menu" ref={wrapRef}>
       {trigger({ open, toggle: () => setOpen((v) => !v) })}
       {open && (
-        <div className={`pop-menu-pop ${align}`} role="menu">
-          {visible.map((section, i) => (
-            <div key={section.title ?? i} className="pop-menu-section">
-              {section.title && <div className="pop-menu-head">{section.title}</div>}
-              {section.items.map((item, j) => (
-                <button
-                  key={item.id ?? (typeof item.label === "string" ? item.label : j)}
-                  type="button"
-                  role="menuitem"
-                  className={`pop-menu-item${item.danger ? " danger" : ""}${item.muted ? " muted" : ""}`}
-                  disabled={item.disabled}
-                  title={item.title}
-                  onClick={() => {
-                    setOpen(false);
-                    item.onSelect();
-                  }}
-                >
-                  <MenuItemBody item={item} />
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
+        <MenuList
+          className={`${align}${up ? " up" : ""}`}
+          sections={sections}
+          onClose={closeToTrigger}
+        />
       )}
     </div>
   );
 }
 
-/** The ⋯ overflow trigger for `PopMenu` — occasional actions live behind it. */
-export function MoreTrigger({ toggle, label }: { toggle: () => void; label: string }) {
-  return (
-    <IconButton label={label} aria-haspopup="menu" onClick={toggle}>
-      <I.More size={14} />
-    </IconButton>
-  );
+interface MoreTriggerProps {
+  toggle: () => void;
+  /** Whether its menu is open: `aria-expanded`, and the pressed look. */
+  open?: boolean;
+  label: string;
+  /** The row's tier (`IconButton`): `md` in headers, `sm` in an in-content toolbar. */
+  size?: IconButtonProps["size"];
+  /** Extra classes (`ghost`, a domain's own). */
+  className?: string;
 }
 
-/** An item's check mark, label and shortcut hint — shared with `ContextMenu`. */
-export function MenuItemBody({ item }: { item: MenuItem }) {
+/** The ⋯ overflow trigger for `PopMenu` — occasional actions live behind it. */
+export function MoreTrigger({ toggle, open, label, size = "md", className }: MoreTriggerProps) {
   return (
-    <>
-      <span className="check">{item.checked && <I.Check size={12} />}</span>
-      {item.detail ? (
-        <span className="pop-menu-label">
-          {item.label}
-          <span className="pop-menu-detail">{item.detail}</span>
-        </span>
-      ) : item.hint ? (
-        <span className="pop-menu-label">{item.label}</span>
-      ) : (
-        item.label
-      )}
-      {item.hint && <span className="kbd">{item.hint}</span>}
-    </>
+    <IconButton
+      label={label}
+      size={size}
+      className={className}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      onClick={toggle}
+    >
+      <I.More size={14} />
+    </IconButton>
   );
 }

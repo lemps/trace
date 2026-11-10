@@ -1,3 +1,4 @@
+import { ICON_SIZE } from "@/components/Icon";
 import type { ProviderKind } from "@/domains/issues/types";
 import { TRACKER_NAMES } from "@/domains/sidebar/items";
 import { NAV_LABELS, type NavId } from "./nav";
@@ -19,7 +20,7 @@ export function TrackerMissing({ nav, tracker, onNav }: TrackerMissingProps) {
     <div className="empty-state">
       <div className="inner">
         <span className="ic">
-          <Icon size={28} />
+          <Icon size={ICON_SIZE.empty} />
         </span>
         <div className="title">{name} isn't connected</div>
         <div className="hint">

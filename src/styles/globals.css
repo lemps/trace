@@ -7,7 +7,7 @@
 /* Modal content + forms (.field) — shared by login, settings, modals */
 .modal h2 {
   margin: 0 0 4px;
-  font-size: calc(var(--text-detail-title) + 1px);
+  font-size: var(--text-detail-title);
   font-weight: 600;
   color: var(--fg-0);
 }
@@ -33,7 +33,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   color: var(--fg-0);
 }
 .field textarea {
@@ -53,7 +53,7 @@
 /* Tooltip-ish */
 .kbd {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-label) - 0.5px);
+  font-size: var(--text-label);
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
@@ -135,7 +135,7 @@
   border-bottom: 1px solid var(--border-faint);
 }
 .modal-title {
-  font-size: calc(var(--text-body) + 0.5px);
+  font-size: var(--text-body);
   font-weight: 600;
   color: var(--fg-0);
 }
@@ -157,7 +157,7 @@
   border-top: 1px solid var(--border-faint);
 }
 .field-label {
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   color: var(--fg-2);
 }
 /* Form inputs sit a step taller than buttons (34px at the default density). */
@@ -168,7 +168,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--fg-0);
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
 }
 .field-input:focus {
   border-color: var(--c-accent);
@@ -181,7 +181,7 @@
 
 .link-btn {
   margin-top: 4px;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   color: var(--fg-3);
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -212,7 +212,7 @@
 }
 .empty-state .title {
   color: var(--fg-1);
-  font-size: calc(var(--text-body) + 0.5px);
+  font-size: var(--text-body);
   font-weight: 500;
 }
 .empty-state .hint {

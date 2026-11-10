@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { useChatActions } from "./actions";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { type ChatView, ChatViewContext, useChatView } from "./chatContext";
@@ -81,17 +82,18 @@ function Thread({ thread, inChat }: { thread: SubagentThread; inChat: boolean })
           <span>
             {thread.toolCount} {thread.toolCount === 1 ? "call" : "calls"}
           </span>
-          {thread.background && <span>background</span>}
+          {thread.background && <span>Background</span>}
         </span>
         {inChat && (
-          <button
-            type="button"
-            className="btn ac-agent-stop"
+          <IconButton
+            size="sm"
+            className="ac-agent-beside"
             onClick={() => openSubagentBeside(workspaceId, thread.callId)}
             title="Open beside: its conversation in a pane next to the chat"
+            label="Open beside"
           >
-            <I.SplitRight size={14} /> Open beside
-          </button>
+            <I.SplitRight size={14} />
+          </IconButton>
         )}
         {running && (
           <button type="button" className="btn ac-agent-stop" onClick={stop}>

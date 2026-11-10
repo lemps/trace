@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "@/app/toast";
 import { getAnthropicKey } from "@/ipc/orchestrator";
 import { type ChatTurn, type ConfirmRequest, runOrchestratorTurn } from "./agent";
 import { runOrchestratorCli } from "./cli";
@@ -45,7 +46,6 @@ export interface PendingConfirm {
 interface ChatStore {
   messages: ChatMessage[];
   busy: boolean;
-  error: string | null;
   /** Set while the assistant is blocked on a confirm-card. */
   pendingConfirm: PendingConfirm | null;
   send: (text: string) => Promise<void>;
@@ -70,7 +70,6 @@ let nextMessageId = 0;
 export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   busy: false,
-  error: null,
   pendingConfirm: null,
 
   async send(text) {
@@ -84,10 +83,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     if (backend === "sdk") {
       key = await getAnthropicKey();
       if (!key) {
-        set({
-          error:
-            "Add your Anthropic API key in Settings → Assistant, or switch to Claude CLI mode.",
-        });
+        toast.error(
+          "Add your Anthropic API key in Settings → Assistant, or switch to Claude CLI mode."
+        );
         return;
       }
     }
@@ -105,7 +103,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         { id: nextMessageId++, role: "assistant", text: "" },
       ],
       busy: true,
-      error: null,
     }));
     const idx = get().messages.length - 1; // the assistant placeholder
     const live = () => myGen === sendGen;
@@ -141,9 +138,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         patch((m) => ({ ...m, tool: undefined }));
       }
     } catch (e) {
-      // patch() is generation-guarded, so a superseded turn shows nothing. `error`
-      // stays reserved for pre-send problems (e.g. no key) so the banner and the
-      // assistant bubble never report the same failure twice.
+      // patch() is generation-guarded, so a superseded turn shows nothing. A
+      // pre-send problem (e.g. no key) is a toast instead, so the toast and the
+      // assistant's reply never report the same failure twice.
       const msg = e instanceof Error ? e.message : String(e);
       patch((m) => ({ ...m, text: m.text || `Error: ${msg}`, tool: undefined }));
     } finally {
@@ -168,7 +165,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     abortController = null;
     confirmResolver?.(false);
     confirmResolver = null;
-    set({ messages: [], busy: false, error: null, pendingConfirm: null });
+    set({ messages: [], busy: false, pendingConfirm: null });
   },
 }));
 

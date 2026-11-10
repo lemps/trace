@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { isShortcut } from "@/platform/shortcuts";
 import type { Deliver } from "./hooks/useDeliver";
 import { useAgentChatStore, useQueue } from "./store";
 
@@ -22,10 +23,11 @@ export function QueueList({ workspaceId, stopped, busy, deliver }: QueueListProp
   if (queue.length === 0) return null;
   return (
     <div className="ac-queue">
-      <div className="ac-queue-label">
-        {stopped
-          ? "Queued · sent once the agent starts"
-          : "Queued · sent in order as each turn ends"}
+      <div
+        className="ac-queue-label"
+        title={stopped ? "Sent once the agent starts" : "Sent in order, one as each turn ends"}
+      >
+        Queued
       </div>
       {queue.map((q, i) => (
         <QueuedRow
@@ -90,10 +92,11 @@ function QueuedRow({ workspaceId, id, text, files, n, onSendNow }: QueuedRowProp
           onChange={(e) => setDraft(e.target.value)}
           onBlur={save}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (e.nativeEvent.isComposing) return;
+            if (isShortcut("chatSend", e)) {
               e.preventDefault();
               save();
-            } else if (e.key === "Escape") {
+            } else if (isShortcut("chatInterrupt", e)) {
               e.preventDefault();
               e.stopPropagation();
               setDraft(null);
@@ -102,22 +105,22 @@ function QueuedRow({ workspaceId, id, text, files, n, onSendNow }: QueuedRowProp
         />
       )}
       {draft === null && onSendNow && (
-        <IconButton size="sm" label="Send it now" onClick={onSendNow}>
-          <I.Send size={14} />
+        <IconButton size="xs" label="Send now" onClick={onSendNow}>
+          <I.Send size={12} />
         </IconButton>
       )}
       {draft === null && (
-        <IconButton size="sm" label="Edit the queued message" onClick={() => setDraft(text)}>
-          <I.Pencil size={14} />
+        <IconButton size="xs" label="Edit" onClick={() => setDraft(text)}>
+          <I.Pencil size={12} />
         </IconButton>
       )}
       <IconButton
-        size="sm"
-        label="Remove the queued message"
+        size="xs"
+        label="Remove"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => removeQueued(workspaceId, id)}
       >
-        <I.X size={14} />
+        <I.Trash size={12} />
       </IconButton>
     </div>
   );

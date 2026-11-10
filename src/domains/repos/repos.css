@@ -8,22 +8,14 @@
   font-size: var(--text-meta);
   color: var(--fg-2);
 }
-.rp-setup-toggle {
+/* A repo row's "Setup · N" (`.btn.xs.rp-setup`): held down while its editor is open. */
+.btn.rp-setup {
   flex-shrink: 0;
-  height: var(--control-h-xs);
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-meta);
-  color: var(--fg-2);
 }
-.rp-setup-toggle:hover:not(:disabled),
-.rp-setup-toggle[aria-expanded="true"] {
+.btn.rp-setup[aria-expanded="true"] {
+  background: var(--bg-3);
   border-color: var(--border-strong);
   color: var(--fg-0);
-}
-.rp-setup-toggle:disabled {
-  color: var(--fg-4);
 }
 .rp-editor {
   display: flex;

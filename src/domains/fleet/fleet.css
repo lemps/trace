@@ -100,7 +100,7 @@
 .fl-title {
   color: var(--fg-0);
   font-weight: 500;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -112,7 +112,7 @@
 }
 .fl-src {
   justify-self: start;
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   padding: 1px 6px;

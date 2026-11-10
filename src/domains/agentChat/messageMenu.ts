@@ -6,7 +6,7 @@ import { plainText } from "./messageText";
 
 // What can be done with a chat message. The hover bar shows the frequent ones (Copy,
 // and Edit on yours); its right-click menu lists them all, from here, so the two
-// can't drift (trace-ui §2 rule 6).
+// can't drift (trace-ui §5, the hover bar).
 
 /** What a copy puts on the clipboard: `text`, and the same formatted when there's `html`. */
 export interface Copied {

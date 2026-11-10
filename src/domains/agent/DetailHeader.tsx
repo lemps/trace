@@ -185,7 +185,9 @@ export function DetailHeader({
         )}
         <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
         <PopMenu
-          trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="More actions" />}
+          trigger={({ open, toggle }) => (
+            <MoreTrigger open={open} toggle={toggle} label="More actions" />
+          )}
           sections={[
             { title: "Worktree", items: editorItems(issue.key) },
             { title: "Agent", items: agentItems },

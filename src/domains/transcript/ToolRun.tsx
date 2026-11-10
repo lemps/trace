@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { callsSentence } from "@/domains/agentChat/format";
 import { useAppearance } from "@/domains/appearance/store";
-import { runSentence, type ToolStep } from "./blocks";
+import type { ToolStep } from "./blocks";
 import { ToolRow } from "./ToolRow";
 
 interface ToolRunProps {
@@ -42,7 +43,7 @@ export function ToolRun({ steps, workspaceId, root, isCurrent }: ToolRunProps) {
         <span className="tx-chev">
           <I.Chevron size={12} />
         </span>
-        <span className="tx-run-sentence">{runSentence(steps)}</span>
+        <span className="tx-run-sentence">{callsSentence(steps.map((s) => s.call))}</span>
         {failed > 0 && <span className="tx-tool-state error">{failed} failed</span>}
         <span className="tx-run-count">{steps.length}</span>
       </button>

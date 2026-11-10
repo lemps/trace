@@ -111,7 +111,7 @@ function PromptRow({ prompt, checked, name, problem, onToggle, onName }: PromptR
         {long && (
           <button
             type="button"
-            className="rp-setup-toggle ci-prompt-more"
+            className="btn xs rp-setup ci-prompt-more"
             aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
           >

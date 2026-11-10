@@ -90,7 +90,7 @@ export function GitHubDialog({ onClose }: { onClose: () => void }) {
             />
             {working && (
               <button type="button" className="btn primary" onClick={() => setBrowsing(true)}>
-                <I.Download size={14} /> Browse repositories
+                <I.GitHub size={14} /> Browse repositories…
               </button>
             )}
           </div>

@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { Markdown } from "@/components/Markdown";
+import { StatusLight } from "@/components/StatusLight";
 import { useBoardStore } from "@/domains/board/store";
-import { ActionCard } from "./ActionCard";
+import { PromptBubble } from "@/domains/transcript/PromptBubble";
+import { isShortcut } from "@/platform/shortcuts";
+import { ActionCard, ConfirmCard } from "./ActionCard";
 import { ChartBlock } from "./Chart";
 import { type ChatMessage, useChatStore } from "./chatStore";
 import { splitBlocks } from "./messageBlocks";
+import { actionVerb } from "./mutations";
 
 const QUICK = [
   "Summarize the sprint",
@@ -28,18 +33,21 @@ const TOOL_LABEL: Record<string, string> = {
   get_agent_transcript: "an agent transcript",
 };
 
-// The orchestrator chat tab. Streams the assistant reply token-by-token and
-// shows a live status line while it reads a tool. State lives in chatStore;
-// this is presentational.
+// The orchestrator chat tab, drawn like the agent chat: your messages in its
+// prompt bubble, replies as prose (Settings → Appearance → Chat & transcript),
+// the working light while a turn runs, and its composer box with an icon Send.
+// Streams the assistant reply token-by-token. State lives in chatStore; this is
+// presentational. A turn can't be stopped (the CLI reply can't be aborted), so
+// Send waits while one runs rather than turning into Stop.
 export function ChatView() {
   const messages = useChatStore((s) => s.messages);
   const busy = useChatStore((s) => s.busy);
-  const error = useChatStore((s) => s.error);
   const send = useChatStore((s) => s.send);
   const pendingConfirm = useChatStore((s) => s.pendingConfirm);
   const resolveConfirm = useChatStore((s) => s.resolveConfirm);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Keep the newest content in view as it streams in. `messages` isn't read in
   // the body — it's the trigger: each streamed delta is a new array.
@@ -49,15 +57,27 @@ export function ChatView() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  // Fit the box to its text, as the agent chat's composer does.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure whenever the text changes
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
+
+  const canSend = !busy && draft.trim() !== "";
   const submit = (text: string) => {
     if (!text.trim() || busy) return;
     setDraft("");
     void send(text);
   };
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter while an IME is composing commits the candidate; it isn't a send.
+    if (e.nativeEvent.isComposing) return;
     // Enter sends; Shift+Enter keeps the textarea's default newline.
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (isShortcut("chatSend", e)) {
       e.preventDefault();
       submit(draft);
     }
@@ -71,7 +91,7 @@ export function ChatView() {
       <div className="orch-msgs" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="orch-chat-intro">
-            <I.Sparkles size={20} />
+            <I.Sparkles size={16} />
             <div className="t">{hasBoard ? "Ask about the board" : "Ask about your sessions"}</div>
             <div className="orch-quick">
               {(hasBoard ? QUICK : QUICK_SESSIONS).map((q) => (
@@ -82,65 +102,68 @@ export function ChatView() {
             </div>
           </div>
         ) : (
-          messages.map((m, i) => <Message key={m.id} msg={m} streaming={busy && i === last} />)
+          messages.map((m, i) => (
+            <Message key={m.id} msg={m} working={busy && i === last && !pendingConfirm} />
+          ))
         )}
       </div>
 
-      {error && messages.length === 0 && <div className="orch-chat-error">{error}</div>}
-
       {pendingConfirm && (
-        <div className="orch-confirm">
-          <div className="orch-confirm-head">
-            <I.Bolt size={12} /> Confirm action
-          </div>
-          <div className="orch-confirm-body">{pendingConfirm.summary}</div>
-          <div className="orch-confirm-actions">
-            <button type="button" className="oc-cancel" onClick={() => resolveConfirm(false)}>
-              Cancel
-            </button>
-            <button type="button" className="oc-go" onClick={() => resolveConfirm(true)}>
-              Confirm
-            </button>
-          </div>
-        </div>
+        <ConfirmCard
+          className="orch-confirm"
+          summary={pendingConfirm.summary}
+          verb={actionVerb(pendingConfirm.name)}
+          onCancel={() => resolveConfirm(false)}
+          onGo={() => resolveConfirm(true)}
+        />
       )}
 
-      <div className="orch-input-row">
-        <textarea
-          className="orch-input"
-          placeholder="Ask the orchestrator…"
-          value={draft}
-          rows={1}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
-        <button
-          type="button"
-          className="btn primary orch-send"
-          onClick={() => submit(draft)}
-          disabled={busy || !draft.trim()}
-          aria-label="Send"
-        >
-          <I.Send size={14} /> Send
-        </button>
+      <div className="orch-composer">
+        <div className="ac-composer">
+          <textarea
+            ref={inputRef}
+            className="ac-input"
+            aria-label="Ask the orchestrator"
+            placeholder="Ask the orchestrator…"
+            value={draft}
+            rows={1}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+          />
+          <div className="ac-composer-bar">
+            <IconButton
+              className="primary"
+              label="Send"
+              shortcut="chatSend"
+              disabled={!canSend}
+              onClick={() => submit(draft)}
+            >
+              <I.Send size={14} />
+            </IconButton>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function Message({ msg, streaming }: { msg: ChatMessage; streaming: boolean }) {
-  const thinking = streaming && !msg.text && !msg.tool;
+function Message({ msg, working }: { msg: ChatMessage; working: boolean }) {
+  if (msg.role === "user") {
+    return (
+      <PromptBubble>
+        <Markdown text={msg.text} prose />
+      </PromptBubble>
+    );
+  }
+  const tool = msg.tool ? `Reading ${TOOL_LABEL[msg.tool] ?? msg.tool}` : undefined;
   return (
-    <div className={`msg ${msg.role}`}>
-      <div className="who">{msg.role === "user" ? "You" : "Orchestrator"}</div>
-      <div className="body">
-        {/* Assistant replies are markdown + inline charts; the user's text stays verbatim. */}
-        {msg.role === "assistant" ? <AssistantBody text={msg.text} /> : msg.text}
-        {msg.tool && (
-          <span className="orch-tool">↳ reading {TOOL_LABEL[msg.tool] ?? msg.tool}…</span>
-        )}
-        {thinking && <span className="orch-typing">thinking…</span>}
-      </div>
+    <div className="ac-reply">
+      <AssistantBody text={msg.text} />
+      {working && (
+        <div className="ac-working">
+          <StatusLight light="working" variant="word" label={tool} />
+        </div>
+      )}
     </div>
   );
 }
@@ -157,7 +180,7 @@ function AssistantBody({ text }: { text: string }) {
         // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional and stable per render
         if (p.type === "action") return <ActionCard key={i} raw={p.raw} />;
         // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional and stable per render
-        return p.text.trim() ? <Markdown key={i} text={p.text} /> : null;
+        return p.text.trim() ? <Markdown key={i} text={p.text} prose /> : null;
       })}
     </>
   );

@@ -1,6 +1,7 @@
 import { type DragEvent, useState } from "react";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { sessionsDrag } from "./dragState";
 import { TitleEditor } from "./TitleEditor";
 import type { SessionTab } from "./types";
@@ -22,7 +23,7 @@ interface SessionTabsProps {
 
 // The page's tab row (`.detail-tabs`, as every tab row is): one tab per user-defined view. Tabs drag
 // to reorder and accept session drops; the active custom tab gets rename and
-// delete actions at the end of the bar.
+// delete (confirmed inline) at the end of the bar.
 export function SessionTabs({
   tabs,
   countOf,
@@ -111,15 +112,15 @@ export function SessionTabs({
             >
               <I.Pencil size={12} />
             </IconButton>
-            <IconButton
+            <InlineConfirm
+              label={<I.Trash size={12} />}
+              className="btn ghost icon xs"
               size="xs"
-              className="ghost"
-              onClick={() => onDelete(activeTab.id)}
-              label="Delete tab"
-              title="Delete tab (its sessions move to General)"
-            >
-              <I.Trash size={12} />
-            </IconButton>
+              ariaLabel="Delete tab"
+              message={`Delete ${activeTab.name}? Its sessions move to General.`}
+              confirmLabel="Delete"
+              onConfirm={() => onDelete(activeTab.id)}
+            />
           </span>
         ))}
     </div>

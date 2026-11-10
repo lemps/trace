@@ -1,6 +1,6 @@
 import { type DragEvent, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
-import { I } from "@/components/Icon";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
 import { noteTransport } from "@/domains/agentChat/transport";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
@@ -149,7 +149,7 @@ export function SessionsView() {
         </div>
         <div className="right">
           <button type="button" className="btn primary" onClick={() => setCreating(true)}>
-            <I.Plus size={14} /> New session
+            <I.Plus size={14} /> New session…
           </button>
         </div>
       </div>
@@ -171,7 +171,7 @@ export function SessionsView() {
           <div className="empty-state">
             <div className="inner">
               <span className="ic">
-                <I.Sparkles size={28} />
+                <I.Sparkles size={ICON_SIZE.empty} />
               </span>
               <div className="title">No exploratory sessions yet</div>
               <div className="hint">
@@ -179,7 +179,7 @@ export function SessionsView() {
                 any folder, with no ticket attached.
               </div>
               <button type="button" className="btn empty-action" onClick={() => setCreating(true)}>
-                <I.Plus size={14} /> New session
+                <I.Plus size={14} /> New session…
               </button>
             </div>
           </div>

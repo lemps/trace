@@ -5,9 +5,13 @@ import type { PlanDoc } from "@/ipc/plans";
 import { SOURCE_LABEL } from "./model";
 import { fullTime } from "./time";
 
-// A document as paper: title, version, source and date over its content, in the
-// light theme whatever trace's is, and nothing of the app around it. It's only in
-// the page while printing; `plans-print.css` shows it, and nothing else, in print.
+// A document as paper: one quiet line (title · source · version · date) over its
+// content, in the light theme whatever trace's is, and nothing of the app around
+// it. It's only in the page while printing; `plans-print.css` shows it, and nothing
+// else, in print. Markdown is `prose`, so it reads as the Plan tab does (Settings →
+// Appearance → Chat & transcript), at a paper size. It's the plain renderer, not
+// ChatMarkdown: a file path stays text rather than becoming a FileLink button, which
+// paper would hide along with every other control.
 export function PrintSheet({ doc, onReady }: { doc: PlanDoc; onReady: () => void }) {
   const frame = useRef<HTMLIFrameElement>(null);
 
@@ -31,10 +35,8 @@ export function PrintSheet({ doc, onReady }: { doc: PlanDoc; onReady: () => void
   return createPortal(
     <div className="plan-print" data-theme="light" data-code-theme="github-light">
       <header className="plan-print-head">
-        <h1>{doc.title}</h1>
-        <div className="plan-print-meta">
-          {SOURCE_LABEL[doc.source]} · version {doc.version} · {fullTime(doc.createdAt)}
-        </div>
+        <span className="plan-print-title">{doc.title}</span>
+        {` · ${SOURCE_LABEL[doc.source]} · version ${doc.version} · ${fullTime(doc.createdAt)}`}
       </header>
       {doc.format === "html" ? (
         <iframe
@@ -46,7 +48,7 @@ export function PrintSheet({ doc, onReady }: { doc: PlanDoc; onReady: () => void
           onLoad={onFrameLoad}
         />
       ) : (
-        <Markdown text={doc.body} className="plan-print-md" />
+        <Markdown text={doc.body} prose />
       )}
     </div>,
     document.body

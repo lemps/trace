@@ -1,4 +1,4 @@
-import { I } from "@/components/Icon";
+import { MenuCaret } from "@/components/MenuCaret";
 import { PopMenu } from "@/components/PopMenu";
 import { DiffLines } from "@/domains/agentChat/DiffCard";
 import type { DiffLine } from "@/domains/agentChat/lineDiff";
@@ -27,13 +27,13 @@ export function ChangesView({ lines, stat, base, doc, earlier, onPickBase }: Cha
           trigger={({ open, toggle }) => (
             <button
               type="button"
-              className="btn pl-ver-btn"
+              className="btn sm pl-ver-btn"
               aria-haspopup="menu"
               aria-expanded={open}
               title="Compare with another version"
               onClick={toggle}
             >
-              v{base.version} <I.Chevron size={12} />
+              v{base.version} <MenuCaret size="sm" />
             </button>
           )}
           sections={[

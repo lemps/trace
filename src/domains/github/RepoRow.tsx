@@ -1,3 +1,4 @@
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { relTime } from "@/domains/prs/relTime";
 import type { GhRepo } from "./types";
@@ -33,7 +34,7 @@ export function RepoRow({ repo, cloning, busy, onClone }: RepoRowProps) {
         </span>
       ) : (
         <button type="button" className="btn" disabled={busy} onClick={onClone}>
-          <I.Download size={14} /> {cloning ? "Cloning…" : "Clone"}
+          <I.Download size={14} /> <BusyLabel busy={cloning} idle="Clone" working="Cloning…" />
         </button>
       )}
     </div>

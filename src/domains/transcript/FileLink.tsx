@@ -3,7 +3,6 @@ import { PopMenu } from "@/components/PopMenu";
 import { editorItems } from "@/domains/agent/editorItems";
 import { copyPlain } from "@/ipc/clipboard";
 import { basename } from "@/platform/paths";
-import { relativeTo } from "./toolSummary";
 
 interface FileLinkProps {
   workspaceId: string;
@@ -20,8 +19,15 @@ export function FileLink({ workspaceId, path, root }: FileLinkProps) {
     <span className="tx-file">
       <PopMenu
         align="left"
-        trigger={({ toggle }) => (
-          <button type="button" className="tx-file-link" onClick={toggle} title={path}>
+        trigger={({ open, toggle }) => (
+          <button
+            type="button"
+            className="tx-file-link"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={toggle}
+            title={path}
+          >
             <span className="dir">{shown.slice(0, shown.length - basename(shown).length)}</span>
             {basename(shown)}
           </button>
@@ -44,4 +50,14 @@ export function FileLink({ workspaceId, path, root }: FileLinkProps) {
       />
     </span>
   );
+}
+
+/** The workspace-relative form of `path`, when it sits under `root`. */
+function relativeTo(path: string, root: string | null): string {
+  if (!root) return path;
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
+  const p = norm(path);
+  const r = norm(root);
+  const under = p.toLowerCase().startsWith(`${r.toLowerCase()}/`);
+  return under ? p.slice(r.length + 1) : path;
 }

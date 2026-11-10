@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ContextMenu } from "@/components/ContextMenu";
+import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { type GalleryImage, imageSrc } from "@/ipc/gallery";
 import { imageMenu } from "./imageActions";
 import { formatSize } from "./model";
@@ -15,7 +15,7 @@ interface ImageGridProps {
 // thread, scaled down by the browser; SVGs too, as `<img>`, so their scripts never
 // run. Right-click (or the menu key) for the image's actions.
 export function ImageGrid({ workspaceId, setId, images, onOpen }: ImageGridProps) {
-  const [menu, setMenu] = useState<{ x: number; y: number; img: GalleryImage } | null>(null);
+  const { menu, openAt, close } = useContextMenuAt<GalleryImage>();
   return (
     <div className="gl-grid">
       {images.map((img) => (
@@ -25,10 +25,7 @@ export function ImageGrid({ workspaceId, setId, images, onOpen }: ImageGridProps
           className="gl-card"
           title={img.rel}
           onClick={() => onOpen(img)}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setMenu({ x: e.clientX, y: e.clientY, img });
-          }}
+          onContextMenu={openAt(img)}
         >
           <span className="gl-thumb">
             <img
@@ -47,8 +44,8 @@ export function ImageGrid({ workspaceId, setId, images, onOpen }: ImageGridProps
         <ContextMenu
           x={menu.x}
           y={menu.y}
-          sections={imageMenu(workspaceId, setId, menu.img)}
-          onClose={() => setMenu(null)}
+          sections={imageMenu(workspaceId, setId, menu.target)}
+          onClose={close}
         />
       )}
     </div>

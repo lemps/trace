@@ -73,7 +73,7 @@
   height: var(--control-h-xs);
   padding: 0 8px;
   border-radius: 999px;
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   font-weight: 500;
   white-space: nowrap;
   color: var(--fg-3);
@@ -130,5 +130,5 @@
   gap: 7px;
 }
 .light-pill.lg .light-age {
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
 }

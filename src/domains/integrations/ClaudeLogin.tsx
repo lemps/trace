@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import { toast } from "@/app/toast";
+import { BusyLabel } from "@/components/BusyLabel";
 import { Segmented } from "@/components/Segmented";
 import { useVercelStore } from "@/domains/vercel/store";
 import type { ClaudeCredentialKind } from "@/ipc/vercel";
@@ -109,7 +110,7 @@ export function ClaudeLogin() {
               disabled={!secret.trim() || saving}
               onClick={save}
             >
-              {saving ? "Saving…" : "Save"}
+              <BusyLabel busy={saving} idle="Save" working="Saving…" />
             </button>
           </div>
         </>

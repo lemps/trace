@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
-import { I } from "@/components/Icon";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { useNow } from "@/hooks/useNow";
 import { ScheduleDetail } from "./ScheduleDetail";
 import { ScheduleModal } from "./ScheduleModal";
@@ -40,7 +40,7 @@ export function SchedulesView() {
         <div className="right">
           <ShareActions prompts={prompts} />
           <button type="button" className="btn primary" onClick={() => setEditing("new")}>
-            <I.Plus size={14} /> New scheduled prompt
+            <I.Plus size={14} /> New scheduled prompt…
           </button>
         </div>
       </div>
@@ -49,7 +49,7 @@ export function SchedulesView() {
           <div className="empty-state">
             <div className="inner">
               <span className="ic">
-                <I.Clock size={28} />
+                <I.Clock size={ICON_SIZE.empty} />
               </span>
               <div className="title">Nothing scheduled yet</div>
               <div className="hint">
@@ -58,7 +58,7 @@ export function SchedulesView() {
                 session.
               </div>
               <button type="button" className="btn empty-action" onClick={() => setEditing("new")}>
-                <I.Plus size={14} /> New scheduled prompt
+                <I.Plus size={14} /> New scheduled prompt…
               </button>
             </div>
           </div>

@@ -50,7 +50,7 @@
 }
 .detail-top .id {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   color: var(--fg-3);
 }
 /* The line above the title: key · status, one size and weight so neither
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   line-height: 1.4;
 }
 .detail-meta .sep {
@@ -180,6 +180,11 @@
   color: var(--fg-3);
   border-bottom: 1px solid transparent;
   margin-bottom: -1px;
+}
+.detail-tab:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-xs);
 }
 .detail-tab:hover {
   color: var(--fg-1);
@@ -305,7 +310,7 @@
   color: var(--fg-0);
 }
 .amsg .time {
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   font-family: var(--font-mono);
 }
@@ -325,7 +330,7 @@
   border-radius: var(--radius);
   padding: 10px 12px;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   color: var(--fg-1);
   white-space: pre;
   overflow-x: auto;

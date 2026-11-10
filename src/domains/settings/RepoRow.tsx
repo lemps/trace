@@ -73,7 +73,7 @@ export function RepoRow({
         )}
         <button
           type="button"
-          className="rp-setup-toggle"
+          className="btn xs rp-setup"
           disabled={!saved}
           aria-expanded={editing !== null}
           onClick={() => setEditing(editing ? null : (saved ?? null))}
@@ -94,7 +94,7 @@ export function RepoRow({
         <div className="rp-editor">
           <SetupFields setup={editing} onChange={setEditing} idPrefix={`rp-${name}`} />
           <div className="rp-editor-foot">
-            <button type="button" className="btn ghost" onClick={() => void suggest()}>
+            <button type="button" className="btn" onClick={() => void suggest()}>
               Suggest from lockfiles
             </button>
             <span className="rp-spacer" />

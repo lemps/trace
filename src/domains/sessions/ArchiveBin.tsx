@@ -1,5 +1,6 @@
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { sessionsDrag } from "./dragState";
 import { relTime } from "./time";
 import type { ScratchSession } from "./types";
@@ -38,8 +39,8 @@ export function ArchiveBin({
         if (drag?.kind === "session") onDropSession(drag.id);
       }}
     >
-      <button type="button" className="archive-head" onClick={onToggle}>
-        <I.Chevron size={14} style={{ transform: open ? "rotate(90deg)" : "none" }} />
+      <button type="button" className="archive-head" aria-expanded={open} onClick={onToggle}>
+        <I.Chevron size={14} />
         <I.Archive size={14} />
         Archived
         <span className="count">{archived.length}</span>
@@ -59,14 +60,15 @@ export function ArchiveBin({
               >
                 <I.ArchiveRestore size={12} />
               </IconButton>
-              <IconButton
+              <InlineConfirm
+                label={<I.Trash size={12} />}
+                className="btn ghost icon xs archive-delete"
+                ariaLabel="Delete permanently"
+                message="Delete for good, with its worktree?"
+                confirmLabel="Delete"
                 size="xs"
-                className="ghost archive-delete"
-                onClick={() => onDelete(s.id)}
-                label="Delete permanently"
-              >
-                <I.Trash size={12} />
-              </IconButton>
+                onConfirm={() => onDelete(s.id)}
+              />
             </div>
           ))}
         </div>

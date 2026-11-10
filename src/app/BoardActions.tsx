@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { useBoardStore } from "@/domains/board/store";
 import { useIssuesStore } from "@/domains/issues/store";
 
@@ -23,11 +24,12 @@ export function BoardActions() {
     if (wasLoading.current && !loading) setUpdatedAt(Date.now());
     wasLoading.current = loading;
   }, [loading]);
+  // `IconButton`'s `title` is only for more than the name: the work, or its last-updated time.
   const title = loading
     ? "Refreshing the board…"
     : updatedAt
       ? `Refresh board · updated ${clock(updatedAt)}`
-      : "Refresh board";
+      : undefined;
   const provider = allBoards.find((b) => b.key === selectedBoardKey)?.provider;
   const boards = allBoards.filter((b) => b.provider === provider);
 
@@ -47,17 +49,16 @@ export function BoardActions() {
           ))}
         </select>
       )}
-      <button
-        type="button"
-        className={loading ? "btn icon board-refresh busy" : "btn icon board-refresh"}
+      <IconButton
+        label="Refresh board"
+        className={loading ? "board-refresh busy" : "board-refresh"}
         title={title}
-        aria-label="Refresh board"
         aria-busy={loading}
         disabled={loading}
         onClick={() => void refresh()}
       >
         <I.Refresh size={14} />
-      </button>
+      </IconButton>
     </>
   );
 }

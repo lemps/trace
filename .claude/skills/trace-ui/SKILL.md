@@ -41,12 +41,21 @@ Every interactive control is one of three heights, so any row of them lines up:
 Corners: controls `--radius-sm` (6px); inline chips in text (`.kbd`, counts, code,
 tags) `--radius-xs` (4px); cards `--radius` (10px); columns and panels `--radius-lg`
 (14px). Only *state* pills are fully round (999px) — and in a header even they take
-the control's height and corner (`StatusLight size="lg"`).
+the control's height and corner (`StatusLight size="lg"`). The one other round thing
+is the floating jump-to-latest pill (`agentChat/LatestButton`), which is also the one
+control allowed to float over content.
+
+A header you click to expand (a thought, a tool run, a diff, a subagent card) is a
+control: `--control-h`, not a row height of its own. A row of controls is one tier
+end to end — the composer's Attach, pickers and Send are all `--control-h`.
 
 **Which control** (all in `components/button.css` unless named):
 
 - **`.btn`** — any action. `.btn.success` merges, `.btn.danger` destroys,
-  `.btn.primary-needs` answers an agent that needs you.
+  `.btn.primary-needs` answers an agent that needs you (its Deny is a plain `.btn`).
+  Worded buttons have the same tiers as icon buttons: `.btn` 30, **`.btn.sm`** 26
+  (pane strips, in-content toolbars, 36px rows), **`.btn.xs`** 20 (inside cards and
+  dense rows). Never hand-make a small button.
 - **`.btn.primary` — one per screen, and it follows state.** The header's Start
   becomes Stop while it runs; the composer's Send and Stop share one slot. When the
   header (or a page head) has the primary, the empty states and bands below it use
@@ -68,8 +77,21 @@ the control's height and corner (`StatusLight size="lg"`).
   in a header row beside bordered buttons — that's what made headers look mixed.
 - **`.link-btn`** — the tertiary tier: an underlined in-text toggle or escape hatch
   (StartPrompt's "Start fresh conversation"). Never the main way to do something.
-- **`.seg`** (`Segmented`) — mutually exclusive view options (card density).
-- **`.filter-chip`** — a toggleable filter (Board, Fleet, Inbox), with `aria-pressed`.
+- **`Segmented`** (`.seg`, `components/segmented.css`) — mutually exclusive view
+  options (card density, a run's views). 26px outside to outside. Never a hand-written
+  `.seg` or a private switch.
+- **`FilterChip`** (`components/FilterChip.tsx`) — a toggleable filter (Board, Fleet,
+  Inbox), with an optional `count`. `--control-h-sm` and `--radius-sm`: a chip is a
+  control, so it has the control's corner, which keeps it distinct from a round state
+  pill. Its on state is `aria-pressed`.
+- **`SplitButton`** — a main action plus a caret that opens its choices (Start ▾, the
+  composer's Send now ▾, a table's copy). **`MenuCaret`** is the one dropdown caret,
+  inside it or after a picker's label; never a hand-rotated `Chevron`.
+- **A menu trigger** sets `aria-haspopup="menu"` and `aria-expanded`, and looks
+  pressed while open (`menu.css`). `MoreTrigger` takes `open` and `size`.
+- **Menus** are `PopMenu` (from a trigger) or `ContextMenu` (at a point); both draw
+  the shared `MenuList`. A disabled item's reason goes in `MenuItem.detail`, never in
+  its label.
 - **`InlineConfirm`** — every destructive action (§5). `ConfirmPrompt` is its armed
   half, for one triggered from a menu.
 - **No panel toggles in headers.** A side panel's own strip is its toggle (§3).
@@ -77,12 +99,14 @@ the control's height and corner (`StatusLight size="lg"`).
 **Icon or word.**
 
 - **Icon-only:** close, more, copy, edit, refresh, open externally, send, attach,
-  expand/collapse, split, filter, sort, jump to latest, reset order.
+  expand/collapse, split, filter, sort, jump to latest, reset order. A composer's
+  Send is icon-only even though it's the primary: the slot is universal.
 - **Words:** primary actions (Start, Merge #12, Raise PR, Answer), destructive
   confirms, anything with a count or a subtle pair (*Leave running* vs *Stop & save*).
 - **Under pressure, labels collapse to icons, never truncate** (`useTabFit` for tabs;
   a container query for header buttons).
-- **"…" on a label means it opens more** — a dialog or a picker ("Choose a file…").
+- **"…" on a label means it opens more** — a dialog or a picker ("Choose a file…",
+  "New session…"). Not for an inline form, an inline confirm or a find bar.
 - **Busy buttons say the verb, in reserved width**: "Merging…", "Raising…",
   "Saving…", pre-sized so the row doesn't jump. By duration: under 100ms nothing;
   under 1s disabled; 1–3s the verb or a `Spinner`; 3s and longer, stage labels.
@@ -183,6 +207,12 @@ the same from the keyboard; "Reset to opened order" is one ghost `RotateCcw`
 - Type tokens: `--text-title` 18 · `--text-detail-title` 15 · `--text-body` 13.5 ·
   `--text-ui` 12.5 · `--text-meta` 11.5 · `--text-label` 10.5. Section labels are
   `--text-label`, uppercase, `letter-spacing: 0.08em`, `--fg-3`.
+- **The scale is a hard rule, and a test enforces it** (`styles/typeScale.test.ts`):
+  a font size is one of those tokens — never `calc()` on a token, never a raw px, never
+  an inline `fontSize`. Between two tokens, pick one.
+- Agent output and what you type to an agent (chat, transcript, plan documents, the
+  composer's input) take their font, size and line height from `--chat-*` (Settings →
+  Appearance → Chat & transcript), via `.md.prose` — not from `--text-body`.
 - `--font-mono` for keys, ids, branches, paths, counts, ages and diffs; Geist for
   everything else.
 - Text colour: `--fg-0` titles, `--fg-1` body, `--fg-2` secondary, `--fg-3` meta.
@@ -193,7 +223,8 @@ the same from the keyboard; "Reset to opened order" is one ghost `RotateCcw`
 `iconsActions`, `iconsCode`, `iconsViewer`): stroked, no emoji, no inline SVG — add a
 glyph to its family file. **Sizes follow the control heights** (`ICON_SIZE` in
 `components/iconScale.ts`): **12** in `xs` controls and in-row pills, **14** in `.btn`
-and `sm` controls, **16** in the rail, nav and empty states. The stroke is compensated
+and `sm` controls, **16** in the rail, nav and small in-panel empty states, **28**
+(`ICON_SIZE.empty`) in a full-page or full-pane `.empty-state`. The stroke is compensated
 (`strokeFor`) so every size draws ~1.1px; don't pass `stroke`.
 
 **One meaning per glyph.** Pick by meaning; if none fits, add a glyph rather than
@@ -208,6 +239,9 @@ borrowing one:
 | An action the orchestrator proposes | `Bolt` | Start |
 | Merge | `GitMerge` | `Check` |
 | Done, passed, copied, selected | `Check` | merge |
+| Failed, error, warning | `Alert` | `X` |
+| Denied, cancelled | `Ban` | `X` |
+| A tool call with no glyph of its own | `Wrench` | `Code` |
 | Reload, re-check | `Refresh` | restart, reset |
 | Reset to default, undo an order | `RotateCcw` | `Refresh` |
 | Restore from the archive | `ArchiveRestore` | `Back` |
@@ -233,7 +267,9 @@ borrowing one:
 - **The reveal recipe** for secondary row actions: `opacity: 0`, shown on row
   `:hover`, row `:focus-within`, and while in a state ("Copied"); always shown under
   `@media (hover: none)`. A close × keeps its slot but is transparent until hover or
-  focus, so labels never shift.
+  focus, so labels never shift. A control in its own strip (a code block's copy, in
+  the block's head) may instead rest quiet at 60%; one laid over content (a table's
+  copy) follows the recipe.
 - **The hover bar is a shortcut layer; ⋯ and right-click are the full list.** A row
   shows 2–4 frequent icon actions on hover; its ⋯ menu and its right-click menu list
   everything, built from the same items (`agentMenu.ts`, `editorItems`).
@@ -246,11 +282,21 @@ borrowing one:
   verb), never a dialog and never a hand-rolled Cancel / Confirm pair or a two-click
   button.
 - Errors go to `toast.error` with the reason, not a bare red line.
+- Chat cards: `--border-faint` around the agent's own activity (tools, diffs,
+  subagents, reports); a card you act on is the amber `.ac-card.ac-ask`, whose head
+  says what it is with a `StatusLight` pill ("Permission · Bash", "Question",
+  "Plan approval"). Every "answer the agent" surface is tinted `--state-needs-bg`.
+- The two chats and the transcript are one design: the orchestrator's chat and the
+  Transcript view reuse the agent chat's pieces (`PromptBubble`, `WorkingRow`,
+  `DiffCard`, `PlanCard`, `LatestButton`, `summarizeTool`, `formatDuration`). Change
+  the piece, not a copy.
 
 ## 6. Where code goes
 
-- Shared primitives (`StatusLight`, `SidePanel`, `Modal`, `PopMenu`, `Icon`,
-  `IconButton`, `InlineConfirm`, `Spinner`) live in `src/components/`;
+- Shared primitives (`StatusLight`, `SidePanel`, `Modal`, `PopMenu`, `ContextMenu`,
+  `MenuList`, `SplitButton`, `MenuCaret`, `Icon`, `IconButton`, `InlineConfirm` (with a
+  `size` for rows), `FilterChip`, `Segmented`, `BusyLabel`, `BackButton`, `Spinner`)
+  live in `src/components/`;
   reuse them before writing a look-alike.
 - A domain's CSS lives in its folder and is imported once in `src/main.tsx`; class
   names are prefixed per domain (`ib-`, `fl-`, `rs-`). Keep CSS files under the
@@ -265,16 +311,16 @@ borrowing one:
 - [ ] Each glyph means what §4's table says; icons are 12 / 14 / 16 by place, with no `stroke`.
 - [ ] Words only for primaries, confirms and counts; labels collapse to icons, never truncate.
 - [ ] Agent state uses `StatusLight`; colour appears only for state, accent or diff.
-- [ ] No new raw hex/oklch/px where a token exists; titles use the type tokens.
-- [ ] Tab rows are `.detail-tabs`; filters are `.filter-chip`.
+- [ ] No new raw hex/oklch/px where a token exists; every font size is a plain type token.
+- [ ] Tab rows are `.detail-tabs`; filters are `FilterChip`; small worded buttons are `.btn.sm` / `.btn.xs`.
+- [ ] Menu triggers set `aria-expanded`; carets are `MenuCaret`; disabled reasons are in `detail`.
 - [ ] Destructive actions use `InlineConfirm`; busy buttons say the verb in reserved width.
 - [ ] Hover-only actions reveal on `:focus-within` and under `hover: none`, and have another path.
 - [ ] Navigation is in the rail, context in the right-edge `SidePanel`, one side panel at most.
 - [ ] Empty and error states say something useful.
 - [ ] A workspace tab that comes and goes follows `.claude/rules/tabs.md` (`panes/coming.ts`): × hides, never deletes.
-- [ ] `npx tsc --noEmit` and `npx @biomejs/biome check src` pass.
+- [ ] `npx tsc --noEmit`, `npx @biomejs/biome check src` and `npm test` pass.
 
-Legacy to migrate when you touch it (don't copy): raw `font-size` px values,
-inline `oklch(... / alpha)` literals, `.thinking`/`.waiting`, and `--c-prog`/`--c-warn`
+Legacy to migrate when you touch it (don't copy): inline `oklch(... / alpha)` literals, `.thinking`/`.waiting`, and `--c-prog`/`--c-warn`
 for agent state. Raw radii left on purpose: 1–3px drop lines and bars, miniature
 previews, and avatars (their corners scale with their size).

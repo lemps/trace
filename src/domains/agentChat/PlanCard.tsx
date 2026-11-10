@@ -16,7 +16,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
   return (
     <div className="ac-card ac-plan">
       <div className="ac-card-head">
-        <I.List size={14} />
+        <I.ListChecks size={14} />
         <span className="ac-card-title">Tasks</span>
         <span className="ac-card-meta">
           {done} of {plan.items.length} done

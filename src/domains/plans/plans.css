@@ -116,7 +116,9 @@
   gap: 8px;
   flex-shrink: 0;
 }
-.pl-ver-btn {
+/* An in-content toolbar (trace-ui §1): the version picker, Document | Changes and
+   ⋯ (`MoreTrigger size="sm"`) all stand --control-h-sm tall. */
+.btn.pl-ver-btn {
   font-family: var(--font-mono);
   font-size: var(--text-meta);
   gap: 4px;
@@ -198,9 +200,6 @@
   flex-shrink: 0;
 }
 
-.pl-ver-btn svg {
-  transform: rotate(90deg);
-}
 /* A plan's lines are prose: they wrap rather than scroll. */
 .pl-diff .ac-diff-body .diff-line {
   min-width: 0;

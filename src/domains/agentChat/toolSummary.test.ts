@@ -1,7 +1,7 @@
 // Run: `npm test`.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { commandOf, compactInput, patchFiles, summarizeTool } from "./toolSummary.ts";
+import { commandOf, compactInput, patchFiles, planOf, summarizeTool } from "./toolSummary.ts";
 
 const s = (name: string, input: unknown) => {
   const l = summarizeTool(name, input);
@@ -22,6 +22,19 @@ describe("summarizeTool", () => {
       s("Task", { description: "Look", subagent_type: "Explore" }),
       "Agent Look (Explore)"
     );
+    assert.equal(s("Skill", { skill: "trace-ui" }), "Skill trace-ui");
+    assert.equal(s("WebSearch", { query: "tauri" }), "Web search tauri");
+  });
+
+  it("says how far a task list has got", () => {
+    const todos = [
+      { content: "Plan", status: "completed" },
+      { content: "Build", status: "in_progress" },
+      { content: "Ship", status: "pending" },
+    ];
+    assert.equal(s("TodoWrite", { todos }), "Tasks 1 of 3 done");
+    assert.equal(s("TodoWrite", { todos: [] }), "Tasks");
+    assert.equal(summarizeTool("TodoWrite", { todos }).category, "plan");
   });
 
   it("reads Codex's tools the same way", () => {
@@ -51,6 +64,17 @@ describe("helpers", () => {
     assert.equal(commandOf({ cmd: "echo hi" }), "echo hi");
     assert.equal(commandOf({ command: ["pwsh", "-Command", "dir"] }), "dir");
     assert.deepEqual(patchFiles("*** Add File: a\n*** Delete File: b"), ["a", "b"]);
+  });
+
+  it("reads either agent's task list as a plan", () => {
+    assert.deepEqual(
+      planOf({ todos: [{ content: "A", status: "in_progress" }, { status: "done" }] }).items,
+      [{ text: "A", status: "inProgress" }]
+    );
+    assert.deepEqual(planOf({ plan: [{ step: "B", status: "completed" }] }).items, [
+      { text: "B", status: "done" },
+    ]);
+    assert.deepEqual(planOf(undefined).items, []);
   });
 
   it("clips long inputs", () => {

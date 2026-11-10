@@ -49,7 +49,7 @@ function CardBody({ item }: { item: ToolItem }) {
             <span>
               {thread.toolCount} {thread.toolCount === 1 ? "call" : "calls"}
             </span>
-            {thread.background && <span>background</span>}
+            {thread.background && <span>Background</span>}
           </span>
           <span className="ac-agent-go" aria-hidden>
             <I.Chevron size={12} />

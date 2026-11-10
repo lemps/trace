@@ -1,4 +1,4 @@
-import { I } from "@/components/Icon";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { basename } from "@/platform/paths";
 
 interface StartPromptProps {
@@ -37,7 +37,7 @@ export function StartPrompt({
     <div className="empty-state">
       <div className="inner">
         <span className="ic">
-          <I.Play size={28} />
+          <I.Play size={ICON_SIZE.empty} />
         </span>
         {exited ? (
           <>

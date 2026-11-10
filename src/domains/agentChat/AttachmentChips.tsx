@@ -1,4 +1,5 @@
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { isImagePath, shownName } from "./attachmentFiles";
 import { useAttachmentPreview } from "./hooks/useAttachmentPreview";
 
@@ -32,15 +33,9 @@ function AttachmentChip({ path, onRemove }: { path: string; onRemove: (path: str
     <span className={`ac-attachment${url ? " has-thumb" : ""}`} title={path}>
       {url ? <img className="ac-attachment-thumb" src={url} alt="" /> : <Icon size={12} />}
       <span className="ac-attachment-name">{name}</span>
-      <button
-        type="button"
-        className="ac-attachment-x"
-        aria-label={`Remove ${name}`}
-        title="Remove"
-        onClick={() => onRemove(path)}
-      >
+      <IconButton size="xs" className="ghost" label="Remove" onClick={() => onRemove(path)}>
         <I.X size={12} />
-      </button>
+      </IconButton>
     </span>
   );
 }
