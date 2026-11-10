@@ -227,6 +227,8 @@ export interface ChatAgentState {
 export interface JournalEvent {
   workspaceId: string;
   rows: JournalRow[];
+  /** The rows are the whole journal, renumbered: they replace what's held. */
+  reset?: boolean;
 }
 
 export interface SessionInfoEvent {

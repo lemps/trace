@@ -1,6 +1,5 @@
-//! Starting and driving chat agents (kept in `registry`), and the `JournalSink`
-//! each adapter writes to, which appends rows to the workspace's journal
-//! (`store`) and emits them to the renderer. A chat agent is listed in the
+//! Starting and driving chat agents (kept in `registry`), each writing to a
+//! `sink::Sink` that persists and emits its rows. A chat agent is listed in the
 //! interrupted-agents ledger and reports its exit (`agent-run-state`) the same
 //! way a terminal agent does, so the board, fleet and resume-after-quit see it.
 
@@ -8,103 +7,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
-use super::journal::{Answer, JournalBody, JournalRow};
+use super::journal::{Answer, JournalRow};
 use super::registry::Begin;
+use super::sink::{JournalEvent, Sink};
 use super::transport::Transport;
-use super::{brands, settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
+use super::{backfill, brands, settle, store, JournalSink, LaunchSpec, SessionInfo, UserMessage};
 use crate::state::AppState;
-
-/// `agent-journal`'s payload (`JournalEvent` in types.ts).
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct JournalEvent<'a> {
-    workspace_id: &'a str,
-    rows: Vec<JournalRow>,
-}
-
-/// `agent-session-info`'s payload (`SessionInfoEvent` in types.ts).
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SessionInfoEvent<'a> {
-    workspace_id: &'a str,
-    info: SessionInfo,
-}
-
-struct Sink {
-    app: AppHandle,
-    workspace_id: String,
-    path: PathBuf,
-    instance: u64,
-    /// A third-party provider, which pins the model: stamped on every info.
-    provider: Option<String>,
-}
-
-impl JournalSink for Sink {
-    fn row(&self, row: JournalRow) {
-        // Streaming text changes with every token: only its final revision is
-        // kept, or a long answer would be written out once per word.
-        let streaming = matches!(&row.body, JournalBody::Message(m) if m.streaming);
-        if !streaming {
-            if let Err(e) = store::append(&self.path, &row) {
-                eprintln!("trace: {e}");
-            }
-        }
-        // Plan mode and task lists become the Plan tab's documents (`plans`).
-        crate::plans::on_row(&self.app, &self.workspace_id, &row);
-        let event = JournalEvent {
-            workspace_id: &self.workspace_id,
-            rows: vec![row],
-        };
-        let _ = self.app.emit("agent-journal", event);
-    }
-
-    fn info(&self, mut info: SessionInfo) {
-        info.provider = self.provider.clone();
-        let state = self.app.state::<AppState>();
-        let was_working = state
-            .chat_agents
-            .info(&self.workspace_id)
-            .is_some_and(|i| i.at_work());
-        let info = state.chat_agents.note_info(&self.workspace_id, info);
-        // What a resume after a quit needs to know: was it still at work. Not the
-        // turn that ends because trace is going down: that one was cut off.
-        let going_down = state
-            .shutting_down
-            .load(std::sync::atomic::Ordering::SeqCst);
-        let now_working = info.at_work();
-        if now_working != was_working && !going_down {
-            crate::interrupted::record_busy(&self.workspace_id, now_working);
-        }
-        let event = SessionInfoEvent {
-            workspace_id: &self.workspace_id,
-            info,
-        };
-        let _ = self.app.emit("agent-session-info", event);
-    }
-
-    fn exited(&self, _reason: Option<String>) {
-        // The reason is already a status row; the registry just lets go.
-        let state = self.app.state::<AppState>();
-        if !state.chat_agents.ended(&self.workspace_id, self.instance) {
-            return;
-        }
-        // As a terminal agent's exit does (`claude::pty`).
-        crate::interrupted::record_exit(&self.app, &self.workspace_id);
-        let _ = self.app.emit(
-            "agent-run-state",
-            serde_json::json!({ "workspaceId": self.workspace_id, "running": false }),
-        );
-        crate::activity::record_agent(
-            &self.app,
-            &self.workspace_id,
-            crate::activity::ActivityKind::AgentExit,
-            "session ended",
-            serde_json::Value::Null,
-        );
-    }
-}
 
 /// What a chat agent is started with, before trace adds its own wiring: the
 /// same as a terminal agent (`commands::agent::spawn_in`).
@@ -225,6 +135,22 @@ fn launch(
             req.extra_args,
         )?,
     };
+    // Turns taken in the terminal since the view last read the journal (a
+    // switch back to chat): added before this run numbers its rows after them.
+    if req.remote.is_none() {
+        match backfill::sync(&req.workspace_id, Some(&req.cwd)) {
+            Ok(Some(rows)) => {
+                let event = JournalEvent {
+                    workspace_id: &req.workspace_id,
+                    rows,
+                    reset: true,
+                };
+                let _ = app.emit("agent-journal", event);
+            }
+            Ok(None) => {}
+            Err(e) => eprintln!("trace: {e}"),
+        }
+    }
     let path = store::journal_path(&req.workspace_id);
     let rows = store::load_compacted(&path)?;
     // The last run's open rows end now, on disk too, before this run adds to them.
@@ -375,14 +301,23 @@ pub fn current(state: &AppState, workspace_id: &str) -> ChatAgentState {
     }
 }
 
-/// A workspace's journal. While no agent runs, rows it left open read as ended.
-pub fn load(state: &AppState, workspace_id: &str) -> Result<Vec<JournalRow>, String> {
-    let rows = store::load(&store::journal_path(workspace_id))?;
-    if state.chat_agents.is_running(workspace_id) {
-        Ok(rows)
-    } else {
-        Ok(settle::settled(rows))
+/// Whether a chat agent is starting, running or stopping for the workspace.
+pub fn is_running(state: &AppState, workspace_id: &str) -> bool {
+    state.chat_agents.is_running(workspace_id)
+}
+
+/// A workspace's journal. While no agent runs, rows it left open read as ended,
+/// and turns its conversation took outside a chat run are added (`backfill`):
+/// a session that ran in the terminal shows its conversation before it starts.
+pub fn load(workspace_id: &str, running: bool) -> Result<Vec<JournalRow>, String> {
+    if running {
+        return store::load(&store::journal_path(workspace_id));
     }
+    if let Err(e) = backfill::sync(workspace_id, None) {
+        eprintln!("trace: {e}");
+    }
+    let rows = store::load(&store::journal_path(workspace_id))?;
+    Ok(settle::settled(rows))
 }
 
 /// The workspace is gone for good: its journal and transport go with it.

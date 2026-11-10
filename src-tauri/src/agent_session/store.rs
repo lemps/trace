@@ -70,6 +70,11 @@ pub fn load_compacted(path: &Path) -> Result<Vec<JournalRow>, String> {
     Ok(rows)
 }
 
+/// A journal's bytes as rows, each at its latest revision, in `seq` order.
+pub(super) fn parse(bytes: &[u8]) -> Vec<JournalRow> {
+    latest(bytes).0
+}
+
 /// The `seq` a new row continues from.
 pub fn next_seq(rows: &[JournalRow]) -> u64 {
     rows.iter().map(|r| r.seq + 1).max().unwrap_or(0)
@@ -101,7 +106,7 @@ fn latest(bytes: &[u8]) -> (Vec<JournalRow>, usize) {
     (rows, lines)
 }
 
-fn to_lines(rows: &[JournalRow]) -> Vec<u8> {
+pub(super) fn to_lines(rows: &[JournalRow]) -> Vec<u8> {
     let mut out = Vec::new();
     for row in rows {
         if let Ok(line) = serde_json::to_vec(row) {

@@ -10,6 +10,7 @@ pub(crate) mod book;
 mod content;
 pub(crate) mod deliver;
 mod handback;
+pub(crate) mod history;
 mod prompts;
 mod spawn;
 pub(crate) mod tools;

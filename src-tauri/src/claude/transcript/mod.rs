@@ -129,6 +129,12 @@ fn read_file(path: &Path, offset: u64, reset: bool) -> Option<(u64, bool, Vec<Tr
     Some((start + complete as u64, reset, items))
 }
 
+/// One conversation line's items, for code that reads the file its own way
+/// (`agent_session::claude::history`).
+pub(crate) fn line_items(raw: &str) -> Vec<TranscriptItem> {
+    parse::line(raw)
+}
+
 /// Cut `text` to `max` characters, marking the cut. Unlike `activity::clip` it
 /// never trims: tool inputs (an Edit's `old_string`) keep their indentation.
 fn clip(text: &str, max: usize) -> String {

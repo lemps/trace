@@ -8,14 +8,16 @@
 //! (process handling, persistence, commands) and the adapters live beside it.
 //!
 //! - `registry`: the chat agents, starting, running or stopping.
-//! - `runtime`: starting and driving them, and the sink that persists and emits rows.
+//! - `runtime`: starting and driving them; `sink`: what persists and emits their rows.
 //! - `store`: the journal file; `settle`: rows a vanished process left open.
+//! - `backfill`: the conversation's turns from outside a chat run, added to it.
 //! - `transport`: whether each workspace runs as a chat or in the terminal.
 //! - `claude`, `codex`: the adapters; `brands` picks one by its CLI.
 //! - `attachments`: files sent with a message (pasted ones saved to disk first).
 //! - `options`: each workspace's model, effort and permission mode.
 
 pub mod attachments;
+pub mod backfill;
 pub mod brands;
 pub mod claude;
 pub mod codex;
@@ -25,6 +27,7 @@ pub mod process;
 pub mod registry;
 pub mod runtime;
 pub mod settle;
+mod sink;
 pub mod store;
 pub mod subagent;
 pub mod transport;

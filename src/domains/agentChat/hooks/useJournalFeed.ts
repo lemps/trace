@@ -20,9 +20,10 @@ const fetched = new Set<string>();
 export function ensureChatListeners(): void {
   if (listening) return;
   listening = true;
-  const { applyRows, setInfo } = useAgentChatStore.getState();
+  const { applyRows, resetRows, setInfo } = useAgentChatStore.getState();
   void onAgentJournal((e) => {
-    applyRows(e.workspaceId, e.rows);
+    if (e.reset) resetRows(e.workspaceId, e.rows);
+    else applyRows(e.workspaceId, e.rows);
     noteChatRows(e.workspaceId, e.rows);
   }).catch(() => {
     listening = false;
