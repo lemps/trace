@@ -6,6 +6,7 @@ import { useVercelStore } from "@/domains/vercel/store";
 import { ClaudeLogin } from "./ClaudeLogin";
 import { VercelForm } from "./ConnectForms";
 import { SandboxLifetime } from "./SandboxLifetime";
+import { SandboxSize } from "./SandboxSize";
 import { VercelReadiness } from "./VercelReadiness";
 import { VERCEL } from "./vercel";
 
@@ -43,6 +44,7 @@ export function VercelDialog({ onClose }: { onClose: () => void }) {
         <VercelReadiness vercel={status} />
         {status && <ClaudeLogin />}
         {status && <SandboxLifetime />}
+        {status && <SandboxSize />}
         {status && (
           <div className="ig-form-foot">
             <InlineConfirm

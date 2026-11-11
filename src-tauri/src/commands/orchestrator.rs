@@ -81,8 +81,6 @@ pub async fn orchestrator_cli(
         "Task",
         "TodoWrite",
         "NotebookEdit",
-        "NotebookRead",
-        "MultiEdit",
         "ExitPlanMode",
         "KillShell",
         "BashOutput",
