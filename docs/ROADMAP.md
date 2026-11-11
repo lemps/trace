@@ -71,6 +71,10 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
       question rows answered in place, for Claude and Codex (`agent_session/codex/`). The terminal
       transcript still doesn't.
+- [x] **Start a session from the task:** the New session dialog asks what the agent should do, not
+      what to call it — the task starts the agent as its first message, Haiku names the session from
+      it (its first line when there's no key or CLI), and the dialog reopens on the repo, agent,
+      model and mode last used. Everything else is behind More options.
 - [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
