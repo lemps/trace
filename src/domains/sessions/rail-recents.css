@@ -81,7 +81,7 @@
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   height: 34px;
   padding: 0 8px;
   border-radius: var(--radius-sm);

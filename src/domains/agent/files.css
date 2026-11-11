@@ -4,7 +4,7 @@
 .diff-pane {
   overflow: auto;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   line-height: 1.55;
 }
 .diff-line {
@@ -81,7 +81,7 @@
   padding: 20px;
   color: var(--fg-3);
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 
 /* A whole file (no diff): one line-number column, then the text. */
@@ -150,9 +150,16 @@
   outline: 1px solid var(--c-accent);
   outline-offset: -1px;
 }
+/* The folded folders' "…": kept as text (it reads as part of the path), but a
+   control of the `xs` tier, so it has a hit area the crumbs' text height doesn't. */
 .fx-crumb.more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  min-width: 0;
+  min-width: var(--control-h-xs);
+  height: var(--control-h-xs);
+  padding: 0 4px;
 }
 .fx-crumb.more.on {
   color: var(--fg-0);
@@ -205,10 +212,6 @@
 }
 .fx-vstat.unchanged {
   color: var(--fg-3);
-}
-.fx-vhead .seg {
-  margin-right: 0;
-  flex-shrink: 0;
 }
 .fx-vhead .pop-menu {
   flex-shrink: 0;

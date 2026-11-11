@@ -1,138 +1,10 @@
-/* Questions, answered questions, and the composer with its queue and slash menu. */
+/* The composer, with its attachments, queue and slash menu. */
 
-/* Questions. */
-.ac-q {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-.ac-q-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 0;
-  font-size: var(--text-body);
-  color: var(--fg-0);
-}
-.ac-q-header {
-  flex-shrink: 0;
-  padding: 0 6px;
-  height: var(--control-h-xs);
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--fg-2);
-}
-.ac-q-options {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ac-q-option {
-  display: grid;
-  grid-template-columns: 16px auto 1fr;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--control-h);
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-1);
-  font-size: var(--text-ui);
-  color: var(--fg-1);
-  text-align: left;
-}
-.ac-q-option:hover {
-  border-color: var(--border-strong);
-}
-.ac-q-option.on {
-  border-color: var(--c-accent);
-  background: var(--c-accent-bg);
-  color: var(--fg-0);
-}
-.ac-q-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--fg-4);
-  border-radius: 999px;
-}
-.ac-q-option.multi .ac-q-mark {
-  border-radius: var(--radius-xs);
-}
-.ac-q-option.on .ac-q-mark {
-  border-color: var(--c-accent);
-  background: var(--c-accent);
-  color: var(--on-bright);
-}
-.ac-q-desc {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-meta);
-  color: var(--fg-3);
-}
-.ac-q-input {
-  height: var(--control-h);
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-0);
-  color: var(--fg-0);
-  font: inherit;
-  font-size: var(--text-ui);
-}
-.ac-q-input:focus {
-  outline: none;
-  border-color: var(--c-accent);
-}
-.ac-answered {
-  gap: 6px;
-}
-.ac-answered-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: var(--text-ui);
-}
-.ac-answered-q {
-  color: var(--fg-2);
-}
-.ac-answered-a {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.ac-chip {
-  display: inline-flex;
-  align-items: center;
-  height: var(--control-h-xs);
-  padding: 0 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  color: var(--fg-0);
-  font-size: var(--text-meta);
-}
-
-/* Composer. */
 .ac-composer-wrap {
   max-width: var(--chat-col, 820px);
   width: 100%;
   margin: 0 auto;
-  padding: 0 20px 14px;
+  padding: 0 20px 12px;
 }
 .ac-composer {
   position: relative;
@@ -156,9 +28,12 @@
   border: 0;
   background: transparent;
   color: var(--fg-0);
+  /* The chat's own type (Appearance → Chat & transcript), so a message is typed
+     at the size and in the font its bubble shows it in (`.md.prose`). */
   font: inherit;
-  font-size: var(--text-body);
-  line-height: 1.5;
+  font-family: var(--chat-font, inherit);
+  font-size: var(--chat-size, var(--text-body));
+  line-height: var(--chat-line-height, 1.5);
   /* Sized to its text by Composer, so the whole message shows; only a paste
      taller than most of the window scrolls, keeping the conversation in view. */
   max-height: 75vh;
@@ -183,7 +58,7 @@
   margin-right: auto;
   color: var(--fg-2);
 }
-.btn.icon.ac-attach:hover {
+.btn.icon.ac-attach:hover:not(:disabled) {
   color: var(--fg-0);
 }
 
@@ -200,8 +75,9 @@
   align-items: center;
   gap: 6px;
   max-width: 260px;
-  height: var(--control-h-xs);
-  padding: 0 4px 0 8px;
+  /* Tall enough to hold its × (`IconButton` xs) inside its border. */
+  height: var(--control-h-sm);
+  padding: 0 2px 0 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--fg-1);
@@ -231,20 +107,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ac-attachment-x {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
+.ac-attachment > .btn.icon {
   color: var(--fg-3);
-  cursor: pointer;
 }
-.ac-attachment-x:hover {
+.ac-attachment > .btn.icon:hover:not(:disabled) {
   color: var(--fg-0);
-  background: var(--bg-3);
 }
 
 /* Send and Stop share this one square slot (`SendSlot`), so the pickers beside it
@@ -253,26 +120,21 @@
 .ac-send-split {
   margin-left: 4px;
 }
-/* The composer sits at the bottom of the pane: its menu opens upwards. */
-.ac-send-split .pop-menu-pop {
-  top: auto;
-  bottom: calc(100% + 6px);
-}
-.ac-send-split .caret.ac-send-caret {
-  transform: rotate(-90deg);
-}
 
-/* Slash commands, above the composer. */
+/* Slash commands, above the composer: a menu like the bar's pickers open
+   (`PopMenu`, components/menu.css) in its rows, surface, hover and stacking;
+   only the command's name is mono. */
 .ac-slash {
   position: absolute;
   left: 8px;
   bottom: calc(100% + 6px);
-  z-index: 2;
+  z-index: 30;
   display: flex;
   flex-direction: column;
   min-width: 220px;
   max-width: min(520px, calc(100% - 16px));
   padding: 4px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-elev);
   box-shadow: var(--shadow-pop);
@@ -280,17 +142,18 @@
 .ac-slash-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: var(--control-h-sm);
-  padding: 0 10px;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
   font-size: var(--text-ui);
   color: var(--fg-1);
   text-align: left;
+  white-space: nowrap;
 }
 .ac-slash-name {
   flex-shrink: 0;
+  font-family: var(--font-mono);
 }
 /* A saved prompt's title, then its mark. */
 .ac-slash-title {
@@ -298,9 +161,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-sans);
-  color: var(--fg-2);
+  color: var(--fg-3);
 }
 .ac-slash-tag {
   flex-shrink: 0;
@@ -310,13 +171,12 @@
   padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
   font-size: var(--text-label);
   color: var(--fg-3);
 }
 .ac-slash-item.active,
 .ac-slash-item:hover {
-  background: var(--c-accent-bg);
+  background: var(--bg-3);
   color: var(--fg-0);
 }
 
@@ -369,7 +229,7 @@
 .ac-queued-files {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   margin-left: 8px;
   color: var(--fg-3);
   font-family: var(--font-mono);

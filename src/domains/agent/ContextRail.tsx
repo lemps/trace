@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { toast } from "@/app/toast";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import type { Issue } from "@/domains/issues/types";
 import { jiraBrowseUrl } from "@/domains/issues/url";
 import { StartedSessionsSection } from "@/domains/sessions/StartedSessions";
@@ -26,18 +27,21 @@ function copy(text: string) {
 }
 
 interface LinkedRowProps {
-  icon: (p: { size?: number; style?: CSSProperties }) => ReactNode;
+  icon: (p: { size?: number }) => ReactNode;
   keyText: string;
   sub?: string | null;
   url?: string;
 }
 
 // One linked reference (the issue, its epic): a key that opens in the tracker,
-// an optional sub-label, and a copy button for pasting the key into the chat.
+// an optional sub-label, and a copy button for pasting the key into the chat
+// (revealed on the row's hover or focus, trace-ui §5).
 function LinkedRow({ icon: Icon, keyText, sub, url }: LinkedRowProps) {
   return (
     <div className="linked-row">
-      <Icon size={14} style={{ color: "var(--fg-3)" }} />
+      <span className="linked-icon">
+        <Icon size={14} />
+      </span>
       {url ? (
         <a className="linked-key" href={url} target="_blank" rel="noreferrer">
           {keyText}
@@ -46,15 +50,14 @@ function LinkedRow({ icon: Icon, keyText, sub, url }: LinkedRowProps) {
         <span className="linked-key">{keyText}</span>
       )}
       {sub && <span className="linked-sub">{sub}</span>}
-      <button
-        type="button"
-        className="linked-copy"
+      <IconButton
+        size="xs"
+        className="ghost linked-copy"
+        label={`Copy ${keyText}`}
         onClick={() => copy(keyText)}
-        title={`Copy ${keyText}`}
-        aria-label={`Copy ${keyText}`}
       >
         <I.Copy size={12} />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -86,7 +89,7 @@ export function ContextRail({ issue, site, hasPr, running }: ContextRailProps) {
           <LinkedRow icon={I.Ticket} keyText={issue.key} sub={issue.statusName} url={issueUrl} />
           {issue.epicKey && (
             <LinkedRow
-              icon={I.Branch}
+              icon={I.Layers}
               keyText={issue.epicKey}
               sub={issue.epic ?? "Epic"}
               url={epicUrl}

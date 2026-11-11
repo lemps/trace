@@ -24,6 +24,10 @@
 .pop-menu-pop.left {
   left: 0;
 }
+.pop-menu-pop.up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
 .pop-menu-section + .pop-menu-section {
   margin-top: 4px;
   padding-top: 4px;
@@ -32,9 +36,10 @@
 .pop-menu-head {
   font-size: var(--text-label);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--fg-3);
-  padding: 4px 8px 3px;
+  /* Lines up with the items' labels: their 4px pad + the 14px check slot + 6px gap. */
+  padding: 4px 8px 4px 24px;
 }
 .pop-menu-item {
   display: flex;
@@ -77,27 +82,69 @@
   color: var(--c-accent);
 }
 
-/* Split button: the action, plus a caret that opens its choices. */
-.split-btn {
+/* A menu's trigger looks pressed while its menu is open (`aria-expanded`): neutral,
+   unlike a toggle's accent `aria-pressed` (button.css). Every trigger sets
+   `aria-haspopup="menu"`, which scopes this away from disclosure toggles. */
+.btn[aria-haspopup][aria-expanded="true"]:not(.primary):not(:disabled) {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}
+.btn[aria-haspopup][aria-expanded="true"]:not(.primary):not(.ghost) {
+  border-color: var(--border-strong);
+}
+.btn.primary[aria-haspopup][aria-expanded="true"] {
+  background: var(--fg-1);
+}
+
+/* The one dropdown caret (`MenuCaret`): a chevron turned to point at the menu. */
+.menu-caret {
   display: inline-flex;
+  transform: rotate(90deg);
+}
+.menu-caret.up {
+  transform: rotate(-90deg);
+}
+/* An icon trigger with a caret beside its glyph ("Open in ▾"): as tall as its tier.
+   Under `.pop-menu` to outweigh `.btn.icon.sm`'s width (button.css loads later). */
+.pop-menu > .btn.icon.has-caret {
+  width: auto;
+  padding: 0 4px 0 6px;
+  gap: 2px;
+}
+
+/* Split button (`SplitButton`): the action, plus a caret that opens its choices.
+   The caret is one tier narrower than it is tall: 26 beside a 30px action, 20
+   beside 26 or 20. */
+.split-btn {
+  --split-caret-w: var(--control-h-sm);
+  display: inline-flex;
+}
+.split-btn.sm,
+.split-btn.xs {
+  --split-caret-w: var(--control-h-xs);
 }
 .split-btn > .btn {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
-.split-btn .pop-menu > .btn {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-left: 1px solid color-mix(in oklch, var(--bg-0) 35%, transparent);
-  width: 26px;
+/* Its hover border shows over the caret's shared edge. */
+.split-btn > .btn:hover:not(:disabled) {
+  position: relative;
+  z-index: 1;
+}
+.split-btn > .pop-menu > .btn:first-child {
+  width: var(--split-caret-w);
   padding: 0;
   justify-content: center;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  /* Its left border is the divider, laid over the action's right one. */
+  margin-left: -1px;
 }
-.split-btn .caret {
-  display: inline-flex;
-  transform: rotate(90deg);
+.split-btn > .pop-menu > .btn.primary:first-child {
+  margin-left: 0;
+  border-left: 1px solid color-mix(in oklch, var(--bg-0) 35%, transparent);
 }
-
 
 /* FontField: a text box and the button listing every suggested font. */
 .font-field {
@@ -128,4 +175,9 @@
   position: fixed;
   top: auto;
   z-index: 60;
+}
+
+/* A row's ⋯ slot (`RowMore`, used by every row with a menu): it lines up as a box. */
+.row-more {
+  display: inline-flex;
 }

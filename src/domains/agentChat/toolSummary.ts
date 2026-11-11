@@ -1,7 +1,10 @@
-// One line per tool call, the same for every agent brand: Claude's `Bash` and
-// Codex's `shell` both read "Run <command>". Inputs are whatever each agent's
-// tools take, so every field is read as `unknown` and narrowed; a tool we don't
-// know still gets its name and a short form of its input.
+import type { Plan, PlanStatus } from "./types.ts";
+
+// One line per tool call, the same for every agent brand and in both views of a
+// conversation (the chat's tool cards, the transcript's tool rows): Claude's
+// `Bash` and Codex's `shell` both read "Run <command>". Inputs are whatever each
+// agent's tools take, so every field is read as `unknown` and narrowed; a tool
+// we don't know still gets its name and a short form of its input.
 
 /** What kind of work a call is, for a folded turn's sentence ("ran 3 commands"). */
 export type ToolCategory = "run" | "read" | "edit" | "search" | "web" | "agent" | "plan" | "other";
@@ -89,6 +92,28 @@ export function patchOf(input: unknown): string {
   return str(input, "input") || str(input, "patch");
 }
 
+/** A task-list call's list (Claude's TodoWrite `todos`, Codex's update_plan `plan`) as a plan. */
+export function planOf(input: unknown): Plan {
+  const f = fields(input);
+  const list = Array.isArray(f.todos) ? f.todos : Array.isArray(f.plan) ? f.plan : [];
+  const items = list.flatMap((t: unknown): Plan["items"] => {
+    const text = str(t, "content") || str(t, "step");
+    if (!text) return [];
+    const s = str(t, "status");
+    const status: PlanStatus =
+      s === "completed" ? "done" : s === "in_progress" ? "inProgress" : "pending";
+    return [{ text, status }];
+  });
+  return { items };
+}
+
+/** "2 of 5 done", or "" for an empty list. */
+function planProgress(input: unknown): string {
+  const { items } = planOf(input);
+  if (items.length === 0) return "";
+  return `${items.filter((i) => i.status === "done").length} of ${items.length} done`;
+}
+
 /** `mcp__github__create_pr` → `github · create_pr`. */
 function mcpLabel(name: string): string | null {
   const mcp = /^mcp__(.+?)__(.+)$/.exec(name);
@@ -163,7 +188,7 @@ export function summarizeTool(name: string, input: unknown): ToolLine {
     }
     case "TodoWrite":
     case "update_plan":
-      return line("Tasks", "", "plan", false);
+      return line("Tasks", planProgress(input), "plan", false);
     case "Skill":
       return line("Skill", str(input, "skill"), "other");
     default: {

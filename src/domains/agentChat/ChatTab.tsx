@@ -20,8 +20,9 @@ interface ChatTabProps {
 }
 
 /**
- * One tab of a chat's strip (`ChatTabs`). Its × keeps its slot, transparent until
- * the tab is hovered or focused, so labels never shift (trace-ui §2 rule 1).
+ * One tab of a chat's strip (`ChatTabs`), a `.detail-tab` like every tab in trace.
+ * Its × keeps its slot, transparent until the tab is hovered or focused, so labels
+ * never shift (trace-ui §5, the reveal recipe).
  */
 export function ChatTab({
   id,
@@ -48,7 +49,7 @@ export function ChatTab({
         aria-keyshortcuts={ariaKeys}
         aria-hidden={out || undefined}
         tabIndex={out ? -1 : undefined}
-        className={`ac-tab${on ? " on" : ""}${fitClass(mode)}`}
+        className={`detail-tab${on ? " active" : ""}${fitClass(mode)}`}
         onClick={() => onPick(id)}
         onAuxClick={(e) => {
           if (e.button !== 1 || !onClose) return;

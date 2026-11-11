@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { MenuSection } from "@/components/PopMenu";
+import { I } from "@/components/Icon";
+import type { RowActionSection } from "@/components/useRowMenu";
 import { editorItems } from "@/domains/agent/editorItems";
 import type { ScratchSession } from "./types";
 
@@ -13,9 +14,11 @@ interface SessionRowMenuArgs {
 }
 
 /**
- * A session row's right-click menu: everything the row offers (open, rename, its PR,
- * archive) and the session's "Open in …" editors, the same items its detail's ⋯ has
- * (`editorItems`; none for a sandbox, whose files aren't on this computer).
+ * Everything a session row offers, as one list: its ⋯ and right-click menus show it
+ * all, its hover bar Rename and Archive (`inBar`). Open, rename, its PR, the
+ * session's "Open in …" editors (the same items as its detail's ⋯, `editorItems`;
+ * none for a sandbox, whose files aren't on this computer), and Archive, which the
+ * bin undoes, so it needs no confirm.
  */
 export function sessionRowMenu({
   session,
@@ -23,14 +26,21 @@ export function sessionRowMenu({
   onOpen,
   onRename,
   onArchive,
-}: SessionRowMenuArgs): MenuSection[] {
+}: SessionRowMenuArgs): RowActionSection[] {
   return [
     {
       items: [
-        { label: "Open", onSelect: onOpen },
-        { label: "Rename", onSelect: onRename },
+        { id: "open", label: "Open", onSelect: onOpen },
+        { id: "rename", label: "Rename", glyph: I.Pencil, inBar: true, onSelect: onRename },
         ...(pr
-          ? [{ label: `Open PR #${pr.number} on GitHub`, onSelect: () => void openUrl(pr.url) }]
+          ? [
+              {
+                id: "pr",
+                label: `Open PR #${pr.number} on GitHub`,
+                glyph: I.External,
+                onSelect: () => void openUrl(pr.url),
+              },
+            ]
           : []),
       ],
     },
@@ -38,6 +48,10 @@ export function sessionRowMenu({
       title: session.folder ? "Folder" : "Worktree",
       items: session.host ? [] : editorItems(session.id),
     },
-    { items: [{ label: "Archive", onSelect: onArchive }] },
+    {
+      items: [
+        { id: "archive", label: "Archive", glyph: I.Archive, inBar: true, onSelect: onArchive },
+      ],
+    },
   ];
 }

@@ -61,7 +61,6 @@ interface AgentDetailProps {
 const EMPTY_PRS: PullRequest[] = [];
 
 export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps) {
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"raise" | "merge" | null>(null);
   const [cli, setCli] = useState<AgentCli>(agentCli);
   // What the agent runs on (once it has run), and what the Start menu picks for the next start.
@@ -154,11 +153,10 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
     // terminal, which duplicates the banner.
     if (startingRef.current || useBoardStore.getState().runningAgents.has(issue.key)) return;
     if (!repoChoice) {
-      setError("Add a repository in Settings, then pick one for this ticket.");
+      toast.error("Add a repository in Settings, then pick one for this ticket.");
       return;
     }
     startingRef.current = true;
-    setError(null);
     try {
       // Remember which repo this ticket runs in — the backend resolves it for
       // every subsequent terminal/files/tests/PR command on this issue.
@@ -170,7 +168,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       // direct it) — only the board paths (card button, drag) send the brief.
       await launchIssueAgent(issue.key, { cli, provider, transport });
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't start the agent: ${String(err)}`);
     } finally {
       startingRef.current = false;
     }
@@ -203,7 +201,6 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   };
 
   const onRaisePr = async () => {
-    setError(null);
     setBusy("raise");
     try {
       const title = `[${issue.key}] ${issue.summary}`;
@@ -213,7 +210,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       activity.log({ kind: "pr-raised", issueKey: issue.key, title: "raised a PR" });
       void openUrl(url);
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't raise the PR: ${String(err)}`);
     } finally {
       setBusy(null);
     }
@@ -221,14 +218,13 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
 
   const onMergePr = async () => {
     if (!openPr) return;
-    setError(null);
     setBusy("merge");
     try {
       await mergePr(issue.key, openPr.url);
       await refreshIssuePrs(issue.key, issue.id);
       activity.log({ kind: "pr-merged", issueKey: issue.key, title: `merged #${openPr.number}` });
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't merge #${openPr.number}: ${String(err)}`);
     } finally {
       setBusy(null);
     }
@@ -306,10 +302,6 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         agentItems={agentItems}
         layoutItems={layoutItems(panes)}
       />
-
-      {error && (
-        <div style={{ padding: "8px 20px", color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>
-      )}
 
       <div className="detail-body">
         <div className="detail-left">

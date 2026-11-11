@@ -211,7 +211,7 @@ button.tk-key:focus-visible svg {
 }
 .tk-comment-body {
   margin-top: 6px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-1);

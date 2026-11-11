@@ -61,7 +61,7 @@ function ToolActivity({ tools }: { tools: ChatStyle["tools"] }) {
                     <span className="tx-chev">
                       <I.Chevron size={12} />
                     </span>
-                    <c.glyph size={13} />
+                    <c.glyph size={12} />
                     <span className="tx-tool-name">{c.name}</span>
                     <span className="tx-tool-target code">{c.target}</span>
                   </span>

@@ -1,0 +1,44 @@
+/* FilterChip (`components/FilterChip.tsx`): a toggleable filter — the Board's state,
+   assignee and type rows, Inbox, Fleet. A control, so `--control-h-sm` and the
+   control corner; only state pills are round (trace-ui §1). On is `aria-pressed`. */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+  background: var(--bg-1);
+}
+.filter-chip:hover {
+  color: var(--fg-1);
+  border-color: var(--border);
+}
+.filter-chip[aria-pressed="true"] {
+  background: var(--bg-3);
+  color: var(--fg-0);
+  border-color: var(--border-strong);
+}
+.filter-chip-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.filter-chip[aria-pressed="true"] .filter-chip-count {
+  color: var(--fg-2);
+}
+/* Excluded (the Board's ⌥-clicked type): struck through, so "everything but Tasks"
+   reads at a glance. */
+.filter-chip.excluded {
+  color: var(--fg-4);
+  text-decoration: line-through;
+  border-style: dashed;
+}
+/* Nothing would match it under the other filters (epics assigned to others). */
+.filter-chip.empty:not([aria-pressed="true"]) {
+  opacity: 0.55;
+}

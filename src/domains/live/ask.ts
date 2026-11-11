@@ -14,7 +14,7 @@ function toolIn(message: string | null | undefined): string | null {
 }
 
 /** `mcp__server__tool` reads as `server · tool`; built-in tools as themselves. */
-function toolLabel(tool: string): string {
+export function toolLabel(tool: string): string {
   const mcp = tool.match(/^mcp__(.+?)__(.+)$/);
   return mcp ? `${mcp[1]} · ${mcp[2]}` : tool;
 }

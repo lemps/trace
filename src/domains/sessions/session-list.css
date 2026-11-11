@@ -19,7 +19,7 @@
     var(--sr-pr-w, 128px)
     var(--sr-diff-w, 104px)
     var(--sr-time-w, 64px)
-    44px;
+    64px;
   align-items: center;
   gap: 12px;
   height: 36px;
@@ -48,7 +48,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   font-weight: 500;
   color: var(--fg-0);
 }
@@ -71,7 +71,7 @@
 .sr-diff {
   text-align: right;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   white-space: nowrap;
 }
 .sr-diff .add {
@@ -83,12 +83,14 @@
 .sr-time {
   text-align: right;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   white-space: nowrap;
 }
-/* Rename and Archive (IconButton xs): quiet until the row is hovered, holds focus or
-   has its menu open; always there without a hovering pointer. */
+/* The hover bar (`RowBar`): Rename, Archive and the ⋯, all IconButton xs. Quiet
+   until the row is hovered, holds focus or has its menu open (right-click or the
+   ⋯'s `aria-expanded`); always there without a hovering pointer. 2px apart: a
+   hairline between three 20px buttons in a 64px column. */
 .sr-actions {
   display: inline-flex;
   justify-content: flex-end;
@@ -98,7 +100,8 @@
 }
 .session-row:hover .sr-actions,
 .session-row:focus-within .sr-actions,
-.session-row.menu-open .sr-actions {
+.session-row.menu-open .sr-actions,
+.sr-actions:has([aria-expanded="true"]) {
   opacity: 1;
 }
 @media (hover: none) {
@@ -148,9 +151,6 @@
 }
 .vs-row:hover {
   background: var(--bg-2);
-}
-.vs-row .btn {
-  height: var(--control-h-sm);
 }
 .vs-title {
   min-width: 0;

@@ -1,0 +1,31 @@
+/* Segmented (`components/Segmented.tsx`): a few mutually exclusive options (card
+   density, a run's views, a schedule's kind). The whole control is `--control-h-sm`
+   outside to outside, so it lines up with chips and `sm` buttons beside it; its
+   options fill the inside of the 1px border. No outer margin: the row's gap places it. */
+.seg {
+  display: inline-flex;
+  flex-shrink: 0;
+  height: var(--control-h-sm);
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+.seg button:hover {
+  color: var(--fg-1);
+}
+.seg button.on {
+  background: var(--bg-3);
+  color: var(--fg-0);
+}

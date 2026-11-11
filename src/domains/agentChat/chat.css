@@ -9,7 +9,8 @@
   background: var(--bg-0);
 }
 
-/* Header: agent, model, cost, usage-limit windows. */
+/* Header: agent, model, cost, usage-limit windows. A strip, 36px like a
+   subagent view's head (`.ac-subview-head`), so stacked strips agree. */
 .ac-head {
   display: flex;
   align-items: center;
@@ -58,9 +59,8 @@
   border-radius: inherit;
   background: var(--fg-3);
 }
-.ac-limit.high .ac-limit-bar > span {
-  background: var(--c-warn);
-}
+/* Neutral, red once it's all but used up, as the context gauge is: amber, blue
+   and green mean agent state. */
 .ac-limit.full .ac-limit-bar > span {
   background: var(--c-danger);
 }
@@ -146,7 +146,8 @@
   gap: 12px;
 }
 
-/* Reasoning: one quiet line, unfolding to the text. */
+/* Reasoning: one quiet line, unfolding to the text. A head you click to unfold
+   is a control: the control height, as the fold's, a diff's and a tool's are. */
 .ac-thought-head,
 .ac-fold-head {
   display: flex;
@@ -154,7 +155,7 @@
   gap: 8px;
   width: 100%;
   min-width: 0;
-  height: 28px;
+  height: var(--control-h);
   font-size: var(--text-ui);
   color: var(--fg-3);
   text-align: left;
@@ -177,7 +178,7 @@
 }
 .ac-thought-body {
   margin-left: 6px;
-  padding: 2px 0 4px 14px;
+  padding: 2px 0 4px 12px;
   border-left: 2px solid var(--border);
 }
 .ac-thought-body .md {
@@ -196,7 +197,6 @@
   background: var(--bg-1);
 }
 .ac-fold-head {
-  height: 32px;
   padding: 0 10px;
 }
 .ac-fold-sentence {
@@ -226,13 +226,15 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
+/* A warning is neutral, its triangle the mark (amber means agent state); only
+   an error takes a colour. */
 .ac-status.warning {
-  border: 1px solid color-mix(in oklch, var(--c-warn) 35%, transparent);
-  background: color-mix(in oklch, var(--c-warn) 9%, transparent);
+  border: 1px solid var(--border);
+  background: var(--bg-1);
   color: var(--fg-1);
 }
 .ac-status.warning > svg {
-  color: var(--c-warn);
+  color: var(--fg-2);
 }
 .ac-status.error {
   border: 1px solid var(--c-danger-border);
@@ -255,7 +257,7 @@
 /* A message's hover bar (MessageRow): Copy, Edit on yours, and when it was said;
    under a reply, or under your bubble on the right. Quiet until the message is
    hovered or holds focus, or its menu is open, or it says "Copied"; always there
-   without a pointer that hovers (trace-ui §2 rule 1). */
+   without a pointer that hovers (trace-ui §5, the reveal recipe). */
 .ac-msg-actions {
   display: flex;
   align-items: center;

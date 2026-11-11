@@ -1,4 +1,5 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { BusyLabel } from "@/components/BusyLabel";
 import { Modal } from "@/components/Modal";
 import { useTailscaleStore } from "@/domains/tailscale/store";
 import type { TailnetDevice, TailnetState } from "@/ipc/tailscale";
@@ -79,7 +80,7 @@ export function TailscaleDialog({ onClose }: { onClose: () => void }) {
             </button>
           )}
           <button type="button" className="btn" disabled={loading} onClick={() => void check()}>
-            {loading ? "Checking…" : "Check again"}
+            <BusyLabel busy={loading} idle="Check again" working="Checking…" />
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { I } from "@/components/Icon";
+import { MenuCaret } from "@/components/MenuCaret";
 import { type MenuItem, PopMenu } from "@/components/PopMenu";
 import { agentCli, agentProvider } from "@/domains/agent/defaults";
 import { useAgentOptionsStore, useSavedOptions } from "./agentOptions";
@@ -117,7 +117,7 @@ function Picker({ name, label, items, when, lock, tone }: PickerProps) {
         >
           <span className="ac-opt-label">{label}</span>
           <span className="ac-opt-chev" aria-hidden>
-            <I.Chevron size={11} />
+            <MenuCaret size="xs" up />
           </span>
         </button>
       )}

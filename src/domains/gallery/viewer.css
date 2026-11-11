@@ -47,12 +47,10 @@
   gap: 8px;
   flex-shrink: 0;
 }
-/* One / Side by side / Swipe: an icon segmented control, each option named. */
+/* One / Side by side / Swipe: an icon segmented control, each option named and
+   square inside the control's 1px border. */
 .seg.gv-modes button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--control-h-sm);
+  width: calc(var(--control-h-sm) - 2px);
   padding: 0;
 }
 .gv-stage {

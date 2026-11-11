@@ -60,6 +60,19 @@ export function actionSummary(name: string, input: unknown): string {
   }
 }
 
+const ACTION_VERB: Record<string, string> = {
+  move_issue: "Move",
+  start_agent: "Start",
+  send_to_agent: "Send",
+  comment_on_issue: "Comment",
+  broadcast_to_agents: "Broadcast",
+};
+
+/** The confirm card's go button: the action's verb, so the button says what it does. */
+export function actionVerb(name: string): string {
+  return ACTION_VERB[name] ?? "Confirm";
+}
+
 /**
  * Execute a confirmed mutating tool. Returns a result string for the model.
  * `actor` is who the activity log credits (an agent calling over MCP, or the

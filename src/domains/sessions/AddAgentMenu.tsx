@@ -18,10 +18,12 @@ export function AddAgentMenu({ onAdd, blocked }: AddAgentMenuProps) {
     <div className="add-agent">
       <PopMenu
         align="left"
-        trigger={({ toggle }) => (
+        trigger={({ open, toggle }) => (
           <IconButton
             size="sm"
             className="ghost add-agent-btn"
+            aria-haspopup="menu"
+            aria-expanded={open}
             onClick={toggle}
             disabled={Boolean(blocked)}
             title={blocked || "Add another agent in this session's worktree"}
@@ -35,7 +37,7 @@ export function AddAgentMenu({ onAdd, blocked }: AddAgentMenuProps) {
             title: "Add agent · same worktree",
             items: AGENT_OPTIONS.map((o) => ({
               id: `${o.cli}:${o.provider}`,
-              label: <span className={`session-cli ${o.cli}`}>{o.label.toLowerCase()}</span>,
+              label: o.label,
               // The backend treats "no provider" as Anthropic.
               onSelect: () => onAdd(o.cli, o.provider === "anthropic" ? undefined : o.provider),
             })),

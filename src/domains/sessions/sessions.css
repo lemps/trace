@@ -73,7 +73,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--fg-3);
-  padding: 1px 5px;
+  padding: 1px 6px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-xs);
 }
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-faint);
   font-size: var(--text-ui);
 }
@@ -105,7 +105,7 @@
 }
 .archive-row .archive-when {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 /* Delete permanently: `.btn.ghost.icon.xs`, red on hover. */
@@ -130,15 +130,11 @@
   border-color: var(--border-strong);
   outline: none;
 }
-.ttl-edit {
-  display: inline-flex;
+/* Rename, beside the title: an xs ghost `IconButton`, a step quieter at rest. */
+.btn.ttl-edit {
   vertical-align: middle;
   margin-left: 6px;
-  padding: 2px;
-  color: var(--fg-4);
-}
-.ttl-edit:hover {
-  color: var(--fg-1);
+  color: var(--fg-3);
 }
 
 /* User-defined sections — collapsible vertical groups within a tab */
@@ -179,8 +175,20 @@
   opacity: 0;
   transition: opacity 0.12s ease;
 }
-.sec-head:hover .sec-actions {
+.sec-head:hover .sec-actions,
+.sec-head:focus-within .sec-actions {
   opacity: 1;
+}
+@media (hover: none) {
+  .sec-actions {
+    opacity: 1;
+  }
+}
+/* Delete section's armed confirm: plain words, not the header's uppercase label. */
+.sec-actions .inline-confirm {
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
 }
 .sec-add {
   display: inline-flex;
@@ -202,7 +210,7 @@
 }
 .unsectioned .pr-muted {
   padding: 8px 10px;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 
 /* Tab-bar extras: add-tab button + active-tab actions */
@@ -230,7 +238,7 @@
   gap: 8px;
   width: 100%;
   text-align: left;
-  padding: 7px 8px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   font-size: var(--text-ui);
 }
@@ -240,7 +248,7 @@
 .link-ticket-row .ticket {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-2);
 }
 .link-ticket-row .ttl {
@@ -284,4 +292,10 @@
 }
 .btn.add-agent-btn:hover:not(:disabled) {
   border-color: var(--border-strong);
+}
+
+/* A disclosure's chevron points down while it's open. */
+.archive-head[aria-expanded="true"] > svg:first-child,
+.sec-head > [aria-expanded="true"] svg {
+  transform: rotate(90deg);
 }

@@ -1,6 +1,6 @@
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
-import { PopMenu } from "@/components/PopMenu";
+import { SplitButton } from "@/components/SplitButton";
 import { useHint } from "@/platform/shortcuts";
 import type { DeliverHow } from "./hooks/useDeliver";
 
@@ -19,7 +19,7 @@ interface SendSlotProps {
   onStop: () => void;
 }
 
-// The composer's one primary (trace-ui §2 rule 5): Send, and Stop while the agent
+// The composer's one primary (trace-ui §1): Send, and Stop while the agent
 // works and there's nothing to send. Typing while it works makes it a split
 // button: Send now steers the running turn, and the caret also offers Queue (for
 // when the turn ends) and Interrupt and send. Esc stops a turn whichever it shows.
@@ -72,7 +72,39 @@ function SteerSplit({ busy, canSend, onSend }: SteerSplitProps) {
   const queueHint = useHint("chatQueue");
   const interruptHint = useHint("chatInterruptSend");
   return (
-    <div className="split-btn ac-send-split">
+    <SplitButton
+      primary
+      up
+      className="ac-send-split"
+      menuLabel="More ways to send"
+      disabled={!canSend}
+      sections={[
+        {
+          items: [
+            {
+              label: "Send now",
+              detail: busy
+                ? "It reads this after its current step"
+                : "Starts a turn while its subagents work",
+              hint: nowHint,
+              onSelect: () => onSend("now"),
+            },
+            {
+              label: "Queue",
+              detail: busy ? "Sent when this turn ends" : "Sent in order after what's queued",
+              hint: queueHint,
+              onSelect: () => onSend("queue"),
+            },
+            {
+              label: "Interrupt and send",
+              detail: busy ? "Stops the turn, then sends this" : "Stops its subagents first",
+              hint: interruptHint,
+              onSelect: () => onSend("interrupt"),
+            },
+          ],
+        },
+      ]}
+    >
       <IconButton
         className="primary"
         label="Send now"
@@ -82,49 +114,6 @@ function SteerSplit({ busy, canSend, onSend }: SteerSplitProps) {
       >
         <I.Send size={14} />
       </IconButton>
-      <PopMenu
-        trigger={({ toggle }) => (
-          <button
-            type="button"
-            className="btn primary"
-            onClick={toggle}
-            disabled={!canSend}
-            aria-haspopup="menu"
-            aria-label="More ways to send"
-            title="More ways to send"
-          >
-            <span className="caret ac-send-caret">
-              <I.Chevron size={12} />
-            </span>
-          </button>
-        )}
-        sections={[
-          {
-            items: [
-              {
-                label: "Send now",
-                detail: busy
-                  ? "It reads this after its current step"
-                  : "Starts a turn while its subagents work",
-                hint: nowHint,
-                onSelect: () => onSend("now"),
-              },
-              {
-                label: "Queue",
-                detail: busy ? "Sent when this turn ends" : "Sent in order after what's queued",
-                hint: queueHint,
-                onSelect: () => onSend("queue"),
-              },
-              {
-                label: "Interrupt and send",
-                detail: busy ? "Stops the turn, then sends this" : "Stops its subagents first",
-                hint: interruptHint,
-                onSelect: () => onSend("interrupt"),
-              },
-            ],
-          },
-        ]}
-      />
-    </div>
+    </SplitButton>
   );
 }

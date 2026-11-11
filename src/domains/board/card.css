@@ -25,6 +25,13 @@
 .card.dragging {
   opacity: 0.5;
 }
+/* The top row's right end: agent state (or Start) and the assignee. */
+.card .card-end {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .card .row {
   display: flex;
   align-items: center;
@@ -32,7 +39,7 @@
 }
 .card .ticket-id {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   letter-spacing: 0.02em;
 }
@@ -119,7 +126,7 @@ button.epic-chip:hover {
   align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-1);
 }
 .agent-avatar {
@@ -128,7 +135,7 @@ button.epic-chip:hover {
   border-radius: 5px;
   display: grid;
   place-items: center;
-  font-size: 10px;
+  font-size: var(--text-label);
   font-weight: 700;
   color: var(--on-bright);
   flex-shrink: 0;
@@ -137,13 +144,13 @@ button.epic-chip:hover {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: var(--text-ui);
 }
 .agent-avatar.xl {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 .card .activity {
@@ -308,10 +315,10 @@ button.epic-chip:hover {
 
 /* The agent's closing words for its last turn. */
 .card-quote {
-  margin-top: 7px;
+  margin-top: 8px;
   padding-left: 8px;
   border-left: 2px solid var(--border);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   line-height: 1.45;
   color: var(--fg-2);
   display: -webkit-box;
@@ -330,26 +337,3 @@ button.epic-chip:hover {
   margin-top: 4px;
 }
 
-.card-go {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: var(--control-h-xs);
-  padding: 0 7px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  font-size: calc(var(--text-meta) - 0.5px);
-  color: var(--fg-3);
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease,
-    background 0.12s ease;
-}
-.card:hover .card-go,
-.card-go:focus-visible {
-  color: var(--fg-1);
-  border-color: var(--border-strong);
-}
-.card-go:hover {
-  background: var(--bg-elev);
-}

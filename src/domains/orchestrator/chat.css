@@ -1,4 +1,8 @@
-/* Orchestrator chat tab — message stream, input, and the confirm-card gate. */
+/* Orchestrator chat tab. It's drawn with the agent chat's pieces: the prompt
+   bubble (`.tx-bubble`), prose replies (`.md.prose`), the working row
+   (`.ac-working`), the ask card (`.ac-card.ac-ask`) and receipt (`.ac-receipt`),
+   and the composer box (`.ac-composer`). What's here only places them in the
+   narrow side panel. */
 
 /* Chat view */
 .orch-chat {
@@ -10,10 +14,10 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 .orch-chat-intro {
   margin: auto;
@@ -26,7 +30,7 @@
 }
 .orch-chat-intro .t {
   color: var(--fg-1);
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   font-weight: 500;
 }
 .orch-quick {
@@ -36,7 +40,7 @@
   width: 100%;
 }
 .orch-quick button {
-  padding: 7px 10px;
+  padding: 6px 10px;
   font-size: var(--text-ui);
   color: var(--fg-1);
   background: var(--bg-2);
@@ -51,177 +55,54 @@
 .orch-quick button:disabled {
   opacity: 0.5;
 }
-.msg {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.msg .who {
-  font-size: calc(var(--text-label) - 0.5px);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fg-3);
-  font-weight: 600;
-}
-.msg .body {
-  font-size: calc(var(--text-body) - 0.5px);
-  line-height: 1.55;
-  color: var(--fg-1);
-  word-break: break-word;
-}
-/* The user's own text is verbatim (preserve its line breaks); assistant text
-   is markdown and brings its own block layout. */
-.msg.user .body {
-  color: var(--fg-0);
-  white-space: pre-wrap;
-}
-/* Match the chat's brightness/size — the shared `.md` scope is a touch dimmer
-   and smaller, tuned for the Files preview. */
-.msg .md {
-  color: var(--fg-1);
-  font-size: calc(var(--text-body) - 0.5px);
-}
-.orch-tool,
-.orch-typing {
-  display: inline-block;
-  margin-left: 6px;
-  font-size: var(--text-meta);
-  font-style: italic;
-  color: var(--fg-3);
-}
-.orch-chat-error {
-  margin: 0 14px 8px;
-  padding: 8px 10px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  color: var(--c-review);
-  background: var(--c-review-bg);
-  border: 1px solid var(--border-faint);
-  border-radius: var(--radius-sm);
-}
-.orch-input-row {
-  display: flex;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--border-faint);
-  align-items: flex-end;
-}
-.orch-input {
-  flex: 1;
-  resize: none;
-  max-height: 120px;
-  min-height: 36px;
-  padding: 8px 10px;
-  font-size: calc(var(--text-body) - 0.5px);
-  font-family: inherit;
-  color: var(--fg-0);
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  line-height: 1.4;
-}
-.orch-input:focus {
-  border-color: var(--border-strong);
-  outline: none;
-}
-.orch-input::placeholder {
-  color: var(--fg-4);
-}
-/* The composer's Send (`.btn.primary`), not a colour of its own: amber is agent state. */
-.orch-send {
-  flex-shrink: 0;
-}
-.orch-send:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
 
-/* Confirm-card — the human gate before any mutating action runs */
-.orch-confirm {
-  margin: 0 14px 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--c-prog-border);
-  background: var(--c-prog-bg);
-  border-radius: var(--radius-sm);
-}
-.orch-confirm-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  color: var(--c-prog);
-  margin-bottom: 6px;
-}
-.orch-confirm-body {
-  font-size: var(--text-ui);
-  line-height: 1.45;
-  color: var(--fg-0);
-  word-break: break-word;
-}
-.orch-confirm-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
-.orch-confirm-actions button {
-  padding: 5px 12px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  border-radius: var(--radius-sm);
-}
-.oc-cancel {
-  color: var(--fg-1);
-  border: 1px solid var(--border);
-}
-.oc-cancel:hover {
-  color: var(--fg-0);
-  border-color: var(--border-strong);
-}
-.oc-go {
-  background: var(--c-prog);
-  color: var(--bg-1);
-  font-weight: 500;
-}
-.oc-go:hover {
-  filter: brightness(1.08);
-}
-
-/* Inline action card — a confirm-gated action the assistant requested via an
-   ```action block (the CLI/-p equivalent of the SDK's confirm-card). */
-.orch-action {
+/* A reply's parts flow as blocks (charts bring their own margins); its cards,
+   receipts and the working row sit a step apart from the text. */
+.orch-msgs .ac-reply > .ac-card,
+.orch-msgs .ac-reply > .ac-receipt {
   margin: 8px 0;
-  padding: 9px 11px;
-  border: 1px solid var(--c-prog-border);
-  background: var(--c-prog-bg);
-  border-radius: var(--radius-sm);
 }
-.orch-action-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-ui);
-  line-height: 1.4;
-  color: var(--fg-0);
-  word-break: break-word;
-}
-.orch-action-foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 9px;
-}
-.orch-action-foot button {
-  padding: 4px 11px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  border-radius: var(--radius-sm);
-}
-.orch-action-result {
+.orch-msgs .ac-reply > .ac-working {
   margin-top: 8px;
-  font-size: calc(var(--text-ui) - 0.5px);
-  color: var(--fg-2);
 }
-.orch-action-result.muted {
-  color: var(--fg-3);
+.orch-msgs .ac-reply > :first-child {
+  margin-top: 0;
+}
+.orch-msgs .ac-reply > :last-child {
+  margin-bottom: 0;
+}
+
+/* An action's summary can be long in the narrow panel: it wraps rather than
+   truncating as the agent chat's one-line card titles do. */
+.orch-ask .ac-card-head {
+  align-items: flex-start;
+}
+.orch-ask .ac-card-head > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.orch-ask .ac-card-title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* The card a running turn is parked on, above the composer. */
+.orch-confirm {
+  margin: 0 12px 8px;
+}
+/* What a confirmed action did, in full (a result can be a sentence). */
+.orch-receipt {
+  align-items: flex-start;
+}
+.orch-receipt > svg {
+  margin-top: 2px;
+}
+.orch-receipt-text {
+  min-width: 0;
+  color: var(--fg-1);
+  overflow-wrap: anywhere;
+}
+
+/* The composer box is the agent chat's; the panel only insets it. */
+.orch-composer {
+  padding: 0 12px 12px;
 }

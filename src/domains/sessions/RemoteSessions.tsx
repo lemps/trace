@@ -1,3 +1,4 @@
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
 import type { RemoteSessionsState } from "./hooks/useRemoteSessions";
@@ -22,7 +23,6 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
           onClick={refresh}
           disabled={loading}
           label="Refresh sessions in Vercel Sandbox"
-          title="Refresh"
         >
           <span className={`vs-ic${loading ? " spinning" : ""}`}>
             <I.Refresh size={14} />
@@ -47,11 +47,11 @@ export function RemoteSessions({ remote }: { remote: RemoteSessionsState }) {
               <span className="sr-time">{relTime(r.createdAt / 1000)}</span>
               <button
                 type="button"
-                className="btn"
+                className="btn sm"
                 disabled={joining !== null}
                 onClick={() => join(r.workspaceId)}
               >
-                {joining === r.workspaceId ? "Joining…" : "Join"}
+                <BusyLabel busy={joining === r.workspaceId} idle="Join" working="Joining…" />
               </button>
             </div>
           ))}

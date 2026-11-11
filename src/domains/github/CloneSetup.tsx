@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
+import { BusyLabel } from "@/components/BusyLabel";
 import { SetupFields } from "@/domains/repos/SetupFields";
 import { isEmptySetup } from "@/domains/repos/types";
 import { setRepoSetup } from "@/ipc/repoSetup";
@@ -53,7 +54,7 @@ export function CloneSetup({ cloned, onDone }: CloneSetupProps) {
           Skip
         </button>
         <button type="button" className="btn primary" onClick={save} disabled={saving}>
-          {saving ? "Saving…" : "Save setup"}
+          <BusyLabel busy={saving} idle="Save setup" working="Saving…" />
         </button>
       </div>
     </div>

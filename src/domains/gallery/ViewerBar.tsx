@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { Segmented } from "@/components/Segmented";
 import type { GalleryImage } from "@/ipc/gallery";
@@ -71,18 +72,15 @@ export function ViewerBar(p: ViewerBarProps) {
           onChange={(v) => (v === "fit" ? p.onFit() : p.onActual())}
         />
         <PopMenu
-          trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="Image actions" />}
+          trigger={({ open, toggle }) => (
+            <MoreTrigger open={open} toggle={toggle} label="Image actions" size="sm" />
+          )}
           sections={imageMenu(p.workspaceId, p.setId, p.img)}
         />
-        <button
-          type="button"
-          className="btn icon"
-          aria-label="Close viewer"
-          title="Close (Esc)"
-          onClick={p.onClose}
-        >
+        {/* Esc closes it (ImageViewer), as it backs out of a detail: `detailBack`'s key. */}
+        <IconButton size="sm" label="Close viewer" shortcut="detailBack" onClick={p.onClose}>
           <I.X size={14} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

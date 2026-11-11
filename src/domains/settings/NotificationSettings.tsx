@@ -140,7 +140,7 @@ export function NotificationSettings() {
             <IconButton label="Play the sound" onClick={() => preview(sound)}>
               <I.Play size={14} />
             </IconButton>
-            <button type="button" className="btn ghost" onClick={() => void pickFile()}>
+            <button type="button" className="btn" onClick={() => void pickFile()}>
               Choose a file…
             </button>
           </div>

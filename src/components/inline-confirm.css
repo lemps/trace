@@ -12,3 +12,15 @@
   font-size: var(--text-ui);
   color: var(--fg-1);
 }
+.inline-confirm .btn {
+  flex-shrink: 0;
+}
+/* Inside a list row (`xs`) or a strip (`sm`) the buttons are that worded tier
+   (`.btn.sm` / `.btn.xs`), so arming doesn't grow the row, and the message stays
+   on one line. */
+.inline-confirm.sm .inline-confirm-msg,
+.inline-confirm.xs .inline-confirm-msg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

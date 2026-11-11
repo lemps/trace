@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
+import { FilterChip } from "@/components/FilterChip";
 import { pickChatOption } from "@/domains/agentChat/PendingPrompts";
 import { isChatAgent } from "@/domains/agentChat/transport";
 import { dismissAsk } from "@/domains/board/waitingNotify";
@@ -95,15 +96,14 @@ export function InboxView({ onOpen }: InboxViewProps) {
         </div>
         <div className="ib-filters">
           {TABS.map((t) => (
-            <button
+            <FilterChip
               key={t.id}
-              type="button"
-              aria-pressed={tab === t.id}
-              className={`filter-chip${tab === t.id ? " active" : ""}`}
+              active={tab === t.id}
+              count={count(t)}
               onClick={() => setTab(t.id)}
             >
-              {t.label} <span className="mono">{count(t)}</span>
-            </button>
+              {t.label}
+            </FilterChip>
           ))}
           <ResetOrderButton />
         </div>

@@ -28,7 +28,7 @@ export function ToolCard({ item }: { item: ToolItem }) {
           <span className="tx-chev">
             <I.Chevron size={12} />
           </span>
-          <Glyph size={13} />
+          <Glyph size={12} />
           <span className="tx-tool-name">{summary.label}</span>
           {!summary.path && summary.target && (
             <span className={`tx-tool-target${summary.isCode ? " code" : ""}`}>

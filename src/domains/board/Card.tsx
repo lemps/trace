@@ -1,10 +1,10 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { DragEvent, MouseEvent } from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { AgentAvatar } from "@/components/AgentAvatar";
-import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
+import { RowMenuPopover, RowMore } from "@/components/RowMenu";
 import { StatusLight } from "@/components/StatusLight";
-import { useContextMenuAt } from "@/components/useContextMenuAt";
+import { findAction, useRowMenu } from "@/components/useRowMenu";
 import { epicColor } from "@/domains/board/epicColor";
 import { useBoardStore } from "@/domains/board/store";
 import { useIssuesStore } from "@/domains/issues/store";
@@ -14,7 +14,7 @@ import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useAgentQuiet } from "@/domains/live/quietStore";
 import { useLiveStore } from "@/domains/live/store";
 import { useNow } from "@/hooks/useNow";
-import { cardMenu } from "./cardMenu";
+import { cardMenu, START_ACTION } from "./cardMenu";
 import { useDensity } from "./density";
 
 interface CardProps {
@@ -32,7 +32,8 @@ function prStateClass(state: string): string {
 
 // The card outer is a `div role="button"` (rather than a real `<button>`) so we can
 // nest a real `<button>` for the PR pill without breaking HTML's no-nested-interactives rule.
-// Right-click (or the context-menu key) lists everything the card offers (`cardMenu`).
+// Its actions are one list (`cardMenu`), behind the ⋯ that shows on hover or focus and
+// behind right-click (or the context-menu key); Start stays a visible button.
 export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
   const firstPr = prs && prs.length > 0 ? prs[0] : null;
   const live = useLiveStore((s) => s.info[issue.key]);
@@ -46,17 +47,24 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
   const site = useIssuesStore((s) => s.sessions.jira?.site ?? null);
   const epicUrl = issue.epicKey ? jiraBrowseUrl(site, issue.epicKey) : undefined;
 
-  const onKickoff = (e: MouseEvent) => {
-    e.stopPropagation();
-    kickoff(issue.key);
-  };
   const canStart = !live && issue.statusCategory !== "done";
-  const { menu, openAt, close } = useContextMenuAt<null>();
+  const menu = useRowMenu();
 
   const open = () => onOpen(issue.key);
-  const onCardKey = (e: { key: string }) => {
+  const onCardKey = (e: KeyboardEvent) => {
+    // Enter on a button in the card (Start, the ⋯, a pill) is that button's.
+    if (e.target !== e.currentTarget) return;
     if (e.key === "Enter" || e.key === " ") open();
   };
+  const actions = cardMenu({
+    issueKey: issue.key,
+    onStart: canStart ? () => kickoff(issue.key) : undefined,
+    hasAgent: Boolean(live),
+    pr: firstPr,
+    epic: epicUrl && issue.epicKey ? { key: issue.epicKey, url: epicUrl } : undefined,
+    onOpen: open,
+  });
+  const start = findAction(actions, START_ACTION);
 
   const onPrClick = (e: MouseEvent) => {
     if (!firstPr) return;
@@ -81,14 +89,12 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
         onDragStart={(e) => onDragStart(e, issue.key)}
         onClick={open}
         onKeyDown={onCardKey}
-        onContextMenu={openAt(null)}
+        onContextMenu={menu.onContextMenu}
       >
         <div className="row">
           <span className={`priority ${issue.priority}`} />
           <span className="ticket-id">{issue.key}</span>
-          <span
-            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
+          <span className="card-end">
             {live ? (
               <StatusLight
                 light={light}
@@ -98,18 +104,22 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
                 age={ageLabel(live.since, now * 1000)}
               />
             ) : (
-              canStart && (
+              start && (
                 <button
                   type="button"
-                  className="card-go"
-                  onClick={onKickoff}
-                  title={`Start an agent on ${issue.key} with the ticket brief`}
+                  className="btn xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    start.onSelect();
+                  }}
+                  title={start.title}
                 >
                   <I.Play size={12} /> Start
                 </button>
               )
             )}
             <AgentAvatar assignee={issue.assignee} />
+            <RowMore menu={menu} label="Ticket actions" className="card-more" />
           </span>
         </div>
 
@@ -149,11 +159,11 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
 
         {density !== "compact" && (
           <div className="meta">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span className="card-type">
               <I.Ticket size={12} /> {issue.issueType}
             </span>
             {issue.labels.slice(0, 2).map((label) => (
-              <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span key={label} className="card-label">
                 <span className="dot-sep">·</span>
                 {label}
               </span>
@@ -161,8 +171,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
             {firstPr && (
               <button
                 type="button"
-                className={`pr-pill ${prStateClass(firstPr.state)}`}
-                style={{ marginLeft: "auto", cursor: "pointer" }}
+                className={`pr-pill card-pr ${prStateClass(firstPr.state)}`}
                 onClick={onPrClick}
                 title={`${firstPr.title || `PR #${firstPr.number}`} — opens on GitHub`}
               >
@@ -172,21 +181,7 @@ export function Card({ issue, prs, onOpen, onDragStart }: CardProps) {
           </div>
         )}
       </div>
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          onClose={close}
-          sections={cardMenu({
-            issueKey: issue.key,
-            onStart: canStart ? () => kickoff(issue.key) : undefined,
-            hasAgent: Boolean(live),
-            pr: firstPr,
-            epic: epicUrl && issue.epicKey ? { key: issue.epicKey, url: epicUrl } : undefined,
-            onOpen: open,
-          })}
-        />
-      )}
+      <RowMenuPopover menu={menu} sections={actions} />
     </>
   );
 }

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { I } from "@/components/Icon";
+import { useEffect, useRef } from "react";
+import { toast } from "@/app/toast";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { useBoardStore } from "@/domains/board/store";
 import { startTerminal } from "@/ipc/agent";
 import { PtyTerminal } from "./PtyTerminal";
@@ -16,12 +17,10 @@ export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoSt
   const setAgentRunning = useBoardStore((s) => s.setAgentRunning);
   const clearOutput = useBoardStore((s) => s.clearOutput);
   const startingRef = useRef(false);
-  const [error, setError] = useState<string | null>(null);
 
   const start = async () => {
     if (startingRef.current || running) return;
     startingRef.current = true;
-    setError(null);
     const size = fitTerminal(termKey) ?? { cols: 80, rows: 24 };
     clearOutput(termKey);
     resetTerminal(termKey);
@@ -31,7 +30,7 @@ export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoSt
       // The pane may have resized while the spawn was in flight.
       syncPtySize(termKey);
     } catch (e) {
-      setError(String(e));
+      toast.error(`Couldn't open a terminal: ${String(e)}`);
     } finally {
       startingRef.current = false;
     }
@@ -56,14 +55,13 @@ export function TerminalPane({ issueKey, autoStart }: { issueKey: string; autoSt
         <div className="empty-state">
           <div className="inner">
             <span className="ic">
-              <I.Terminal size={28} />
+              <I.Terminal size={ICON_SIZE.empty} />
             </span>
             <div className="title">Open a shell in this workspace</div>
             <div className="hint">
               A plain terminal rooted in this workspace's worktree — the same place its agent runs,
               separate from the agent in Chat. Run git, build, or test commands here.
             </div>
-            {error && <div style={{ color: "var(--c-danger)", fontSize: 12.5 }}>{error}</div>}
             <button type="button" className="btn empty-action" onClick={start}>
               <I.Terminal size={14} /> Open terminal
             </button>

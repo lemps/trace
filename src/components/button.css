@@ -81,6 +81,21 @@
   background: color-mix(in oklch, var(--state-needs) 85%, var(--fg-0));
 }
 
+/* Worded small tiers, for actions inside list rows and cards (Join, Run now, Start,
+   Setup) and in strips: `sm` 26px, `xs` 20px, picked by the row's size. They only set
+   the size, so they compose with every variant above (`btn xs primary`). Icons: 14
+   in `sm`, 12 in `xs`. Declared before `.btn.icon` so the icon tiers keep padding 0. */
+.btn.sm {
+  height: var(--control-h-sm);
+  padding: 0 10px;
+}
+.btn.xs {
+  height: var(--control-h-xs);
+  padding: 0 8px;
+  gap: 4px;
+  font-size: var(--text-meta);
+}
+
 /* Square icon-only button, in three tiers: 30 (headers, toolbars), 26 (`sm`: pane
    strips, in-content toolbars), 20 (`xs`: inside rows, chips and inputs). Always
    named — use `IconButton` (components/IconButton.tsx). Icons: 14 in md/sm, 12 in xs. */

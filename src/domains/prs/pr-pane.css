@@ -147,7 +147,7 @@
   gap: 6px;
 }
 .pr-convo-head .count {
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   font-family: var(--font-mono);
 }
@@ -169,7 +169,7 @@
 .pr-entry {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   padding: 8px 10px;
   border: 1px solid var(--border-faint);
   border-left: 2px solid var(--border-faint);
@@ -191,7 +191,7 @@
   gap: 6px;
   width: 100%;
   text-align: left;
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
   min-width: 0;
 }
 .pr-entry-head:hover .pr-entry-who {
@@ -205,7 +205,7 @@
   color: var(--fg-1);
 }
 .pr-bot {
-  font-size: calc(var(--text-label) - 1px);
+  font-size: var(--text-label);
   font-weight: 500;
   padding: 0 4px;
   border-radius: var(--radius-xs);
@@ -225,13 +225,13 @@
   color: var(--c-danger);
 }
 .pr-entry-when {
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   white-space: nowrap;
 }
 .pr-flag {
   margin-left: auto;
-  font-size: calc(var(--text-label) - 1px);
+  font-size: var(--text-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -240,8 +240,8 @@
 .pr-entry-path {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: calc(var(--text-meta) - 0.5px);
+  gap: 6px;
+  font-size: var(--text-meta);
   color: var(--fg-3);
   min-width: 0;
 }
@@ -253,8 +253,8 @@
   min-width: 0;
 }
 .pr-tag {
-  font-size: calc(var(--text-label) - 0.5px);
-  padding: 0 5px;
+  font-size: var(--text-label);
+  padding: 0 4px;
   border-radius: var(--radius-xs);
   background: var(--bg-2);
   color: var(--fg-3);
@@ -278,7 +278,7 @@
   overflow-x: auto;
 }
 .pr-more {
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
   margin-top: 2px;
 }

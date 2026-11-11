@@ -37,7 +37,7 @@ export function ShareActions({ prompts }: ShareActionsProps) {
   return (
     <>
       <button type="button" className="btn" onClick={() => void pickFile()}>
-        <I.Download size={14} /> Import
+        <I.Download size={14} /> Import…
       </button>
       <button
         type="button"
@@ -46,7 +46,7 @@ export function ShareActions({ prompts }: ShareActionsProps) {
         disabled={prompts.length === 0}
         title={prompts.length ? "Save prompts to a file you can share" : "Nothing to export yet"}
       >
-        <I.Upload size={14} /> Export
+        <I.Upload size={14} /> Export…
       </button>
       {exporting && <ExportModal prompts={prompts} onClose={() => setExporting(false)} />}
       {importing && <ImportModal items={importing} onClose={() => setImporting(null)} />}

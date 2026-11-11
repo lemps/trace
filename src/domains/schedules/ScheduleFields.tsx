@@ -1,13 +1,14 @@
+import { Segmented } from "@/components/Segmented";
 import { formatWhen, WEEKDAY_SHORT } from "./describe";
 import { useSchedulePreview } from "./hooks/useSchedulePreview";
 import type { IntervalUnit, Schedule, ScheduleKind } from "./types";
 
-const KINDS: { kind: ScheduleKind; label: string }[] = [
-  { kind: "interval", label: "Every…" },
-  { kind: "daily", label: "Daily" },
-  { kind: "weekly", label: "Weekly" },
-  { kind: "monthly", label: "Monthly" },
-  { kind: "cron", label: "Cron" },
+const KINDS: { value: ScheduleKind; label: string }[] = [
+  { value: "interval", label: "Every" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "cron", label: "Cron" },
 ];
 
 /** Switch kinds, carrying the time of day across where both kinds have one. */
@@ -58,20 +59,13 @@ export function ScheduleFields({ value, onChange, anchorAt }: ScheduleFieldsProp
   return (
     <div className="field">
       <span className="field-label">Schedule</span>
-      <div className="sched-kinds" role="tablist" aria-label="Schedule type">
-        {KINDS.map(({ kind, label }) => (
-          <button
-            key={kind}
-            type="button"
-            role="tab"
-            aria-selected={value.kind === kind}
-            className={`sched-kind${value.kind === kind ? " active" : ""}`}
-            onClick={() => value.kind !== kind && onChange(withKind(value, kind))}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Schedule type"
+        className="sched-kinds"
+        value={value.kind}
+        options={KINDS}
+        onChange={(kind) => kind !== value.kind && onChange(withKind(value, kind))}
+      />
 
       <div className="sched-inputs">
         {value.kind === "interval" && (

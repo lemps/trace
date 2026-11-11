@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { MenuCaret } from "@/components/MenuCaret";
 import { PopMenu } from "@/components/PopMenu";
 import { copyText } from "../copyText";
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -44,20 +45,17 @@ export function ViewerHeader({ workspaceId, path, change, onReveal, children }: 
         align="right"
         sections={fileMenu(workspaceId, path, isGone).map((items) => ({ items }))}
         trigger={({ open, toggle }) => (
-          <button
-            type="button"
-            className={`fx-tool${open ? " on" : ""}`}
-            onClick={toggle}
-            title="Open in…"
-            aria-label="Open in…"
+          <IconButton
+            size="sm"
+            className="ghost has-caret"
+            label="Open in…"
             aria-haspopup="menu"
             aria-expanded={open}
+            onClick={toggle}
           >
             <I.External size={14} />
-            <span className="fx-caret" aria-hidden="true">
-              <I.Chevron size={14} />
-            </span>
-          </button>
+            <MenuCaret size="sm" />
+          </IconButton>
         )}
       />
     </div>

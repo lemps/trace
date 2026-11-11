@@ -1,4 +1,5 @@
 import { type DragEvent, useRef } from "react";
+import { FilterChip } from "@/components/FilterChip";
 import { useIssuesStore } from "@/domains/issues/store";
 import type { ColumnStatus, Issue } from "@/domains/issues/types";
 import { useLiveStore } from "@/domains/live/store";
@@ -6,7 +7,6 @@ import { AssigneeFilter } from "./AssigneeFilter";
 import { Column } from "./Column";
 import { columnColor, groupIssuesByColumn } from "./columns";
 import { DensityToggle } from "./DensityToggle";
-import { FilterChip } from "./FilterChip";
 import type { BoardFilter } from "./filterPrefs";
 import { RepoPickModal } from "./RepoPickModal";
 import { useBoardStore } from "./store";

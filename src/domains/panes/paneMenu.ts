@@ -60,14 +60,14 @@ export function paneMenu(
       label: "Split right",
       hint: hints.right,
       disabled: !splittable,
-      title: splittable ? undefined : why,
+      detail: splittable ? undefined : why,
       onSelect: run((l) => splitTab(l, tab, home.id, "right")),
     },
     {
       label: "Split down",
       hint: hints.down,
       disabled: !splittable,
-      title: splittable ? undefined : why,
+      detail: splittable ? undefined : why,
       onSelect: run((l) => splitTab(l, tab, home.id, "bottom")),
     },
     {
@@ -86,7 +86,7 @@ export function paneMenu(
   return [
     { title: label, items },
     { title: "Tabs", items: comingTabs(panes, after) },
-    { items: layoutItems(panes, after) },
+    { title: "Layout", items: layoutItems(panes, after) },
   ];
 }
 

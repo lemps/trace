@@ -16,10 +16,17 @@ export const ACTION_ICONS = {
       <rect x="6" y="6" width="12" height="12" rx="1.5" />
     </Base>
   ),
-  /** Close or dismiss: reversible. Never delete or stop. Also "failed" in a status. */
+  /** Close or dismiss: reversible. Never delete or stop, and not a failure (Alert). */
   X: (p: IconProps) => (
     <Base {...p}>
       <path d="M18 6 6 18M6 6l12 12" />
+    </Base>
+  ),
+  /** Refused: a request denied, a question cancelled. Not failed (Alert) or dismissed (X). */
+  Ban: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m4.9 4.9 14.2 14.2" />
     </Base>
   ),
   /** Delete permanently. */

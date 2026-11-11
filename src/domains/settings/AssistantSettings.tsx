@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { I } from "@/components/Icon";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import {
   type OrchBackend,
   type OrchSpeed,
@@ -105,7 +106,7 @@ export function AssistantSettings() {
             />
             <button
               type="button"
-              className="key-btn"
+              className="btn"
               disabled={!value.trim()}
               onClick={() => void save(value)}
             >
@@ -113,9 +114,16 @@ export function AssistantSettings() {
             </button>
           </div>
           {saved && (
-            <button type="button" className="key-remove" onClick={() => void save("")}>
-              Remove key
-            </button>
+            <div className="key-remove-row">
+              <InlineConfirm
+                label="Remove key"
+                className="key-remove"
+                size="xs"
+                message="Remove the saved key? The Orchestrator needs one to chat."
+                confirmLabel="Remove"
+                onConfirm={() => void save("")}
+              />
+            </div>
           )}
           {justSaved && (
             <span className="key-status">

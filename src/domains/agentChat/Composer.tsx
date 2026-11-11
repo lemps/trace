@@ -9,6 +9,7 @@ import {
 } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { isShortcut } from "@/platform/shortcuts";
 import { AgentOptionPickers } from "./AgentOptionPickers";
 import { AttachmentChips } from "./AttachmentChips";
@@ -52,8 +53,9 @@ const carriesFiles = (e: DragEvent) => e.dataTransfer.types.includes("Files");
 // saved prompts; `/name` + Enter puts a saved prompt's text in the box. What's typed
 // and attached is the workspace's draft (`drafts.ts`): it waits, across closing the
 // detail and restarts, until it's sent. Send and Stop share one slot (`SendSlot`),
-// which gains a caret for the other ways to send while the agent works. The keys are in the buttons' tooltips and the cheat sheet, not spelled
-// out under the box.
+// which gains a caret for the other ways to send while the agent works: what each
+// does is in that menu, and the keys in the buttons' tooltips and the cheat sheet,
+// not spelled out in the box or under it.
 export function Composer({
   workspaceId,
   busy,
@@ -91,7 +93,6 @@ export function Composer({
     inputRef.current?.focus();
   }, [pending, workspaceId]);
   const matches = slash.matches;
-  const slashHint = slash.entries.length > 0 ? ", / for commands" : "";
 
   const attached = files.paths;
   const hasDraft = text.trim() !== "" || attached.length > 0 || files.saving;
@@ -168,12 +169,12 @@ export function Composer({
           aria-label="Message the agent"
           placeholder={
             onStart
-              ? `Message the agent to start it${slashHint}`
+              ? "Message the agent to start it"
               : busy
-                ? `Steer the agent: it reads this after its current step${slashHint}`
+                ? "Steer the agent"
                 : toMain
-                  ? `Message the main agent${slashHint}`
-                  : `Message the agent${slashHint}`
+                  ? "Message the main agent"
+                  : "Message the agent"
           }
           rows={1}
           value={text}
@@ -185,15 +186,14 @@ export function Composer({
           onPaste={onPaste}
         />
         <div className="ac-composer-bar">
-          <button
-            type="button"
-            className="btn icon ac-attach"
+          <IconButton
+            className="ac-attach"
+            label="Attach files"
+            title="Attach files, or paste or drop them here"
             onClick={files.pick}
-            title="Attach files (or paste or drop them here)"
-            aria-label="Attach files"
           >
             <I.Paperclip size={14} />
-          </button>
+          </IconButton>
           <AgentOptionPickers workspaceId={workspaceId} running={running} />
           <SendSlot
             busy={busy}

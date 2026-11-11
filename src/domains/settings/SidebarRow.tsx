@@ -3,6 +3,7 @@ import { navTracker } from "@/app/nav";
 import { RAIL_ICONS } from "@/app/railIcons";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import type { ProviderKind } from "@/domains/issues/types";
 import {
@@ -11,7 +12,7 @@ import {
   TRACKER_NAMES,
   type Visibility,
 } from "@/domains/sidebar/items";
-import { isShortcut, useHint } from "@/platform/shortcuts";
+import { isShortcut } from "@/platform/shortcuts";
 
 interface SidebarRowProps {
   def: SidebarItemDef;
@@ -57,8 +58,6 @@ export function SidebarRow(props: SidebarRowProps) {
   const Icon = RAIL_ICONS[def.id];
   const tracker = navTracker(def.id);
   const line = def.isFixed ? def.desc : status(entry, tracker, connected, searchHint);
-  const upKey = useHint("sidebarMoveUp");
-  const downKey = useHint("sidebarMoveDown");
   const onKeyDown = (e: KeyboardEvent) => {
     if (def.isFixed) return;
     const delta = isShortcut("sidebarMoveUp", e) ? -1 : isShortcut("sidebarMoveDown", e) ? 1 : 0;
@@ -88,19 +87,16 @@ export function SidebarRow(props: SidebarRowProps) {
         {def.isFixed ? (
           <span className="sb-fixed">Always shown</span>
         ) : tracker ? (
-          <fieldset className="seg" aria-label={`Show ${def.label}`}>
-            {(["auto", "shown", "hidden"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                className={entry.visibility === v ? "on" : undefined}
-                aria-pressed={entry.visibility === v}
-                onClick={() => props.onVisibility(v)}
-              >
-                {v === "auto" ? `With ${TRACKER_NAMES[tracker]}` : v === "shown" ? "Show" : "Hide"}
-              </button>
-            ))}
-          </fieldset>
+          <Segmented<Visibility>
+            label={`Show ${def.label}`}
+            value={entry.visibility}
+            options={[
+              { value: "auto", label: `With ${TRACKER_NAMES[tracker]}` },
+              { value: "shown", label: "Show" },
+              { value: "hidden", label: "Hide" },
+            ]}
+            onChange={props.onVisibility}
+          />
         ) : (
           <Switch
             on={entry.visibility !== "hidden"}
@@ -114,25 +110,23 @@ export function SidebarRow(props: SidebarRowProps) {
           <>
             <IconButton
               size="sm"
-              className="ghost"
+              className="ghost sb-up"
               label={`Move ${def.label} up`}
-              title={`Move up (${upKey})`}
               shortcut="sidebarMoveUp"
               aria-disabled={!canUp}
               onClick={() => canUp && props.onNudge(-1)}
             >
-              <I.Chevron size={14} style={{ transform: "rotate(-90deg)" }} />
+              <I.Chevron size={14} />
             </IconButton>
             <IconButton
               size="sm"
-              className="ghost"
+              className="ghost sb-down"
               label={`Move ${def.label} down`}
-              title={`Move down (${downKey})`}
               shortcut="sidebarMoveDown"
               aria-disabled={!canDown}
               onClick={() => canDown && props.onNudge(1)}
             >
-              <I.Chevron size={14} style={{ transform: "rotate(90deg)" }} />
+              <I.Chevron size={14} />
             </IconButton>
           </>
         )}

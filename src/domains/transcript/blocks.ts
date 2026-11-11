@@ -57,51 +57,17 @@ export function toBlocks(items: readonly TranscriptItem[]): Block[] {
   return blocks;
 }
 
-/** "4s", "1m 30s", "2h 5m" — how long a turn took. */
-export function formatDuration(ms: number): string {
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return s % 60 ? `${m}m ${s % 60}s` : `${m}m`;
-  const h = Math.floor(m / 60);
-  return m % 60 ? `${h}h ${m % 60}m` : `${h}h`;
-}
-
-/** Verb phrases per tool, singular and plural, for a run's one-line summary. */
-const RUN_PHRASES: Record<string, [string, string, string]> = {
-  Read: ["read", "file", "files"],
-  Edit: ["edited", "file", "files"],
-  MultiEdit: ["edited", "file", "files"],
-  Write: ["wrote", "file", "files"],
-  Bash: ["ran", "command", "commands"],
-  PowerShell: ["ran", "command", "commands"],
-  Grep: ["searched", "time", "times"],
-  Glob: ["searched", "time", "times"],
-  WebFetch: ["fetched", "page", "pages"],
-  WebSearch: ["searched the web", "time", "times"],
-  Task: ["started", "agent", "agents"],
-  Agent: ["started", "agent", "agents"],
-};
-
 /**
- * "Read 3 files, ran 2 commands and edited a file": what a run of tool calls did,
- * in first-use order, so a folded run still says what happened inside it.
+ * When the turn in progress started (unix ms): the first prompt after the last
+ * turn end. Null between turns, or when that prompt carries no time.
  */
-export function runSentence(steps: readonly ToolStep[]): string {
-  const counts = new Map<string, { phrase: [string, string, string]; n: number }>();
-  for (const { call } of steps) {
-    const phrase = RUN_PHRASES[call.name] ?? ["used", "tool", "tools"];
-    // Same verb + noun merge (Edit and MultiEdit are both "edited N files").
-    const key = `${phrase[0]} ${phrase[2]}`;
-    const entry = counts.get(key);
-    if (entry) entry.n++;
-    else counts.set(key, { phrase, n: 1 });
+export function turnStartedAt(items: readonly TranscriptItem[]): number | null {
+  let at: string | null = null;
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (item.kind === "turnEnd") break;
+    if (item.kind === "prompt") at = item.at;
   }
-  const parts = [...counts.values()].map(({ phrase: [verb, one, many], n }) => {
-    if (one === "time") return n === 1 ? verb : `${verb} ${n} times`;
-    return n === 1 ? `${verb} ${one === "agent" ? "an" : "a"} ${one}` : `${verb} ${n} ${many}`;
-  });
-  const text =
-    parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : parts[0];
-  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+  const ms = at ? Date.parse(at) : Number.NaN;
+  return Number.isNaN(ms) ? null : ms;
 }

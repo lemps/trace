@@ -1,10 +1,9 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type DragEvent, type MouseEvent, useState } from "react";
-import { ContextMenu } from "@/components/ContextMenu";
+import { type DragEvent, useState } from "react";
 import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
+import { RowBar, RowMenuPopover } from "@/components/RowMenu";
 import { StatusLight } from "@/components/StatusLight";
-import { useContextMenuAt } from "@/components/useContextMenuAt";
+import { barActions, useRowMenu } from "@/components/useRowMenu";
 import { useGroupQuiet } from "@/domains/live/quietStore";
 import type { AgentLight } from "@/domains/live/types";
 import { useSessionUnread } from "@/domains/live/unreadStore";
@@ -49,9 +48,9 @@ interface SessionRowProps {
 
 // One session as a list row: status dot, name, where it works, its PR, its
 // diff and age — the facts that decide which one to open, and nothing else.
-// Rename/archive appear on hover or focus; right-click lists everything the row
-// offers (`sessionRowMenu`). The row drags up and down its list, into
-// other sections, tabs and the bin. One an agent started says who, and links to it;
+// Its actions are one list (`sessionRowMenu`): Rename and Archive in the bar that
+// shows on hover or focus, and all of them behind its ⋯ and its right-click. The
+// row drags up and down its list, into other sections, tabs and the bin. One an agent started says who, and links to it;
 // sorted by "Started by", it sits indented under its parent instead. Its title is
 // bold while it has a finished turn you haven't opened (`live/unreadStore`).
 export function SessionRow(props: SessionRowProps) {
@@ -62,7 +61,7 @@ export function SessionRow(props: SessionRowProps) {
   const createdBy = creatorOf(session);
   const [renaming, setRenaming] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const { menu, openAt, close } = useContextMenuAt<null>();
+  const menu = useRowMenu();
   const companions = companionsOf(session);
   const branch = meaningfulBranch(session, overview?.branch ?? null);
   // A sandbox session has no checkout here to read: say which sandbox and repo.
@@ -72,10 +71,13 @@ export function SessionRow(props: SessionRowProps) {
   const pr = overview?.pr;
   const hasDiff = diff != null && (diff.add > 0 || diff.del > 0);
 
-  const stop = (fn: () => void) => (e: MouseEvent) => {
-    e.stopPropagation();
-    fn();
-  };
+  const actions = sessionRowMenu({
+    session,
+    pr,
+    onOpen,
+    onRename: () => setRenaming(true),
+    onArchive,
+  });
   const onDragStart = (e: DragEvent) => {
     sessionsDrag.current = { kind: "session", id: session.id };
     e.dataTransfer.effectAllowed = "move";
@@ -89,7 +91,7 @@ export function SessionRow(props: SessionRowProps) {
     <>
       {/* biome-ignore lint/a11y/useSemanticElements: hosts nested buttons; HTML forbids nested interactives */}
       <div
-        className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}${menu ? " menu-open" : ""}${unread ? " unread" : ""}`}
+        className={`session-row${dropMark ? ` drop-${dropMark}` : ""}${dragging ? " dragging" : ""}${menu.at ? " menu-open" : ""}${unread ? " unread" : ""}`}
         data-sid={session.id}
         aria-description={unread ? "New since you looked" : undefined}
         role="button"
@@ -102,10 +104,12 @@ export function SessionRow(props: SessionRowProps) {
           setDragging(false);
         }}
         onClick={renaming ? undefined : onOpen}
-        onContextMenu={renaming ? undefined : openAt(null)}
+        onContextMenu={renaming ? undefined : menu.onContextMenu}
         onKeyDown={(e) => {
           if (renaming) return;
           onKeyDown(e);
+          // Enter on a button in the row (the ⋯, Rename, the PR) is that button's.
+          if (e.target !== e.currentTarget) return;
           if (!e.defaultPrevented && (e.key === "Enter" || e.key === " ")) onOpen();
         }}
       >
@@ -162,7 +166,10 @@ export function SessionRow(props: SessionRowProps) {
             <button
               type="button"
               className={`pr-pill ${pr.state}`}
-              onClick={stop(() => void openUrl(pr.url))}
+              onClick={(e) => {
+                e.stopPropagation();
+                void openUrl(pr.url);
+              }}
               title={`Open PR #${pr.number} on GitHub`}
             >
               #{pr.number} {pr.state}
@@ -177,34 +184,14 @@ export function SessionRow(props: SessionRowProps) {
           )}
         </span>
         <span className="sr-time">{relTime(session.createdAt)}</span>
-        <span className="sr-actions">
-          <IconButton
-            size="xs"
-            className="ghost"
-            label="Rename"
-            onClick={stop(() => setRenaming(true))}
-          >
-            <I.Pencil size={12} />
-          </IconButton>
-          <IconButton size="xs" className="ghost" label="Archive" onClick={stop(onArchive)}>
-            <I.Archive size={12} />
-          </IconButton>
-        </span>
-      </div>
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          onClose={close}
-          sections={sessionRowMenu({
-            session,
-            pr,
-            onOpen,
-            onRename: () => setRenaming(true),
-            onArchive,
-          })}
+        <RowBar
+          className="sr-actions"
+          actions={barActions(actions)}
+          menu={menu}
+          moreLabel="Session actions"
         />
-      )}
+      </div>
+      <RowMenuPopover menu={menu} sections={actions} />
     </>
   );
 }

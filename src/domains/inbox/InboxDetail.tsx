@@ -72,7 +72,7 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
             {where && <span className="mono">· {where}</span>}
           </div>
           <h2>
-            <button type="button" className="ib-title-link" onClick={onOpen} title="Open">
+            <button type="button" className="ib-title-link" onClick={onOpen}>
               {entry.title}
             </button>
           </h2>

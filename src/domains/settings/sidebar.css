@@ -60,9 +60,6 @@
   display: flex;
   justify-content: flex-end;
 }
-.sb-control .seg {
-  margin-right: 0;
-}
 .sb-fixed {
   font-size: var(--text-meta);
   color: var(--fg-3);
@@ -72,6 +69,13 @@
   gap: 2px;
   /* Two buttons' room, so a fixed row's control lines up with the rest. */
   width: calc(var(--control-h-sm) * 2 + 2px);
+}
+/* The chevron points the way the row moves. */
+.sb-move .sb-up svg {
+  transform: rotate(-90deg);
+}
+.sb-move .sb-down svg {
+  transform: rotate(90deg);
 }
 /* Not `disabled`: a disabled button drops focus, and Alt+↑ would lose its row at the top. */
 .sb-move .btn[aria-disabled="true"] {

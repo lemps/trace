@@ -14,8 +14,8 @@ const GLYPHS: Record<ToolCategory, Glyph> = {
   search: I.Search,
   web: I.Globe,
   agent: I.Sparkles,
-  plan: I.List,
-  other: I.Code,
+  plan: I.ListChecks,
+  other: I.Wrench,
 };
 
 /** The glyph for a call to `name`: an MCP tool's is the plug, others by category. */

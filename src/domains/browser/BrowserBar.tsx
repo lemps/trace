@@ -2,6 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
+import { IconButton } from "@/components/IconButton";
 import { type BrowserAction, type BrowserPage, browserAct } from "@/ipc/browser";
 import { copyPlain } from "@/ipc/clipboard";
 import { suggestions, typedUrl } from "./model";
@@ -81,16 +82,9 @@ export function BrowserBar({ workspaceId, page, pages, composing, onComposed }: 
   return (
     <div className="bw-bar">
       {[...NAV, reload].map(({ action, label, icon: Icon }) => (
-        <button
-          key={action}
-          type="button"
-          className="btn icon"
-          aria-label={label}
-          title={label}
-          onClick={() => act(action)}
-        >
+        <IconButton key={action} size="sm" label={label} onClick={() => act(action)}>
           <Icon size={14} />
-        </button>
+        </IconButton>
       ))}
       <form className="bw-address" onSubmit={submit}>
         <input
@@ -123,24 +117,16 @@ export function BrowserBar({ workspaceId, page, pages, composing, onComposed }: 
           ))}
         </datalist>
       </form>
-      <button
-        type="button"
-        className="btn icon"
-        aria-label="Open in your browser"
-        title="Open in your browser"
+      <IconButton
+        size="sm"
+        label="Open in your browser"
         onClick={() => void openUrl(shown).catch((e) => toast.error(String(e)))}
       >
         <I.External size={14} />
-      </button>
-      <button
-        type="button"
-        className="btn icon"
-        aria-label="Copy address"
-        title="Copy address"
-        onClick={copy}
-      >
+      </IconButton>
+      <IconButton size="sm" label="Copy address" onClick={copy}>
         <I.Copy size={14} />
-      </button>
+      </IconButton>
       {live.loading && <div className="bw-progress" aria-hidden />}
     </div>
   );

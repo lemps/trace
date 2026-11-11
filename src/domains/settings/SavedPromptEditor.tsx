@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "@/app/toast";
+import { BusyLabel } from "@/components/BusyLabel";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import type { SavedPromptDraft } from "@/ipc/savedPrompts";
 
@@ -82,7 +83,7 @@ export function SavedPromptEditor({ initial, onDone }: SavedPromptEditorProps) {
           Cancel
         </button>
         <button type="submit" className="btn primary" disabled={!canSave}>
-          {saving ? "Saving…" : "Save"}
+          <BusyLabel busy={saving} idle="Save" working="Saving…" />
         </button>
       </div>
     </form>

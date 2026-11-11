@@ -1,4 +1,5 @@
-/* The composer bar's model, effort and mode pickers (`AgentOptionPickers`). */
+/* The composer bar's model, effort and mode pickers (`AgentOptionPickers`): the
+   bar's control height and type, like Attach and Send beside them, but quiet. */
 
 .ac-opts {
   display: flex;
@@ -11,13 +12,13 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: var(--control-h-sm);
-  max-width: 150px;
-  padding: 0 6px 0 8px;
+  height: var(--control-h);
+  max-width: 160px;
+  padding: 0 6px 0 10px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
   background: transparent;
-  font-size: var(--text-meta);
+  font-size: var(--text-ui);
   color: var(--fg-2);
 }
 .ac-opt:hover:not(:disabled) {
@@ -50,7 +51,6 @@
   display: inline-flex;
   flex-shrink: 0;
   color: var(--fg-3);
-  transform: rotate(-90deg);
 }
 .ac-opt:disabled .ac-opt-chev {
   visibility: hidden;

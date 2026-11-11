@@ -2,7 +2,7 @@ import { type DragEvent, Fragment, useRef, useState } from "react";
 import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
-import { PopMenu } from "@/components/PopMenu";
+import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { TabMore } from "@/components/TabMore";
 import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { fitClass, useTabFit } from "@/components/useTabFit";
@@ -165,16 +165,13 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
         )}
         <PopMenu
           trigger={({ open, toggle }) => (
-            <IconButton
+            <MoreTrigger
               size="sm"
               className={`ghost pn-act${open ? " open" : ""}`}
               label="Pane actions"
-              aria-haspopup="menu"
-              aria-expanded={open}
-              onClick={toggle}
-            >
-              <I.More size={14} />
-            </IconButton>
+              open={open}
+              toggle={toggle}
+            />
           )}
           sections={paneMenu(panes, group.active, hints, narrow, refocus)}
         />

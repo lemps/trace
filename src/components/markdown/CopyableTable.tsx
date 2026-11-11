@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
-import { PopMenu } from "@/components/PopMenu";
+import { IconButton } from "@/components/IconButton";
+import { SplitButton } from "@/components/SplitButton";
 import { copyPlain, copyRich } from "@/ipc/clipboard";
 import {
   extractTable,
@@ -13,8 +14,8 @@ import {
 } from "./tableExport";
 import { useCopied } from "./useCopied";
 
-// A GFM table with a copy control on its top-right corner, shown on hover or
-// focus. The button copies the table for documents and spreadsheets (HTML and
+// A GFM table with a copy control (`SplitButton`) on its top-right corner, shown on
+// hover or focus, and held while it says "Copied". The button copies the table for documents and spreadsheets (HTML and
 // TSV in one clipboard item: each app takes the richest it reads); its caret
 // also offers a Markdown pipe table. The control floats over the table's head
 // row, so it never widens the table.
@@ -35,40 +36,23 @@ function TableCopy({ node }: { node: TableHast }) {
   const copyTable = () => run(writeTable);
   const copyMarkdown = () => run((d) => copyPlain(tableToMarkdown(d)));
   return (
-    <div className="md-table-copy">
-      <button
-        type="button"
-        className="md-table-copy-main"
-        aria-label={copied ? "Copied" : "Copy table"}
-        title={copied ? "Copied" : "Copy table"}
-        onClick={copyTable}
-      >
+    <SplitButton
+      size="xs"
+      className={`md-table-copy${copied ? " copied" : ""}`}
+      menuLabel="More ways to copy"
+      sections={[
+        {
+          items: [
+            { label: "Copy table", detail: "For docs and spreadsheets", onSelect: copyTable },
+            { label: "Copy as Markdown", onSelect: copyMarkdown },
+          ],
+        },
+      ]}
+    >
+      <IconButton size="xs" label={copied ? "Copied" : "Copy table"} onClick={copyTable}>
         {copied ? <I.Check size={12} /> : <I.Copy size={12} />}
-      </button>
-      <PopMenu
-        trigger={({ open, toggle }) => (
-          <button
-            type="button"
-            className="md-table-copy-caret"
-            aria-label="More ways to copy"
-            aria-haspopup="menu"
-            aria-expanded={open}
-            title="More ways to copy"
-            onClick={toggle}
-          >
-            <I.Chevron size={12} />
-          </button>
-        )}
-        sections={[
-          {
-            items: [
-              { label: "Copy table", detail: "For docs and spreadsheets", onSelect: copyTable },
-              { label: "Copy as Markdown", onSelect: copyMarkdown },
-            ],
-          },
-        ]}
-      />
-    </div>
+      </IconButton>
+    </SplitButton>
   );
 }
 

@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import { FilterChip } from "@/components/FilterChip";
 import type { Issue } from "@/domains/issues/types";
 import { hint } from "@/platform/shortcuts";
 import { ALL_TYPES, isAllTypes, type TypeSelection, toggleType } from "./typeSelection";
@@ -33,31 +34,26 @@ export function TypeFilter({ types, visible, selected, onSelect }: TypeFilterPro
   return (
     <div className="type-filter">
       <span className="tf-label">Type</span>
-      <button
-        type="button"
-        className={`tf-chip${isAllTypes(selected) ? " active" : ""}`}
-        onClick={() => onSelect(ALL_TYPES)}
-      >
+      <FilterChip active={isAllTypes(selected)} onClick={() => onSelect(ALL_TYPES)}>
         All
-      </button>
+      </FilterChip>
       {types.map((t) => {
         const count = counts.get(t) ?? 0;
-        const state = selected.include.includes(t)
-          ? " active"
-          : selected.exclude.includes(t)
-            ? " excluded"
-            : "";
+        const variant = [
+          selected.exclude.includes(t) ? "excluded" : "",
+          count === 0 ? "empty" : "",
+        ].filter(Boolean);
         return (
-          <button
+          <FilterChip
             key={t}
-            type="button"
-            className={`tf-chip${state}${count === 0 ? " empty" : ""}`}
+            active={selected.include.includes(t)}
+            count={count}
+            className={variant.length > 0 ? variant.join(" ") : undefined}
             onClick={(e) => onChip(e, t)}
             title={`Click to show ${t} · ${hint("typeFilterHide")} to hide it`}
           >
             {t}
-            <span className="tf-count">{count}</span>
-          </button>
+          </FilterChip>
         );
       })}
     </div>

@@ -14,7 +14,6 @@ export function RepoPickModal({ issueKey }: { issueKey: string }) {
   const closeRepoPick = useBoardStore((s) => s.closeRepoPick);
   const kickoff = useBoardStore((s) => s.kickoff);
   const [repos, setRepos] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     listRepos()
@@ -23,13 +22,12 @@ export function RepoPickModal({ issueKey }: { issueKey: string }) {
   }, []);
 
   const pick = async (path: string) => {
-    setError(null);
     try {
       await setIssueRepo(issueKey, path);
       closeRepoPick();
       kickoff(issueKey);
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't set ${issueKey}'s repository: ${String(err)}`);
     }
   };
 
@@ -53,7 +51,6 @@ export function RepoPickModal({ issueKey }: { issueKey: string }) {
           </button>
         ))}
       </div>
-      {error && <span style={{ fontSize: 12.5, color: "var(--c-danger)" }}>{error}</span>}
     </Modal>
   );
 }

@@ -1,6 +1,7 @@
 import { type DragEvent, type ReactNode, useState } from "react";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { sessionsDrag } from "./dragState";
 import { TitleEditor } from "./TitleEditor";
 import type { SessionSection } from "./types";
@@ -82,10 +83,7 @@ export function SectionGroup({
           aria-expanded={!section.collapsed}
           label={section.collapsed ? "Expand section" : "Collapse section"}
         >
-          <I.Chevron
-            size={12}
-            style={{ transform: section.collapsed ? "none" : "rotate(90deg)" }}
-          />
+          <I.Chevron size={12} />
         </IconButton>
         {renaming ? (
           <TitleEditor
@@ -106,15 +104,15 @@ export function SectionGroup({
           >
             <I.Pencil size={12} />
           </IconButton>
-          <IconButton
+          <InlineConfirm
+            label={<I.Trash size={12} />}
+            className="btn ghost icon xs"
             size="xs"
-            className="ghost"
-            onClick={onDelete}
-            label="Delete section"
-            title="Delete section (its sessions stay)"
-          >
-            <I.Trash size={12} />
-          </IconButton>
+            ariaLabel="Delete section"
+            message={`Delete ${section.name}? Its sessions stay in this tab.`}
+            confirmLabel="Delete"
+            onConfirm={onDelete}
+          />
         </span>
         <span className="sec-sort">{sortMenu}</span>
       </div>

@@ -1,7 +1,8 @@
 /* ============ Sessions page: sort menus, manual order, who started a session ============ */
 
-/* A list's sort trigger: quiet, naming the sort. The unsectioned list carries it
-   in a slim head row; a section at the end of its header. */
+/* A list's sort trigger: quiet, naming the sort, with the menu caret. The
+   unsectioned list carries it in a slim head row; a section at the end of its
+   header. */
 .sl-head {
   display: flex;
   justify-content: flex-end;
@@ -14,9 +15,9 @@
 .sl-sort {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   height: var(--control-h-xs);
-  padding: 0 6px;
+  padding: 0 4px 0 6px;
   border-radius: var(--radius-sm);
   font-size: var(--text-meta);
   font-weight: 400;
@@ -25,7 +26,7 @@
   color: var(--fg-3);
 }
 .sl-sort:hover,
-.sl-sort.open {
+.sl-sort[aria-expanded="true"] {
   color: var(--fg-1);
   background: var(--bg-2);
 }

@@ -91,10 +91,11 @@
   min-width: 0;
   display: flex;
 }
+/* The pane strip's tier, like its `sm` icon buttons, so the row lines up. */
 .bw-address-input {
   flex: 1;
   min-width: 0;
-  height: var(--control-h);
+  height: var(--control-h-sm);
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

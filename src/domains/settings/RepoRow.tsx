@@ -73,7 +73,7 @@ export function RepoRow({
         )}
         <button
           type="button"
-          className="rp-setup-toggle"
+          className="btn xs rp-setup"
           disabled={!saved}
           aria-expanded={editing !== null}
           onClick={() => setEditing(editing ? null : (saved ?? null))}
@@ -81,10 +81,10 @@ export function RepoRow({
           {saved && !isEmptySetup(saved) ? `Setup · ${setupCount(saved)}` : "Setup"}
         </button>
         <InlineConfirm
+          size="xs"
           label={<I.X size={12} />}
           className="btn ghost icon xs repo-remove"
           ariaLabel={`Remove ${name}`}
-          title={`Remove ${name}`}
           message="Remove from trace, with its ticket mappings? The folder stays."
           confirmLabel="Remove"
           onConfirm={onRemove}
@@ -94,7 +94,7 @@ export function RepoRow({
         <div className="rp-editor">
           <SetupFields setup={editing} onChange={setEditing} idPrefix={`rp-${name}`} />
           <div className="rp-editor-foot">
-            <button type="button" className="btn ghost" onClick={() => void suggest()}>
+            <button type="button" className="btn" onClick={() => void suggest()}>
               Suggest from lockfiles
             </button>
             <span className="rp-spacer" />

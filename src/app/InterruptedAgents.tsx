@@ -101,7 +101,7 @@ export function InterruptedAgents() {
       className="share-modal"
       footer={
         <>
-          <button type="button" className="btn ghost" onClick={dismiss}>
+          <button type="button" className="btn" onClick={dismiss}>
             Not now
           </button>
           <button

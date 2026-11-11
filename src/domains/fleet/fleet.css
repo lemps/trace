@@ -11,7 +11,7 @@
   align-items: flex-end;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 20px 20px 14px;
+  padding: 20px 20px 16px;
 }
 .fl-head h1 {
   margin: 0;
@@ -40,9 +40,9 @@
   display: grid;
   grid-template-columns:
     14px 104px minmax(220px, 2.2fr) 74px 54px 54px minmax(150px, 1.2fr)
-    90px 100px minmax(180px, 2fr);
+    90px 100px minmax(180px, 2fr) var(--control-h-xs);
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   height: 46px;
   padding: 0 16px;
   border-bottom: 1px solid var(--border-faint);
@@ -100,7 +100,7 @@
 .fl-title {
   color: var(--fg-0);
   font-weight: 500;
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -112,7 +112,7 @@
 }
 .fl-src {
   justify-self: start;
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   padding: 1px 6px;
@@ -130,6 +130,23 @@
 }
 .fl-row .pr-pill {
   cursor: pointer;
+}
+/* The row's ⋯ (`RowMore`): the reveal recipe, in a column of its own so nothing
+   shifts. Shown on hover, focus, while its menu is open, and without a hover pointer. */
+.fl-more {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.fl-row:hover .fl-more,
+.fl-row:focus-within .fl-more,
+.fl-row.menu-open .fl-more,
+.fl-more:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .fl-more {
+    opacity: 1;
+  }
 }
 .fl-drop {
   height: 2px;

@@ -1,4 +1,5 @@
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { FilterChip } from "@/components/FilterChip";
 import type { Assignee, Issue } from "@/domains/issues/types";
 
 // Unique assignees across the board's issues, alphabetical.
@@ -18,25 +19,24 @@ interface AssigneeFilterProps {
 }
 
 // Jira-style avatar row: click a face to filter the board to that assignee,
-// click it again (or All) to clear. Hidden when the board has a single person.
+// click it again (or Everyone) to clear. Hidden when the board has a single person.
+// "Everyone", not "All": the state chips beside it start with their own All.
 export function AssigneeFilter({ issues, selected, onSelect }: AssigneeFilterProps) {
   const people = uniqueAssignees(issues);
   if (people.length <= 1) return null;
 
   return (
     <div className="assignee-filter">
-      <button
-        type="button"
-        className={`af-all${selected === null ? " active" : ""}`}
-        onClick={() => onSelect(null)}
-      >
-        All
-      </button>
+      <FilterChip active={selected === null} onClick={() => onSelect(null)}>
+        Everyone
+      </FilterChip>
       {people.map((p) => (
         <button
           key={p.accountId}
           type="button"
-          className={`af-av${selected === p.accountId ? " active" : ""}`}
+          className="af-av"
+          aria-pressed={selected === p.accountId}
+          aria-label={p.displayName}
           onClick={() => onSelect(selected === p.accountId ? null : p.accountId)}
           title={p.displayName}
         >

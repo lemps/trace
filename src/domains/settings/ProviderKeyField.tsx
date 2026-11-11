@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import type { AgentProvider } from "@/ipc/agent";
 import {
   deepseekKeyConfigured,
@@ -83,7 +84,7 @@ export function ProviderKeyField({ provider }: ProviderKeyFieldProps) {
         />
         <button
           type="button"
-          className="key-btn"
+          className="btn"
           disabled={!draft.trim()}
           onClick={() => void save(draft)}
         >
@@ -91,9 +92,16 @@ export function ProviderKeyField({ provider }: ProviderKeyFieldProps) {
         </button>
       </div>
       {saved && (
-        <button type="button" className="key-remove" onClick={() => void save("")}>
-          Remove key
-        </button>
+        <div className="key-remove-row">
+          <InlineConfirm
+            label="Remove key"
+            className="key-remove"
+            size="xs"
+            message="Remove the saved key? Agents on this provider need one."
+            confirmLabel="Remove"
+            onConfirm={() => void save("")}
+          />
+        </div>
       )}
     </div>
   );

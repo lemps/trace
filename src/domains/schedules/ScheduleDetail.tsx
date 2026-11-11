@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "@/app/toast";
+import { BackButton } from "@/components/BackButton";
 import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
-import { InlineConfirm } from "@/components/InlineConfirm";
+import { ConfirmPrompt } from "@/components/InlineConfirm";
+import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { Switch } from "@/components/Switch";
+import { useDetailKeys } from "@/domains/agent/useDetailKeys";
 import { useNow } from "@/hooks/useNow";
 import { describeSchedule, formatWhen, relative } from "./describe";
 import { PromptView } from "./PromptView";
@@ -12,6 +14,10 @@ import { RunViewer } from "./RunViewer";
 import { useSchedulesStore } from "./store";
 import type { ScheduledPrompt } from "./types";
 
+/** The detail has no ⌘1–9 tabs; only Esc (back, as its BackButton says). */
+const NO_TABS: readonly string[] = [];
+const noTab = () => {};
+
 interface ScheduleDetailProps {
   prompt: ScheduledPrompt;
   onEdit: () => void;
@@ -19,7 +25,8 @@ interface ScheduleDetailProps {
 
 // Full-screen detail for one scheduled prompt (the `.detail` shell sessions and
 // issues use): its run history on the left, the selected run's conversation on
-// the right — live while it runs, replayed from disk once it's done.
+// the right — live while it runs, replayed from disk once it's done. The header's
+// right group is status → Run now / Stop run → ⋯ (Edit, Delete; Delete confirms here).
 export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
   const allRuns = useSchedulesStore((s) => s.runs);
   const openRunId = useSchedulesStore((s) => s.openRunId);
@@ -30,6 +37,8 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
   const stopRun = useSchedulesStore((s) => s.stopRun);
   const remove = useSchedulesStore((s) => s.remove);
   const now = useNow(30_000);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  useDetailKeys(close, NO_TABS, noTab);
 
   const runs = useMemo(() => allRuns.filter((r) => r.promptId === prompt.id), [allRuns, prompt.id]);
   // Default to the newest run — which is also where a fresh "Run now" lands.
@@ -39,6 +48,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
 
   // Confirmed inline first: this kills a live run and deletes the history and worktree.
   const onDelete = () => {
+    setConfirmDelete(false);
     void remove(prompt.id)
       .then(() => toast.success(`Deleted “${prompt.title}”`))
       .catch(fail);
@@ -52,9 +62,7 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
   return (
     <div className="detail">
       <div className="detail-top">
-        <button type="button" className="back" onClick={close}>
-          <I.Back size={14} /> Scheduled
-        </button>
+        <BackButton label="Scheduled" onBack={close} />
         <span className="session-avatar">
           <I.Clock size={16} />
         </span>
@@ -73,23 +81,22 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
               label={prompt.enabled ? "Pause schedule" : "Resume schedule"}
             />
           </span>
-          <IconButton label="Edit prompt" onClick={onEdit}>
-            <I.Pencil size={14} />
-          </IconButton>
-          <InlineConfirm
-            label={
-              <>
-                <I.Trash size={14} /> Delete
-              </>
-            }
-            message={
-              live
-                ? "Stop its run and delete it, its run history and its worktree?"
-                : "Delete it, its run history and its worktree?"
-            }
-            confirmLabel="Delete"
-            onConfirm={onDelete}
-          />
+          {confirmDelete && (
+            <ConfirmPrompt
+              message={
+                live
+                  ? "Stop its run and delete it, its run history and its worktree?"
+                  : "Delete it, its run history and its worktree?"
+              }
+              confirmLabel={
+                <>
+                  <I.Trash size={14} /> Delete
+                </>
+              }
+              onCancel={() => setConfirmDelete(false)}
+              onConfirm={onDelete}
+            />
+          )}
           {live ? (
             <button type="button" className="btn" onClick={() => void stopRun(live.id).catch(fail)}>
               <I.Stop size={14} /> Stop run
@@ -103,6 +110,19 @@ export function ScheduleDetail({ prompt, onEdit }: ScheduleDetailProps) {
               <I.Play size={14} /> Run now
             </button>
           )}
+          <PopMenu
+            trigger={({ open, toggle }) => (
+              <MoreTrigger open={open} toggle={toggle} label="Prompt actions" />
+            )}
+            sections={[
+              {
+                items: [
+                  { label: "Edit prompt…", onSelect: onEdit },
+                  { label: "Delete", danger: true, onSelect: () => setConfirmDelete(true) },
+                ],
+              },
+            ]}
+          />
         </div>
       </div>
 

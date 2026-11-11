@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { Markdown, NO_LINK_COMPONENTS } from "@/components/Markdown";
+import { StatusLight } from "@/components/StatusLight";
+import { isShortcut } from "@/platform/shortcuts";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useAnswer } from "./hooks/useAnswer";
 import type { Question, QuestionSet } from "./types";
@@ -43,6 +45,9 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
 
   return (
     <div className="ac-card ac-ask ac-question">
+      <div className="ac-card-head">
+        <StatusLight light="attention" variant="pill" label="Question" />
+      </div>
       {set.questions.map((q) => (
         <fieldset key={q.id} className="ac-q" disabled={busy}>
           <legend className="ac-q-text">
@@ -85,7 +90,8 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
                 if (!q.multiSelect && value) setPicks((p) => ({ ...p, [q.id]: [] }));
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.nativeEvent.isComposing && ready) send();
+                if (e.nativeEvent.isComposing || !isShortcut("chatSend", e)) return;
+                if (ready) send();
               }}
             />
           )}
@@ -114,7 +120,7 @@ function Answered({ set }: { set: QuestionSet }) {
   if (!answers) {
     return (
       <div className="ac-receipt">
-        <I.X size={12} />
+        <I.Ban size={12} />
         <span className="ac-receipt-what">Question cancelled</span>
       </div>
     );

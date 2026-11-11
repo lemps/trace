@@ -92,7 +92,7 @@
 .sp-tab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   height: var(--control-h-sm);
   padding: 0 10px;
   border-radius: var(--radius-sm);

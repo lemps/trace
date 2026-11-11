@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
+import { resolvePath } from "@/domains/agentChat/chatContext";
 import { toolGlyph } from "@/domains/agentChat/toolGlyph";
+import { summarizeTool } from "@/domains/agentChat/toolSummary";
 import { useAppearance } from "@/domains/appearance/store";
 import type { ToolStep } from "./blocks";
 import { FileLink } from "./FileLink";
 import { ToolDetail } from "./ToolDetail";
-import { summarize } from "./toolSummary";
 
 interface ToolRowProps {
   step: ToolStep;
@@ -16,16 +17,16 @@ interface ToolRowProps {
   isLive: boolean;
 }
 
-// One tool call as one line — what it did, to what — that unfolds to the
-// command, the edit or the output. Folded unless Appearance says to open
-// tool activity: the line is the point.
+// One tool call as one line — what it did, to what, in the chat's words
+// (`summarizeTool`) — that unfolds to the command, the edit or the output.
+// Folded unless Appearance says to open tool activity: the line is the point.
 export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
   const tools = useAppearance((s) => s.prefs.chat.tools);
   const [choice, setChoice] = useState<boolean | null>(null);
   const open = choice ?? tools === "expanded";
   const { call, result } = step;
-  const summary = summarize(call.name, call.input);
-  const Glyph = toolGlyph(call.name);
+  const summary = summarizeTool(call.name, call.input);
+  const Glyph = toolGlyph(call.name, summary.category);
   const failed = result?.isError ?? false;
   const pending = !result;
   return (
@@ -40,15 +41,17 @@ export function ToolRow({ step, workspaceId, root, isLive }: ToolRowProps) {
           <span className="tx-chev">
             <I.Chevron size={12} />
           </span>
-          <Glyph size={13} />
+          <Glyph size={12} />
           <span className="tx-tool-name">{summary.label}</span>
-          {!summary.path && (
+          {!summary.path && summary.target && (
             <span className={`tx-tool-target${summary.isCode ? " code" : ""}`}>
               {summary.target}
             </span>
           )}
         </button>
-        {summary.path && <FileLink workspaceId={workspaceId} path={summary.path} root={root} />}
+        {summary.path && (
+          <FileLink workspaceId={workspaceId} path={resolvePath(summary.path, root)} root={root} />
+        )}
         {failed && <span className="tx-tool-state error">Failed</span>}
         {pending && isLive && (
           <span className="tx-tool-state">

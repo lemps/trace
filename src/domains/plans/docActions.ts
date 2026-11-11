@@ -36,7 +36,7 @@ export function docActions(a: DocActionsArgs): MenuSection[] {
       title: "Export",
       items: [
         {
-          label: md ? "Copy as Markdown" : "Copy HTML",
+          label: md ? "Copy as Markdown" : "Copy as HTML",
           onSelect: () => copyText(doc.body, md ? "Markdown" : "HTML"),
         },
         { label: md ? "Save as .md…" : "Save as .html…", onSelect: save },
@@ -59,7 +59,14 @@ export function docActions(a: DocActionsArgs): MenuSection[] {
     {
       items: [
         ...(a.versions > 1
-          ? [{ label: `Remove version ${doc.version}`, onSelect: () => a.askRemove("version") }]
+          ? [
+              {
+                label: `Remove version ${doc.version}`,
+                // Permanent, like removing the whole document.
+                danger: true,
+                onSelect: () => a.askRemove("version"),
+              },
+            ]
           : []),
         {
           label: a.versions > 1 ? "Remove document" : "Remove",

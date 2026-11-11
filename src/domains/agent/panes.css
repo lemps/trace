@@ -31,7 +31,7 @@
 }
 .test-suite .duration {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-meta) - 0.5px);
+  font-size: var(--text-meta);
   color: var(--fg-3);
 }
 .test-suite.fail {
@@ -64,15 +64,15 @@
 .tests-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .tests-summary {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   margin-bottom: 16px;
   font-family: var(--font-mono);
-  font-size: calc(var(--text-ui) - 0.5px);
+  font-size: var(--text-ui);
 }
 .tests-summary .item {
   color: var(--fg-2);

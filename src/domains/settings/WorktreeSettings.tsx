@@ -1,16 +1,16 @@
-import { confirm } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
+import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { listWorktrees, removeWorktree, type WorktreeInfo } from "@/ipc/worktrees";
 import { basename } from "@/platform/paths";
 
 // Worktree housekeeping: every .worktrees/ checkout across the configured
-// repos, with merged/dirty/running status and one-click removal. Dirty
-// worktrees need a confirm (removal discards uncommitted work).
+// repos, with merged/dirty/running status and removal confirmed inline. A dirty
+// worktree's confirm warns that its uncommitted work is lost.
 export function WorktreeSettings() {
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
@@ -23,20 +23,12 @@ export function WorktreeSettings() {
   useEffect(refresh, []);
 
   const remove = async (wt: WorktreeInfo) => {
-    setError(null);
-    if (wt.dirty) {
-      const ok = await confirm(
-        `${wt.name} has uncommitted changes that will be lost. Remove it anyway?`,
-        { title: "Remove worktree", kind: "warning" }
-      );
-      if (!ok) return;
-    }
     setBusy(wt.path);
     try {
       await removeWorktree(wt.repo, wt.path, wt.branch, wt.dirty);
       refresh();
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't remove ${wt.name}: ${String(err)}`);
     } finally {
       setBusy(null);
     }
@@ -45,14 +37,13 @@ export function WorktreeSettings() {
   // Clean, merged, idle worktrees — the no-questions-asked bulk target.
   const removable = worktrees.filter((wt) => wt.merged && !wt.dirty && !wt.running);
   const removeMerged = async () => {
-    setError(null);
     setBusy("*");
     try {
       for (const wt of removable) {
         await removeWorktree(wt.repo, wt.path, wt.branch, false);
       }
     } catch (err) {
-      setError(String(err));
+      toast.error(`Couldn't remove every merged worktree: ${String(err)}`);
     } finally {
       setBusy(null);
       refresh();
@@ -71,14 +62,17 @@ export function WorktreeSettings() {
           <I.Refresh size={14} />
         </IconButton>
         {removable.length > 0 && (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => void removeMerged()}
+          <InlineConfirm
+            label={
+              <>
+                <I.Trash size={14} /> Remove {removable.length} merged
+              </>
+            }
             disabled={busy !== null}
-          >
-            <I.Trash size={14} /> Remove {removable.length} merged
-          </button>
+            message={`Remove ${removable.length} merged worktree${removable.length === 1 ? "" : "s"} and their branches?`}
+            confirmLabel={`Remove ${removable.length}`}
+            onConfirm={() => void removeMerged()}
+          />
         )}
       </div>
       {worktrees.length === 0 ? (
@@ -95,24 +89,24 @@ export function WorktreeSettings() {
               {wt.running && <span className="wt-chip running">running</span>}
               {wt.merged && <span className="wt-chip merged">merged</span>}
               {wt.dirty && <span className="wt-chip dirty">uncommitted</span>}
-              <IconButton
+              <InlineConfirm
+                label={<I.Trash size={12} />}
+                className="btn ghost icon xs repo-remove"
                 size="xs"
-                className="ghost repo-remove"
-                onClick={() => void remove(wt)}
                 disabled={wt.running || busy === wt.path}
-                label={`Remove worktree ${wt.name}`}
+                ariaLabel={`Remove worktree ${wt.name}`}
                 title={wt.running ? "Stop the agent first" : "Remove worktree + branch"}
-              >
-                <I.Trash size={12} />
-              </IconButton>
+                message={
+                  wt.dirty
+                    ? "Has uncommitted changes that will be lost. Remove it and its branch?"
+                    : "Remove the worktree and its branch?"
+                }
+                confirmLabel="Remove"
+                onConfirm={() => void remove(wt)}
+              />
             </div>
           ))}
         </div>
-      )}
-      {error && (
-        <span style={{ fontSize: 12.5, color: "var(--c-danger)", marginTop: 8, display: "block" }}>
-          {error}
-        </span>
       )}
     </section>
   );

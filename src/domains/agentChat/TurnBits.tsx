@@ -1,12 +1,13 @@
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
-import { formatDuration, usageFacts } from "./format";
+import { formatDuration, turnEndText } from "./format";
 import { useNow } from "./hooks/useNow";
 import type { ChatTurn } from "./projection";
-import type { Status } from "./types";
+import type { Status, Turn } from "./types";
 
 // The small rows around a turn's content: notices, the footer a finished turn
-// ends with, and the live Working line.
+// ends with, and the live Working line. The transcript draws its turn ends and
+// its Working line with these too.
 
 export function StatusRow({ status }: { status: Status }) {
   if (status.tone === "info") return <div className="tx-notice">{status.text}</div>;
@@ -15,35 +16,26 @@ export function StatusRow({ status }: { status: Status }) {
       className={`ac-status ${status.tone}`}
       role={status.tone === "error" ? "alert" : undefined}
     >
-      {status.tone === "error" ? <I.X size={14} /> : <I.Alert size={14} />}
+      <I.Alert size={14} />
       <span>{status.text}</span>
     </div>
   );
 }
 
-const ENDED: Record<string, string> = {
-  completed: "Worked",
-  interrupted: "Interrupted after",
-  failed: "Failed after",
-};
+/** The line a turn ends on, the same in the chat and the transcript. */
+export function TurnEnd({ state, durationMs, usage }: Omit<Turn, "turnId">) {
+  return (
+    <div className={`tx-turn-end ac-turn-end ${state}`}>
+      <span>{turnEndText(state, durationMs, usage)}</span>
+    </div>
+  );
+}
 
-/** "Worked 3m 12s · 64.9k in · 5.9k out · 212k cached · $0.41". */
+/** A finished turn's footer: "Worked 3m 12s · 64.9k in · 5.9k out · 212k cached · $0.41". */
 export function TurnFooter({ turn }: { turn: ChatTurn }) {
   const { summary } = turn;
   if (!summary || summary.state === "running") return null;
-  const facts: string[] = [];
-  const word = ENDED[summary.state] ?? "Worked";
-  facts.push(
-    summary.durationMs !== undefined
-      ? `${word} ${formatDuration(summary.durationMs)}`
-      : word.replace(/ after$/, "")
-  );
-  if (summary.usage) facts.push(...usageFacts(summary.usage));
-  return (
-    <div className={`tx-turn-end ac-turn-end ${summary.state}`}>
-      <span>{facts.join(" · ")}</span>
-    </div>
-  );
+  return <TurnEnd state={summary.state} durationMs={summary.durationMs} usage={summary.usage} />;
 }
 
 /**

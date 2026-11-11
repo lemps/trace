@@ -7,7 +7,7 @@ import { type PlanFormat, publishPlanDoc } from "@/ipc/plans";
 export const PUBLISH_DOCUMENT: Anthropic.Tool = {
   name: "publish_document",
   description:
-    "Publish a document for the user to read, review or export: a plan, spec, design, review or report. It opens in this workspace's Plan tab in trace, rendered (Markdown with the chat's styles, or HTML in a sandbox with scripts off), where the user can compare versions, copy it, save it as .md or PDF, or send it back to you. Use it when the user asks for a plan or write-up, or when a long result reads better as a document than as a chat reply. Publishing again with the same title, or with `replaces` set to a document id this tool returned, adds a new version and keeps the old ones. For raw HTML from a shell, `trace-render page.html` does the same.",
+    "Publish a document for the user to read, review or export: a plan, spec, design, review or report. It opens in this workspace's Plan tab in trace, rendered (Markdown with the chat's styles, or HTML in a sandbox with scripts off), where the user can compare versions, copy it, save it as .md or PDF, or send it back to you. On paper nothing can be clicked or hovered, so give anything interactive (tabs, collapsed sections, hover details) a static reading too. Use it when the user asks for a plan or write-up, or when a long result reads better as a document than as a chat reply. Publishing again with the same title, or with `replaces` set to a document id this tool returned, adds a new version and keeps the old ones. For raw HTML from a shell, `trace-render page.html` does the same.",
   input_schema: {
     type: "object",
     properties: {

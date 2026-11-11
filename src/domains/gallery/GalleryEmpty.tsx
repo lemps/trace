@@ -24,7 +24,7 @@ export function GalleryEmpty({ workspaceId }: { workspaceId: string }) {
         Screenshots, charts or icons an agent points you at show here, and so does any folder you
         open. New files show up as they're written.
       </p>
-      <button type="button" className="btn primary" onClick={() => void pickFolder()}>
+      <button type="button" className="btn empty-action" onClick={() => void pickFolder()}>
         <I.FolderOpen size={14} /> Open a folder…
       </button>
     </div>

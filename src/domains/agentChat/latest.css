@@ -1,6 +1,8 @@
-/* "Jump to latest": a round icon pill (`LatestButton`, the Transcript view) for when
-   you've scrolled up. In the corner beside the column when there's room, else its
-   own row under the conversation, so it never covers a message. */
+/* "Jump to latest": a round icon pill (`LatestButton`, in the chat, a subagent's view
+   and the transcript) for when you've scrolled up. In the corner beside the column
+   when there's room, else its own row under the conversation, so it never covers a
+   message. */
+/* Round on purpose: the documented exception to "only state pills are round" (trace-ui §1). */
 .btn.icon.jump-latest {
   border-radius: 999px;
   color: var(--fg-1);

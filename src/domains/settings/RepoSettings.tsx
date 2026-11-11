@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { CloneFolder } from "@/domains/github/CloneFolder";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
 import { useGitHubStore } from "@/domains/github/store";
@@ -32,7 +33,6 @@ const withId = (m: RepoMapping): EditorRow => ({ ...m, id: crypto.randomUUID() }
 export function RepoSettings() {
   const [repos, setRepos] = useState<string[]>([]);
   const [mappings, setMappings] = useState<EditorRow[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
   // Remote, default branch and setup per repo: slower (git per repo), so they fill in.
   const [details, setDetails] = useState<Record<string, RepoDetails>>({});
   const [browsing, setBrowsing] = useState(false);
@@ -65,12 +65,11 @@ export function RepoSettings() {
   const persist = (next: EditorRow[]) => {
     setMappings(next);
     void setRepoMappings(next.map(({ pattern, repo }) => ({ pattern, repo }))).catch((err) =>
-      setMessage(String(err))
+      toast.error(`Couldn't save your repo mappings: ${String(err)}`)
     );
   };
 
   const addFolder = async () => {
-    setMessage(null);
     const picked = await open({
       directory: true,
       multiple: false,
@@ -81,17 +80,16 @@ export function RepoSettings() {
       setRepos(await addRepo(picked));
       loadDetails();
     } catch (err) {
-      setMessage(String(err));
+      toast.error(`Couldn't add that repository: ${String(err)}`);
     }
   };
 
   const remove = async (path: string) => {
-    setMessage(null);
     try {
       setRepos(await removeRepo(path));
       persist(mappings.filter((m) => m.repo !== path));
     } catch (err) {
-      setMessage(String(err));
+      toast.error(`Couldn't remove that repository: ${String(err)}`);
     }
   };
 
@@ -130,10 +128,10 @@ export function RepoSettings() {
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
         <button type="button" className="btn" onClick={addFolder}>
-          <I.Plus size={14} /> Add repository
+          <I.Plus size={14} /> Add repository…
         </button>
         <button type="button" className="btn" onClick={() => setBrowsing(true)}>
-          <I.Download size={14} /> Clone from GitHub
+          <I.Download size={14} /> Clone from GitHub…
         </button>
         <ConductorImport
           onImported={() => {
@@ -141,7 +139,6 @@ export function RepoSettings() {
             loadDetails();
           }}
         />
-        {message && <span style={{ fontSize: 12.5, color: "var(--c-danger)" }}>{message}</span>}
       </div>
       {repos.length === 0 && (
         <span className="hint" style={{ marginTop: 8, display: "block" }}>
@@ -194,14 +191,27 @@ export function RepoSettings() {
                   </option>
                 ))}
               </select>
-              <IconButton
-                size="xs"
-                className="ghost repo-remove"
-                onClick={() => persist(mappings.filter((_, j) => j !== i))}
-                label="Remove mapping"
-              >
-                <I.X size={12} />
-              </IconButton>
+              {m.pattern.trim() ? (
+                <InlineConfirm
+                  label={<I.Trash size={12} />}
+                  className="btn ghost icon xs repo-remove"
+                  size="xs"
+                  ariaLabel="Remove mapping"
+                  message={`Remove the ${m.pattern.trim()} mapping?`}
+                  confirmLabel="Remove"
+                  onConfirm={() => persist(mappings.filter((x) => x.id !== m.id))}
+                />
+              ) : (
+                // A blank row holds nothing yet (it isn't even saved), so it goes on one click.
+                <IconButton
+                  size="xs"
+                  className="ghost repo-remove"
+                  onClick={() => persist(mappings.filter((x) => x.id !== m.id))}
+                  label="Remove mapping"
+                >
+                  <I.Trash size={12} />
+                </IconButton>
+              )}
             </div>
           ))}
           <button

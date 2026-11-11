@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo } from "react";
-import { I } from "@/components/Icon";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { InlineConfirm } from "@/components/InlineConfirm";
 import { openIssueAnywhere } from "@/domains/board/openIssueAnywhere";
 import { useActivityStore } from "./store";
@@ -94,8 +94,6 @@ export function ActivityView() {
           <div className="right">
             <InlineConfirm
               label="Clear"
-              className="btn ghost"
-              title="Clear activity"
               message="Delete the whole activity log? This can't be undone."
               confirmLabel="Clear"
               onConfirm={clear}
@@ -108,7 +106,7 @@ export function ActivityView() {
           <div className="empty-state">
             <div className="inner">
               <span className="ic">
-                <I.Activity size={28} />
+                <I.Activity size={ICON_SIZE.empty} />
               </span>
               <div className="title">No activity yet</div>
               <div className="hint">

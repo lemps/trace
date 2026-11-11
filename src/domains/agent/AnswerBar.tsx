@@ -5,6 +5,8 @@ import { useLiveStore } from "@/domains/live/store";
 // Docked under the chat while the agent waits on a menu prompt (a permission,
 // a plan, a single-choice question): the same answers as the terminal's, one
 // click away. The terminal still works — this just saves finding the prompt.
+// The first answer of a permission or plan is the amber one; the rest (deny
+// too: it refuses, it doesn't destroy) are plain buttons, as on a chat's cards.
 export function AnswerBar({ workspaceId }: { workspaceId: string }) {
   const ask = useLiveStore((s) => s.info[workspaceId]?.ask ?? null);
   const choices = choicesFor(ask);
@@ -17,9 +19,7 @@ export function AnswerBar({ workspaceId }: { workspaceId: string }) {
         : `The agent asks to use ${ask.tool ?? "a tool"}${ask.detail ? `: ${ask.detail}` : ""}`;
   return (
     <fieldset className="answer-bar" aria-label="Answer the agent">
-      <span className="answer-text" title={what}>
-        {what}
-      </span>
+      <span className="answer-text">{what}</span>
       {choices.map((c, i) => (
         <button
           key={c.label}

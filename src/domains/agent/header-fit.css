@@ -1,4 +1,4 @@
-/* Detail headers under pressure (trace-ui §2 rule 3): labels collapse to icons and
+/* Detail headers under pressure (trace-ui §1): labels collapse to icons and
    are never truncated. A secondary text button in `.detail-top` marks itself
    `.btn.fit` and wraps its words in `.fit-label`; below the width here the words
    are hidden visually but stay its accessible name, and its `title` names it on

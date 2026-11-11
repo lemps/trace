@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "@/app/toast";
-import { I } from "@/components/Icon";
 import { ConfirmPrompt } from "@/components/InlineConfirm";
+import { MenuCaret } from "@/components/MenuCaret";
 import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { Segmented } from "@/components/Segmented";
 import { countChanges, type DiffLine } from "@/domains/agentChat/lineDiff";
@@ -23,8 +23,9 @@ interface PlanViewerProps {
 }
 
 // One document: its title and where it came from, a version picker (v1, v2, …),
-// Document | Changes (a version against an earlier one), and its actions menu.
-// Removing asks inline, never in a dialog.
+// Document | Changes (a version against an earlier one), and its actions menu,
+// all at the in-content toolbar's height (`--control-h-sm`). Removing asks
+// inline, never in a dialog.
 export function PlanViewer({ workspaceId, agentTab, series }: PlanViewerProps) {
   const [versionId, setVersionId] = useState<string | null>(null);
   const [view, setView] = useState<View>("document");
@@ -71,13 +72,13 @@ export function PlanViewer({ workspaceId, agentTab, series }: PlanViewerProps) {
               trigger={({ open, toggle }) => (
                 <button
                   type="button"
-                  className="btn pl-ver-btn"
+                  className="btn sm pl-ver-btn"
                   aria-haspopup="menu"
                   aria-expanded={open}
                   title="Show another version"
                   onClick={toggle}
                 >
-                  v{doc.version} of {series.versions.length} <I.Chevron size={12} />
+                  v{doc.version} of {series.versions.length} <MenuCaret size="sm" />
                 </button>
               )}
               sections={[
@@ -105,7 +106,9 @@ export function PlanViewer({ workspaceId, agentTab, series }: PlanViewerProps) {
             />
           )}
           <PopMenu
-            trigger={({ toggle }) => <MoreTrigger toggle={toggle} label="Document actions" />}
+            trigger={({ open, toggle }) => (
+              <MoreTrigger open={open} toggle={toggle} label="Document actions" size="sm" />
+            )}
             sections={docActions({
               workspaceId,
               doc,

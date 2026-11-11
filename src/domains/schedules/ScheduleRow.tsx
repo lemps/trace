@@ -78,10 +78,10 @@ export function ScheduleRow({
       <div className="sched-row-actions" onClick={stop}>
         <button
           type="button"
-          className="btn"
+          className="btn sm"
           onClick={onRunNow}
           disabled={live}
-          title={live ? "A run is already going" : "Run this prompt now"}
+          title={live ? "A run is already going" : undefined}
         >
           <I.Play size={14} /> Run now
         </button>

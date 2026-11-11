@@ -51,7 +51,8 @@ export function ChatHeader({ info, turns }: ChatHeaderProps) {
 
 function Limit({ window: w }: { window: LimitWindow }) {
   const pct = Math.round(Math.min(1, Math.max(0, w.utilization)) * 100);
-  const level = pct >= 95 ? " full" : pct >= 80 ? " high" : "";
+  // Neutral, then red at the critical step, as the context gauge is.
+  const level = pct >= 95 ? " full" : "";
   const reset = resetsIn(w.resetsAt, Date.now());
   const label = limitLabel(w.name);
   return (

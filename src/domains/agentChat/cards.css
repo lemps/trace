@@ -1,4 +1,10 @@
-/* Chat cards (`ac-`): tool rows, diffs, plans, approvals, questions, receipts. */
+/* Chat cards (`ac-`): tool rows, diffs, plans, approvals, questions, receipts.
+
+   Outlines follow one rule: `--border-faint` for containers of the agent's own
+   activity (tool rows, a turn's folded work, runs, diffs, its task list, a
+   subagent's card, brief and report), `--border` for cards the user acts on (a
+   permission, a plan approval, a question), drawn in the needs-you amber
+   (`.ac-ask`, below) while they wait. */
 
 /* Tool rows: the transcript's line (`tx-tool-line`), in a card of their own. */
 .ac-tool {
@@ -32,13 +38,14 @@
   padding: 0 10px 10px 30px;
 }
 
-/* Shared card frame: plans, prompts, answered questions. */
+/* Shared card frame: plans, prompts, answered questions. Faint, as the agent's
+   own activity; a card you act on (`.ac-ask`) takes its border below. */
 .ac-card {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-1);
 }
@@ -68,7 +75,7 @@
 
 /* Diffs: path, change, +/− counts; the lines use the Files tab's `.diff-line`. */
 .ac-diff {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-1);
   overflow: hidden;
@@ -78,7 +85,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  height: 32px;
+  height: var(--control-h);
   padding: 0 10px;
 }
 .ac-diff-toggle {
@@ -180,7 +187,9 @@
   color: var(--fg-2);
 }
 
-/* Prompts that wait on you: the "needs you" amber, answered in place. */
+/* Cards you act on (a permission, a plan approval, a question) wait on you: the
+   needs-you amber, its light in the head (`StatusLight`), answered in place. The
+   same tint as the answer bar and the inbox's ask card. */
 .ac-ask {
   border-color: var(--state-needs-border);
   background: var(--state-needs-bg);

@@ -28,7 +28,7 @@
 }
 .error-boundary-msg {
   font-family: var(--font-mono);
-  font-size: calc(var(--text-body) - 0.5px);
+  font-size: var(--text-body);
   color: var(--fg-1);
   white-space: pre-wrap;
   word-break: break-word;

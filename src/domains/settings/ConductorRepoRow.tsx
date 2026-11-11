@@ -59,7 +59,7 @@ export function ConductorRepoRow({
         {repo.exists && (
           <button
             type="button"
-            className="rp-setup-toggle"
+            className="btn xs rp-setup"
             aria-expanded={editing}
             onClick={() => setEditing(!editing)}
           >

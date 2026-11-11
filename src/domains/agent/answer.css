@@ -8,11 +8,11 @@
   flex-wrap: wrap;
   gap: 8px;
   margin: 8px 12px 12px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   min-inline-size: 0;
   border: 1px solid var(--state-needs-border);
   border-radius: var(--radius);
-  background: color-mix(in oklch, var(--state-needs) 6%, transparent);
+  background: var(--state-needs-bg);
 }
 .answer-text {
   flex: 1;
@@ -24,6 +24,6 @@
 .detail-top .back .kbd,
 .back .kbd {
   margin-left: 4px;
-  font-size: calc(var(--text-label) - 1px);
+  font-size: var(--text-label);
   padding: 0 4px;
 }

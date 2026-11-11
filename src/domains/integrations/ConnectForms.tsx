@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BusyLabel } from "@/components/BusyLabel";
 import { I } from "@/components/Icon";
 import { useIssuesStore } from "@/domains/issues/store";
 import { useVercelStore } from "@/domains/vercel/store";
@@ -21,7 +22,7 @@ function FormFoot({ canSubmit, onSubmit, connecting, error }: FormFootProps) {
           disabled={!canSubmit || connecting}
           onClick={onSubmit}
         >
-          <I.Plug size={14} /> {connecting ? "Connecting…" : "Connect"}
+          <I.Plug size={14} /> <BusyLabel busy={connecting} idle="Connect" working="Connecting…" />
         </button>
       </div>
     </>
