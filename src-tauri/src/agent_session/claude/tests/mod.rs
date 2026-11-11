@@ -375,3 +375,34 @@ fn a_user_row_keeps_its_attachments_beside_the_text() {
     assert_eq!(user.text, "Look");
     assert_eq!(user.attachments, files);
 }
+
+#[test]
+fn messages_whose_stream_carries_no_id_get_a_row_each() {
+    // Some builds send stream events with no message id on them. Each message
+    // still needs its own row: on one shared id the second message's revisions
+    // start at 0 again, which reads as a stale copy of the first and is dropped.
+    let mut tr = Translator::new(0, || 0);
+    let mut run = Run::default();
+    for text in ["first", "second"] {
+        for line in [
+            json!({"type": "stream_event", "event": {"type": "message_start", "message": {}}}),
+            json!({"type": "stream_event", "event": {
+                "type": "content_block_start", "index": 1, "content_block": {"type": "text"}
+            }}),
+            json!({"type": "stream_event", "event": {
+                "type": "content_block_delta", "index": 1, "delta": {"text": text}
+            }}),
+            json!({"type": "stream_event", "event": {"type": "content_block_stop", "index": 1}}),
+        ] {
+            run.take(tr.line(&line.to_string()));
+        }
+    }
+    let said: Vec<(&str, &str)> = run
+        .sorted()
+        .into_iter()
+        .filter_map(|r| message_text(&r.body).map(|(_, t)| (r.id.as_str(), t)))
+        .collect();
+    assert_eq!(said.len(), 2, "{said:?}");
+    assert_ne!(said[0].0, said[1].0, "both messages landed on one row id");
+    assert_eq!([said[0].1, said[1].1], ["first", "second"]);
+}

@@ -28,7 +28,7 @@ describe("upsertRows", () => {
     assert.equal(body.kind === "message" && body.text, "final");
     j = upsertRows(j, [msg("a", 1, 3, "newer")]);
     assert.equal(j.rows.length, 1);
-    assert.equal(j.byId.a.revision, 3);
+    assert.equal(j.byKey["1:a"].revision, 3);
   });
 
   it("returns the same journal when nothing changed", () => {
@@ -40,6 +40,17 @@ describe("upsertRows", () => {
     const j = upsertRows(EMPTY_JOURNAL, [msg("a", 1, 0, "x"), msg("a", 1, 1, "xy")]);
     assert.equal(j.rows.length, 1);
     assert.equal(j.rows[0].revision, 1);
+  });
+
+  it("takes a retired id back as a new row, not a stale revision", () => {
+    // An adapter whose stream gives no message id puts every message on the
+    // same id, each starting at revision 0: the second must still show.
+    let j = upsertRows(EMPTY_JOURNAL, [msg("msg::1", 1, 250, "the long answer")]);
+    j = upsertRows(j, [msg("msg::1", 2, 0, "I"), msg("msg::1", 2, 3, "I'm here.")]);
+    assert.deepEqual(
+      j.rows.map((r) => (r.body.kind === "message" ? r.body.text : "")),
+      ["the long answer", "I'm here."]
+    );
   });
 
   it("keeps a replaced row in place", () => {
