@@ -64,12 +64,12 @@
 .tests-bar {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .tests-summary {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   margin-bottom: 16px;
   font-family: var(--font-mono);
   font-size: var(--text-ui);

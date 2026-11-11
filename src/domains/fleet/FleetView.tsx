@@ -97,6 +97,7 @@ export function FleetView({ onOpen }: FleetViewProps) {
             <span>Changes</span>
             <span>PR</span>
             <span>Latest</span>
+            <span />
           </div>
           {shown.length === 0 && (
             <div className="fl-empty">

@@ -93,7 +93,7 @@
   display: inline-flex;
   align-items: center;
   height: var(--control-h-xs);
-  padding: 0 7px;
+  padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: var(--text-label);

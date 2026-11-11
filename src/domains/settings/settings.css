@@ -111,7 +111,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-2);
@@ -163,11 +163,11 @@
 
 /* "What's new" panel shown when an update is available */
 .update-notes {
-  margin-top: 14px;
+  margin-top: 16px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius);
   background: var(--bg-1);
-  padding: 12px 14px;
+  padding: 10px 12px;
   max-height: 320px;
   overflow-y: auto;
 }
@@ -222,7 +222,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   height: calc(var(--control-h) + 2px);
-  padding: 0 9px;
+  padding: 0 10px;
   font-size: var(--text-ui);
   color: var(--fg-0);
 }

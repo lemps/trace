@@ -44,7 +44,7 @@ function CallBody({ name, input }: { name: string; input: unknown }) {
   if (name === "Write") {
     return <pre className="tx-code">{str(input, "content")}</pre>;
   }
-  if (name === "TodoWrite") return <PlanCard plan={planOf(input)} />;
+  if (name === "TodoWrite") return <PlanCard plan={planOf(input)} bare />;
   if (name === "Read") return null;
   const prompt = str(input, "prompt");
   // A subagent's brief is the agent's own Markdown.

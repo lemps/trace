@@ -59,7 +59,7 @@
   grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding: 5px 6px;
+  padding: 6px;
   border-radius: var(--radius-sm);
   text-align: left;
   font-size: var(--text-ui);

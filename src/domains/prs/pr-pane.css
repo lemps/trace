@@ -169,7 +169,7 @@
 .pr-entry {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   padding: 8px 10px;
   border: 1px solid var(--border-faint);
   border-left: 2px solid var(--border-faint);
@@ -240,7 +240,7 @@
 .pr-entry-path {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: var(--text-meta);
   color: var(--fg-3);
   min-width: 0;
@@ -254,7 +254,7 @@
 }
 .pr-tag {
   font-size: var(--text-label);
-  padding: 0 5px;
+  padding: 0 4px;
   border-radius: var(--radius-xs);
   background: var(--bg-2);
   color: var(--fg-3);

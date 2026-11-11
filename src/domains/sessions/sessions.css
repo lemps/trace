@@ -73,7 +73,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--fg-3);
-  padding: 1px 5px;
+  padding: 1px 6px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-xs);
 }
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-faint);
   font-size: var(--text-ui);
 }
@@ -238,7 +238,7 @@
   gap: 8px;
   width: 100%;
   text-align: left;
-  padding: 7px 8px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   font-size: var(--text-ui);
 }

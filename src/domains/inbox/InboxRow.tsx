@@ -1,10 +1,12 @@
 import type { DragEvent } from "react";
 import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
+import { RowBar, RowMenuPopover } from "@/components/RowMenu";
 import { StatusLight } from "@/components/StatusLight";
+import { barActions, type RowAction, useRowMenu } from "@/components/useRowMenu";
+import { useAgentRowActions } from "@/domains/fleet/agentRowActions";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
-import { useHint, useTitleWithHint } from "@/platform/shortcuts";
+import { useHint } from "@/platform/shortcuts";
 import { titleWithHint } from "@/platform/shortcuts/hintText";
 
 interface InboxRowProps {
@@ -28,14 +30,39 @@ interface InboxRowProps {
 
 // One agent in the inbox list: its light and ask, title, last words, and how
 // long it's been like this. A drag handle reorders; the arrow (or ⏎, or a
-// double-click) opens it; the cross (or E) takes it out of "Needs you".
+// double-click) opens it; the cross (or E) takes it out of "Needs you". Those two
+// and the rest (`useAgentRowActions`) are behind its ⋯ and its right-click too.
 export function InboxRow(props: InboxRowProps) {
   const { entry, selected, now, dropAbove, isDragging, dragProps, onSelect, onOpen } = props;
   const { info } = entry;
   const ask = shownAsk(info);
-  const dismissTitle = `${useTitleWithHint("Dismiss", "inboxDismiss")}: takes it out of Needs you. This doesn't answer the agent.`;
-  const openTitle = useTitleWithHint("Open", "inboxOpen");
   const reorder = `${useHint("inboxMoveUp")} / ${useHint("inboxMoveDown")}`;
+  const lead: RowAction[] = [];
+  const dismissHint = useHint("inboxDismiss");
+  const openHint = useHint("inboxOpen");
+  if (info.light === "attention") {
+    lead.push({
+      id: "dismiss",
+      label: "Dismiss",
+      glyph: I.X,
+      inBar: true,
+      shortcut: "inboxDismiss",
+      hint: dismissHint,
+      title: "Takes it out of Needs you. This doesn't answer the agent.",
+      onSelect: props.onDismiss,
+    });
+  }
+  lead.push({
+    id: "open",
+    label: "Open",
+    glyph: I.Chevron,
+    inBar: true,
+    shortcut: "inboxOpen",
+    hint: openHint,
+    onSelect: onOpen,
+  });
+  const actions = useAgentRowActions({ entry, onOpen, lead });
+  const menu = useRowMenu();
   return (
     <>
       {dropAbove && <div className="ib-drop" aria-hidden="true" />}
@@ -45,13 +72,15 @@ export function InboxRow(props: InboxRowProps) {
       <div
         role="button"
         tabIndex={0}
-        className={`ib-row${selected ? " sel" : ""}${isDragging ? " dragging" : ""}`}
+        className={`ib-row${selected ? " sel" : ""}${isDragging ? " dragging" : ""}${menu.at ? " menu-open" : ""}`}
         aria-current={selected ? "true" : undefined}
         onClick={onSelect}
         onDoubleClick={onOpen}
         onKeyDown={(e) => {
-          if (e.key === " ") onSelect();
+          // Space on one of its buttons is that button's.
+          if (e.target === e.currentTarget && e.key === " ") onSelect();
         }}
+        onContextMenu={menu.onContextMenu}
         {...dragProps}
       >
         <span className="ib-grip" title={titleWithHint("Drag to reorder", reorder)}>
@@ -73,38 +102,15 @@ export function InboxRow(props: InboxRowProps) {
           <span className={`ib-age${info.light === "attention" ? " hot" : ""}`}>
             {ageLabel(info.since, now)}
           </span>
-          <span className="ib-row-actions">
-            {info.light === "attention" && (
-              <IconButton
-                size="xs"
-                className="ghost ib-open"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  props.onDismiss();
-                }}
-                title={dismissTitle}
-                label={`Dismiss ${entry.title}`}
-                shortcut="inboxDismiss"
-              >
-                <I.X size={12} />
-              </IconButton>
-            )}
-            <IconButton
-              size="xs"
-              className="ghost ib-open"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen();
-              }}
-              title={openTitle}
-              label={`Open ${entry.title}`}
-              shortcut="inboxOpen"
-            >
-              <I.Chevron size={12} />
-            </IconButton>
-          </span>
+          <RowBar
+            className="ib-row-actions"
+            actions={barActions(actions)}
+            menu={menu}
+            moreLabel="Agent actions"
+          />
         </span>
       </div>
+      <RowMenuPopover menu={menu} sections={actions} />
     </>
   );
 }

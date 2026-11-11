@@ -24,7 +24,7 @@ interface PaneTabProps {
 /**
  * One tab of a pane's strip, and its × when it has one: a coming tab's hides it,
  * an optional one's closes it. The × keeps its slot, clear until the tab is hovered
- * or focused, so labels never shift (trace-ui §2 rule 1).
+ * or focused, so labels never shift (trace-ui §5, the reveal recipe).
  */
 export function PaneTab({
   panel,
@@ -60,7 +60,7 @@ export function PaneTab({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <Icon size={13} />
+        <Icon size={12} />
         <span className="pn-tab-label" data-fit-label>
           {panel.label}
         </span>

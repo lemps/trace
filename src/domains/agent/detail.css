@@ -27,7 +27,7 @@
 .detail-top {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-faint);
   background: linear-gradient(180deg, var(--sheen), transparent);
@@ -68,7 +68,7 @@
 .status-quiet {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: var(--fg-3);
 }
 .status-quiet .d {
@@ -115,7 +115,7 @@
   align-items: center;
   gap: 6px;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: 999px;
   font-size: var(--text-meta);
   font-weight: 500;
@@ -197,7 +197,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--fg-3);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-xs);
 }

@@ -1,9 +1,12 @@
 import type { DragEvent } from "react";
 import { I } from "@/components/Icon";
+import { RowMenuPopover, RowMore } from "@/components/RowMenu";
 import { StatusLight } from "@/components/StatusLight";
+import { useRowMenu } from "@/components/useRowMenu";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useAgentQuiet } from "@/domains/live/quietStore";
+import { useAgentRowActions } from "./agentRowActions";
 
 /** A PR as the fleet shows it — from Jira dev-status (tickets) or `gh` (sessions). */
 export interface FleetPr {
@@ -37,25 +40,30 @@ const clock = (t: number) =>
   new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 // One live agent as a table row. Rows keep their place when state changes;
-// the grip drags them, the row opens the agent.
+// the grip drags them, the row opens the agent. Its ⋯ (on hover or focus) and its
+// right-click list what can be done with it (`useAgentRowActions`).
 export function FleetRow(props: FleetRowProps) {
   const { entry, now, where, diff, pr, dropAbove, isDragging, dragProps } = props;
   const { info } = entry;
   const quiet = useAgentQuiet(entry.id);
   const ask = shownAsk(info);
   const latest = ask?.label ?? info.update ?? info.lastMessage ?? "";
+  const menu = useRowMenu();
+  const actions = useAgentRowActions({ entry, onOpen: props.onOpen, pr });
   return (
     <>
       {dropAbove && <div className="fl-drop" aria-hidden="true" />}
       {/* biome-ignore lint/a11y/useSemanticElements: hosts a nested PR button; HTML forbids nested interactives */}
       <div
-        className={`fl-row${info.light === "attention" ? " needs" : ""}${isDragging ? " dragging" : ""}`}
+        className={`fl-row${info.light === "attention" ? " needs" : ""}${isDragging ? " dragging" : ""}${menu.at ? " menu-open" : ""}`}
         role="button"
         tabIndex={0}
         onClick={props.onOpen}
         onKeyDown={(e) => {
-          if (e.key === "Enter") props.onOpen();
+          // Enter on the PR pill or the ⋯ is that button's.
+          if (e.target === e.currentTarget && e.key === "Enter") props.onOpen();
         }}
+        onContextMenu={menu.onContextMenu}
         {...dragProps}
       >
         <span className="fl-grip" title="Drag to reorder">
@@ -103,7 +111,9 @@ export function FleetRow(props: FleetRowProps) {
         <span className="fl-ell fl-latest" title={latest || undefined}>
           {latest}
         </span>
+        <RowMore menu={menu} label="Agent actions" className="fl-more" />
       </div>
+      <RowMenuPopover menu={menu} sections={actions} />
     </>
   );
 }

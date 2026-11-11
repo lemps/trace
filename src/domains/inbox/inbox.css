@@ -69,9 +69,9 @@
   display: grid;
   grid-template-columns: 14px 10px minmax(0, 1fr) auto;
   align-items: start;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
-  padding: 11px 12px 11px 6px;
+  padding: 10px 12px 10px 6px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   text-align: left;
@@ -87,6 +87,7 @@
 .ib-row.dragging {
   opacity: 0.5;
 }
+/* Optical: centres the dot on the title's first line. */
 .ib-row > .light-dot {
   margin-top: 5px;
 }
@@ -313,7 +314,7 @@
 }
 .ib-ask-detail {
   margin: 0;
-  padding: 9px 11px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-0);

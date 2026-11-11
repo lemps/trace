@@ -51,7 +51,6 @@ function CharacterTile({ sprite, selected, onPick }: CharacterTileProps) {
       onClick={onPick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title={sprite.manifest.name}
     >
       <Sprite sprite={sprite} animation={hover ? "happy" : "idle"} label={sprite.manifest.name} />
       <span className="name">{sprite.manifest.name}</span>

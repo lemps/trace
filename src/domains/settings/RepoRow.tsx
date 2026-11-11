@@ -81,10 +81,10 @@ export function RepoRow({
           {saved && !isEmptySetup(saved) ? `Setup · ${setupCount(saved)}` : "Setup"}
         </button>
         <InlineConfirm
+          size="xs"
           label={<I.X size={12} />}
           className="btn ghost icon xs repo-remove"
           ariaLabel={`Remove ${name}`}
-          title={`Remove ${name}`}
           message="Remove from trace, with its ticket mappings? The folder stays."
           confirmLabel="Remove"
           onConfirm={onRemove}

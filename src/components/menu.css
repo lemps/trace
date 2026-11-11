@@ -176,3 +176,8 @@
   top: auto;
   z-index: 60;
 }
+
+/* A row's ⋯ slot (`RowMore`, used by every row with a menu): it lines up as a box. */
+.row-more {
+  display: inline-flex;
+}

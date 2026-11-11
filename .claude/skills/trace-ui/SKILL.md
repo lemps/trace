@@ -272,7 +272,10 @@ borrowing one:
   copy) follows the recipe.
 - **The hover bar is a shortcut layer; ⋯ and right-click are the full list.** A row
   shows 2–4 frequent icon actions on hover; its ⋯ menu and its right-click menu list
-  everything, built from the same items (`agentMenu.ts`, `editorItems`).
+  everything, built from the same items (`agentMenu.ts`, `editorItems`). A row
+  declares one list of `RowAction`s and `useRowMenu` + `RowBar` / `RowMore` /
+  `RowMenuPopover` (`components/RowMenu.tsx`) draw all three from it: session rows,
+  board cards, Fleet and Inbox rows. The menu is laid beside the row, never inside it.
 - Anything hover-revealed also has a visible or keyboard path (an always-visible
   Start, a row's open arrow as well as double-click).
 - Empty: a dashed box with one plain sentence that says what would fill it
@@ -294,7 +297,7 @@ borrowing one:
 ## 6. Where code goes
 
 - Shared primitives (`StatusLight`, `SidePanel`, `Modal`, `PopMenu`, `ContextMenu`,
-  `MenuList`, `SplitButton`, `MenuCaret`, `Icon`, `IconButton`, `InlineConfirm` (with a
+  `MenuList`, `RowMenu`, `SplitButton`, `MenuCaret`, `Icon`, `IconButton`, `InlineConfirm` (with a
   `size` for rows), `FilterChip`, `Segmented`, `BusyLabel`, `BackButton`, `Spinner`)
   live in `src/components/`;
   reuse them before writing a look-alike.

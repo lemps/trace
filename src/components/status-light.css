@@ -54,7 +54,7 @@
 .light-word {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   font-size: var(--text-meta);
   white-space: nowrap;
   color: var(--fg-3);
@@ -124,10 +124,10 @@
    row reads as one strip. Tinted rather than filled — it's a state, not a control. */
 .light-pill.lg {
   height: var(--control-h);
-  padding: 0 11px;
+  padding: 0 12px;
   border-radius: var(--radius-sm);
   font-size: var(--text-ui);
-  gap: 7px;
+  gap: 6px;
 }
 .light-pill.lg .light-age {
   font-size: var(--text-meta);

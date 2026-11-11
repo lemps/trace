@@ -91,7 +91,7 @@ export function Breadcrumbs({ path, oldPath, onReveal }: BreadcrumbsProps) {
               onClick={toggle}
               aria-haspopup="menu"
               aria-expanded={open}
-              aria-label={`${folded.length} more folders`}
+              aria-label="Show folded folders"
               title={folded.map((f) => f.name).join(" / ")}
             >
               …

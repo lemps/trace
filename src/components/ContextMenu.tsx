@@ -9,6 +9,8 @@ interface ContextMenuProps {
   x: number;
   y: number;
   sections: MenuSection[];
+  /** `right`: `x` is the right edge it hangs from (a row's ⋯), not the pointer. */
+  align?: "left" | "right";
   onClose: () => void;
   /**
    * Where focus goes after Escape or a pick (before the item runs). Defaults to what
@@ -21,7 +23,14 @@ interface ContextMenuProps {
 // context-menu key, `useContextMenuAt`) instead of under a trigger. Kept inside the
 // window; takes focus so arrows move through it and Esc closes it — which also keeps
 // Esc from reaching a terminal under it, where it would interrupt the agent.
-export function ContextMenu({ x, y, sections, onClose, returnFocus }: ContextMenuProps) {
+export function ContextMenu({
+  x,
+  y,
+  sections,
+  align = "left",
+  onClose,
+  returnFocus,
+}: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [opener] = useState(() =>
@@ -33,10 +42,11 @@ export function ContextMenu({ x, y, sections, onClose, returnFocus }: ContextMen
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const left = Math.max(4, Math.min(x, window.innerWidth - el.offsetWidth - 4));
+    const from = align === "right" ? x - el.offsetWidth : x;
+    const left = Math.max(4, Math.min(from, window.innerWidth - el.offsetWidth - 4));
     const top = Math.max(4, Math.min(y, window.innerHeight - el.offsetHeight - 4));
     setPos({ left, top });
-  }, [x, y]);
+  }, [x, y, align]);
 
   useEffect(() => {
     if (pos) ref.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();

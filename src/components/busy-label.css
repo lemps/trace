@@ -1,5 +1,5 @@
 /* `BusyLabel`: the rest word and the busy verb share one grid cell, so a button is
-   pre-sized to the longer and never jumps (trace-ui §2 rule 7). */
+   pre-sized to the longer and never jumps (trace-ui §1). */
 .busy-label {
   display: inline-grid;
   justify-items: start;

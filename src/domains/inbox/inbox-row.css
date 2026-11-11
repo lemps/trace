@@ -5,13 +5,32 @@
   align-items: flex-end;
   gap: 6px;
 }
-/* Its × and › are `.btn.ghost.icon.xs`; the row's hover or selection outlines them. */
-.ib-row:hover .ib-open,
-.ib-row.sel .ib-open {
+/* Its hover bar (`RowBar`): × and › are `.btn.ghost.icon.xs`, always there; the row's
+   hover or selection outlines them. */
+.ib-row:hover .ib-row-actions .btn.icon,
+.ib-row.sel .ib-row-actions .btn.icon {
   color: var(--fg-1);
   border-color: var(--border);
 }
 .ib-row-actions {
   display: flex;
   gap: 4px;
+}
+/* Its ⋯ follows the reveal recipe and keeps its slot: shown on hover, focus,
+   selection, while its menu is open, and always without a hovering pointer. */
+.ib-row-actions .row-more {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.ib-row:hover .row-more,
+.ib-row:focus-within .row-more,
+.ib-row.sel .row-more,
+.ib-row.menu-open .row-more,
+.ib-row-actions .row-more:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ib-row-actions .row-more {
+    opacity: 1;
+  }
 }

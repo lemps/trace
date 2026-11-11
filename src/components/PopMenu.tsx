@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useDismiss } from "@/hooks/useDismiss";
 import { I } from "./Icon";
 import { IconButton, type IconButtonProps } from "./IconButton";
+import { ICON_SIZE } from "./iconScale";
 import { MenuList } from "./MenuList";
 
 export interface MenuItem {
@@ -95,7 +96,7 @@ export function MoreTrigger({ toggle, open, label, size = "md", className }: Mor
       aria-expanded={open}
       onClick={toggle}
     >
-      <I.More size={14} />
+      <I.More size={size === "xs" ? ICON_SIZE.xs : ICON_SIZE.sm} />
     </IconButton>
   );
 }

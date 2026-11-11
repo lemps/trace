@@ -111,7 +111,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px 10px;
+  padding: 12px 12px 10px;
   border-bottom: 1px solid var(--border-faint);
 }
 .col-dot {
@@ -201,7 +201,7 @@
   gap: 8px;
   width: 100%;
   text-align: left;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-sm);
   background: var(--bg-1);
@@ -225,4 +225,44 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ============ Card: its ⋯ and its meta line (card.css is at its cap) ============ */
+
+/* The card's ⋯ (`RowMore`, `MoreTrigger size="xs"`): the reveal recipe. It keeps its
+   slot, so nothing in the top row shifts when it shows: on hover, while the card holds
+   focus, while its menu is open, and always without a hovering pointer. */
+.card .card-more {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.card:hover .card-more,
+.card:focus-within .card-more,
+.card .card-more:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .card .card-more {
+    opacity: 1;
+  }
+}
+.card .card-more .btn.icon {
+  color: var(--fg-3);
+}
+.card .card-more .btn.icon:hover:not(:disabled) {
+  color: var(--fg-0);
+}
+/* The meta line's type and labels; the PR pill sits at its end. */
+.card .card-type,
+.card .card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.card .card-label {
+  gap: 6px;
+}
+.card .card-pr {
+  margin-left: auto;
+  cursor: pointer;
 }

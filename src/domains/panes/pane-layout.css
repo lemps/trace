@@ -101,7 +101,7 @@
   margin-left: 0;
   margin-right: 4px;
 }
-/* The pane's × and ⋯: quiet chrome (trace-ui §2 rule 1). Always there on the
+/* The pane's × and ⋯: quiet chrome (trace-ui §5, the reveal recipe). Always there on the
    focused pane (or the only one); on another while its strip is hovered or holds
    focus, or its menu is open; always without a hovering pointer. */
 .btn.icon.pn-act {

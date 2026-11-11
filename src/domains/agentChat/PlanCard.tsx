@@ -11,17 +11,26 @@ const WORD: Record<PlanStatus, string> = {
   done: "Done",
 };
 
-export function PlanCard({ plan }: { plan: Plan }) {
+interface PlanCardProps {
+  plan: Plan;
+  /** Drops the head, for a host that already says "Tasks · N of M done" (the
+   *  Transcript's opened tool row). */
+  bare?: boolean;
+}
+
+export function PlanCard({ plan, bare = false }: PlanCardProps) {
   const done = plan.items.filter((i) => i.status === "done").length;
   return (
     <div className="ac-card ac-plan">
-      <div className="ac-card-head">
-        <I.ListChecks size={14} />
-        <span className="ac-card-title">Tasks</span>
-        <span className="ac-card-meta">
-          {done} of {plan.items.length} done
-        </span>
-      </div>
+      {!bare && (
+        <div className="ac-card-head">
+          <I.ListChecks size={14} />
+          <span className="ac-card-title">Tasks</span>
+          <span className="ac-card-meta">
+            {done} of {plan.items.length} done
+          </span>
+        </div>
+      )}
       <ol className="ac-plan-items">
         {plan.items.map((item, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: a plan's steps are positional

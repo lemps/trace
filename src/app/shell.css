@@ -79,7 +79,7 @@
   gap: 8px;
   width: 100%;
   text-align: left;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
   font-size: var(--text-ui);
   color: var(--fg-1);
@@ -97,7 +97,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--fg-3);
-  padding: 0 5px;
+  padding: 0 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
 }
@@ -106,7 +106,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--fg-3);
-  padding: 0 5px;
+  padding: 0 4px;
   border: 1px solid var(--border-faint);
   border-radius: var(--radius-xs);
   background: var(--bg-2);
@@ -158,7 +158,7 @@
   flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   color: var(--fg-3);
@@ -297,7 +297,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 11px 12px;
+  padding: 10px 12px;
   border-radius: var(--radius);
   background: var(--bg-elev);
   border: 1px solid var(--border);
@@ -344,14 +344,21 @@
   margin: -1px -4px 0 0;
 }
 
-.board-switcher {
-  height: var(--control-h);
-  padding: 0 8px;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--fg-1);
-  font-size: var(--text-ui);
+/* The board switcher (`BoardActions`): a `.btn` naming the current board, with the
+   menu caret; a long name ends in an ellipsis. Its menu scrolls past a dozen boards. */
+.btn.board-switcher {
+  max-width: 240px;
+  padding: 0 8px 0 12px;
+}
+.board-switcher-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pop-menu:has(> .board-switcher) .pop-menu-pop {
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 /* The board's refresh: its icon turns while the board reloads under the cards. */

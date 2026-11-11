@@ -54,7 +54,7 @@
 .kbd {
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   color: var(--fg-3);

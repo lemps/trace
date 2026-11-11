@@ -319,7 +319,6 @@
 /* Transcript | Terminal, at the right end of the detail tab bar. */
 .tx-switch {
   margin-left: auto;
-  margin-right: 0;
 }
 .tx-switch button:disabled {
   opacity: 0.4;

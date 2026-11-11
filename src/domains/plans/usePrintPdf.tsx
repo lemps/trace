@@ -10,7 +10,7 @@ export interface PrintPdf {
   run: (doc: PlanDoc) => Promise<void>;
 }
 
-/** How long a sheet may take to lay out (an HTML document's frame to load). */
+/** How long a sheet may take to lay out (an HTML document's images and fonts to load). */
 const READY_MS = 5000;
 
 // Save as PDF: put the document in its print layout (`plans-print.css` hides the

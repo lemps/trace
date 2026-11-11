@@ -40,7 +40,7 @@
   text-transform: uppercase;
   color: var(--fg-3);
   font-weight: 600;
-  padding: 18px 0 10px;
+  padding: 16px 0 10px;
   border-bottom: 1px solid var(--border-faint);
   margin-bottom: 8px;
 }
@@ -50,7 +50,7 @@
 .act-row {
   display: grid;
   grid-template-columns: 64px 28px 1fr;
-  gap: 14px;
+  gap: 12px;
   padding: 8px 0;
   align-items: flex-start;
   font-size: var(--text-body);

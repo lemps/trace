@@ -7,10 +7,10 @@
    does; paper sets only the base size. */
 
 /* On screen the sheet is laid out out of sight, as wide as a page's text, so an
-   HTML document's frame can be measured to its full height before printing:
-   A4 less the 0.6in margins either side (platform/*_pdf.rs), ≈ 678px. A4 is the
-   narrowest common paper, so on Letter the frame is measured a little narrower
-   than it prints, which only ever makes it taller than it needs, never cut. */
+   HTML document can be measured before printing (its cards, or its fallback
+   frame's height): A4 less the 0.6in margins either side (platform/*_pdf.rs),
+   ≈ 678px. A4 is the narrowest common paper, so on Letter it's measured a little
+   narrower than it prints, which only ever makes a frame taller, never cut. */
 .plan-print {
   position: fixed;
   top: 0;
@@ -18,6 +18,16 @@
   width: calc(210mm - 1.2in);
   visibility: hidden;
   pointer-events: none;
+}
+
+/* An HTML document's print copy (print/HtmlPrint), in a shadow root on this
+   host. On screen its paint is contained: a `position: fixed` box in the
+   document is placed and clipped here, out of sight with the sheet, rather
+   than over the app (it's inert too, so nothing in it takes a click). On paper
+   it's laid out like any other content, so it breaks across pages. */
+.plan-print-doc {
+  display: block;
+  contain: paint;
 }
 
 @media print {
@@ -94,6 +104,29 @@
   }
   .plan-print .md-code-head:has(.md-code-lang:empty) {
     display: none;
+  }
+  /* Tables fit the page. On screen a wide one scrolls in its own box
+     (markdown.css), which paper would cut at the right edge, and a scroll box
+     can't break across pages. Here it's a real table again, as wide as its
+     content up to the column (an auto-layout table shrinks to fit by wrapping
+     its cells), so a narrow table stays narrow; a cell breaks anywhere, so even
+     a long path or hash wraps rather than pushing the table past the edge. */
+  .plan-print .md .md-table {
+    width: auto;
+    max-width: 100%;
+  }
+  .plan-print .md table {
+    display: table;
+    width: auto;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .plan-print .md th,
+  .plan-print .md td {
+    overflow-wrap: anywhere;
+  }
+  .plan-print-doc {
+    contain: none;
   }
   .plan-print-frame {
     display: block;
