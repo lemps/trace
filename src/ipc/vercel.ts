@@ -115,3 +115,18 @@ export function setSandboxLifetime(
 ): Promise<SandboxLifetime> {
   return invoke("set_sandbox_lifetime", { idleMinutes, maxHours });
 }
+
+/** How big new sandboxes are (`execution/sandbox/size.rs`). */
+export interface SandboxSize {
+  /** vCPUs, each with 2 GB of memory; null is Vercel's default. */
+  vcpus: number | null;
+}
+
+export function sandboxSize(): Promise<SandboxSize> {
+  return invoke("sandbox_size");
+}
+
+/** Saved within range; returns what was saved. Only sandboxes made afterwards get it. */
+export function setSandboxSize(vcpus: number | null): Promise<SandboxSize> {
+  return invoke("set_sandbox_size", { vcpus });
+}
