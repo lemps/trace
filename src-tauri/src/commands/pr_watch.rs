@@ -13,8 +13,13 @@ use crate::github::{links, thread::PrThread};
 #[tauri::command]
 pub async fn workspace_prs(workspace_id: String) -> Result<Vec<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        locate(&workspace_id)
-            .map(|(cwd, ids)| links::discover(&cwd, &ids))
+        // A ticket in a sandbox has no worktree here, even if it has a repo assigned.
+        let remote = crate::commands::issue_host::of_issue(&workspace_id)
+            .and_then(|_| crate::commands::session_host::remote_prs(&workspace_id));
+        remote
+            .or_else(|| {
+                locate(&workspace_id).map(|(cwd, ids)| links::discover(&cwd, &ids))
+            })
             .or_else(|| crate::commands::session_host::remote_prs(&workspace_id))
             .unwrap_or_default()
     })

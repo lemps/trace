@@ -4,6 +4,7 @@ import { defaultTransport, useHasChat } from "@/domains/agentChat/transport";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { AGENT_OPTIONS, isChosen } from "./agentOptions";
 import { agentLabel } from "./providerLabel";
+import type { RunsOnState } from "./runsOn";
 
 interface StartSplitButtonProps {
   cli: AgentCli;
@@ -13,6 +14,8 @@ interface StartSplitButtonProps {
   /** Chat or terminal for this start; undefined = what it ran on last, else Settings' default. */
   transport: Transport | undefined;
   onChooseTransport: (transport: Transport) => void;
+  /** Where it runs; the choice shows only while Vercel is connected. */
+  runsOn: RunsOnState;
 }
 
 // "Start Claude ▾": one click starts the chosen agent; the caret picks which
@@ -25,8 +28,12 @@ export function StartSplitButton({
   onChoose,
   transport,
   onChooseTransport,
+  runsOn,
 }: StartSplitButtonProps) {
-  const canChat = useHasChat(cli);
+  const inSandbox = runsOn.host === "vercel";
+  // A sandbox with no saved Claude login can only show a terminal, to sign in from.
+  const chatBlocked = !useHasChat(cli) || Boolean(runsOn.chatBlock);
+  const canChat = !chatBlocked;
   const shown = canChat ? (transport ?? defaultTransport(cli)) : "terminal";
   const name = agentLabel(cli, provider);
   return (
@@ -34,10 +41,36 @@ export function StartSplitButton({
       primary
       menuLabel="Choose which agent to start"
       sections={[
+        ...(runsOn.offered
+          ? [
+              {
+                title: "Runs on",
+                items: [
+                  {
+                    label: "This machine",
+                    checked: !inSandbox,
+                    onSelect: () => runsOn.choose("local"),
+                  },
+                  {
+                    label: "Vercel sandbox",
+                    detail: "Clones the repo from GitHub",
+                    checked: inSandbox,
+                    onSelect: () => {
+                      runsOn.choose("vercel");
+                      // Only Claude runs in a sandbox.
+                      if (cli !== "claude") onChoose("claude", provider);
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
         {
           title: "Agent",
           items: AGENT_OPTIONS.map((o) => ({
             label: o.label,
+            detail: inSandbox && o.cli !== "claude" ? "Not available in a sandbox" : undefined,
+            disabled: inSandbox && o.cli !== "claude",
             checked: isChosen(o, cli, provider),
             onSelect: () => onChoose(o.cli, o.provider),
           })),
@@ -47,7 +80,7 @@ export function StartSplitButton({
           items: [
             {
               label: "Chat",
-              detail: canChat ? undefined : `Not available for ${name}`,
+              detail: canChat ? undefined : (runsOn.chatBlock ?? `Not available for ${name}`),
               checked: shown === "chat",
               disabled: !canChat,
               onSelect: () => onChooseTransport("chat"),

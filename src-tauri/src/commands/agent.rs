@@ -232,6 +232,8 @@ pub fn start_agent(
     match_text: Option<String>,
     // "chat" | "terminal"; unset keeps what the ticket ran on last.
     transport: Option<String>,
+    // "local" | "vercel": where it runs; unset keeps what the ticket ran on last.
+    host: Option<String>,
 ) -> Result<(), String> {
     if state.pty_sessions.lock().contains_key(&issue_key) {
         return Ok(());
@@ -242,9 +244,17 @@ pub fn start_agent(
         return Ok(());
     };
 
-    let worktree = issue_worktree(&issue_key, match_text.as_deref().unwrap_or(""))?;
-
+    let match_text = match_text.unwrap_or_default();
     let cli = cli.unwrap_or_else(|| "claude".to_string());
+    // A sandbox clones the repo itself: no local worktree, and only Claude runs there.
+    let sandbox = crate::commands::issue_host::settle(&issue_key, &match_text, host.as_deref())?;
+    let worktree = match sandbox {
+        Some(_) if cli != "claude" => {
+            return Err("Only Claude runs in a cloud sandbox.".to_string());
+        }
+        Some(sandbox) => crate::commands::session_host::sandbox_cwd(&sandbox),
+        None => issue_worktree(&issue_key, &match_text)?,
+    };
     spawn_in(
         app,
         &state,

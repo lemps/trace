@@ -1,7 +1,7 @@
 // Agent launch defaults configured in Settings, read from localStorage so the
 // start flows and the Settings UI share one source of truth.
 
-import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
+import type { AgentCli, AgentProvider, RunsOn, Transport } from "@/ipc/agent";
 
 const CLI_KEY = "trace.agentCli";
 const PROVIDER_KEY = "trace.agentProvider";
@@ -61,6 +61,18 @@ export function agentTransport(): Transport {
 export function setAgentTransport(next: Transport) {
   // Chat is the default: store nothing for it.
   write(TRANSPORT_KEY, next === "terminal" ? "terminal" : "");
+}
+
+const HOST_KEY = "trace.agentHost";
+
+/** Where ticket agents run when nothing says otherwise. This machine unless set;
+ * only Claude runs in a sandbox, and the repo needs a GitHub origin. */
+export function agentHost(): RunsOn {
+  return read(HOST_KEY) === "vercel" ? "vercel" : "local";
+}
+
+export function setAgentHost(next: RunsOn) {
+  write(HOST_KEY, next === "vercel" ? "vercel" : "");
 }
 
 /** The default model, or undefined to use the CLI's own default. */

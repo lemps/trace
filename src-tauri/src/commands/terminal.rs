@@ -33,6 +33,7 @@ pub fn start_terminal(
     let cwd = if crate::commands::session::is_session(&issue_key) {
         crate::commands::session::session_cwd(&issue_key, true)?
     } else {
+        crate::commands::issue_host::require_local(&issue_key, "A terminal")?;
         let repo = crate::commands::repos::repo_for(&issue_key)?;
         let worktree = crate::commands::repos::workspace_dir(&repo, &issue_key);
         if !std::path::Path::new(&worktree).exists() {

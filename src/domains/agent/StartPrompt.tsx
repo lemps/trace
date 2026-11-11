@@ -13,6 +13,8 @@ interface StartPromptProps {
   cliName: string;
   /** The agent exited by itself: word this as a restart of the same conversation. */
   exited?: boolean;
+  /** Set when it will run in a sandbox: what that means for the repositories on offer. */
+  sandboxNote?: string;
   /** It will start as a chat rather than its TUI. */
   asChat: boolean;
 }
@@ -30,6 +32,7 @@ export function StartPrompt({
   agentName,
   cliName,
   exited = false,
+  sandboxNote,
   asChat,
 }: StartPromptProps) {
   const noRepos = repos.length === 0;
@@ -52,7 +55,9 @@ export function StartPrompt({
               Start {asChat ? "a" : "an interactive"} {capitalize(agentName)} session
             </div>
             <div className="hint">
-              The agent runs in an isolated git worktree under the repo you pick.{" "}
+              {sandboxNote
+                ? "The agent runs in a Vercel sandbox, with the repo you pick cloned from GitHub."
+                : "The agent runs in an isolated git worktree under the repo you pick."}{" "}
               {asChat
                 ? "Its work shows here as a chat: messages, tool runs, diffs and approvals."
                 : `You'll get the full ${cliName} TUI right here.`}
@@ -75,6 +80,7 @@ export function StartPrompt({
             </select>
           </label>
         )}
+        {sandboxNote && !exited && <div className="hint">{sandboxNote}</div>}
         <button type="button" className="btn empty-action" onClick={onStart} disabled={noRepos}>
           <I.Play size={14} /> {exited ? "Restart" : "Start"} {agentName}
         </button>
