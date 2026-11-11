@@ -130,6 +130,7 @@ pub fn run() {
             commands::agent::agent_running,
             commands::agent::live_workspaces,
             commands::agent::start_agent,
+            commands::issue_host::issue_host,
             commands::terminal::start_terminal,
             commands::tailscale::tailscale_status,
             commands::preflight::preflight_checks,

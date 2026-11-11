@@ -2,7 +2,6 @@
 //! server, so it opens at the port's preview URL (`execution::sandbox::preview`).
 //! Only a loopback URL in a sandbox session costs a provider call.
 
-use crate::commands::session::owning_session;
 use crate::execution::sandbox::{preview, SandboxProvider};
 use crate::execution::vercel::{auth, Vercel};
 use crate::execution::SessionHost;
@@ -14,7 +13,7 @@ pub(crate) async fn for_workspace(workspace_id: &str, url: String) -> String {
         return url;
     }
     let Some(SessionHost::Vercel { sandbox, .. }) =
-        owning_session(workspace_id).and_then(|s| s.host)
+        crate::commands::issue_host::host_of(workspace_id)
     else {
         return url;
     };

@@ -14,6 +14,7 @@ import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { editorItems } from "./editorItems";
 import { agentLabel } from "./providerLabel";
 import { RestartChip } from "./RestartChip";
+import type { RunsOnState } from "./runsOn";
 import { StartSplitButton } from "./StartSplitButton";
 
 interface DetailHeaderProps {
@@ -45,6 +46,8 @@ interface DetailHeaderProps {
   /** Chat or terminal for the next start; undefined = Settings' default. */
   transport: Transport | undefined;
   onChooseTransport: (transport: Transport) => void;
+  /** Where the agent runs (this machine or a sandbox). */
+  runsOn: RunsOnState;
   /** Restart, Open in terminal / as chat (`agentChat/agentMenu`). */
   agentItems: MenuItem[];
   /** The pane layout's own (Reset layout). */
@@ -58,14 +61,16 @@ interface PrActionProps {
   busy: "raise" | "merge" | null;
   onRaisePr: () => void;
   onMergePr: () => void;
+  /** In a sandbox: Raise PR and Merge need a local worktree, so only an existing PR shows. */
+  remote: boolean;
 }
 
 // The header's PR button follows the PR's real state: merge an open one, view a
 // finished one, and only offer "Raise PR" when the workspace has none at all. Raise
 // PR drops to its icon when the header is narrow (`header-fit.css`); Merge #N and a
 // PR's number keep their words. Busy, each says its verb in the same width.
-function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
-  if (openPr && isLive(openPr.state)) {
+function PrAction({ openPr, busy, onRaisePr, onMergePr, remote }: PrActionProps) {
+  if (openPr && isLive(openPr.state) && !remote) {
     return (
       <button
         type="button"
@@ -91,6 +96,7 @@ function PrAction({ openPr, busy, onRaisePr, onMergePr }: PrActionProps) {
       </button>
     );
   }
+  if (remote) return null;
   return (
     <button
       type="button"
@@ -133,6 +139,7 @@ export function DetailHeader({
   onChooseProvider,
   transport,
   onChooseTransport,
+  runsOn,
   agentItems,
   layoutItems,
 }: DetailHeaderProps) {
@@ -181,15 +188,22 @@ export function DetailHeader({
             }}
             transport={transport}
             onChooseTransport={onChooseTransport}
+            runsOn={runsOn}
           />
         )}
-        <PrAction openPr={openPr} busy={busy} onRaisePr={onRaisePr} onMergePr={onMergePr} />
+        <PrAction
+          openPr={openPr}
+          busy={busy}
+          onRaisePr={onRaisePr}
+          onMergePr={onMergePr}
+          remote={runsOn.remote}
+        />
         <PopMenu
           trigger={({ open, toggle }) => (
             <MoreTrigger open={open} toggle={toggle} label="More actions" />
           )}
           sections={[
-            { title: "Worktree", items: editorItems(issue.key) },
+            ...(runsOn.remote ? [] : [{ title: "Worktree", items: editorItems(issue.key) }]),
             { title: "Agent", items: agentItems },
             { title: "Layout", items: layoutItems },
           ]}

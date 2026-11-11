@@ -17,6 +17,7 @@ pub mod gallery;
 pub mod github;
 pub mod groups;
 pub mod interrupted;
+pub mod issue_host;
 pub mod issues;
 pub mod mcp;
 pub mod orchestrator;

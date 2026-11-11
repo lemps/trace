@@ -45,6 +45,7 @@ pub fn open_in_editor(
     let path = if crate::commands::session::is_session(&issue_key) {
         crate::commands::session::session_cwd(&issue_key, false)?
     } else {
+        crate::commands::issue_host::require_local(&issue_key, "Opening in an editor")?;
         let repo = crate::commands::repos::repo_for(&issue_key)
             .ok()
             .or_else(crate::commands::repos::default_repo)

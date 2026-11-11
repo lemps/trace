@@ -9,6 +9,7 @@ import type { PlanTabState } from "@/domains/plans/store";
 import type { AgentCli } from "@/ipc/agent";
 import { AgentViewSwitch } from "./AgentViewSwitch";
 import { prTab, testsTab } from "./reviewTabs";
+import { ticketTabsFor } from "./runsOn";
 import { TicketPane } from "./TicketPane";
 import { type ViewerTabsState, viewerTabs } from "./viewerTabs";
 import { filesTab, terminalTab, type WorkspaceTabsState } from "./workspaceTabs";
@@ -31,6 +32,10 @@ interface TicketPanelsArgs {
   tests: Coming;
   pr: Coming;
   prUrls: string[];
+  /** Started in a sandbox: no local worktree behind Terminal and Tests. */
+  remote: boolean;
+  /** The sandbox can read its checkout, so Files stays. */
+  filesInSandbox: boolean;
 }
 
 /**
@@ -39,6 +44,7 @@ interface TicketPanelsArgs {
  */
 export function ticketPanels(a: TicketPanelsArgs) {
   const { issue, site, cli, chat, plan, viewers, workspace, tests, pr, prUrls } = a;
+  const has = ticketTabsFor(a.remote, a.filesInSandbox);
   const panels: PanelDescriptor[] = [
     {
       id: TICKET_CHAT_TAB,
@@ -57,9 +63,9 @@ export function ticketPanels(a: TicketPanelsArgs) {
       icon: I.Ticket,
       render: () => <TicketPane issue={issue} site={site} />,
     },
-    filesTab(issue.key, workspace),
-    terminalTab(issue.key, workspace),
-    testsTab(issue.key, tests),
+    ...(has.files ? [filesTab(issue.key, workspace)] : []),
+    ...(has.terminal ? [terminalTab(issue.key, workspace)] : []),
+    ...(has.tests ? [testsTab(issue.key, tests)] : []),
     prTab(prUrls, pr),
   ];
   return panels;

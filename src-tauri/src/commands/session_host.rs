@@ -16,18 +16,27 @@ pub(crate) fn host_for(workspace_id: &str) -> Result<Host, String> {
     let sessions = load();
     if let Some(s) = sessions.iter().find(|s| s.id == workspace_id) {
         if let Some(host) = &s.host {
-            return sandbox_host(s, host);
+            return sandbox_host(&s.id, &s.title, s.repo.as_deref(), host);
         }
     } else if sessions
         .iter()
         .any(|s| s.host.is_some() && s.agents.iter().any(|a| a.id == workspace_id))
     {
         return Err("A sandbox session can't have extra agents yet.".to_string());
+    } else if let Some(host) = crate::commands::issue_host::of_issue(workspace_id) {
+        // A ticket's sandbox: it names itself and its repo by the issue key.
+        let local_repo = crate::commands::repos::repo_for(workspace_id).ok();
+        return sandbox_host(workspace_id, workspace_id, local_repo.as_deref(), &host);
     }
     Ok(Host::local())
 }
 
-fn sandbox_host(session: &ScratchSession, host: &SessionHost) -> Result<Host, String> {
+fn sandbox_host(
+    id: &str,
+    title: &str,
+    local_repo: Option<&str>,
+    host: &SessionHost,
+) -> Result<Host, String> {
     match host {
         SessionHost::Vercel { sandbox, remote } => {
             let conn = auth::load().ok_or("Connect Vercel in Integrations first.")?;
@@ -37,23 +46,21 @@ fn sandbox_host(session: &ScratchSession, host: &SessionHost) -> Result<Host, St
                 .ok_or("This session doesn't say which GitHub repository to check out.")?;
             // The repo's setup, found by its local checkout or else its remote.
             let catalog = crate::repo_catalog::store::load();
-            let setup = session
-                .repo
-                .as_deref()
+            let setup = local_repo
                 .and_then(|path| catalog.for_path(path))
                 .or_else(|| catalog.for_remote(&remote))
                 .map(|r| r.setup.clone())
                 .unwrap_or_default();
             let target = SandboxTarget {
-                workspace_id: session.id.clone(),
+                workspace_id: id.to_string(),
                 sandbox: sandbox.clone(),
                 remote,
-                title: session.title.clone(),
+                title: title.to_string(),
                 setup,
             };
             let secrets = Secrets {
                 github: None,
-                pick_github: Some(github_preferences(session.repo.as_deref())),
+                pick_github: Some(github_preferences(local_repo)),
                 claude: credential::load(),
             };
             Ok(Host::Vercel(Box::new(SandboxHost::new(
@@ -70,10 +77,8 @@ fn sandbox_host(session: &ScratchSession, host: &SessionHost) -> Result<Host, St
 /// chat transport, the transcript view, the folder's tabs).
 #[tauri::command]
 pub fn agent_capabilities(workspace_id: String) -> Capabilities {
-    load()
-        .iter()
-        .find(|s| s.id == workspace_id || s.agents.iter().any(|a| a.id == workspace_id))
-        .and_then(|s| s.host.as_ref())
+    crate::commands::issue_host::host_of(&workspace_id)
+        .as_ref()
         .map_or(Capabilities::ALL, SessionHost::capabilities)
 }
 
@@ -140,12 +145,14 @@ pub(crate) fn sandbox_cwd(host: &SessionHost) -> String {
 /// The PRs of a session in a sandbox: its branch's, on its GitHub repo, since
 /// there's no checkout here to ask. None when `workspace_id` isn't one.
 pub(crate) fn remote_prs(workspace_id: &str) -> Option<Vec<String>> {
-    let session = crate::commands::session::owning_session(workspace_id)?;
-    let SessionHost::Vercel { remote, .. } = session.host.as_ref()?;
+    let id = crate::commands::session::owning_session(workspace_id)
+        .map_or_else(|| workspace_id.to_string(), |s| s.id);
+    let host = crate::commands::issue_host::host_of(&id)?;
+    let SessionHost::Vercel { remote, .. } = &host;
     let remote = remote.as_deref().and_then(github_remote)?;
-    let branch = crate::execution::sandbox::host::session_branch(&session.id);
+    let branch = crate::execution::sandbox::host::session_branch(&id);
     // The ones its `gh` reported opening, then its branch's on GitHub.
-    let mut prs = crate::execution::sandbox::prs::of(&session.id);
+    let mut prs = crate::execution::sandbox::prs::of(&id);
     for url in crate::github::links::repo_branch_prs(&remote, &branch) {
         if !prs.contains(&url) {
             prs.push(url);
