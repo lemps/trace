@@ -2,6 +2,9 @@
 // from the IPC boundary, and deciding when a later launch should say something.
 // Pure, so `checks.test.ts` covers it.
 
+/** What trace can do about a failed check itself: a button on its row. */
+export type FixAction = "install" | "signIn";
+
 /** One preflight check: a CLI trace needs, or `gh` being signed in. */
 export interface PreflightCheck {
   /** "git", "claude", "gh" or "codex". */
@@ -14,6 +17,12 @@ export interface PreflightCheck {
   detail: string;
   /** A short plain instruction; only on a failed check. */
   fix: string | null;
+  /** What trace can do about it itself; only on a failed check. */
+  action: FixAction | null;
+}
+
+function parseAction(v: unknown): FixAction | null {
+  return v === "install" || v === "signIn" ? v : null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -33,6 +42,7 @@ export function parseChecks(raw: unknown): PreflightCheck[] {
         title: typeof c.title === "string" ? c.title : c.id,
         detail: typeof c.detail === "string" ? c.detail : "",
         fix: !c.ok && typeof c.fix === "string" && c.fix ? c.fix : null,
+        action: c.ok ? null : parseAction(c.action),
       },
     ];
   });
@@ -65,6 +75,22 @@ export function noticeText(checks: readonly PreflightCheck[]): string {
   const problems = requiredProblems(checks);
   if (problems.length === 1) return `Setup: ${problems[0].title}.`;
   return `Setup: ${problems.length} things trace needs aren't ready.`;
+}
+
+/**
+ * The next thing "Set it all up" should do: installs before sign-ins (a tool
+ * has to be there to sign in), required checks only, and never one that was
+ * already tried this round, so a failure stops the run instead of looping.
+ */
+export function nextFix(
+  checks: readonly PreflightCheck[],
+  tried: ReadonlySet<string>
+): { id: string; action: FixAction } | null {
+  const open = requiredProblems(checks).filter(
+    (c) => c.action !== null && !tried.has(`${c.id}:${c.action}`)
+  );
+  const pick = open.find((c) => c.action === "install") ?? open[0];
+  return pick?.action ? { id: pick.id, action: pick.action } : null;
 }
 
 /** The first run's steps, in order. Every one can be skipped with Next. */
