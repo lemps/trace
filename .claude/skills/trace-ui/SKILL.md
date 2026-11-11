@@ -287,6 +287,7 @@ borrowing one:
 | Epic | `Layers` | `Branch` |
 | Branch, worktree | `Branch` | epic |
 | Queue a message | `ListPlus` | |
+| Slash commands (the composer's `/` menu) | `Slash` | `Code` |
 | Task list | `ListChecks` | `Check` |
 | A plan: the Plan tab, its documents, *Plan* mode | `Plan` | `ListChecks` |
 | Import ↓ / Export ↑ | `Download` / `Upload` | |

@@ -63,9 +63,28 @@ describe("slashMatches", () => {
     assert.deepEqual(labels("/pr", [], [prompt("pr")]), ["pr"]);
   });
 
-  it("lists at most eight", () => {
-    const many = Array.from({ length: 12 }, (_, i) => `cmd${i}`);
-    assert.equal(labels("/", many, [])?.length, 8);
+  it("lists every match, so `/` alone shows them all", () => {
+    const many = Array.from({ length: 40 }, (_, i) => `cmd${i}`);
+    assert.equal(labels("/", many, [])?.length, 40);
+  });
+
+  it("describes the commands Claude Code describes", () => {
+    const details = [{ name: "compact", description: "Keep a summary", argumentHint: "[how]" }];
+    const entries = slashEntries(["compact", "mine"], [], details);
+    assert.equal(entries[0].detail?.description, "Keep a summary");
+    assert.equal(entries[1].detail, undefined);
+  });
+
+  it("offers Claude Code's commands until the agent lists its own", () => {
+    const details = [{ name: "mcp", description: "Manage MCP servers", argumentHint: "" }];
+    assert.deepEqual(
+      slashEntries([], [], details).map((e) => e.label),
+      ["mcp"]
+    );
+    assert.deepEqual(
+      slashEntries(["own"], [], details).map((e) => e.label),
+      ["own"]
+    );
   });
 });
 

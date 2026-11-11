@@ -49,7 +49,7 @@ const isRepoPlace = (place: string) => place !== SCRATCH && place !== FOLDER;
 
 // A session starts from the task you want done: type it, press Start, and the agent
 // is created and handed it as its first message. Haiku names the session from that
-// task (`titleFromPrompt`) — nobody types a title. The choices that change where the
+// task (`titleFromPrompt`) unless you type a name under it. The choices that change where the
 // work happens sit under it, opened on whatever was used last
 // (`sessionDefaults`); the rest are behind More options. An empty task still works
 // and behaves as it always did: the session is created and waits at its prompt.
@@ -209,6 +209,16 @@ export function NewSessionModal({
           }}
         />
       </label>
+      <label className="field">
+        <span className="field-label">Name</span>
+        <input
+          className="field-input"
+          type="text"
+          placeholder="Named from the task"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
       <NewSessionWhere
         host={host}
         choices={choices}
@@ -238,8 +248,6 @@ export function NewSessionModal({
       </button>
       {more && (
         <NewSessionMore
-          title={title}
-          onTitle={setTitle}
           showHost={Boolean(vercel)}
           hostPick={hostPick}
           onHost={setHostPick}

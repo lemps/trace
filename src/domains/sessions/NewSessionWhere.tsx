@@ -3,7 +3,9 @@ import {
   modeLabel,
   modelChoices,
   modelLabel,
+  modelName,
 } from "@/domains/agentChat/agentOptionsFormat";
+import { useClaudeModels } from "@/domains/agentChat/claudeCatalog";
 import type { AgentCli } from "@/ipc/agent";
 import { basename } from "@/platform/paths";
 import type { SessionHostKind } from "./types";
@@ -50,6 +52,7 @@ export function NewSessionWhere({
   mode,
   onMode,
 }: NewSessionWhereProps) {
+  const catalog = useClaudeModels();
   return (
     <div className="ns-options">
       <label className="field">
@@ -90,9 +93,9 @@ export function NewSessionWhere({
           onChange={(e) => onModel(e.target.value)}
         >
           <option value="">{modelLabel(undefined)}</option>
-          {modelChoices(cli, model || undefined).map((m) => (
+          {modelChoices(cli, model || undefined, catalog).map((m) => (
             <option key={m} value={m}>
-              {modelLabel(m)}
+              {modelName(m, catalog)}
             </option>
           ))}
         </select>

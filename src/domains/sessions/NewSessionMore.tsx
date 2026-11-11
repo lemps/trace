@@ -3,8 +3,6 @@ import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import type { SessionHostKind } from "./types";
 
 interface NewSessionMoreProps {
-  title: string;
-  onTitle: (next: string) => void;
   /** Only offered while Vercel is connected. */
   showHost: boolean;
   hostPick: SessionHostKind | "local";
@@ -25,12 +23,9 @@ const HOSTS: { value: SessionHostKind | "local"; label: string }[] = [
   { value: "vercel", label: "Vercel" },
 ];
 
-// The New session dialog's second tier: what you rarely change. A name of your own
-// (otherwise the task is named for you), where it runs, which endpoint is behind
-// Claude, and whether it opens as a chat or a terminal.
+// The New session dialog's second tier: what you rarely change. Where it runs,
+// which endpoint is behind Claude, and whether it opens as a chat or a terminal.
 export function NewSessionMore({
-  title,
-  onTitle,
   showHost,
   hostPick,
   onHost,
@@ -45,16 +40,6 @@ export function NewSessionMore({
 }: NewSessionMoreProps) {
   return (
     <div className="ns-more-fields">
-      <label className="field">
-        <span className="field-label">Name</span>
-        <input
-          className="field-input"
-          type="text"
-          placeholder="Named from the task"
-          value={title}
-          onChange={(e) => onTitle(e.target.value)}
-        />
-      </label>
       {showHost && (
         <div className="field">
           <span className="field-label">Run on</span>

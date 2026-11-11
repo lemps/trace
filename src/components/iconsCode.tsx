@@ -3,6 +3,12 @@ import { Base, type IconProps } from "./iconBase";
 // Code, files and git (the workspace tabs, PRs, epics), part of `I` (Icon.tsx).
 
 export const CODE_ICONS = {
+  /** Slash commands: the composer's button that opens its `/` menu. */
+  Slash: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M15 4 9 20" />
+    </Base>
+  ),
   /** The Files tab, code. Not "Open in…" (External) or a PR's files (FileDiff). */
   Code: (p: IconProps) => (
     <Base {...p}>

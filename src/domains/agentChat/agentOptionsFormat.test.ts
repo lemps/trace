@@ -6,6 +6,7 @@ import {
   effortChoices,
   effortLabel,
   effortSuffix,
+  isModel,
   modeChoices,
   modeDetail,
   modeGlyph,
@@ -15,6 +16,7 @@ import {
   modelEffortText,
   modelLabel,
   modelLockReason,
+  modelName,
   pickerTitle,
   shownOption,
   TRACE_MODE,
@@ -34,6 +36,37 @@ describe("agent option pickers", () => {
     assert.deepEqual(modelChoices("claude", "claude-opus-5-5").at(-1), "claude-opus-5-5");
     assert.deepEqual(modelChoices("codex", "gpt-5.6"), ["gpt-5.6"]);
     assert.deepEqual(modelChoices("codex", undefined), []);
+  });
+
+  it("offers what the CLI lists once it's known, named its way", () => {
+    const catalog = [
+      { value: "opus", displayName: "Opus 5.5" },
+      { value: "claude-fable-5-2", displayName: "Fable 5.2" },
+    ];
+    assert.deepEqual(modelChoices("claude", undefined, catalog), ["opus", "claude-fable-5-2"]);
+    assert.deepEqual(modelChoices("claude", "haiku", catalog).at(-1), "haiku");
+    assert.deepEqual(modelChoices("codex", undefined, catalog), []);
+    assert.equal(modelName("opus", catalog), "Opus 5.5");
+    assert.equal(modelName("sonnet", catalog), "Sonnet");
+    assert.equal(modelName(undefined, catalog), "Default model");
+  });
+
+  it("knows a running agent's id is the alias it was picked as", () => {
+    const catalog = [
+      { value: "opus", displayName: "Opus 5.5", resolvedModel: "claude-opus-5-5" },
+      { value: "fable", displayName: "Fable 5.1", resolvedModel: "claude-fable-5-1" },
+      { value: "claude-opus-5", displayName: "Opus 5", resolvedModel: "claude-opus-5" },
+    ];
+    assert.deepEqual(modelChoices("claude", "claude-opus-5-5", catalog), [
+      "opus",
+      "fable",
+      "claude-opus-5",
+    ]);
+    assert.equal(isModel("opus", "claude-opus-5-5", catalog), true);
+    assert.equal(isModel("fable", "claude-opus-5-5", catalog), false);
+    // Listed under its own id: that row, not an alias, is the one in use.
+    assert.equal(isModel("claude-opus-5", "claude-opus-5", catalog), true);
+    assert.equal(modelName("claude-fable-5-1", catalog), "Fable 5.1");
   });
 
   it("names Claude's models, from aliases and ids", () => {

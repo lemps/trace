@@ -74,7 +74,9 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
 - [x] **Start a session from the task:** the New session dialog asks what the agent should do, not
       what to call it — the task starts the agent as its first message, Haiku names the session from
       it (its first line when there's no key or CLI), and the dialog reopens on the repo, agent,
-      model and mode last used. Everything else is behind More options.
+      model and mode last used, with a Name field under the task to name it yourself. Everything
+      else is behind More options. Its model list, and the composer's, come from the installed
+      Claude Code (`claude/catalog.rs`), so new models show without a trace release.
 - [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
