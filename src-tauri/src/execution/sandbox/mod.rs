@@ -21,6 +21,7 @@ pub mod prs;
 mod ready;
 pub mod script;
 pub mod session;
+pub mod size;
 mod setup;
 mod watch;
 

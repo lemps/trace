@@ -129,7 +129,7 @@ impl SandboxProvider for Vercel {
             .iter()
             .map(|(k, v)| (k.clone(), Value::String(v.clone())))
             .collect();
-        let body = json!({
+        let mut body = json!({
             "projectId": self.conn.project_id,
             "name": spec.name,
             "timeout": millis(spec.timeout),
@@ -142,6 +142,10 @@ impl SandboxProvider for Vercel {
             "tags": tags,
             "ports": spec.ports,
         });
+        // Memory follows vCPUs (2 GB each). Unset keeps Vercel's default.
+        if let Some(vcpus) = crate::execution::sandbox::size::load().vcpus {
+            body["resources"] = json!({ "vcpus": vcpus });
+        }
         let v = self.conn.api().post("/v3/sandboxes", &[], &body)?;
         Ok(info_with_routes(&v))
     }

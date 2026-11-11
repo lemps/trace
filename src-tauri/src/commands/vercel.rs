@@ -8,6 +8,7 @@ use serde::Serialize;
 use crate::commands::session::ScratchSession;
 use crate::execution::credential::{self, ClaudeCredential, CredentialKind};
 use crate::execution::sandbox::lifetime::{self, Lifetime};
+use crate::execution::sandbox::size::{self, Size};
 use crate::execution::sandbox::SandboxProvider;
 use crate::execution::vercel::{auth, Vercel};
 
@@ -56,6 +57,18 @@ pub fn set_sandbox_lifetime(idle_minutes: u32, max_hours: u32) -> Result<Lifetim
         idle_minutes,
         max_hours,
     })
+}
+
+/// How big new sandboxes are, in vCPUs (2 GB of memory each); unset is Vercel's default.
+#[tauri::command]
+pub fn sandbox_size() -> Size {
+    size::load()
+}
+
+/// Save it (within range); only sandboxes made after this get it.
+#[tauri::command]
+pub fn set_sandbox_size(vcpus: Option<u8>) -> Result<Size, String> {
+    size::save(Size { vcpus })
 }
 
 #[tauri::command]
