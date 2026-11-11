@@ -84,7 +84,11 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       ([#70](https://github.com/noble1911/trace/pull/70)).
 - [x] **First run and preflight:** checks for git, claude and a signed-in gh with fixes, and a
       three-step setup for new users; Settings → Run setup again
-      ([#61](https://github.com/noble1911/trace/pull/61)). Not yet: a base branch picker.
+      ([#61](https://github.com/noble1911/trace/pull/61)). On macOS and Linux, trace installs
+      Claude Code and the GitHub CLI itself (into `~/.local/bin`, no admin or Homebrew) and signs
+      both in through the browser, row by row or with "Set it all up"; Claude Code's sign-in is
+      checked too. Not yet: a base branch picker, the same on Windows, a Git check that sees
+      through Apple's `/usr/bin/git` placeholder.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
 - [x] **Default view setting:** choose chat or CLI globally or per agent. Settings → Agents →
       Shows as (Chat by default; brands without a chat adapter stay Terminal), overridden per

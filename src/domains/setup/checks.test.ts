@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  nextFix,
   noticeText,
   type PreflightCheck,
   parseChecks,
@@ -13,14 +14,54 @@ import {
 import { alreadySetUp, DEFAULT_SETUP, parseSetup, type UsageFacts } from "./prefs.ts";
 
 function check(id: string, ok: boolean, required = true): PreflightCheck {
-  return { id, ok, required, title: `${id} title`, detail: "", fix: ok ? null : `fix ${id}` };
+  return {
+    id,
+    ok,
+    required,
+    title: `${id} title`,
+    detail: "",
+    fix: ok ? null : `fix ${id}`,
+    action: null,
+  };
 }
+
+describe("nextFix", () => {
+  const fixable = (id: string, action: "install" | "signIn"): PreflightCheck => ({
+    ...check(id, false),
+    action,
+  });
+
+  it("installs before signing in, and skips what can't be fixed or isn't required", () => {
+    const checks = [
+      fixable("gh", "signIn"),
+      check("git", false),
+      fixable("claude", "install"),
+      { ...fixable("codex", "install"), required: false },
+    ];
+    assert.deepEqual(nextFix(checks, new Set()), { id: "claude", action: "install" });
+    assert.deepEqual(nextFix(checks, new Set(["claude:install"])), { id: "gh", action: "signIn" });
+  });
+
+  it("stops once everything fixable was tried", () => {
+    const checks = [fixable("gh", "signIn"), check("git", false)];
+    assert.equal(nextFix(checks, new Set(["gh:signIn"])), null);
+    assert.equal(nextFix([check("git", true)], new Set()), null);
+  });
+});
 
 describe("parseChecks", () => {
   it("reads the backend's list and drops what isn't a check", () => {
     const raw = [
       { id: "git", ok: true, required: true, title: "Git", detail: "/usr/bin/git", fix: null },
-      { id: "gh", ok: false, required: true, title: "gh", detail: "x", fix: "gh auth login" },
+      {
+        id: "gh",
+        ok: false,
+        required: true,
+        title: "gh",
+        detail: "x",
+        fix: "gh auth login",
+        action: "signIn",
+      },
       { ok: true },
       "nonsense",
     ];
@@ -30,6 +71,8 @@ describe("parseChecks", () => {
       ["git", "gh"]
     );
     assert.equal(checks[1].fix, "gh auth login");
+    assert.equal(checks[1].action, "signIn");
+    assert.equal(checks[0].action, null);
   });
 
   it("never shows a fix on a passing check, and treats unknown as required", () => {

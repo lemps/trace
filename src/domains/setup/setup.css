@@ -117,6 +117,7 @@
   color: var(--c-danger);
 }
 .su-check-body {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -156,6 +157,50 @@
   color: var(--fg-1);
   line-height: 1.5;
   user-select: text;
+}
+
+/* Install / Sign in: trace fixes the row itself. */
+.su-check-action {
+  flex-shrink: 0;
+}
+.su-checks-buttons {
+  display: flex;
+  gap: 8px;
+}
+.su-fix-error {
+  margin-top: 2px;
+  font-size: var(--text-meta);
+  color: var(--c-danger);
+  overflow-wrap: anywhere;
+}
+/* A sign-in waiting on the browser: gh's one-time code, big enough to read off. */
+.su-signin {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-3);
+  font-size: var(--text-meta);
+  color: var(--fg-1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.su-signin-code {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-ui);
+  letter-spacing: 0.08em;
+  user-select: text;
+}
+.su-signin-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.su-signin-wait {
+  color: var(--fg-3);
 }
 
 /* Settings rows inside the modal: tighter than on the Settings page. */

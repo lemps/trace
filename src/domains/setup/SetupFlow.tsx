@@ -4,6 +4,7 @@ import { Modal } from "@/components/Modal";
 import { AgentStep } from "./AgentStep";
 import { ConnectStep } from "./ConnectStep";
 import { SETUP_STEPS, stepBy } from "./checks";
+import { useFixStore } from "./fixes";
 import { PreflightList } from "./PreflightList";
 import { useSetupStore } from "./store";
 import { ThemeStep } from "./ThemeStep";
@@ -21,8 +22,13 @@ export function SetupFlow({ onNav }: SetupFlowProps) {
   const launch = useSetupStore((s) => s.launch);
   const goTo = useSetupStore((s) => s.goTo);
   const close = useSetupStore((s) => s.close);
+  const cancelFix = useFixStore((s) => s.cancel);
 
   useEffect(() => launch(), [launch]);
+  // Closing the dialog stops a sign-in still waiting on the browser.
+  useEffect(() => {
+    if (view === null) cancelFix();
+  }, [view, cancelFix]);
 
   if (view === "checks") {
     return (
