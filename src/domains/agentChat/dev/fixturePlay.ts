@@ -10,21 +10,19 @@ const WS = "dev:chat-fixture";
 let seq = 50_000;
 let run = 0;
 const revs = new Map<string, number>();
+/** Where each fixture row sits, so its revisions replace it instead of piling up. */
+const placed = new Map<string, { seq: number; at: number }>();
 
 function put(id: string, body: JournalBody, turnId: string): void {
   const revision = revs.has(id) ? (revs.get(id) ?? 0) + 1 : 0;
   revs.set(id, revision);
-  const s = useAgentChatStore.getState();
-  const old = s.journals[WS]?.byId[id];
-  const row: JournalRow = {
-    id,
-    revision,
-    seq: old?.seq ?? ++seq,
-    at: old?.at ?? Date.now(),
-    turnId,
-    body,
-  };
-  s.applyRows(WS, [row]);
+  let where = placed.get(id);
+  if (!where) {
+    where = { seq: ++seq, at: Date.now() };
+    placed.set(id, where);
+  }
+  const row: JournalRow = { id, revision, seq: where.seq, at: where.at, turnId, body };
+  useAgentChatStore.getState().applyRows(WS, [row]);
 }
 
 function info(busy: boolean, runningSubagents: number): void {
