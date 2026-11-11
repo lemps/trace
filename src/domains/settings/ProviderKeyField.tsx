@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import { InlineConfirm } from "@/components/InlineConfirm";
 import type { AgentProvider } from "@/ipc/agent";
 import {
   deepseekKeyConfigured,
@@ -9,19 +7,23 @@ import {
   setWaferKey,
   waferKeyConfigured,
 } from "@/ipc/providers";
+import { KeyField } from "./KeyField";
 
 // The masked API-key field for a third-party model provider. The key is stored
 // 0600 Rust-side and never read back — the UI only learns whether one exists.
-// Normal/fast variants of the same endpoint share one credential.
+// Normal/fast variants of the same endpoint share one credential. With Anthropic
+// (or Codex) chosen, the row stays in place, inactive, so the page doesn't move.
 
 interface ProviderKeyFieldProps {
-  provider: Exclude<AgentProvider, "anthropic">;
+  provider: AgentProvider;
+  /** Why the key doesn't apply now (Codex chosen, or Anthropic); none: it does. */
+  inactiveReason?: string;
 }
 
 /** Credential family — Wafer/DeepSeek normal+fast/flash share one key file each. */
 type CredFamily = "moonshot" | "wafer" | "deepseek";
 
-function credFamily(provider: ProviderKeyFieldProps["provider"]): CredFamily {
+function credFamily(provider: Exclude<AgentProvider, "anthropic">): CredFamily {
   if (provider === "wafer" || provider === "wafer-fast") return "wafer";
   if (provider === "deepseek" || provider === "deepseek-pro") return "deepseek";
   return "moonshot";
@@ -45,64 +47,38 @@ const SAVE: Record<CredFamily, (key: string) => Promise<void>> = {
   deepseek: setDeepseekKey,
 };
 
-export function ProviderKeyField({ provider }: ProviderKeyFieldProps) {
-  const [saved, setSaved] = useState(false);
-  const [draft, setDraft] = useState("");
+/** Anthropic needs no key here: the row shows, inactive, with nothing to check. */
+const NO_KEY = async () => false;
+const NO_SAVE = async () => {};
+
+export function ProviderKeyField({ provider, inactiveReason }: ProviderKeyFieldProps) {
+  if (provider === "anthropic") {
+    return (
+      <KeyField
+        label="Provider API key"
+        needHint="Needed by a third-party provider, from its own site."
+        placeholder="Paste a key"
+        removeMessage="Remove the saved key?"
+        isSaved={NO_KEY}
+        save={NO_SAVE}
+        inactive
+        inactiveReason={inactiveReason ?? "Applies when Provider isn't Anthropic."}
+      />
+    );
+  }
   const family = credFamily(provider);
   const meta = META[family];
-  const configured = CHECK[family];
-  const persist = SAVE[family];
-
-  useEffect(() => {
-    configured()
-      .then(setSaved)
-      .catch(() => setSaved(false));
-  }, [configured]);
-
-  const save = async (next: string) => {
-    await persist(next);
-    setSaved(Boolean(next.trim()));
-    setDraft("");
-  };
-
   return (
-    <div className="setting-block">
-      <div className="label">{meta.label}</div>
-      <div className="hint">
-        {saved
-          ? "A key is saved. Enter a new one to replace it."
-          : `Required for agents via this provider — from ${meta.origin}.`}
-      </div>
-      <div className="key-row">
-        <input
-          type="password"
-          className="key-input"
-          aria-label={meta.label}
-          placeholder={saved ? "•••••••••••••••• (saved)" : "…"}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <button
-          type="button"
-          className="btn"
-          disabled={!draft.trim()}
-          onClick={() => void save(draft)}
-        >
-          Save
-        </button>
-      </div>
-      {saved && (
-        <div className="key-remove-row">
-          <InlineConfirm
-            label="Remove key"
-            className="key-remove"
-            size="xs"
-            message="Remove the saved key? Agents on this provider need one."
-            confirmLabel="Remove"
-            onConfirm={() => void save("")}
-          />
-        </div>
-      )}
-    </div>
+    <KeyField
+      key={family}
+      label={meta.label}
+      needHint={`Required for agents via this provider — from ${meta.origin}.`}
+      placeholder="Paste a key"
+      removeMessage="Remove the saved key? Agents on this provider need one."
+      isSaved={CHECK[family]}
+      save={SAVE[family]}
+      inactive={inactiveReason !== undefined}
+      inactiveReason={inactiveReason}
+    />
   );
 }

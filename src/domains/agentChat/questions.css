@@ -2,23 +2,38 @@
    answered set shrinks to. The card frame and its amber are `.ac-card.ac-ask`
    (cards.css). */
 
+/* Rhythm: 6px between a question's own rows (options, the typed answer), 8px under
+   the question, 16px between questions, so each reads as a group of its own. */
+.ac-question {
+  gap: 16px;
+}
 .ac-q {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   border: 0;
   min-width: 0;
 }
+/* The question: its topic chip and "Pick any" sit on the first line of a
+   question that wraps (baselines), and the text takes the room between them. */
 .ac-q-text {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   width: 100%;
   padding: 0;
+  /* A fieldset's legend isn't one of its flex items, so the gap above never reaches
+     it: without this the options sat right under the question. */
+  margin-bottom: 8px;
   font-size: var(--text-body);
   color: var(--fg-0);
+}
+.ac-q-text > .md {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .ac-q-header {
   flex-shrink: 0;
@@ -36,23 +51,29 @@
 .ac-q-options {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
+/* An option: the mark, then its label with the description flowing after it and
+   wrapping under the label. A control's height on one line; it grows with its
+   text. On the card's neutral surface, a step darker with its own border. The
+   18px line (5px padding each side, 1px border) makes one line exactly
+   `--control-h`, and centres the 14px mark on the first line. */
 .ac-q-option {
   display: grid;
-  grid-template-columns: 16px auto 1fr;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 8px;
   min-height: var(--control-h);
-  padding: 4px 10px;
+  padding: 5px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-1);
+  background: var(--bg-0);
   font-size: var(--text-ui);
+  line-height: 18px;
   color: var(--fg-1);
   text-align: left;
 }
-.ac-q-option:hover {
+.ac-q-option:hover:not(:disabled) {
   border-color: var(--border-strong);
 }
 .ac-q-option.on {
@@ -66,6 +87,7 @@
   justify-content: center;
   width: 14px;
   height: 14px;
+  margin-top: 2px;
   border: 1.5px solid var(--fg-4);
   border-radius: 999px;
 }
@@ -77,13 +99,26 @@
   background: var(--c-accent);
   color: var(--on-bright);
 }
-.ac-q-desc {
+.ac-q-body {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+/* "(Recommended)" at the end of a label, as a quiet tag: `.ac-chip`'s shape, quieter. */
+.ac-q-rec {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-label);
+  line-height: 14px;
+  vertical-align: 1px;
+  color: var(--fg-2);
+}
+.ac-q-desc {
+  margin-left: 8px;
   font-size: var(--text-meta);
-  color: var(--fg-3);
+  color: var(--fg-2);
 }
 .ac-q-input {
   height: var(--control-h);
@@ -126,4 +161,84 @@
   border-radius: var(--radius-sm);
   color: var(--fg-0);
   font-size: var(--text-meta);
+}
+
+/* Options with previews: the options, then the preview of the one pointed at,
+   beside them once the card is wide enough to hold both. */
+.ac-question {
+  container-type: inline-size;
+}
+.ac-q-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+@container (min-width: 720px) {
+  .ac-q-split {
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    /* The preview is as tall as the options it sits beside. */
+    align-items: stretch;
+  }
+}
+/* Beside a preview the options' column is narrow: a description starts on its own
+   line under the label, not part-way along it. */
+.ac-q-split .ac-q-desc {
+  display: block;
+  margin-left: 0;
+}
+.ac-q-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-0);
+}
+.ac-q-preview-label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+/* The preview's text fills the pane and the pane grows with it: no height of its
+   own, so nothing scrolls inside a box that has room. A line too long for the pane
+   wraps (code reads on; a scroll bar here hid the end of every long line). Only a
+   very tall preview scrolls, as a whole, so the options stay in reach. */
+.ac-q-preview {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+/* `.tx-code`'s type, without its own box or height. */
+.ac-q-preview-text {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* A fenced preview: the code theme's colours, but not a code card inside the pane
+   (no second border, head or height of its own). */
+.ac-q-preview .md-code {
+  margin: 0;
+  border: 0;
+  background: none;
+}
+.ac-q-preview .md-code-head {
+  display: none;
+}
+.ac-q-preview .md-code pre {
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+}
+.ac-q-preview .md-code pre code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

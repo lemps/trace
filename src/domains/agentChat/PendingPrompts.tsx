@@ -6,23 +6,12 @@ import { type ChatView, ChatViewContext } from "./chatContext";
 import { useJournalFeed } from "./hooks/useJournalFeed";
 import { QuestionCard } from "./QuestionCard";
 import { useAgentChatStore, useJournal } from "./store";
-import type { Approval, JournalRow, QuestionSet } from "./types";
+import type { Approval } from "./types";
+import { openPrompts } from "./waiting";
 
 // A chat agent's open prompts outside its chat view — the Inbox shows them and
-// answers them in place, over the chat protocol rather than keystrokes.
-
-type Open = { kind: "approval"; approval: Approval } | { kind: "question"; questions: QuestionSet };
-
-/** Approvals and questions still waiting for an answer, oldest first. */
-export function openPrompts(rows: readonly JournalRow[]): Open[] {
-  const out: Open[] = [];
-  for (const row of rows) {
-    const b = row.body;
-    if (b.kind === "approval" && !b.resolution) out.push({ kind: "approval", approval: b });
-    if (b.kind === "question" && !b.resolution) out.push({ kind: "question", questions: b });
-  }
-  return out;
-}
+// answers them in place, over the chat protocol rather than keystrokes. Each is
+// the chat's own ask card, so the stack around them has no frame of its own.
 
 /** The open prompts of `workspaceId`'s chat agent, answerable here. Nothing when none is open. */
 export function ChatPrompts({ workspaceId }: { workspaceId: string }) {
@@ -36,7 +25,7 @@ export function ChatPrompts({ workspaceId }: { workspaceId: string }) {
   if (prompts.length === 0) return null;
   return (
     <ChatViewContext.Provider value={view}>
-      <section className="ib-card ask" aria-label="What the agent needs">
+      <section className="ac-prompts" aria-label="What the agent needs">
         {prompts.map((p) =>
           p.kind === "approval" ? (
             <ApprovalCard key={p.approval.requestId} approval={p.approval} />

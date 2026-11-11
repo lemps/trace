@@ -4,8 +4,10 @@ import type { RepoDetails, SetupConfig } from "@/domains/repos/types";
 
 // Per-repo details and worktree setup (`commands/repo_setup.rs`).
 
-export function repoDetails(): Promise<RepoDetails[]> {
-  return invoke("repo_details");
+/** Each configured repo's details. A build from before `exists` reads as present. */
+export async function repoDetails(): Promise<RepoDetails[]> {
+  const list = await invoke<RepoDetails[]>("repo_details");
+  return list.map((d) => ({ ...d, exists: d.exists !== false }));
 }
 
 /** Save what runs in each new worktree of the repo at `path`; returns it cleaned. */

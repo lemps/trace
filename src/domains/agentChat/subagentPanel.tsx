@@ -1,56 +1,110 @@
-import { useMemo } from "react";
+import type { ReactNode } from "react";
+import type { IconProps } from "@/components/Icon";
 import { I } from "@/components/Icon";
-import { openPanel, registerPanelKind } from "@/domains/panes/registry";
-import { useShownOf } from "@/domains/panes/shown";
-import { chatOf, useSubagents } from "./hooks/useChat";
+import type { MenuItem } from "@/components/PopMenu";
+import { openPanel, registerPanelKind, runSection, showPanel } from "@/domains/panes/registry";
+import { closeSubagentTabs, isTabClosed, reopenSubagentTab, useClosedTabs } from "./closedTabs";
+import { chatOf, useChat } from "./hooks/useChat";
+import { useJournalFeed } from "./hooks/useJournalFeed";
 import { SubagentMark } from "./SubagentBits";
 import { SubagentView } from "./SubagentView";
 import { useAgentChatStore } from "./store";
+import type { SubagentThread } from "./subagents";
+import { useAgentTransport } from "./transport";
 
-// A subagent's conversation as a pane of its own, beside its agent's tab
-// (`domains/panes`). Panels are named `sub:<agentWorkspaceId>:<callId>`; any detail
-// hosting that agent can show one, and a stored layout naming one comes back after
-// a reload. Once the agent's journal is loaded and the subagent isn't in it, the
-// panel resolves to nothing and the layout drops it.
+// Each subagent of a chat agent is a tab in its detail's pane strip
+// (`domains/panes`), right after the agent's tab and its earlier subagents, in the
+// agent's run (`runSection`). Panels are named `sub:<agentWorkspaceId>:<callId>`.
+// A tab appears when its subagent starts, without taking the view; a finished one
+// closes (its ×, middle-click, its menu), which only hides it (`closedTabs.ts`) —
+// its card in the chat, or Open beside, brings it back. A stored layout naming one
+// comes back after a reload; once the agent's journal is loaded and the subagent
+// isn't in it, or the agent now runs in a terminal, it resolves to nothing and the
+// layout drops it.
 
 const PREFIX = "sub";
 
 export const subagentPanelId = (workspaceId: string, callId: string) =>
   `${PREFIX}:${workspaceId}:${callId}`;
 
-/**
- * Open a subagent in a pane to the right of its agent's tab (or show and focus that
- * pane, if open). The chat goes back to Main: one subagent isn't shown twice.
- */
+/** Show a subagent's tab and focus its pane, bringing it back if it was closed. */
+export function showSubagentTab(workspaceId: string, callId: string): void {
+  reopenSubagentTab(workspaceId, callId);
+  showPanel(subagentPanelId(workspaceId, callId));
+}
+
+/** Move a subagent's tab to a pane right of its agent's (or show that pane, if it has one). */
 export function openSubagentBeside(workspaceId: string, callId: string): void {
+  reopenSubagentTab(workspaceId, callId);
   openPanel(subagentPanelId(workspaceId, callId), "right");
-  const store = useAgentChatStore.getState();
-  if (store.tab[workspaceId] === callId) store.setTab(workspaceId, "main");
 }
 
-/** Which of an agent's subagents are open in a pane of their own, by call id. */
-export function useSubagentsInPanes(
-  workspaceId: string,
-  subagents: readonly { callId: string }[]
-): ReadonlySet<string> {
-  const shown = useShownOf(subagents.map((s) => subagentPanelId(workspaceId, s.callId)));
-  return useMemo(
-    () => new Set(shown ? shown.split("\n").map((id) => id.slice(id.lastIndexOf(":") + 1)) : []),
-    [shown]
-  );
+/** A subagent still going (or waiting on you) keeps its tab; a finished one can close. */
+const closable = (s: SubagentThread) => s.status !== "running" && !s.pending;
+
+/** How a subagent is doing, in its tooltip: the agent-state words, then the ends. */
+const WORDS = { running: "working", done: "done", failed: "failed", stopped: "stopped" };
+const calls = (n: number) => `${n} ${n === 1 ? "call" : "calls"}`;
+const describe = (s: SubagentThread) =>
+  `${s.label}${s.agentType ? ` (${s.agentType})` : ""}: ${s.pending ? "needs you" : WORDS[s.status]}, ${calls(s.toolCount)}`;
+
+/**
+ * A tab's mark: how its subagent is doing, live without re-resolving the panel. It
+ * reads the agent's journal and transport in, so a tab a stored layout brought back
+ * gets its name (or goes) without the agent's own tab having been shown.
+ */
+function TabMark({ workspaceId, callId }: { workspaceId: string; callId: string }) {
+  useJournalFeed(workspaceId);
+  useAgentTransport(workspaceId);
+  const s = useChat(workspaceId).subagents.find((x) => x.callId === callId);
+  return s ? <SubagentMark status={s.status} pending={s.pending} /> : <I.Sparkles size={12} />;
 }
 
-/** The tab's status mark, live without re-resolving the panel. */
-function SubagentBadge({ workspaceId, callId }: { workspaceId: string; callId: string }) {
-  const s = useSubagents(workspaceId).find((x) => x.callId === callId);
-  return s ? <SubagentMark status={s.status} pending={s.pending} /> : null;
+// One mark component per tab, so a re-resolved panel doesn't remount it (a spinner
+// that restarted on every call would flicker).
+const marks = new Map<string, (p: IconProps) => ReactNode>();
+function markOf(workspaceId: string, callId: string) {
+  const id = subagentPanelId(workspaceId, callId);
+  let mark = marks.get(id);
+  if (!mark) {
+    mark = () => <TabMark workspaceId={workspaceId} callId={callId} />;
+    marks.set(id, mark);
+  }
+  return mark;
 }
 
-function lookup(workspaceId: string, callId: string) {
-  const { journals, loaded } = useAgentChatStore.getState();
+/** What a subagent's tab offers in its right-click menu, beside the pane's own items. */
+function menuOf(workspaceId: string, thread: SubagentThread, all: SubagentThread[]): MenuItem[] {
+  const finished = all.filter((s) => closable(s) && !isTabClosed(workspaceId, s.callId));
+  return [
+    { label: "Open beside", onSelect: () => openSubagentBeside(workspaceId, thread.callId) },
+    {
+      label: "Close",
+      disabled: !closable(thread),
+      detail: closable(thread) ? undefined : "It's still working, or waiting on you",
+      onSelect: () => closeSubagentTabs(workspaceId, [thread.callId]),
+    },
+    {
+      label: "Close finished",
+      disabled: finished.length === 0,
+      onSelect: () =>
+        closeSubagentTabs(
+          workspaceId,
+          finished.map((s) => s.callId)
+        ),
+    },
+  ];
+}
+
+/** The agent's subagents as far as its tabs go: none for an agent now in a terminal. */
+function threadsOf(workspaceId: string): { loaded: boolean; threads: SubagentThread[] | null } {
+  const { journals, loaded, transport } = useAgentChatStore.getState();
   const journal = journals[workspaceId];
-  const thread = journal ? chatOf(journal.rows).subagents.find((t) => t.callId === callId) : null;
-  return { loaded: loaded[workspaceId] ?? false, thread };
+  if (transport[workspaceId] === "terminal") return { loaded: true, threads: [] };
+  return {
+    loaded: loaded[workspaceId] ?? false,
+    threads: journal ? chatOf(journal.rows).subagents : null,
+  };
 }
 
 registerPanelKind({
@@ -61,32 +115,68 @@ registerPanelKind({
     if (cut <= 0) return null;
     const owner = rest.slice(0, cut);
     const callId = rest.slice(cut + 1);
-    const { loaded, thread } = lookup(owner, callId);
-    // Not loaded yet (straight after a reload): keep it; the view loads the journal.
+    if (isTabClosed(owner, callId)) return null;
+    const { loaded, threads } = threadsOf(owner);
+    const thread = threads?.find((t) => t.callId === callId);
+    // Not loaded yet (straight after a reload): keep it; the agent's chat loads the journal.
     if (loaded && !thread) return null;
     return {
       owner,
       panel: {
         id: subagentPanelId(owner, callId),
-        label: thread?.label ?? "Subagent",
-        icon: I.Sparkles,
-        title: thread ? `Subagent: ${thread.label}` : "Subagent",
-        section: "subagents",
+        label: thread?.label || "Subagent",
+        icon: markOf(owner, callId),
+        title: thread ? describe(thread) : "Subagent",
+        section: runSection(owner),
         optional: true,
-        badge: <SubagentBadge workspaceId={owner} callId={callId} />,
+        closable: thread ? closable(thread) : true,
+        onClose: () => closeSubagentTabs(owner, [callId]),
+        menu: thread ? menuOf(owner, thread, threads ?? []) : undefined,
         render: () => <SubagentView workspaceId={owner} callId={callId} />,
       },
     };
   },
-  subscribe: (onChange) => useAgentChatStore.subscribe(onChange),
-  // Which subagents each loaded agent has, and their labels: what resolve reads.
+  // Only for an agent known to run as a chat: a journal left from an earlier chat run
+  // of one now in a terminal (or not known yet) places nothing.
+  owned(owner) {
+    if (useAgentChatStore.getState().transport[owner] !== "chat") return [];
+    const { threads } = threadsOf(owner);
+    return (threads ?? [])
+      .filter((t) => !isTabClosed(owner, t.callId))
+      .map((t) => subagentPanelId(owner, t.callId));
+  },
+  subscribe: (onChange) => {
+    const offChat = useAgentChatStore.subscribe(onChange);
+    const offClosed = useClosedTabs.subscribe(onChange);
+    return () => {
+      offChat();
+      offClosed();
+    };
+  },
+  // What resolve and owned read: each agent's subagents (label, state, calls), whether
+  // it's loaded or in a terminal, and which tabs were closed.
   version: () => {
-    const { journals, loaded } = useAgentChatStore.getState();
-    return Object.entries(journals)
-      .map(([ws, j]) => {
-        const subs = chatOf(j.rows).subagents.map((t) => `${t.callId}=${t.label}`);
-        return `${ws}${loaded[ws] ? "+" : "-"}${subs.join(",")}`;
-      })
-      .join(";");
+    const { journals, loaded, transport } = useAgentChatStore.getState();
+    const agents = Object.entries(journals).map(([ws, j]) => {
+      const subs = chatOf(j.rows).subagents.map(
+        (t) => `${t.callId}=${t.label}/${t.status}/${t.pending}/${t.toolCount}`
+      );
+      return `${ws}${loaded[ws] ? "+" : "-"}${transport[ws] ?? ""}:${subs.join(",")}`;
+    });
+    const known = Object.entries(transport).map(([ws, t]) => `${ws}=${t}`);
+    return `${agents.join(";")}#${known.join(";")}#${closedSerial()}`;
   },
 });
+
+// The closed lists can run to hundreds of ids: a number that changes with them
+// stands in for them in the version, which is read on every chat update.
+let closedSeen: object | null = null;
+let closedCount = 0;
+function closedSerial(): number {
+  const { closed } = useClosedTabs.getState();
+  if (closed !== closedSeen) {
+    closedSeen = closed;
+    closedCount += 1;
+  }
+  return closedCount;
+}

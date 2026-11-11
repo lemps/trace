@@ -30,9 +30,9 @@ interface ComposerProps {
   busy: boolean;
   /** Anything runs (a turn, or subagents after it): there's something to interrupt. */
   working: boolean;
+  /** A question or approval above waits on you: the box asks for the answer. */
+  waiting?: boolean;
   onInterrupt: () => void;
-  /** A subagent's tab is showing; messages still go to the main agent. */
-  toMain: boolean;
   slashCommands: readonly string[];
   /** The agent is up: an option picked goes to it, not to its next start. */
   running: boolean;
@@ -43,7 +43,7 @@ interface ComposerProps {
 /** A drag carries files from the desktop (not a pane tab or a card). */
 const carriesFiles = (e: DragEvent) => e.dataTransfer.types.includes("Files");
 
-// Where you talk to the agent (the main one; subagents are read-only). Enter
+// Where you talk to the agent (on its own tab; its subagents' tabs are read-only). Enter
 // sends (Shift+Enter is a new line). While a turn runs, Enter steers it: the
 // agent reads the message after its current step. ⌥Enter queues it for when the
 // turn ends instead, and ⌘Enter interrupts the turn and sends it (`useDeliver`).
@@ -60,8 +60,8 @@ export function Composer({
   workspaceId,
   busy,
   working,
+  waiting = false,
   onInterrupt,
-  toMain,
   slashCommands,
   running,
   onStart,
@@ -170,10 +170,10 @@ export function Composer({
           placeholder={
             onStart
               ? "Message the agent to start it"
-              : busy
-                ? "Steer the agent"
-                : toMain
-                  ? "Message the main agent"
+              : waiting
+                ? "Answer above, or message the agent"
+                : busy
+                  ? "Steer the agent"
                   : "Message the agent"
           }
           rows={1}

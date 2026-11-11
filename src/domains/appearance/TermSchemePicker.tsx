@@ -2,10 +2,12 @@ import { termColors } from "./ansi";
 import { TermSnippet, THUMB_LINES } from "./previews/TerminalPreview";
 import { activeTheme, useAppearance } from "./store";
 import { resolveTermScheme, TERM_SCHEMES, type TermSchemeChoice } from "./terminalSchemes";
+import { themeLabel } from "./themes";
 
 // The terminal colour schemes as thumbnails: each draws two sample lines and
 // six of its ANSI colours, so a scheme is picked by how it looks.
-// "Match theme" shows whichever scheme the current app theme picks.
+// "Match theme" shows, and names, whichever scheme the current app theme picks.
+// The sample is a picture (aria-hidden): a card's name is its label alone.
 
 const CHOICES: { id: TermSchemeChoice; label: string }[] = [
   { id: "match", label: "Match theme" },
@@ -31,14 +33,18 @@ export function TermSchemePicker() {
             className={`ap-thumb${choice === c.id ? " on" : ""}`}
             onClick={() => update({ termScheme: c.id })}
           >
-            <TermSnippet scheme={scheme} lines={THUMB_LINES}>
-              <span className="ap-term-dots">
-                {NORMAL.map((n) => (
-                  <i key={n} style={{ background: ansi[n] }} />
-                ))}
-              </span>
-            </TermSnippet>
-            <span className="ap-thumb-name">{c.label}</span>
+            <span className="ap-thumb-pic" aria-hidden="true">
+              <TermSnippet scheme={scheme} lines={THUMB_LINES}>
+                <span className="ap-term-dots">
+                  {NORMAL.map((n) => (
+                    <i key={n} style={{ background: ansi[n] }} />
+                  ))}
+                </span>
+              </TermSnippet>
+            </span>
+            <span className="ap-thumb-name">
+              {c.id === "match" ? `${c.label} · ${themeLabel(theme)}` : c.label}
+            </span>
           </button>
         );
       })}

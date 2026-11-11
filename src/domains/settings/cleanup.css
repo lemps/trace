@@ -1,4 +1,4 @@
-/* Settings → Worktrees: auto-cleanup rules and their live preview. */
+/* Settings → Worktrees → Auto-cleanup: the idle period field and the summary line. */
 
 /* Idle period: a short number next to its unit, inside the 220px control. */
 .setting-row .cleanup-period {
@@ -11,18 +11,12 @@
   flex-shrink: 0;
 }
 
-.cleanup-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.cleanup-preview-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* The summary while the next preview is worked out: the previous one, dimmed. */
+.cleanup-summary.stale .setting-text .label {
+  color: var(--fg-3);
 }
 
+/* A one-line note under a section (also Settings → Notifications'). */
 .setting-note {
   padding: 8px 0 0;
   font-size: var(--text-ui);

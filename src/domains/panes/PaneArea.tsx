@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { type PaneArea as AreaCtx, PaneAreaContext } from "./context";
 import { allTabs, focusedGroup, listGroups, minSize } from "./model";
+import { inRunOrder } from "./owned";
 import { focusPane, trackScroll } from "./PanelSlot";
 import { MIN_PANE_H, MIN_PANE_W, PaneGroupView, PaneNodeView, STRIP_H } from "./PaneSplit";
 import { usePaneKeys } from "./usePaneKeys";
@@ -24,9 +25,13 @@ export function PaneArea({ panes }: { panes: Panes }) {
   const narrow = useTooSmall(rootRef, groups.length > 1 ? need : null);
   const focused = focusedGroup(layout);
   const shown = narrow ? [focused.active] : groups.map((g) => g.active);
-  // One row reads in the tabs' own order (agents first), not pane by pane.
+  // One row reads in the tabs' own order (agents first, each with its subagents),
+  // not pane by pane.
   const inLayout = new Set(allTabs(layout));
-  const naturalOrder = [...panels.keys()].filter((t) => inLayout.has(t));
+  const naturalOrder = inRunOrder(
+    [...panels.keys()].filter((t) => inLayout.has(t)),
+    panes.runs
+  );
 
   const elements = useRef(new Map<string, HTMLElement>());
   const elementFor = useCallback((tab: string) => {

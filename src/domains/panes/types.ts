@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { IconProps } from "@/components/Icon";
+import type { MenuItem } from "@/components/PopMenu";
 
 /**
  * One tab-like view a detail can show in a pane: an agent's chat, Plan, Files, a
@@ -46,6 +47,13 @@ export interface PanelDescriptor {
   /** Its ×: for a coming tab, hides it (nothing is deleted). */
   onClose?: () => void;
   /**
+   * Whether it has a × (and closes on middle-click). By default an optional panel or
+   * one with `onClose` does; a subagent still at work says false.
+   */
+  closable?: boolean;
+  /** Its own items in its right-click menu, in place of the generic Close (a subagent's). */
+  menu?: MenuItem[];
+  /**
    * The content. It stays mounted while the tab is shown — moving it to another pane
    * moves its DOM, so terminals, scroll and selection survive — and unmounts when hidden.
    */
@@ -68,4 +76,10 @@ export interface PanelKind {
    */
   subscribe?: (onChange: () => void) => () => void;
   version?: () => string;
+  /**
+   * Panels that place themselves (`owned.ts`): the ids, in the order they started, a
+   * detail hosting `owner` puts after that agent's tab without being asked — an
+   * agent's subagents. Whatever isn't listed only comes in through `openPanel`.
+   */
+  owned?: (owner: string) => string[];
 }

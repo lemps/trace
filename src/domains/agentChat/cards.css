@@ -2,9 +2,9 @@
 
    Outlines follow one rule: `--border-faint` for containers of the agent's own
    activity (tool rows, a turn's folded work, runs, diffs, its task list, a
-   subagent's card, brief and report), `--border` for cards the user acts on (a
-   permission, a plan approval, a question), drawn in the needs-you amber
-   (`.ac-ask`, below) while they wait. */
+   subagent's card, brief and report), and the needs-you amber border for cards
+   the user acts on (a permission, a plan approval, a question) while they wait
+   (`.ac-ask`, below). */
 
 /* Tool rows: the transcript's line (`tx-tool-line`), in a card of their own. */
 .ac-tool {
@@ -57,11 +57,10 @@
   font-size: var(--text-ui);
   color: var(--fg-2);
 }
+/* Wraps rather than truncates: a permission's title is what it asks to do. */
 .ac-card-title {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   color: var(--fg-0);
   font-weight: 500;
 }
@@ -187,15 +186,37 @@
   color: var(--fg-2);
 }
 
-/* Cards you act on (a permission, a plan approval, a question) wait on you: the
-   needs-you amber, its light in the head (`StatusLight`), answered in place. The
-   same tint as the answer bar and the inbox's ask card. */
+/* Cards you act on (a permission, a plan approval, a question) wait on you: a
+   neutral surface with the needs-you amber only on the border and on its light in
+   the head (`StatusLight`), answered in place. No tint behind the content, so a
+   picked option's accent stays true and a long question set isn't a wall of amber.
+   The same in the chat, the Inbox (`inbox/AskCard`, `ChatPrompts`) and the
+   terminal view's answer bar. */
 .ac-ask {
   border-color: var(--state-needs-border);
-  background: var(--state-needs-bg);
+  background: var(--bg-1);
+}
+/* The pill sits on the first line of a title that wraps. */
+.ac-ask > .ac-card-head {
+  align-items: baseline;
 }
 .ac-ask > .ac-card-head > svg {
   color: var(--state-needs);
+}
+/* A sentence beside the pill, only where it says what the pill doesn't. */
+.ac-ask-note {
+  min-width: 0;
+  color: var(--fg-2);
+}
+/* What a question or plan says, in the Inbox's ask card. */
+.ac-ask-text {
+  color: var(--fg-0);
+}
+/* A chat agent's open prompts outside its chat (the Inbox): its own cards, stacked. */
+.ac-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .ac-ask-actions {
   display: flex;

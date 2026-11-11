@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { overlayOpen } from "@/domains/agent/useDetailKeys";
+import { isTyping, overlayOpen } from "@/domains/agent/useDetailKeys";
 import { isShortcut } from "@/platform/shortcuts";
 import { cycleFocus, focusedGroup, moveToNextGroup, type PaneLayout, splitTab } from "./model";
+import { stepOrigin, stepRun, upFrom } from "./owned";
 import type { Panes } from "./usePanes";
 
 type Op = (l: PaneLayout) => PaneLayout;
@@ -20,7 +21,9 @@ const KEYS: [string, Op][] = [
  * shown tab off right or down, move it on, and step focus between panes — focus
  * lands inside the pane, so typing goes where you looked. Off in the narrow fallback,
  * where there's one row to act on. They reach here from a focused terminal too
- * (`isAppKey`).
+ * (`isAppKey`). The next/previous-tab keys step through the agent in view and its
+ * subagents' tabs (`owned.ts`), the narrow fallback included, and Esc on a
+ * subagent's tab goes up to its agent's.
  */
 export function usePaneKeys(panes: Panes, narrow: boolean, focusLater: () => void): void {
   const ref = useRef({ panes, narrow, focusLater });
@@ -28,6 +31,27 @@ export function usePaneKeys(panes: Panes, narrow: boolean, focusLater: () => voi
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || overlayOpen()) return;
+      // Through an agent's tab and its subagents' tabs, in the strips' order.
+      const step = isShortcut("chatNextTab", e) ? 1 : isShortcut("chatPrevTab", e) ? -1 : 0;
+      if (step !== 0) {
+        const { panes } = ref.current;
+        const from = stepOrigin(panes.layout, panes.runs);
+        const to = from ? stepRun(panes.layout, panes.runs, from, step) : null;
+        if (!to) return;
+        e.preventDefault();
+        panes.select(to);
+        return;
+      }
+      // Esc on a subagent's tab goes up to its agent's tab, as its breadcrumb does,
+      // not out of the detail (which is what Esc does next, from the agent's tab).
+      if (isShortcut("detailBack", e) && !isTyping(e.target)) {
+        const { panes } = ref.current;
+        const up = upFrom(panes.layout, panes.runs);
+        if (!up) return;
+        e.preventDefault();
+        panes.select(up);
+        return;
+      }
       const hit = KEYS.find(([id]) => isShortcut(id, e));
       if (!hit) return;
       const { panes, narrow, focusLater } = ref.current;
@@ -36,7 +60,9 @@ export function usePaneKeys(panes: Panes, narrow: boolean, focusLater: () => voi
       panes.apply(hit[1]);
       focusLater();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Capturing: it's heard before the detail's own Esc (`useDetailKeys`), which
+    // stands down for a key already handled.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 }

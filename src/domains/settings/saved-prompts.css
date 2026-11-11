@@ -1,4 +1,4 @@
-/* Settings → Agents → Saved prompts (`SavedPromptsSettings`). */
+/* Settings → Prompts → Saved prompts (`SavedPromptsSettings`). */
 .sp-list {
   display: flex;
   flex-direction: column;
@@ -39,6 +39,29 @@
 .sp-row-body {
   font-size: var(--text-meta);
   color: var(--fg-3);
+}
+/* The hover bar (`RowBar`): Edit and the ⋯, IconButton xs. Quiet until the row is
+   hovered, holds focus or has its menu open; always there without a hovering pointer. */
+.sp-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.sp-row:hover .sp-actions,
+.sp-row:focus-within .sp-actions,
+.sp-row.menu-open .sp-actions,
+.sp-actions:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .sp-actions {
+    opacity: 1;
+  }
+}
+.sp-row .inline-confirm {
+  flex-shrink: 0;
 }
 .sp-empty {
   padding: 20px 12px;
@@ -82,6 +105,12 @@
   font-size: var(--text-ui);
   color: var(--fg-3);
   pointer-events: none;
+}
+/* Inputs at the controls' height, like the rest of Settings. */
+.sp-editor .field input {
+  height: var(--control-h);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .field .sp-name-input input {
   width: 100%;

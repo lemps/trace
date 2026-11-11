@@ -1,7 +1,8 @@
-// Words and choices for the composer's model, effort and mode pickers. Pure, so
-// `node:test` covers them. Values are Claude Code's own names (`--effort`,
-// `--permission-mode`); Codex gets the subset its app-server takes, and its own
-// top effort (`xhigh`). See agent_session/options in the backend.
+// Words, glyph names and choices for the composer's model-and-effort pill and its
+// permission-mode picker (`AgentOptionPickers`). Pure, so `node:test` covers them.
+// Values are Claude Code's own names (`--effort`, `--permission-mode`); Codex gets
+// the subset its app-server takes, and its own top effort (`xhigh`). See
+// agent_session/options in the backend.
 
 import type { AgentOptions, SessionInfo } from "./types";
 
@@ -17,9 +18,75 @@ export function modelChoices(agent: string, current: string | undefined): string
   return list;
 }
 
+const FAMILIES = "opus|sonnet|haiku|fable";
+/** `claude-opus-5-5`, `claude-sonnet-4`: the family, then the version. */
+const FAMILY_FIRST = new RegExp(`^claude-(${FAMILIES})-(\\d{1,2})(?:-(\\d{1,2}))?$`);
+/** `claude-3-5-sonnet`, `claude-3-opus`: the older ids, version first. */
+const VERSION_FIRST = new RegExp(`^claude-(\\d{1,2})(?:-(\\d{1,2}))?-(${FAMILIES})$`);
+/** A release date (`-20261001`, or Vertex's `@20261001`). */
+const DATE_STAMP = /[-@]\d{8}$/;
+/** Claude Code's million-token context suffix (`opus[1m]`, `claude-sonnet-5-5[1m]`). */
+const LONG_CONTEXT = /\[1m\]$/i;
+
+/**
+ * A model's name: Claude's aliases and ids read as "Opus", "Opus 5.5", "Sonnet 3.5",
+ * "Opus 5.5 1M". Anything else (another provider's model, an id we don't know) is
+ * shown exactly as it is: never a guess.
+ */
 export function modelLabel(model: string | undefined): string {
   if (!model) return "Default model";
-  return (CLAUDE_MODEL_ALIASES as readonly string[]).includes(model) ? capitalise(model) : model;
+  const name = anthropicName(model.replace(LONG_CONTEXT, ""));
+  if (!name) return model;
+  return LONG_CONTEXT.test(model) ? `${name} 1M` : name;
+}
+
+function anthropicName(id: string): string | null {
+  if ((CLAUDE_MODEL_ALIASES as readonly string[]).includes(id)) return capitalise(id);
+  const bare = id.replace(DATE_STAMP, "");
+  const fresh = FAMILY_FIRST.exec(bare);
+  if (fresh) return named(fresh[1], fresh[2], fresh[3]);
+  const old = VERSION_FIRST.exec(bare);
+  if (old) return named(old[3], old[1], old[2]);
+  return null;
+}
+
+function named(family: string, major: string, minor: string | undefined): string {
+  return `${capitalise(family)} ${minor === undefined ? major : `${major}.${minor}`}`;
+}
+
+/** The model and effort pill's two parts; `effort` is null while it's the default. */
+export interface ModelEffortText {
+  model: string;
+  effort: string | null;
+}
+
+export function modelEffortText(
+  model: string | undefined,
+  effort: string | undefined
+): ModelEffortText {
+  return { model: modelLabel(model), effort: effort ? effortLabel(effort) : null };
+}
+
+/**
+ * What follows the model in the pill: " · High", or nothing at the default effort
+ * (the pill reads "Opus 5.5 · High" or "Opus 5.5"). Its own part, so a narrow
+ * composer can drop it.
+ */
+export function effortSuffix({ effort }: ModelEffortText): string {
+  return effort ? ` · ${effort}` : "";
+}
+
+/** The pill's accessible name: "Model and effort: Opus 5.5, High". */
+export function modelEffortName({ model, effort }: ModelEffortText): string {
+  return `Model and effort: ${model}, ${effort ?? effortLabel(undefined)}`;
+}
+
+/**
+ * A picker's tooltip: its name and value (all a collapsed picker shows is a glyph),
+ * then when a pick applies or why it can't be made.
+ */
+export function pickerTitle(name: string, notes: readonly (string | null)[]): string {
+  return [name, ...notes.filter((n): n is string => Boolean(n))].join(". ");
 }
 
 /** Effort levels to offer, lowest first. */
@@ -71,6 +138,30 @@ export function modeLabel(mode: string | undefined): string {
 
 export function modeDetail(mode: string): string | undefined {
   return MODE_DETAILS[mode];
+}
+
+/** The `I.*` glyph in front of a mode's word, by name (this module stays free of React). */
+export type ModeGlyph =
+  | "Hand"
+  | "Pencil"
+  | "Plan"
+  | "ShieldAlert"
+  | "Ban"
+  | "ShieldCheck"
+  | "Shield";
+
+const MODE_GLYPHS = new Map<string, ModeGlyph>([
+  ["default", "Hand"], // asks first: a raised hand
+  ["acceptEdits", "Pencil"], // edits on its own: the edit glyph
+  ["plan", "Plan"], // the Plan tab's own glyph: one glyph for "plan" app-wide
+  ["bypassPermissions", "ShieldAlert"], // no permission checks at all
+  ["dontAsk", "Ban"], // never asks: refuses whatever isn't allowed already
+  ["auto", "ShieldCheck"], // permissions checked for you
+]);
+
+/** A mode's glyph; a plain shield (permissions) for an unset or unknown one. */
+export function modeGlyph(mode: string | undefined): ModeGlyph {
+  return (mode && MODE_GLYPHS.get(mode)) || "Shield";
 }
 
 /**

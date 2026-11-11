@@ -6,6 +6,7 @@ import { type ViewerTabsState, viewerTabs } from "@/domains/agent/viewerTabs";
 import { filesTab, terminalTab, type WorkspaceTabsState } from "@/domains/agent/workspaceTabs";
 import type { LiveInfo } from "@/domains/live/types";
 import type { Coming } from "@/domains/panes/coming";
+import { runSection } from "@/domains/panes/registry";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { planTab } from "@/domains/plans/planTab";
 import type { PlanTabState } from "@/domains/plans/store";
@@ -44,8 +45,9 @@ interface SessionPanelsArgs {
 }
 
 /**
- * A session's tabs, in their natural order: one per agent (a status dot each, the
- * "+" after the last), then after a rule Plan, Browser, Gallery, Files, Terminal, Tests
+ * A session's tabs, in their natural order: one per agent (a status dot each), each
+ * followed by its subagents' tabs (`subagentPanel.tsx`) and a rule, the "+" at the
+ * end of the last agent's run; then Plan, Browser, Gallery, Files, Terminal, Tests
  * and Pull request, each only with something to show (Files, Tests and Pull request
  * never in a plain folder, which has no git). Files and Terminal are the
  * worktree's, whichever agent is in front. A session on another host (a Vercel
@@ -65,7 +67,8 @@ export function sessionPanels(a: SessionPanelsArgs): PanelDescriptor[] {
       id: agentTab(entry.workspaceId),
       label: entry.label,
       icon: I.Chat,
-      section: "agents",
+      // Its own run: its subagents' tabs follow it, and the rule falls after the last.
+      section: runSection(entry.workspaceId),
       title: entry.companion ? `Companion agent — same ${place}` : "This session's agent",
       badge: <StatusLight light={a.live[entry.workspaceId]?.light ?? "stopped"} />,
       toolbar: <AgentViewSwitch workspaceId={entry.workspaceId} cli={entry.cli} />,

@@ -15,6 +15,7 @@ import { useLiveStore } from "@/domains/live/store";
 import { focusedGroup } from "@/domains/panes/model";
 import { PaneArea } from "@/domains/panes/PaneArea";
 import { layoutItems } from "@/domains/panes/paneMenu";
+import { resolvePanel } from "@/domains/panes/registry";
 import { isTabOn, useOnTabs, useTabSettings } from "@/domains/panes/tabSettings";
 import { type Panes, usePanes } from "@/domains/panes/usePanes";
 import { usePlanTab } from "@/domains/plans/store";
@@ -221,8 +222,9 @@ export function SessionDetail({
 /**
  * Keep the header's agent and the panes in step. Selecting an agent from outside
  * (opening the session, a notification for a companion) shows its tab; focusing an
- * agent's tab — clicking it, or its pane — makes it the one the header acts on, and
- * the one whose turns count as watched. Focusing Files or Terminal changes neither.
+ * agent's tab (or one of its subagents' tabs) — clicking it, or its pane — makes it
+ * the one the header acts on, and the one whose turns count as watched. Focusing
+ * Files or Terminal changes neither.
  */
 function useFollowAgent(
   panes: Panes,
@@ -243,7 +245,7 @@ function useFollowAgent(
       if (selected) show(agentTab(selected));
       return;
     }
-    const agent = agentOfTab(focusedTab);
+    const agent = agentOfTab(focusedTab) ?? resolvePanel(focusedTab)?.owner ?? null;
     if (agent && agent !== selected && has(agent)) {
       seen.current = agent;
       select(agent);

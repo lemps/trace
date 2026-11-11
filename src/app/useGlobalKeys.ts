@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { showView, toggleFrontView } from "@/components/useSidePanel";
+import { zoomBy } from "@/domains/appearance/store";
 import { useBoardStore } from "@/domains/board/store";
 import { useIssuesStore } from "@/domains/issues/store";
 import { orderIds } from "@/domains/live/order";
 import { useLiveStore } from "@/domains/live/store";
 import { useSessionsStore } from "@/domains/sessions/store";
-import { isNextAgentKey, isOrchestratorKey } from "@/platform/shortcuts";
+import { isNextAgentKey, isOrchestratorKey, zoomKey } from "@/platform/shortcuts";
 import { landingNav, type NavId } from "./nav";
 import { openWorkspace } from "./openWorkspace";
 
@@ -24,7 +25,10 @@ export function nextNeedingYou(): string | null {
   return needs.find((id) => order.indexOf(id) > at && id !== current) ?? needs[0];
 }
 
-/** App-wide shortcuts: ⌘J orchestrator, ⌘⇧N jump to the next agent needing you. */
+/**
+ * App-wide shortcuts: ⌘J orchestrator, ⌘⇧N jump to the next agent needing you,
+ * ⌘= / ⌘− / ⌘0 zoom (Interface size).
+ */
 export function useGlobalKeys(setNav: (nav: NavId) => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -42,6 +46,12 @@ export function useGlobalKeys(setNav: (nav: NavId) => void): void {
         e.preventDefault();
         const next = nextNeedingYou();
         if (next) openWorkspace(next, setNav);
+      } else {
+        const zoom = zoomKey(e);
+        if (zoom) {
+          e.preventDefault();
+          zoomBy(zoom);
+        }
       }
     };
     window.addEventListener("keydown", onKey);

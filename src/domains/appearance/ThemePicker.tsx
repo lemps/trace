@@ -26,7 +26,7 @@ function Preview({ theme }: { theme: ThemeId }) {
 }
 
 const CHOICES: { id: ThemeChoice; label: string; blurb: string }[] = [
-  { id: "system", label: "System", blurb: "Dark or Light, following the OS." },
+  { id: "system", label: "System", blurb: "Follows the OS, with your light and dark picks." },
   ...THEMES,
 ];
 
@@ -43,19 +43,26 @@ export function ThemePicker() {
           className={`ap-theme${theme === c.id ? " on" : ""}`}
           onClick={() => update({ theme: c.id })}
         >
-          {c.id === "system" ? (
-            <span className="ap-pv-split">
-              <Preview theme="dark" />
-              <Preview theme="light" />
-            </span>
-          ) : (
-            <Preview theme={c.id} />
-          )}
+          <span className="ap-theme-pic" aria-hidden="true">
+            {c.id === "system" ? <SystemPreview /> : <Preview theme={c.id} />}
+          </span>
           <span className="ap-theme-name">{c.label}</span>
           <span className="ap-theme-blurb">{c.blurb}</span>
         </button>
       ))}
     </fieldset>
+  );
+}
+
+/** System's card: its light pick beside its dark pick. */
+function SystemPreview() {
+  const light = useAppearance((s) => s.prefs.lightTheme);
+  const dark = useAppearance((s) => s.prefs.darkTheme);
+  return (
+    <span className="ap-pv-split">
+      <Preview theme={dark} />
+      <Preview theme={light} />
+    </span>
   );
 }
 

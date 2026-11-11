@@ -1,7 +1,9 @@
 /* Answering a waiting agent from its detail: the answer bar under the chat, the
    amber primary button it shares with the inbox, and the Esc hint on Back. */
 
-/* Docked under the chat while the agent waits on a permission / plan prompt. */
+/* Docked under the chat while the agent waits on a permission / plan prompt. Drawn
+   as every "answer the agent" surface is (the chat's `.ac-ask`): neutral, with the
+   needs-you amber on the border only. */
 .answer-bar {
   display: flex;
   align-items: center;
@@ -12,7 +14,7 @@
   min-inline-size: 0;
   border: 1px solid var(--state-needs-border);
   border-radius: var(--radius);
-  background: var(--state-needs-bg);
+  background: var(--bg-1);
 }
 .answer-text {
   flex: 1;

@@ -1,112 +1,63 @@
-import { useState } from "react";
-import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
-import { InlineConfirm } from "@/components/InlineConfirm";
-import { SetupFields } from "@/domains/repos/SetupFields";
-import { fullName, isEmptySetup, type RepoDetails, type SetupConfig } from "@/domains/repos/types";
-import { setRepoSetup, suggestRepoSetup } from "@/ipc/repoSetup";
+import { RowBar, RowMenuPopover } from "@/components/RowMenu";
+import { barActions, type RowActionSection, useRowMenu } from "@/components/useRowMenu";
+import { MiddlePath } from "@/domains/repos/MiddlePath";
+import { fullName, type RepoDetails, setupSteps } from "@/domains/repos/types";
 import { basename } from "@/platform/paths";
-import { RepoAccountSelect } from "./RepoAccountSelect";
 
 interface RepoRowProps {
   path: string;
-  /** Null until loaded (it runs git per repo). */
+  /** Null until loaded (it runs git per repo): its columns hold "—" till then. */
   details: RepoDetails | null;
-  onRemove: () => void;
-  onSaved: (setup: SetupConfig) => void;
-  /** The signed-in GitHub logins; the account picker shows with two or more. */
-  githubLogins: string[];
-  onAccountSaved: (login: string | null) => void;
+  /** Its full action list (`repoRowMenu`). */
+  actions: RowActionSection[];
+  /** Its setup editor or remove confirm is open under it. */
+  isOpen: boolean;
 }
 
-const setupCount = (s: SetupConfig) => s.commands.length + s.copyFiles.length;
-
-// One configured repo: name, where it's hosted, its folder, and its worktree
-// setup — what runs after trace creates a worktree for an agent — and, with several
-// GitHub accounts signed in, which one a sandbox uses for it.
-export function RepoRow({
-  path,
-  details,
-  onRemove,
-  onSaved,
-  githubLogins,
-  onAccountSaved,
-}: RepoRowProps) {
-  const [editing, setEditing] = useState<SetupConfig | null>(null);
-  const saved = details?.setup;
-  const name = basename(path);
-
-  const save = async () => {
-    if (!editing) return;
-    try {
-      onSaved(await setRepoSetup(path, editing));
-      setEditing(null);
-    } catch (err) {
-      toast.error(`Couldn't save ${name}'s setup: ${String(err)}`);
-    }
-  };
-  const suggest = async () => {
-    try {
-      const s = await suggestRepoSetup(path);
-      if (isEmptySetup(s)) toast.info(`Nothing to suggest for ${name}: no lockfiles found.`);
-      else setEditing(s);
-    } catch (err) {
-      toast.error(String(err));
-    }
-  };
+// One configured repo as a two-line row of fixed columns, so every row lines up:
+// name · remote · default branch · setup, then its folder underneath. Values git
+// reports arrive later and fill their own columns without moving anything. A
+// folder that's gone says so in place of what git would have told.
+export function RepoRow({ path, details, actions, isOpen }: RepoRowProps) {
+  const menu = useRowMenu();
+  const missing = details?.exists === false;
+  const account = details?.githubAccount;
+  const remote = details ? (details.remote ? fullName(details.remote) : "No remote") : "—";
 
   return (
-    <div className="rp-item">
-      <div className="repo-row">
-        <I.Code size={14} />
-        <span className="repo-name">{name}</span>
-        {details?.remote && <span className="rp-remote">{fullName(details.remote)}</span>}
-        <span className="repo-path">{path}</span>
-        {details && githubLogins.length > 1 && (
-          <RepoAccountSelect
-            path={path}
-            name={name}
-            logins={githubLogins}
-            value={details.githubAccount}
-            onSaved={onAccountSaved}
-          />
+    <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click opens the same menu as its ⋯ */}
+      <div
+        className={`rs-row${missing ? " missing" : ""}${isOpen ? " open" : ""}${menu.at ? " menu-open" : ""}`}
+        onContextMenu={menu.onContextMenu}
+      >
+        <span className="rs-glyph">{missing ? <I.Alert size={14} /> : <I.Folder size={14} />}</span>
+        <span className="rs-name">{basename(path)}</span>
+        {missing ? (
+          <span className="rs-missing">Folder missing</span>
+        ) : (
+          <>
+            <span className={`rs-remote${details?.remote ? "" : " quiet"}`}>{remote}</span>
+            <span className={`rs-branch${details?.defaultBranch ? "" : " quiet"}`}>
+              {details?.defaultBranch || "—"}
+            </span>
+            <span className="rs-steps">{details ? setupSteps(details.setup) : "—"}</span>
+          </>
         )}
-        <button
-          type="button"
-          className="btn xs rp-setup"
-          disabled={!saved}
-          aria-expanded={editing !== null}
-          onClick={() => setEditing(editing ? null : (saved ?? null))}
-        >
-          {saved && !isEmptySetup(saved) ? `Setup · ${setupCount(saved)}` : "Setup"}
-        </button>
-        <InlineConfirm
-          size="xs"
-          label={<I.X size={12} />}
-          className="btn ghost icon xs repo-remove"
-          ariaLabel={`Remove ${name}`}
-          message="Remove from trace, with its ticket mappings? The folder stays."
-          confirmLabel="Remove"
-          onConfirm={onRemove}
+        <RowBar
+          className="rs-actions"
+          actions={barActions(actions)}
+          menu={menu}
+          moreLabel="Repository actions"
+        />
+        <MiddlePath
+          className="rs-path"
+          path={path}
+          suffix={account ? ` · pushes as ${account}` : undefined}
         />
       </div>
-      {editing && (
-        <div className="rp-editor">
-          <SetupFields setup={editing} onChange={setEditing} idPrefix={`rp-${name}`} />
-          <div className="rp-editor-foot">
-            <button type="button" className="btn" onClick={() => void suggest()}>
-              Suggest from lockfiles
-            </button>
-            <span className="rp-spacer" />
-            <button type="button" className="btn" onClick={() => setEditing(null)}>
-              Cancel
-            </button>
-            <button type="button" className="btn primary" onClick={() => void save()}>
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      <RowMenuPopover menu={menu} sections={actions} />
+    </>
   );
 }

@@ -44,6 +44,10 @@ export function RepoBrowser({ onClose, onCloned }: RepoBrowserProps) {
   useEffect(() => {
     if (current) void loadRepos(current);
   }, [current, loadRepos]);
+  // Errors are toasts (trace-ui §5); the list says what's missing.
+  useEffect(() => {
+    if (error) toast.error(`Couldn't reach GitHub: ${error}`);
+  }, [error]);
 
   const list = current ? repos[current] : undefined;
   const shown = useMemo(() => {
@@ -94,10 +98,12 @@ export function RepoBrowser({ onClose, onCloned }: RepoBrowserProps) {
           />
         </div>
         <CloneFolder />
-        {error && <div className="ig-error">{error}</div>}
         <div className="gh-list">
           {!list && loadingOwner === current && (
             <div className="gh-empty">Loading repositories…</div>
+          )}
+          {!list && error && loadingOwner !== current && (
+            <div className="gh-empty">Couldn't load {current}'s repositories.</div>
           )}
           {list && shown.length === 0 && (
             <div className="gh-empty">

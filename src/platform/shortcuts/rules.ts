@@ -30,9 +30,11 @@ const RESERVED: Record<"mac" | "pc", string[]> = {
     "Shift+Meta+4",
     "Shift+Meta+5",
   ],
-  // WebView2 (Windows) and WebKitGTK (Linux): reload, find, print, zoom, dev tools.
+  // WebView2 (Windows) and WebKitGTK (Linux): reload, find, print, dev tools.
   // Ctrl+Shift+J would open the console in a browser, but WebView2 lets the page's
-  // preventDefault win, and it's the orchestrator's default.
+  // preventDefault win, and it's the orchestrator's default. The zoom keys aren't
+  // here: Tauri's zoomHotkeysEnabled is off (its default), so the webview leaves
+  // them to the page, and trace's own Zoom in / out / Actual size take them.
   pc: [
     "F5",
     "Ctrl+F5",
@@ -46,10 +48,6 @@ const RESERVED: Record<"mac" | "pc", string[]> = {
     "Ctrl+Shift+i",
     "F12",
     "F7",
-    "Ctrl+=",
-    "Ctrl+Shift+=", // Ctrl++
-    "Ctrl+-",
-    "Ctrl+0",
     "Alt+F4",
     "Ctrl+w",
     "Ctrl+Shift+Delete",

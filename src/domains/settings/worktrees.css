@@ -1,0 +1,120 @@
+/* Settings → Worktrees (`wt-`): the grouped list. Its frame, bands and empty box are
+   the Repositories list's (`.rs-list`, `.rs-band`, `.rs-empty`: repositories.css). */
+
+/* A repository's name over its worktrees: a small label row inside the list. */
+.wt-group {
+  display: flex;
+  align-items: center;
+  height: var(--control-h-sm);
+  padding: 0 12px;
+  overflow: hidden;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--fg-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A worktree: branch glyph · name · branch · status · ⋯, the same columns in every row. */
+.wt-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) var(--control-h-xs);
+  align-items: center;
+  column-gap: 10px;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--bg-2);
+}
+.wt-row:hover,
+.wt-row.open,
+.wt-row.menu-open {
+  background: var(--bg-3);
+}
+.wt-row.removing {
+  opacity: 0.5;
+}
+.wt-glyph {
+  display: inline-flex;
+  color: var(--fg-3);
+}
+.wt-name {
+  overflow: hidden;
+  font-size: var(--text-body);
+  color: var(--fg-0);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wt-branch {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wt-branch.quiet {
+  color: var(--fg-3);
+}
+.wt-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Facts about a checkout, not agent state: outlined, uncoloured, a control's corner
+   (like `.ci-badge`, `.gh-flag`). The word carries it. */
+.wt-fact {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: var(--control-h-xs);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+/* What auto-cleanup's next pass would do: a forecast, so quieter, and it gives way. */
+.wt-fact.wt-mark {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: block;
+  line-height: calc(var(--control-h-xs) - 2px);
+  border-style: dashed;
+  color: var(--fg-3);
+  text-overflow: ellipsis;
+}
+.wt-fact.wt-mark.stale {
+  opacity: 0.5;
+}
+
+/* The ⋯: the reveal recipe (trace-ui §5). */
+.wt-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.wt-row:hover .wt-actions,
+.wt-row:focus-within .wt-actions,
+.wt-row.menu-open .wt-actions,
+.wt-row.open .wt-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .wt-actions {
+    opacity: 1;
+  }
+}
+.wt-actions .btn.icon {
+  color: var(--fg-3);
+}
+.wt-actions .btn.icon:hover:not(:disabled) {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}

@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { IconButton } from "./IconButton";
 import { MenuCaret } from "./MenuCaret";
 import { PopMenu } from "./PopMenu";
 
 interface FontFieldProps {
-  /** What's typed: a family, or a comma-separated stack. "" means the default. */
+  /** The applied value: a family, or a comma-separated stack. "" means the default. */
   value: string;
+  /** Called with a value to apply: a pick from the menu, or what was typed, on Enter or blur. */
   onChange: (next: string) => void;
   /** Families to offer, each shown in its own face. */
   suggestions: string[];
-  /** The family a blank value falls back to, for the placeholder and Default item. */
+  /** What a blank value means, for the Default item ("Geist Mono", "Same as code font"). */
   defaultFamily: string;
   label: string;
 }
@@ -16,20 +18,35 @@ interface FontFieldProps {
 // A font box that takes any family typed into it, plus a button listing every
 // suggestion. A <datalist> did this before, but Chromium only lists the options
 // matching the current text, so once a font was picked nothing else showed.
+//
+// What's typed is a draft until Enter or blur: applying per keystroke re-laid
+// the whole app in every prefix on the way ("Geist" before "Geist Mono") and
+// reconfigured every live terminal. Escape drops the draft. A menu pick applies
+// at once.
 export function FontField({ value, onChange, suggestions, defaultFamily, label }: FontFieldProps) {
+  const [draft, setDraft] = useState<string | null>(null);
   const current = value.trim();
+  const pick = (next: string) => {
+    setDraft(null);
+    onChange(next);
+  };
+  const commit = () => {
+    if (draft === null) return;
+    setDraft(null);
+    if (draft.trim() !== current) onChange(draft.trim());
+  };
   const items = [
     {
       id: "default",
       label: <span style={{ fontFamily: `"${defaultFamily}"` }}>Default ({defaultFamily})</span>,
       checked: current === "",
-      onSelect: () => onChange(""),
+      onSelect: () => pick(""),
     },
     ...suggestions.map((family) => ({
       id: family,
       label: <span style={{ fontFamily: `"${family}"` }}>{family}</span>,
       checked: current.toLowerCase() === family.toLowerCase(),
-      onSelect: () => onChange(family),
+      onSelect: () => pick(family),
     })),
   ];
   return (
@@ -37,9 +54,22 @@ export function FontField({ value, onChange, suggestions, defaultFamily, label }
       <input
         type="text"
         aria-label={label}
-        placeholder={defaultFamily}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        // One word for "use the default" in every box; the menu names what that is.
+        placeholder="Default"
+        value={draft ?? value}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Escape" && draft !== null) {
+            // Only swallow Escape when it had a draft to drop; otherwise it's the page's.
+            e.preventDefault();
+            e.stopPropagation();
+            setDraft(null);
+          }
+        }}
       />
       <PopMenu
         align="right"

@@ -77,7 +77,10 @@ export function paneMenu(
       onSelect: run((l) => moveToNextGroup(l, tab)),
     },
   ];
-  if (panel?.optional) {
+  if (panel?.menu) {
+    // Its own (a subagent's: Open beside, Close, Close finished), run as it says.
+    items.push(...panel.menu.map((item) => ({ ...item, onSelect: andThen(item.onSelect, after) })));
+  } else if (panel?.optional) {
     items.push({ label: `Close ${label}`, onSelect: run((l) => removeTab(l, tab)) });
   }
   if (groups > 1 && !narrow) {
@@ -89,6 +92,11 @@ export function paneMenu(
     { title: "Layout", items: layoutItems(panes, after) },
   ];
 }
+
+const andThen = (first: (() => void) | undefined, then: () => void) => () => {
+  first?.();
+  then();
+};
 
 /**
  * Tabs that come and go (.claude/rules/tabs.md), always listed so they can be found:

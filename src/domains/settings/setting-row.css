@@ -1,0 +1,122 @@
+/* Settings' building blocks: `SettingSection` and `SettingRow` (+ its `block` and
+   `inactive` variants), and the inputs inside rows. Page-level rules and each tab's
+   own pieces are in settings.css and the tabs' stylesheets. */
+
+/* A section (`SettingSection`): a fixed-height head with a section label and its
+   actions, an optional description, then its rows. */
+.setting-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--control-h);
+}
+.setting-section-title {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-3);
+}
+.setting-section-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.setting-section-desc {
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+/* A list straight under the head or description (not a row, which has its own padding). */
+.setting-section > :is(.sb-list, .sp-list) {
+  margin-top: 12px;
+}
+
+/* Label + hint on the left, control on the right (per the design). */
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-faint);
+  align-items: center;
+}
+.setting-row:last-child {
+  border-bottom: 0;
+}
+.setting-row .label {
+  font-size: var(--text-body);
+  color: var(--fg-0);
+}
+/* The hint and the inactive reason share one cell: the taller sets the height, so
+   swapping them never moves the rows below. */
+.setting-hints {
+  display: grid;
+  margin-top: 2px;
+}
+.setting-hints > .hint {
+  grid-area: 1 / 1;
+}
+.setting-hints > .hint.off {
+  visibility: hidden;
+}
+.setting-row .hint {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.setting-row .control {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+/* `block`: label and hint on top, the control full width beneath. */
+.setting-row.block {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.setting-row.block .control {
+  flex-direction: column;
+  align-items: stretch;
+}
+/* `inactive`: still there, dimmed and out of reach (`inert`), its reason in the hint. */
+.setting-row.inactive .label {
+  color: var(--fg-3);
+}
+.setting-row.inactive .control {
+  opacity: 0.45;
+}
+/* Inputs are the controls' height (`--control-h`), so they line up with the
+   buttons beside them; inside a list row, `--control-h-sm`. */
+.setting-row select,
+.setting-row input[type="text"],
+.setting-row input[type="number"],
+.setting-row input[type="password"] {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  height: var(--control-h);
+  padding: 0 10px;
+  font-size: var(--text-body);
+  color: var(--fg-0);
+}
+.setting-row textarea {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: var(--text-ui);
+  font-family: var(--font-sans);
+  color: var(--fg-0);
+  resize: vertical;
+  line-height: 1.5;
+}
+.setting-row select:focus,
+.setting-row input:focus,
+.setting-row textarea:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}

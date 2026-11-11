@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import { useAgentChatStore } from "./store";
 
-// Subagent tabs closed in a chat's tab strip, per workspace. Closing hides the
-// tab only: the subagent's conversation stays, its card in Main reopens it, and
-// so does picking it from elsewhere. Kept across restarts (the journal brings
-// every subagent back), as a view preference that's fine to lose.
+// Subagent tabs closed in a detail's pane strip, per agent workspace (the tabs:
+// `subagentPanel.tsx`). Closing hides the tab only: the subagent's conversation
+// stays, and its card in the agent's chat, or Open beside, brings it back. Kept
+// across restarts (the journal brings every subagent back), as a view preference
+// that's fine to lose.
 
 const KEY = "trace.closedSubagentTabs";
 /** Call ids kept per workspace: the newest, so a long-lived chat can't grow it forever. */
@@ -61,25 +61,19 @@ export const useClosedTabs = create<ClosedTabsStore>((set) => ({
     }),
 }));
 
-const NONE: string[] = [];
-
-/** A workspace's closed subagent tabs, by call id. */
-export function useClosedOf(workspaceId: string): string[] {
-  return useClosedTabs((s) => s.closed[workspaceId] ?? NONE);
+/** Whether a subagent's tab was closed. */
+export function isTabClosed(workspaceId: string, callId: string): boolean {
+  return useClosedTabs.getState().closed[workspaceId]?.includes(callId) ?? false;
 }
 
-/** Close subagent tabs; showing one of them goes back to Main. */
+/** Close subagent tabs: a pane showing one shows the tab beside it instead. */
 export function closeSubagentTabs(workspaceId: string, callIds: readonly string[]): void {
-  if (callIds.length === 0) return;
-  useClosedTabs.getState().close(workspaceId, callIds);
-  const chat = useAgentChatStore.getState();
-  if (callIds.includes(chat.tab[workspaceId] ?? "main")) chat.setTab(workspaceId, "main");
+  if (callIds.length > 0) useClosedTabs.getState().close(workspaceId, callIds);
 }
 
-/** Show a subagent's tab, bringing it back if it was closed (its card in Main does this). */
-export function showSubagentTab(workspaceId: string, callId: string): void {
+/** Bring a closed subagent tab back (nothing if it's open). */
+export function reopenSubagentTab(workspaceId: string, callId: string): void {
   useClosedTabs.getState().reopen(workspaceId, callId);
-  useAgentChatStore.getState().setTab(workspaceId, callId);
 }
 
 // A hot update would leave subscribers on a stale copy of this state, so reload instead.

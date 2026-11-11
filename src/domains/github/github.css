@@ -95,7 +95,8 @@
   height: var(--control-h-xs);
   padding: 0 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  /* A fact, not agent state: a chip's corner, like `.ci-badge`. */
+  border-radius: var(--radius-sm);
   font-size: var(--text-label);
   color: var(--fg-3);
 }
@@ -168,11 +169,6 @@
   font-size: var(--text-meta);
   color: var(--fg-3);
 }
-/* The same control, as a row of Settings → Repositories. */
-.setting-group .gh-folder {
-  margin: 12px 0 8px;
-}
-
 /* Signed-in accounts in the GitHub dialog: one row each, actions on the right. */
 .ig-sub > .gh-accounts,
 .ig-sub > .gh-signin {

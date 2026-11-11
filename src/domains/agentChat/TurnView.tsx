@@ -23,7 +23,7 @@ function TurnBody({ turn }: { turn: ChatTurn }) {
   const folded = turn.folded.length > 0;
   const hidden: ReadonlySet<ChatItem> = folded && !open ? new Set(turn.folded) : NONE;
   return (
-    <section className="ac-turn">
+    <section className="ac-turn" data-follow-id={turn.id}>
       {turn.prompts.map((p) => (
         <MessageRow key={p.row.id} message={p.message} at={p.row.at} />
       ))}

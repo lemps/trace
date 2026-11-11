@@ -1,21 +1,16 @@
 import { type RefObject, useEffect, useRef } from "react";
 import { isTyping, overlayOpen } from "@/domains/agent/useDetailKeys";
 import { isShortcut } from "@/platform/shortcuts";
-import { stepTab } from "../ChatTabs";
-import type { SubagentSummary } from "./useChat";
 
 interface ChatKeys {
   working: boolean;
   interrupt: () => void;
-  subagents: readonly SubagentSummary[];
-  tab: string;
-  setTab: (tab: string) => void;
 }
 
 /**
- * A chat view's keys, wherever focus is while the view is on screen: Esc
- * interrupts the agent (its turn and subagents) and the tab shortcuts move
- * between the main chat and the subagents' tabs. Not from another text box (a
+ * A chat view's key, wherever focus is while the view is on screen: Esc
+ * interrupts the agent (its turn and subagents). (Stepping to its subagents'
+ * tabs is the pane area's: `usePaneKeys`.) Not from another text box (a
  * question's typed answer, a queued message being edited: Esc there leaves the
  * box), nor while a menu, modal or the slash menu is open (they own Esc).
  *
@@ -37,14 +32,7 @@ export function useChatKeys(pane: RefObject<HTMLDivElement | null>, keys: ChatKe
       if (focusedPane && focusedPane !== el) return;
       const inComposer = target?.classList.contains("ac-input") ?? false;
       if (isTyping(target) && !inComposer) return;
-      const { working, interrupt, subagents, tab, setTab } = ref.current;
-      const step = isShortcut("chatNextTab", e) ? 1 : isShortcut("chatPrevTab", e) ? -1 : 0;
-      if (step !== 0 && subagents.length > 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        setTab(stepTab(subagents, tab, step));
-        return;
-      }
+      const { working, interrupt } = ref.current;
       if (!working || !isShortcut("chatInterrupt", e)) return;
       if (el.querySelector(".ac-slash")) return;
       e.preventDefault();

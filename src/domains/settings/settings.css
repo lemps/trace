@@ -1,14 +1,26 @@
 /* Settings page — extracted from globals.css; class names match the design handoff. */
 
 /* ============ Settings ============ */
+/* The page root (`SettingsView`). A stable gutter keeps the centred column from
+   shifting sideways when a tab becomes tall enough to scroll. */
+.settings-page > .page-body {
+  scrollbar-gutter: stable;
+}
 .settings-wrap {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 20px;
   max-width: 720px;
   margin: 0 auto;
 }
-/* (Not a Markdown heading inside a preview.) */
+/* One hint style wherever a hint sits on the page, in a row or not. */
+.settings-page .hint {
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+
+/* Legacy section look, until every tab uses `SettingSection`. (Not a Markdown
+   heading inside a preview.) */
 .setting-group h2:not(.md h2) {
   margin: 0 0 4px;
   font-size: var(--text-body);
@@ -20,51 +32,6 @@
   font-size: var(--text-ui);
   color: var(--fg-3);
   margin-bottom: 12px;
-}
-
-/* Label + hint on the left, control on the right (per the design). */
-.setting-row {
-  display: grid;
-  grid-template-columns: 1fr 220px;
-  gap: 16px;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--border-faint);
-  align-items: center;
-}
-.setting-row:last-child {
-  border-bottom: 0;
-}
-.setting-row .label {
-  font-size: var(--text-body);
-  color: var(--fg-0);
-}
-.setting-row .hint {
-  font-size: var(--text-meta);
-  color: var(--fg-3);
-  margin-top: 2px;
-}
-.setting-row .control {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-}
-.setting-row select,
-.setting-row input[type="text"],
-.setting-row input[type="number"] {
-  width: 100%;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  height: calc(var(--control-h) + 4px);
-  padding: 0 10px;
-  font-size: var(--text-body);
-  color: var(--fg-0);
-}
-.setting-row select:focus,
-.setting-row input:focus {
-  border-color: var(--border-strong);
-  outline: none;
 }
 
 .switch {
@@ -102,65 +69,6 @@
   background: var(--bg-0);
 }
 
-.repo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.repo-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-faint);
-  border-radius: var(--radius);
-  background: var(--bg-2);
-  color: var(--fg-3);
-}
-.repo-row .repo-name {
-  font-size: var(--text-body);
-  font-weight: 500;
-  color: var(--fg-0);
-}
-.repo-row .repo-path {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  color: var(--fg-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* A row's remove: `.btn.ghost.icon.xs`, red on hover. */
-.repo-row .repo-remove {
-  color: var(--fg-3);
-}
-.repo-row .btn.repo-remove:hover:not(:disabled) {
-  color: var(--c-danger);
-}
-
-/* Worktree status chips */
-.wt-chip {
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  padding: 1px 6px;
-  border-radius: 999px;
-}
-.wt-chip.merged {
-  color: var(--c-done);
-  background: var(--c-done-bg);
-}
-.wt-chip.dirty {
-  color: var(--c-warn);
-  background: var(--c-prog-bg);
-}
-.wt-chip.running {
-  color: var(--c-review);
-  background: var(--c-review-bg);
-}
-
 /* "What's new" panel shown when an update is available */
 .update-notes {
   margin-top: 16px;
@@ -178,120 +86,56 @@
   margin-bottom: 8px;
 }
 
-/* Full-width setting (textarea controls that don't fit the 220px row) */
-.setting-block {
-  padding: 20px 0 6px;
-  border-top: 1px solid var(--border-faint);
-}
-.setting-block .label {
-  font-size: var(--text-body);
-  color: var(--fg-0);
-}
-.setting-block .hint {
-  font-size: var(--text-meta);
-  color: var(--fg-3);
-  margin: 2px 0 10px;
-}
-.setting-block textarea {
-  width: 100%;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: var(--text-ui);
-  font-family: var(--font-sans);
-  color: var(--fg-0);
-  resize: vertical;
-  line-height: 1.5;
-}
-.setting-block textarea:focus {
-  border-color: var(--border-strong);
-  outline: none;
-}
-
-/* Ticket→repo mapping editor rows */
-.map-row {
+/* An API key (`KeyField`): the input and Save, both `--control-h`, then the Remove
+   line, which keeps its room while there's no key to remove. */
+.key-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
 }
-.map-row input[type="text"],
-.map-row select {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  height: calc(var(--control-h) + 2px);
-  padding: 0 10px;
-  font-size: var(--text-ui);
-  color: var(--fg-0);
-}
-.map-row input[type="text"] {
-  width: 160px;
+.setting-row .key-input {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-mono);
 }
-.map-row select {
-  flex: 1;
-}
-.map-row .map-arrow {
-  color: var(--fg-4);
-}
-
-/* Assistant and provider API key rows. The input stands a step taller than buttons
-   (34px, as forms do); Save is a plain 30px `.btn`, centred on it. */
-.setting-block .key-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-.setting-block .key-input {
-  flex: 1;
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  height: calc(var(--control-h) + 4px);
-  padding: 0 10px;
-  font-size: var(--text-body);
-  color: var(--fg-0);
-  font-family: var(--font-mono);
-}
-.setting-block .key-input:focus {
-  border-color: var(--border-strong);
-  outline: none;
-}
-/* Remove key: a quiet link that arms an xs InlineConfirm in the same 20px line. */
 .key-remove-row {
   display: flex;
   align-items: center;
   min-height: var(--control-h-xs);
-  margin-top: 8px;
 }
-.key-remove {
-  font-size: var(--text-ui);
-  color: var(--fg-3);
+.key-remove-row[aria-hidden="true"] {
+  visibility: hidden;
 }
-.key-remove:hover {
-  color: var(--c-review);
-}
-.key-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: var(--text-ui);
-  color: var(--c-done);
+.key-remove-row .link-btn {
+  margin-top: 0;
 }
 
-/* Notification sound: picker + preview, on one row. */
+/* Notification sound: picker, preview and "Choose a file…", on one full-width line. */
 .sound-picker {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.sound-picker select {
-  min-width: 160px;
+.setting-row .sound-picker select {
+  width: 280px;
+  min-width: 0;
 }
+
+/* Inline code in a hint (placeholders, agent tool ids). */
+.settings-page .hint code {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
+
+/* About: the running version, as the row's value. */
+.about-version {
+  font-family: var(--font-mono);
+  font-size: var(--text-ui);
+  color: var(--fg-1);
+}
+
+/* AutoCleanupSettings' error line (it moves to a toast with that tab's rework). */
 .setting-note.error {
   padding: 4px 0 0;
   font-size: var(--text-ui);

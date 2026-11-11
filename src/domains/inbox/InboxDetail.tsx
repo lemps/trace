@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { KeyHint } from "@/components/KeyHint";
+import { Markdown } from "@/components/Markdown";
 import { ChatPrompts } from "@/domains/agentChat/PendingPrompts";
+import { useJournal } from "@/domains/agentChat/store";
 import { useIsChatAgent } from "@/domains/agentChat/transport";
+import { isWaitingOnYou } from "@/domains/agentChat/waiting";
+import { choicesFor } from "@/domains/live/answer";
 import type { LiveEntry } from "@/domains/live/entries";
 import { ageLabel, shownAsk } from "@/domains/live/light";
 import { useSessionsOverview } from "@/domains/sessions/hooks/useSessionsOverview";
@@ -52,6 +56,11 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
   const openKeys = useAriaKeys("inboxOpen");
   // A chat agent's prompts are its own cards, answered over the chat protocol.
   const isChat = useIsChatAgent(entry.id);
+  // One primary per screen: while the card here offers an answer (a chat prompt,
+  // or a terminal menu's choices), that answer is it, and Open is a plain button.
+  const chatRows = useJournal(entry.id).rows;
+  const chatWaits = useMemo(() => isChat && isWaitingOnYou(chatRows), [isChat, chatRows]);
+  const answersHere = isChat ? chatWaits : choicesFor(ask).length > 0;
   const overview = useSessionsOverview(entry.worktreeId ? [entry.worktreeId] : [])[
     entry.worktreeId ?? ""
   ];
@@ -90,7 +99,7 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
         )}
         <button
           type="button"
-          className="btn primary"
+          className={answersHere ? "btn" : "btn primary"}
           onClick={onOpen}
           title={openTitle}
           aria-keyshortcuts={openKeys}
@@ -107,7 +116,7 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
       {info.lastMessage && (
         <section className="ib-card">
           <div className="ib-lbl">Last message</div>
-          <p className="ib-said">{info.lastMessage}</p>
+          <Markdown text={info.lastMessage} prose />
         </section>
       )}
 
@@ -135,7 +144,9 @@ export function InboxDetail({ entry, now, onOpen, onDismiss, onSentNext }: Inbox
               </div>
             ))}
             {diff.files.length > 6 && (
-              <div className="ib-dim">and {diff.files.length - 6} more — open Files to see all</div>
+              <div className="ib-dim">
+                and {diff.files.length - 6} more {diff.files.length === 7 ? "file" : "files"}
+              </div>
             )}
           </div>
         </section>

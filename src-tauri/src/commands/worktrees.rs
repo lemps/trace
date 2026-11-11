@@ -7,6 +7,7 @@ use tauri::State;
 
 use crate::git;
 use crate::helpers::slugify;
+use crate::repo_catalog::owners::{Owners, WorktreeOwner};
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -23,6 +24,9 @@ pub struct WorktreeInfo {
     pub dirty: bool,
     /// A live PTY is rooted here — removal is blocked.
     pub running: bool,
+    /// The session, ticket or scheduled prompt it belongs to, when trace knows:
+    /// what the row is called instead of its dir name (often a session's UUID).
+    pub owner: Option<WorktreeOwner>,
 }
 
 pub(crate) fn git_out(dir: &str, args: &[&str]) -> Option<String> {
@@ -180,6 +184,8 @@ pub async fn list_worktrees(state: State<'_, AppState>) -> Result<Vec<WorktreeIn
 }
 
 fn collect_worktrees(running: &[String]) -> Vec<WorktreeInfo> {
+    // Read once for the whole listing; best-effort (an unknown owner shows its dir).
+    let owners = Owners::load();
     let mut out = Vec::new();
     for repo in crate::commands::repos::all_repos() {
         let Some(listing) = git_out(&repo, &["worktree", "list", "--porcelain"]) else {
@@ -215,6 +221,7 @@ fn collect_worktrees(running: &[String]) -> Vec<WorktreeInfo> {
                     .unwrap_or(false),
                 dirty,
                 running: running.contains(&name),
+                owner: owners.of(&name),
                 repo: repo.clone(),
                 path,
                 name,

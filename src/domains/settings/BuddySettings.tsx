@@ -1,38 +1,33 @@
 import { Switch } from "@/components/Switch";
 import { CharacterPicker } from "@/domains/buddy/CharacterPicker";
-import { resolveSprite } from "@/domains/buddy/characters";
 import { useBuddyStore } from "@/domains/buddy/store";
 import { SettingRow } from "./SettingRow";
+import { SettingSection } from "./SettingSection";
 
-// The rail buddy: on/off, and which character it wears — a live tile per valid
-// folder under domains/buddy/art/ (see ART.md there), however many there are.
+// Settings → Layout → Buddy: the rail buddy on or off, and which character it
+// wears. The picker stays on the page with the buddy off, inactive, so turning it
+// on or off doesn't move what's below.
 export function BuddySettings() {
   const enabled = useBuddyStore((s) => s.enabled);
   const setEnabled = useBuddyStore((s) => s.setEnabled);
-  const character = useBuddyStore((s) => s.character);
 
   return (
-    <section className="setting-group">
-      <h2>Buddy</h2>
-      <div className="desc">
-        Your buddy lives above Settings in the rail, reacts to your agents, and comments on what
-        happens. Each bubble is one Claude Haiku call through the Assistant connection below (at
-        most 40 an hour).
-      </div>
+    <SettingSection
+      title="Buddy"
+      desc="Your buddy lives above Settings in the rail, reacts to your agents, and comments on what happens. Each bubble is one Claude Haiku call through the Assistant tab's connection (at most 40 an hour)."
+    >
       <SettingRow label="Show buddy" hint="Click it to say hi; right-click mutes it for an hour.">
         <Switch on={enabled} onChange={setEnabled} label="Show buddy" />
       </SettingRow>
-      {enabled && (
-        <>
-          <SettingRow
-            label="Character"
-            hint="Every folder in src/domains/buddy/art/ is an option — see ART.md there."
-          >
-            <span className="hint">{resolveSprite(character)?.manifest.name ?? "None"}</span>
-          </SettingRow>
-          <CharacterPicker />
-        </>
-      )}
-    </section>
+      <SettingRow
+        label="Character"
+        hint="Hover one to see it cheer."
+        inactive={!enabled}
+        inactiveReason="Applies when Show buddy is on."
+        block
+      >
+        <CharacterPicker />
+      </SettingRow>
+    </SettingSection>
   );
 }

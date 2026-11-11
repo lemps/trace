@@ -103,8 +103,11 @@ end to end — the composer's Attach, pickers and Send are all `--control-h`.
   Send is icon-only even though it's the primary: the slot is universal.
 - **Words:** primary actions (Start, Merge #12, Raise PR, Answer), destructive
   confirms, anything with a count or a subtle pair (*Leave running* vs *Stop & save*).
+- **A control that shows a value is text** ("Opus 5.5 · High", "Accept edits"),
+  optionally led by a glyph naming the setting; actions and on/off switches are icons.
 - **Under pressure, labels collapse to icons, never truncate** (`useTabFit` for tabs;
-  a container query for header buttons).
+  a container query for header buttons, and for a composer's pickers, which step
+  down to glyphs as it narrows: `agentChat/agentOptions.css`).
 - **"…" on a label means it opens more** — a dialog or a picker ("Choose a file…",
   "New session…"). Not for an inline form, an inline confirm or a find bar.
 - **Busy buttons say the verb, in reserved width**: "Merging…", "Raising…",
@@ -142,7 +145,9 @@ never colour alone**:
 | working, quiet (a look, not a state: `quiet` prop, `live/quietStore`) | `--state-stopped` (grey) | still dashed ring | **No recent update** — nothing heard for `QUIET_AFTER_MS` (10m); not while background tasks run |
 
 Variants: `dot` (tabs, compact lists), `word` (list rows), `pill` (cards, rows,
-inbox), `pill` + `size="lg"` (detail headers). Never draw agent state with ad-hoc
+inbox), `pill` + `size="lg"` (detail headers). State is drawn once per row: a row
+whose first column is its light names the ask beside its title with `word` +
+`dotless`, not a second pill. Never draw agent state with ad-hoc
 text or colour (`.thinking`/`.waiting` are legacy). Tracker status (To do / In
 review) is `<StatusPill>` — a different thing; don't mix them.
 
@@ -197,6 +202,24 @@ a page's tabs (Settings, Pull requests, Sessions) and the orchestrator's; a page
 it to 24px. A state filter is `.filter-chip`s, not tabs. Esc closes a detail (not from
 inside a terminal or while a modal/menu is open); ⌘1–9 switch its tabs.
 
+**Settings** (`domains/settings/`): a tab is `SettingSection`s (a section label in a
+fixed `--control-h` head, `actions` right — a reset there is an `InlineConfirm` — then an
+optional description) holding `SettingRow`s, never an `h2` that repeats the tab's name.
+A row whose option another rules out stays mounted: `inactive` + `inactiveReason`
+dims it, makes its control `inert` and swaps its hint for the reason in the same cell,
+so changing an option never moves the page. A textarea, key field or wide control is
+`SettingRow block` (control full width beneath), not a hand-made block. Inputs there
+are `--control-h`, like the buttons beside them (`--control-h-sm` in a list's rows);
+there's no taller input tier. The page body keeps `scrollbar-gutter: stable` and
+starts each tab at the top; the tabs are words, so a narrow window sends the last to
+`TabMore` (`useTabFit`) rather than folding them to icons.
+
+**A detail has exactly three rows above its content:** the header, the pane tabs, and
+one 36px fact strip that follows the tab (an agent's `ChatHeader`; a subagent's
+`SubagentBar`, in the same place and metrics). An agent's subagents are pane tabs
+right after it, one run with it, the divider after the last. Never a second tab row
+inside a pane.
+
 **Lists of agents** keep a stable order (opened order, or the user's drag): state
 changes recolour a row, never move it. Reorderable rows show `I.Grip`; ⌥↑/⌥↓ does
 the same from the keyboard; "Reset to opened order" is one ghost `RotateCcw`
@@ -218,6 +241,9 @@ the same from the keyboard; "Reset to opened order" is one ghost `RotateCcw`
 - Text colour: `--fg-0` titles, `--fg-1` body, `--fg-2` secondary, `--fg-3` meta.
   `--fg-4` is ~3:1 on the dark surfaces — decoration and disabled only.
 - Spacing steps 4 · 6 · 8 · 10 · 12 · 16 · 20; rows 36–46px; card padding 10×12.
+  Pages, dialogs, tab panes and the side panel use 14px and 18px as their container
+  padding: those are the container values, not violations of the control/row scale,
+  and stay as they are.
 
 **Icons** are `I.*` from `components/Icon.tsx` only (glyphs live in `iconsNav`,
 `iconsActions`, `iconsCode`, `iconsViewer`): stroked, no emoji, no inline SVG — add a
@@ -240,7 +266,13 @@ borrowing one:
 | Merge | `GitMerge` | `Check` |
 | Done, passed, copied, selected | `Check` | merge |
 | Failed, error, warning | `Alert` | `X` |
-| Denied, cancelled | `Ban` | `X` |
+| Denied, cancelled; *Don't ask* mode (refuses what isn't allowed) | `Ban` | `X` |
+| Edit (a name, a message, a file); *Accept edits* mode | `Pencil` | |
+| *Ask* mode: asks before edits and commands | `Hand` | `Alert` |
+| *Full access* mode: runs everything without asking | `ShieldAlert` | `Alert`, a colour |
+| *Auto* mode: permissions checked for it | `ShieldCheck` | `Check` |
+| Permissions; a mode with no glyph of its own | `Shield` | |
+| An agent's model and effort (the composer's pill, collapsed) | `Sliders` | `Settings`, `Sparkles` |
 | A tool call with no glyph of its own | `Wrench` | `Code` |
 | Reload, re-check | `Refresh` | restart, reset |
 | Reset to default, undo an order | `RotateCcw` | `Refresh` |
@@ -256,6 +288,7 @@ borrowing one:
 | Branch, worktree | `Branch` | epic |
 | Queue a message | `ListPlus` | |
 | Task list | `ListChecks` | `Check` |
+| A plan: the Plan tab, its documents, *Plan* mode | `Plan` | `ListChecks` |
 | Import ↓ / Export ↑ | `Download` / `Upload` | |
 | Integrations, connect | `Plug` | |
 | Sign in with GitHub / with a token | `GitHub` / `Key` | `Plug` |
@@ -267,7 +300,9 @@ borrowing one:
 - **The reveal recipe** for secondary row actions: `opacity: 0`, shown on row
   `:hover`, row `:focus-within`, and while in a state ("Copied"); always shown under
   `@media (hover: none)`. A close × keeps its slot but is transparent until hover or
-  focus, so labels never shift. A control in its own strip (a code block's copy, in
+  focus, so labels never shift. Write the rules that show it at least as specific as
+  the one that hides it (`.btn.icon.x:hover`, not `.x:hover`), or it goes clear under
+  the pointer. A control in its own strip (a code block's copy, in
   the block's head) may instead rest quiet at 60%; one laid over content (a table's
   copy) follows the recipe.
 - **The hover bar is a shortcut layer; ⋯ and right-click are the full list.** A row
@@ -284,11 +319,21 @@ borrowing one:
 - **Destructive actions confirm inline with `InlineConfirm`** (message, Cancel, the
   verb), never a dialog and never a hand-rolled Cancel / Confirm pair or a two-click
   button.
+- **Changing an option never moves the page under the pointer.** The Settings page
+  keeps Standard density whatever the setting (`appearance.css` pins the tokens; the
+  previews carry `data-density` and show it). An option never mounts or unmounts a
+  row: it makes it inactive (`SettingRow`'s `inactive`, dimmed, reason in the hint's
+  place). Previews sit in fixed-height frames (`appearance/previews/PreviewFrame`), so
+  bigger text shows less. Typed values (font names, sizes) apply on Enter or blur,
+  never per keystroke; Escape restores the applied value.
 - Errors go to `toast.error` with the reason, not a bare red line.
 - Chat cards: `--border-faint` around the agent's own activity (tools, diffs,
   subagents, reports); a card you act on is the amber `.ac-card.ac-ask`, whose head
   says what it is with a `StatusLight` pill ("Permission · Bash", "Question",
-  "Plan approval"). Every "answer the agent" surface is tinted `--state-needs-bg`.
+  "Plan approval"). Every "answer the agent" surface (the chat's cards, the Inbox's,
+  the terminal view's answer bar) is neutral (`--bg-1`) with a `--state-needs-border`
+  border and the attention pill: no amber tint behind the content. The Inbox shows
+  the chat's own card, once, never framed in a second one.
 - The two chats and the transcript are one design: the orchestrator's chat and the
   Transcript view reuse the agent chat's pieces (`PromptBubble`, `WorkingRow`,
   `DiffCard`, `PlanCard`, `LatestButton`, `summarizeTool`, `formatDuration`). Change

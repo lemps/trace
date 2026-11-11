@@ -1,14 +1,9 @@
-/* A repo's worktree setup (`rp-`): its row in Settings → Repositories and the editor. */
-.rp-item {
-  display: flex;
-  flex-direction: column;
-}
-.rp-remote {
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  color: var(--fg-2);
-}
-/* A repo row's "Setup · N" (`.btn.xs.rp-setup`): held down while its editor is open. */
+/* A repo's worktree setup (`rp-`): the fields (`SetupFields`), shared by Settings →
+   Repositories' editor and the Conductor import, and the small toggle that opens
+   them in the import's rows. Plus `MiddlePath`, a path shortened in the middle. */
+
+/* A row's "Edit setup" toggle in the Conductor import (`.btn.xs.rp-setup`): held
+   down while its editor is open. */
 .btn.rp-setup {
   flex-shrink: 0;
 }
@@ -17,65 +12,30 @@
   border-color: var(--border-strong);
   color: var(--fg-0);
 }
-.rp-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: -1px;
-  padding: 12px;
-  border: 1px solid var(--border-faint);
-  border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
-  background: var(--bg-1);
-}
-.rp-setup {
+
+/* The editor's two fields. */
+.rp-setup-fields {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.rp-lines {
+/* Mono at the UI size, over `.field textarea`'s body size and 80px floor: the copy
+   field is two lines tall, as its `rows` says. */
+.rp-setup-fields .field textarea.rp-lines {
+  min-height: 0;
   font-family: var(--font-mono);
   font-size: var(--text-ui);
+  line-height: 1.5;
 }
-.rp-editor-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.rp-spacer {
-  flex: 1;
-}
-/* A repo's GitHub account, the same height as the row's Setup toggle. */
-/* A repo's GitHub account: a visible label, then the select. */
-.rp-account-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.rp-account-label {
-  font-size: var(--text-meta);
-  color: var(--fg-3);
-}
-.rp-account {
-  flex-shrink: 0;
-  max-width: 140px;
-  height: var(--control-h-xs);
-  padding: 0 6px;
-  background: var(--bg-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-meta);
-  color: var(--fg-1);
-}
-.rp-account:hover,
-.rp-account:focus {
-  border-color: var(--border-strong);
-  outline: none;
-}
-.rp-account-hint {
+
+/* `MiddlePath`: its width comes from the layout; the text is cut to fit in JS. */
+.mid-path {
   display: block;
-  margin-top: 8px;
-  font-size: var(--text-meta);
-  color: var(--fg-3);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mid-path-suffix {
+  font-family: var(--font-sans);
 }

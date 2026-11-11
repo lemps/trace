@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MiddlePath } from "@/domains/repos/MiddlePath";
 import { SetupFields } from "@/domains/repos/SetupFields";
 import { isEmptySetup, type SetupConfig } from "@/domains/repos/types";
 import type { ConductorRepo } from "@/ipc/conductorImport";
@@ -50,7 +51,7 @@ export function ConductorRepoRow({
               {repo.name}
               {status && <span className="ci-badge">{status}</span>}
             </span>
-            <span className="ci-row-sub ci-mono">{repo.rootPath}</span>
+            <MiddlePath className="ci-row-sub ci-mono" path={repo.rootPath} />
             <span className="ci-row-sub ci-mono" title="What runs in each new worktree">
               {setupSummary(setup)}
             </span>

@@ -6,7 +6,14 @@
   margin: 0 auto;
   padding: 0 20px 12px;
 }
+/* A size container: its bar's settings collapse to glyphs as it narrows
+   (agentOptions.css). Containment makes it a stacking context, so it's lifted
+   over the chat's jump-to-latest pill (z 1, latest.css), which its menus open
+   across, and stays under a pane's tab-drop overlay (z 6, pane-layout.css). The
+   orchestrator's composer reuses the box; with no settings in it, nothing collapses. */
 .ac-composer {
+  container: ac-composer / inline-size;
+  z-index: 2;
   position: relative;
   display: flex;
   flex-direction: column;

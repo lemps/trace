@@ -1,0 +1,240 @@
+/* Settings → Repositories (`rs-`): the joined repo list, its in-list setup editor and
+   remove confirm, the ticket mappings and the clone folder. The joined list's look
+   (`.rs-list`, `.rs-band`, `.rs-empty`) is shared with Settings → Worktrees. */
+
+/* One bordered list, rows divided by a hairline. */
+.rs-list {
+  margin-top: 12px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  overflow: hidden;
+  container-type: inline-size;
+}
+.rs-list > * + * {
+  border-top: 1px solid var(--border-faint);
+}
+
+/* A repo: two lines of fixed columns, the same in every row, so they line up and a
+   value arriving from git fills its own cell. Line 2 is the folder (+ its account). */
+.rs-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) 88px 104px 44px;
+  grid-template-rows: var(--control-h-xs) auto;
+  grid-template-areas:
+    "glyph name remote branch steps actions"
+    ". path path path path path";
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 4px 12px;
+}
+.rs-row:hover,
+.rs-row.open,
+.rs-row.menu-open {
+  background: var(--bg-2);
+}
+.rs-glyph {
+  grid-area: glyph;
+  display: inline-flex;
+  color: var(--fg-3);
+}
+.rs-name {
+  grid-area: name;
+  overflow: hidden;
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--fg-0);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-remote,
+.rs-branch {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-remote {
+  grid-area: remote;
+}
+.rs-branch {
+  grid-area: branch;
+}
+.rs-steps {
+  grid-area: steps;
+  overflow: hidden;
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* "—" while loading, "No remote" when there isn't one. */
+.rs-row .quiet {
+  color: var(--fg-3);
+}
+.rs-path {
+  grid-area: path;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
+.rs-path .mid-path-suffix {
+  color: var(--fg-3);
+}
+
+/* A folder gone from disk: dimmed, saying so where git's facts would be. */
+.rs-missing {
+  grid-column: remote / steps;
+  grid-row: 1;
+  font-size: var(--text-ui);
+  color: var(--fg-2);
+}
+.rs-row.missing .rs-name,
+.rs-row.missing .rs-path {
+  color: var(--fg-3);
+}
+.rs-row.missing .rs-glyph {
+  color: var(--fg-2);
+}
+
+/* The hover bar (Edit setup) + ⋯: the reveal recipe (trace-ui §5). */
+.rs-actions {
+  grid-area: actions;
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.rs-row:hover .rs-actions,
+.rs-row:focus-within .rs-actions,
+.rs-row.menu-open .rs-actions,
+.rs-row.open .rs-actions,
+.rs-actions:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+@media (hover: none) {
+  .rs-actions {
+    opacity: 1;
+  }
+}
+.rs-actions .btn.icon {
+  color: var(--fg-3);
+}
+.rs-actions .btn.icon:hover:not(:disabled) {
+  color: var(--fg-0);
+  background: var(--bg-3);
+}
+
+/* Narrow: the default branch gives way first; name and remote keep their share. */
+@container (max-width: 520px) {
+  .rs-row {
+    grid-template-columns: 16px minmax(0, 1fr) minmax(0, 1fr) 96px 44px;
+    grid-template-areas:
+      "glyph name remote steps actions"
+      ". path path path path";
+  }
+  .rs-branch {
+    display: none;
+  }
+}
+
+/* What opens inside the list under a row: it continues the row, no hairline between. */
+.rs-band {
+  padding: 12px;
+  background: var(--bg-2);
+}
+.rs-list > .rs-row.open + .rs-band {
+  border-top: none;
+}
+.rs-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rs-editor-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rs-spacer {
+  flex: 1;
+}
+.rs-confirm {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 12px;
+}
+
+/* Empty: a dashed box, one sentence (the head has the actions). */
+.rs-empty {
+  margin-top: 12px;
+  padding: 24px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+.rs-note {
+  margin-top: 8px;
+  font-size: var(--text-ui);
+  color: var(--fg-3);
+}
+
+/* Ticket mappings: pattern · repository · remove, all `--control-h-sm`. */
+.rs-maps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+.rs-map {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.rs-map input[type="text"],
+.rs-map select {
+  min-width: 0;
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui);
+  color: var(--fg-0);
+}
+.rs-map input[type="text"] {
+  font-family: var(--font-mono);
+}
+.rs-map input:focus,
+.rs-map select:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}
+.rs-map .btn.icon {
+  color: var(--fg-3);
+}
+.rs-map .btn.icon:hover:not(:disabled) {
+  color: var(--c-danger);
+}
+
+/* Cloning: a settings row whose control is the folder (wider than a row's 220px) + Change…. */
+.setting-row.rs-clone-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+.rs-clone-row .control {
+  min-width: 0;
+}
+.rs-clone-path {
+  flex: 1;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-2);
+}
