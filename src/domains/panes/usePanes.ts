@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { allTabs, isArranged, openBeside, type PaneLayout, selectTab } from "./model";
-import { resolvePanel, useOpenRequests, usePanelKindsVersion } from "./registry";
-import { useShownPanels } from "./shown";
+import { allTabs, isArranged, type PaneLayout, selectTab } from "./model";
+import { type OwnedRun, openOwnedBeside } from "./owned";
+import {
+  type OpenRequest,
+  ownedPanels,
+  resolvePanel,
+  useOpenRequests,
+  usePanelKindsVersion,
+} from "./registry";
 import { storedLayout, usePaneLayoutStore } from "./store";
 import type { PanelDescriptor } from "./types";
 import { hideTabs, normalizeLayout, type TabCatalog } from "./validate";
@@ -12,6 +18,10 @@ export interface Panes {
   layout: PaneLayout;
   /** Every panel in the layout, fixed and optional, by id (hidden ones too). */
   panels: Map<string, PanelDescriptor>;
+  /** Each agent the detail hosts (workspace id) → its tab. */
+  owners: Record<string, string>;
+  /** Each agent's tab with the tabs it owns now (its subagents'), in start order. */
+  runs: readonly OwnedRun[];
   /** Select a tab, first showing it (`PanelDescriptor.onReveal`) if it's hidden. */
   reveal: (tab: string) => void;
   /** Whether the user has arranged this workspace (Reset layout has something to undo). */
@@ -23,11 +33,18 @@ export interface Panes {
   reset: () => void;
 }
 
+interface Catalog extends TabCatalog {
+  owned: OwnedRun[];
+  /** `owned`, read again: what an operation acts on, which can be newer than this render. */
+  ownedNow: () => OwnedRun[];
+}
+
 /**
  * The pane layout for one workspace (`scope`), fitted to `fixed` — the panels the
  * detail always has, in order. `owners` maps each agent the detail hosts to its tab:
- * optional panels (`registerPanelKind`) belonging to one of them may join, opened by
- * `openPanel` beside that tab.
+ * optional panels (`registerPanelKind`) belonging to one of them may join — placed
+ * after that tab by themselves if their kind lists them (`owned`), or opened by
+ * `openPanel` / `showPanel`.
  */
 export function usePanes(
   scope: string,
@@ -44,14 +61,18 @@ export function usePanes(
     .filter((p) => p.hidden)
     .map((p) => p.id)
     .join("\n");
-  const ownerKey = Object.keys(owners).join("\n");
+  const ownerKey = Object.entries(owners)
+    .map(([ws, tab]) => `${ws}\t${tab}`)
+    .join("\n");
   // Optional panels re-resolve when their kind's data changes (a subagent appears).
   const kindsVersion = usePanelKindsVersion();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: kindsVersion invalidates isOptional
-  const catalog = useMemo<TabCatalog>(() => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: kindsVersion invalidates isOptional and owned
+  const catalog = useMemo<Catalog>(() => {
     const ids = fixedIds.split("\n");
-    const hosted = new Set(ownerKey.split("\n"));
+    const hosts = ownerKey ? ownerKey.split("\n").map((l) => l.split("\t")) : [];
+    const hosted = new Set(hosts.map(([ws]) => ws));
     const known = new Set(ids);
+    const ownedNow = () => hosts.map(([ws, tab]) => ({ owner: tab, tabs: ownedPanels(ws) }));
     return {
       fixed: ids,
       hidden: new Set(hiddenIds ? hiddenIds.split("\n") : []),
@@ -60,10 +81,12 @@ export function usePanes(
         const found = resolvePanel(tab);
         return found !== null && hosted.has(found.owner);
       },
+      owned: ownedNow(),
+      ownedNow,
     };
   }, [fixedIds, hiddenIds, ownerKey, kindsVersion]);
   // Operations act on the whole layout, hidden tabs and all, so they keep their
-  // places; what's drawn (and counted, and published) is the layout without them.
+  // places; what's drawn (and counted) is the layout without them.
   const full = useMemo(() => normalizeLayout(saved, catalog), [saved, catalog]);
   const layout = useMemo(() => hideTabs(full, catalog.hidden ?? new Set()), [full, catalog]);
 
@@ -82,10 +105,14 @@ export function usePanes(
   latest.current = { scope, catalog };
   const apply = useCallback(
     (op: (layout: PaneLayout) => PaneLayout) => {
-      const { scope, catalog } = latest.current;
+      const { scope } = latest.current;
+      // Owned tabs as they are now: an operation can follow the change that listed one.
+      const catalog = { ...latest.current.catalog, owned: latest.current.catalog.ownedNow() };
       const current = normalizeLayout(storedLayout(usePaneLayoutStore.getState(), scope), catalog);
       const next = op(current);
-      if (next !== current) save(scope, next, isArranged(next, catalog.fixed));
+      // Arranged: not the one row nothing has rearranged (fixed tabs, each agent's owned after it).
+      const natural = allTabs(normalizeLayout(null, catalog));
+      if (next !== current) save(scope, next, isArranged(next, natural));
     },
     [save]
   );
@@ -101,12 +128,31 @@ export function usePanes(
   const reset = useCallback(() => resetScope(latest.current.scope), [resetScope]);
 
   useOpenRequestsFor(owners, catalog, apply);
-  usePublishShown(scope, allTabs(layout).join("\n"));
 
-  return { scope, layout, panels, arranged, apply, select, reveal, reset };
+  return {
+    scope,
+    layout,
+    panels,
+    owners,
+    runs: catalog.owned,
+    arranged,
+    apply,
+    select,
+    reveal,
+    reset,
+  };
 }
 
-/** Open the optional panels `openPanel` asked for that belong to an agent here. */
+/**
+ * What a request does to the layout, given its agent's tab. `l` already holds the
+ * tabs the agent owns now (`apply` reads them), one reopened a moment ago included.
+ */
+function answer(l: PaneLayout, r: OpenRequest, owner: string, ownerTab: string): PaneLayout {
+  if (!r.edge) return selectTab(l, r.id);
+  return openOwnedBeside(l, r.id, { owner: ownerTab, tabs: ownedPanels(owner) }, r.edge);
+}
+
+/** Open or show the optional panels asked for that belong to an agent here. */
 function useOpenRequestsFor(
   owners: Record<string, string>,
   catalog: TabCatalog,
@@ -121,25 +167,10 @@ function useOpenRequestsFor(
       for (const r of mine) {
         const owner = resolvePanel(r.id)?.owner;
         const ownerTab = owner ? owners[owner] : undefined;
-        if (!ownerTab) continue;
-        apply((l) => {
-          // Beside the last panel of the same agent that's open already, so a
-          // second subagent splits that pane rather than halving the chat again.
-          const siblings = allTabs(l).filter((t) => t !== r.id && resolvePanel(t)?.owner === owner);
-          return openBeside(l, r.id, siblings[siblings.length - 1] ?? ownerTab, r.edge);
-        });
+        if (owner && ownerTab) apply((l) => answer(l, r, owner, ownerTab));
       }
     };
     drain();
     return useOpenRequests.subscribe(drain);
   }, []);
-}
-
-/** Say which tabs this detail's layout holds while it's on screen (`shown.ts`). */
-function usePublishShown(scope: string, tabs: string): void {
-  useEffect(() => {
-    const { publish } = useShownPanels.getState();
-    publish(scope, tabs.split("\n"));
-    return () => publish(scope, null);
-  }, [scope, tabs]);
 }

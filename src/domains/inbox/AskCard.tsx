@@ -1,4 +1,5 @@
 import { toast } from "@/app/toast";
+import { Markdown } from "@/components/Markdown";
 import { StatusLight } from "@/components/StatusLight";
 import { type AnswerChoice, choicesFor, choose } from "@/domains/live/answer";
 import type { Ask } from "@/domains/live/types";
@@ -11,49 +12,52 @@ interface AskCardProps {
   age: string;
 }
 
-/** One line on what the agent is waiting for. */
-function hint(ask: Ask, answerable: boolean): string {
+/**
+ * A sentence beside the pill, only where it tells you something the pill doesn't:
+ * a permission or plan says it all in the pill ("Permission · Bash"), and an
+ * answerable question shows its answers.
+ */
+function note(ask: Ask, answerable: boolean): string | null {
   switch (ask.kind) {
     case "permission":
-      return `The agent asks permission${ask.tool ? ` to use ${ask.tool}` : ""}.`;
     case "plan":
-      return "The agent has a plan for you to approve.";
+      return null;
     case "question":
-      return answerable
-        ? "The agent has a question — pick an answer, or open it to type your own."
-        : "The agent has a question — open it to answer in the terminal.";
+      return answerable ? null : "Open it to answer in the terminal.";
     case "turn":
-      return "The agent finished its turn.";
+      return "Reply below, or open it to carry on.";
     default:
-      return "The agent is waiting for you — open it to see what it needs.";
+      return "Open it to see what it needs.";
   }
 }
 
-// What the agent is waiting for — the command, question or plan itself — with
-// one-click answers where its prompt is a plain menu. Keys 1–9 pick them (named in
-// each answer's tooltip, and as a chip when hints on buttons are on).
+// What a terminal agent is waiting for (the command, question or plan itself),
+// drawn as the chat's ask card (`.ac-card.ac-ask`) so the same ask looks the same
+// here and in a chat, with one-click answers where its prompt is a plain menu.
+// Keys 1–9 pick them (named in each answer's tooltip, and as a chip when hints on
+// buttons are on).
 export function AskCard({ workspaceId, ask, age }: AskCardProps) {
   const choices = choicesFor(ask);
   const keys = useNumberedHints("inboxAnswer", Math.min(choices.length, 9));
   const chips = useButtonHints();
   const pick = (choice: AnswerChoice) =>
     void choose(workspaceId, choice).catch((err) => toast.error(`Couldn't answer: ${err}`));
-  // A command or path reads best as code; a question or plan as prose.
-  const code = ask.kind === "permission";
+  const said = note(ask, choices.length > 0);
   return (
-    <section className="ib-card ask" aria-label="What the agent needs">
-      <div className="ib-ask-head">
+    <section className="ac-card ac-ask" aria-label="What the agent needs">
+      <div className="ac-card-head">
         <StatusLight light="attention" variant="pill" label={ask.label} age={age} />
-        <span className="ib-hint">{hint(ask, choices.length > 0)}</span>
+        {said && <span className="ac-ask-note">{said}</span>}
       </div>
       {ask.detail &&
-        (code ? (
-          <pre className="ib-ask-detail mono">{ask.detail}</pre>
+        // A command or path reads best as code; a question or plan as prose.
+        (ask.kind === "permission" ? (
+          <pre className="tx-code ac-cmd">{ask.detail}</pre>
         ) : (
-          <p className="ib-ask-question">{ask.detail}</p>
+          <Markdown text={ask.detail} prose className="ac-ask-text" />
         ))}
       {choices.length > 0 && (
-        <div className="ib-choices">
+        <div className="ac-ask-actions">
           {choices.map((c, i) => (
             <button
               key={c.label}

@@ -9,6 +9,7 @@
 //! - `setup`: running it after `git::create_worktree` makes a worktree.
 
 pub mod model;
+pub mod owners;
 pub mod setup;
 pub mod store;
 pub mod suggest;
@@ -28,6 +29,9 @@ pub struct RepoDetails {
     pub setup: SetupConfig,
     /// The GitHub account picked for it in Settings; None = automatic.
     pub github_account: Option<String>,
+    /// Whether the folder is still on disk. A moved or deleted checkout stays
+    /// listed (agents can't use it) so Settings can say so and offer removal.
+    pub exists: bool,
 }
 
 /// The `origin` of the checkout at `path`, parsed. `None` without one.
@@ -49,19 +53,34 @@ pub fn details(paths: &[String]) -> Vec<RepoDetails> {
     let catalog = store::load();
     paths
         .iter()
-        .map(|path| {
-            let record = catalog.for_path(path);
-            RepoDetails {
-                path: path.clone(),
-                remote: record
-                    .and_then(|r| r.remote.clone())
-                    .or_else(|| origin_of(path)),
-                default_branch: crate::git::get_default_branch(path),
-                setup: record.map(|r| r.setup.clone()).unwrap_or_default(),
-                github_account: record.and_then(|r| r.github_account.clone()),
-            }
-        })
+        .map(|path| detail(path, catalog.for_path(path)))
         .collect()
+}
+
+/// One repo's details. A folder that's gone from disk gets no git at all: git
+/// would fail there and the fallbacks ("main", no remote) would make it look
+/// fine, so it says what the record knows and `exists: false`.
+fn detail(path: &str, record: Option<&model::RepoRecord>) -> RepoDetails {
+    let exists = std::path::Path::new(path).is_dir();
+    let recorded = record.and_then(|r| r.remote.clone());
+    RepoDetails {
+        path: path.to_string(),
+        remote: if exists {
+            recorded.or_else(|| origin_of(path))
+        } else {
+            recorded
+        },
+        default_branch: if exists {
+            crate::git::get_default_branch(path)
+        } else {
+            record
+                .and_then(|r| r.default_branch.clone())
+                .unwrap_or_default()
+        },
+        setup: record.map(|r| r.setup.clone()).unwrap_or_default(),
+        github_account: record.and_then(|r| r.github_account.clone()),
+        exists,
+    }
 }
 
 /// (remote, checkout) for each of `paths` that has a remote — what marks a
@@ -122,4 +141,36 @@ pub fn set_setup(path: &str, setup: SetupConfig) -> Result<SetupConfig, String> 
     let saved = setup.clone();
     store::update(|cat| cat.set_setup(path, remote, setup))?;
     Ok(saved)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::detail;
+    use super::model::{RemoteRepo, RepoRecord};
+
+    #[test]
+    fn a_missing_folder_says_so_and_keeps_what_was_recorded() {
+        let remote = RemoteRepo {
+            host: "github.com".into(),
+            owner: "o".into(),
+            name: "n".into(),
+        };
+        let record = RepoRecord {
+            remote: Some(remote.clone()),
+            default_branch: Some("trunk".into()),
+            ..Default::default()
+        };
+        let d = detail("/no/such/trace/repo/folder", Some(&record));
+        assert!(!d.exists);
+        assert_eq!(d.remote, Some(remote));
+        assert_eq!(d.default_branch, "trunk");
+    }
+
+    #[test]
+    fn a_missing_folder_with_no_record_has_no_remote_or_branch() {
+        let d = detail("/no/such/trace/repo/folder", None);
+        assert!(!d.exists);
+        assert_eq!(d.remote, None);
+        assert_eq!(d.default_branch, "");
+    }
 }

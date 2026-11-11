@@ -90,7 +90,8 @@ export function InboxRow(props: InboxRowProps) {
         <span className="ib-main">
           <span className="ib-top">
             <span className="ib-sub">{entry.subtitle}</span>
-            {ask && <StatusLight light="attention" variant="pill" label={ask.label} />}
+            {/* The light is the first column's; here, only what it asks. */}
+            {ask && <StatusLight light="attention" variant="word" label={ask.label} dotless />}
           </span>
           <span className="ib-title">{entry.title}</span>
           {/* What it's asking (a command, a question) beats what it last said. */}

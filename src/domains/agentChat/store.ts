@@ -31,8 +31,6 @@ interface AgentChatState {
   sending: Record<string, boolean>;
   /** A queued send failed; hold the queue until the agent is heard from again. */
   paused: Record<string, boolean>;
-  /** The chat pane's tab: `"main"`, or the call id of the subagent shown. */
-  tab: Record<string, string>;
   applyRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
   /** Replace the journal: the backend renumbered it (terminal turns added to it). */
   resetRows: (workspaceId: string, rows: readonly JournalRow[]) => void;
@@ -48,8 +46,6 @@ interface AgentChatState {
   requeue: (workspaceId: string, message: QueuedMessage) => void;
   setAnswering: (key: string, on: boolean) => void;
   setSending: (workspaceId: string, on: boolean) => void;
-  /** Show the main chat (`"main"`) or a subagent's tab. */
-  setTab: (workspaceId: string, tab: string) => void;
 }
 
 let nextQueued = 0;
@@ -64,7 +60,6 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
   answering: {},
   sending: {},
   paused: {},
-  tab: {},
   applyRows: (workspaceId, rows) =>
     set((s) => {
       const current = s.journals[workspaceId] ?? EMPTY_JOURNAL;
@@ -134,8 +129,6 @@ export const useAgentChatStore = create<AgentChatState>((set) => ({
       return { answering };
     }),
   setSending: (workspaceId, on) => set((s) => ({ sending: { ...s.sending, [workspaceId]: on } })),
-  setTab: (workspaceId, tab) =>
-    set((s) => (s.tab[workspaceId] === tab ? s : { tab: { ...s.tab, [workspaceId]: tab } })),
 }));
 
 /** A workspace's journal (empty until loaded). */

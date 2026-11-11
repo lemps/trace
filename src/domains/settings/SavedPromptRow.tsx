@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { toast } from "@/app/toast";
 import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
-import { InlineConfirm } from "@/components/InlineConfirm";
+import { ConfirmPrompt } from "@/components/InlineConfirm";
+import { RowBar, RowMenuPopover } from "@/components/RowMenu";
+import { barActions, type RowActionSection, useRowMenu } from "@/components/useRowMenu";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import type { SavedPrompt } from "@/ipc/savedPrompts";
 
@@ -10,9 +12,13 @@ interface SavedPromptRowProps {
   onEdit: () => void;
 }
 
-// One saved prompt in Settings: its /name, title and the start of its text, with
-// Edit and a delete that asks inline first.
+// One saved prompt in Settings: its /name, title and the start of its text. Its
+// actions are one list (trace-ui §5): Edit in the hover bar, everything behind the
+// ⋯ and right-click. Delete asks in the row first, at the row's xs tier.
 export function SavedPromptRow({ prompt, onEdit }: SavedPromptRowProps) {
+  const menu = useRowMenu();
+  const [confirming, setConfirming] = useState(false);
+
   const remove = async () => {
     try {
       await useSavedPrompts.getState().remove(prompt.id);
@@ -21,26 +27,49 @@ export function SavedPromptRow({ prompt, onEdit }: SavedPromptRowProps) {
     }
   };
 
+  const actions: RowActionSection[] = [
+    { items: [{ id: "edit", label: "Edit", glyph: I.Pencil, inBar: true, onSelect: onEdit }] },
+    {
+      items: [{ id: "delete", label: "Delete", danger: true, onSelect: () => setConfirming(true) }],
+    },
+  ];
+
   return (
-    <div className="sp-row">
-      <span className="sp-row-name">/{prompt.name}</span>
-      <span className="sp-row-text">
-        <span className="sp-row-title">{prompt.title}</span>
-        <span className="sp-row-body" title={prompt.body}>
-          {prompt.body}
+    <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: right-click and double-click are shortcuts; the ⋯ and Edit are the buttons */}
+      <div
+        className={`sp-row${menu.at ? " menu-open" : ""}`}
+        onContextMenu={confirming ? undefined : menu.onContextMenu}
+        onDoubleClick={confirming ? undefined : onEdit}
+      >
+        <span className="sp-row-name">/{prompt.name}</span>
+        <span className="sp-row-text">
+          <span className="sp-row-title">{prompt.title}</span>
+          <span className="sp-row-body" title={prompt.body}>
+            {prompt.body}
+          </span>
         </span>
-      </span>
-      <IconButton label={`Edit /${prompt.name}`} onClick={onEdit}>
-        <I.Pencil size={14} />
-      </IconButton>
-      <InlineConfirm
-        label={<I.Trash size={14} />}
-        className="btn icon"
-        ariaLabel={`Delete /${prompt.name}`}
-        message={`Delete /${prompt.name}?`}
-        confirmLabel="Delete"
-        onConfirm={() => void remove()}
-      />
-    </div>
+        {confirming ? (
+          <ConfirmPrompt
+            size="xs"
+            message={`Delete /${prompt.name}?`}
+            confirmLabel="Delete"
+            onCancel={() => setConfirming(false)}
+            onConfirm={() => {
+              setConfirming(false);
+              void remove();
+            }}
+          />
+        ) : (
+          <RowBar
+            className="sp-actions"
+            actions={barActions(actions)}
+            menu={menu}
+            moreLabel={`/${prompt.name} actions`}
+          />
+        )}
+      </div>
+      <RowMenuPopover menu={menu} sections={actions} />
+    </>
   );
 }

@@ -35,11 +35,15 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       ([#13](https://github.com/noble1911/trace/pull/13)) Shortcuts show in menus, tooltips, the
       search palette and a cheat sheet (`?`, Ctrl+/, the rail's keyboard button), not as chips on
       buttons unless Settings → Shortcuts' "Show shortcut hints on buttons" is on.
-- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
-      plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
-      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview, and
-      Chat & transcript styles agent Markdown (fonts, sizes, spacing, width, code theme, tool
-      activity); fenced code is highlighted.
+- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System
+      (with its own light and dark picks, so Paper and Midnight follow the OS too), plus accent,
+      interface size (80–150%, also ⌘= / ⌘− / ⌘0), density, interface and code fonts, terminal
+      scheme, font, cursor and scrollback, reduced motion.
+      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview in a
+      fixed frame, and Chat & transcript styles agent Markdown (fonts, sizes, spacing, reading
+      width, code theme, tool activity); fenced code is highlighted. Changing an option never
+      moves the page: Settings keeps Standard density, and a zoom keeps the clicked control
+      under the pointer.
 
 ## Candidates
 

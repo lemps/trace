@@ -1,13 +1,19 @@
-/* Settings → Shortcuts. */
-.sc-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* Settings → Shortcuts. The tab's sections sit straight in the page's column. */
+.sc-tab {
+  display: contents;
+}
+/* One density on the tab: a long list of shortcuts, so every row (the hints switch
+   too) is dense. */
+.sc-tab .setting-row {
+  padding: 10px 0;
 }
 .setting-row.sc-row {
   grid-template-columns: 1fr auto;
-  padding: 10px 0;
+}
+/* Always drawn (a blank line when there's nothing to say), so a note appearing
+   while recording doesn't grow the row. */
+.sc-row .hint {
+  margin-top: 2px;
 }
 .sc-keys {
   display: inline-flex;
@@ -25,4 +31,8 @@
 }
 .setting-row .hint.sc-problem {
   color: var(--c-danger);
+}
+/* Nothing to reset: the button keeps its slot, so the keys never shift. */
+.btn.sc-reset-off {
+  visibility: hidden;
 }

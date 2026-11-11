@@ -5,19 +5,23 @@ import { I } from "@/components/Icon";
 import { Markdown } from "@/components/Markdown";
 import { appVersion, checkAppUpdate, installAppUpdate, type UpdateInfo } from "@/ipc/update";
 import { SettingRow } from "./SettingRow";
+import { SettingSection } from "./SettingSection";
 
 type Phase = "idle" | "checking" | "current" | "available" | "installing";
 
-// The Updates section of Settings: show the running version, check the GitHub
-// release feed on demand, and install + relaunch in place. Dev builds have no
-// release feed behind them, so a failed check is a toast, not fatal.
+// Settings → About: the running version, and updates — check the GitHub release
+// feed on demand, then install + relaunch in place. The primary keeps its place
+// through every phase (Check → Checking… → Install & restart → Installing…). Dev
+// builds have no release feed behind them, so a failed check is a toast, not fatal.
 export function UpdateSettings() {
   const [version, setVersion] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
 
   useEffect(() => {
-    void appVersion().then(setVersion);
+    void appVersion()
+      .then(setVersion)
+      .catch(() => setVersion(""));
   }, []);
 
   const check = async () => {
@@ -43,39 +47,47 @@ export function UpdateSettings() {
     }
   };
 
+  const installing = phase === "installing";
   const hint =
     phase === "current"
       ? "You're on the latest version."
-      : phase === "installing"
-        ? "Downloading and installing…"
+      : installing
+        ? "Downloading and installing. trace restarts when it's done."
         : "Updates are downloaded from GitHub releases and verified before installing.";
 
   return (
-    <section className="setting-group">
-      <h2>Updates</h2>
-      <div className="desc">trace {version ? `v${version}` : ""}</div>
-      <SettingRow label={update ? `v${update.version} available` : "App version"} hint={hint}>
-        {phase === "available" && update ? (
-          <button type="button" className="btn primary" onClick={() => void install()}>
-            <I.Download size={14} /> Install &amp; restart
+    <SettingSection title="trace">
+      <SettingRow label="Version">
+        <span className="about-version">{version ? `v${version}` : "—"}</span>
+      </SettingRow>
+      <SettingRow label={update ? `v${update.version} available` : "Updates"} hint={hint}>
+        {update && (phase === "available" || installing) ? (
+          <button
+            type="button"
+            className="btn primary"
+            disabled={installing}
+            onClick={() => void install()}
+          >
+            <I.Download size={14} />
+            <BusyLabel busy={installing} idle="Install & restart" working="Installing…" />
           </button>
         ) : (
           <button
             type="button"
             className="btn"
             onClick={() => void check()}
-            disabled={phase === "checking" || phase === "installing"}
+            disabled={phase === "checking"}
           >
             <BusyLabel busy={phase === "checking"} idle="Check for updates" working="Checking…" />
           </button>
         )}
       </SettingRow>
-      {phase === "available" && update?.notes && (
+      {(phase === "available" || installing) && update?.notes && (
         <div className="update-notes">
           <div className="update-notes-title">What's new in v{update.version}</div>
           <Markdown text={update.notes} />
         </div>
       )}
-    </section>
+    </SettingSection>
   );
 }

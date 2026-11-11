@@ -84,6 +84,9 @@ pub fn questions(request_id: &str, req: &Value) -> (QuestionSet, Pending) {
                         .map(|o| QuestionOption {
                             label: str_at(o, "label").unwrap_or_default().to_string(),
                             description: str_at(o, "description").map(str::to_string),
+                            preview: str_at(o, "preview")
+                                .filter(|p| !p.trim().is_empty())
+                                .map(str::to_string),
                         })
                         .collect()
                 })

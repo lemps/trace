@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { I } from "@/components/Icon";
 import type { Issue } from "@/domains/issues/types";
 import type { Coming } from "@/domains/panes/coming";
+import { runSection } from "@/domains/panes/registry";
 import type { PanelDescriptor } from "@/domains/panes/types";
 import { planTab } from "@/domains/plans/planTab";
 import type { PlanTabState } from "@/domains/plans/store";
@@ -32,7 +33,10 @@ interface TicketPanelsArgs {
   prUrls: string[];
 }
 
-/** A ticket's tabs, in their natural order (⌘1–7, counting only those shown). */
+/**
+ * A ticket's tabs, in their natural order (⌘1–7, counting only those shown): the
+ * agent's, with its subagents' after it, then the rest.
+ */
 export function ticketPanels(a: TicketPanelsArgs) {
   const { issue, site, cli, chat, plan, viewers, workspace, tests, pr, prUrls } = a;
   const panels: PanelDescriptor[] = [
@@ -40,6 +44,8 @@ export function ticketPanels(a: TicketPanelsArgs) {
       id: TICKET_CHAT_TAB,
       label: "Chat",
       icon: I.Chat,
+      // Its subagents' tabs follow it in its run; a rule divides the run from the rest.
+      section: runSection(issue.key),
       toolbar: <AgentViewSwitch workspaceId={issue.key} cli={cli} />,
       render: () => chat,
     },

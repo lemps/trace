@@ -77,6 +77,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* An optional panel's label is the agent's words (a subagent's task): capped, the
+   whole of it in the tooltip, so one long task can't take the strip. */
+.pn-tab-label.capped {
+  max-width: 200px;
+}
+/* With several agents in the detail, the agent a subagent's tab belongs to:
+   identity, so quiet and mono, never a state colour. */
+.pn-tab-owner {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--fg-3);
+}
 .pn-strip .detail-tab:focus-visible {
   outline: 1px solid var(--c-accent);
   outline-offset: -1px;
@@ -112,7 +124,7 @@
 .pn-strip.pn-chrome-on .pn-act,
 .pn-strip:hover .pn-act,
 .pn-strip:focus-within .pn-act,
-.pn-act.open {
+.btn.icon.pn-act.open {
   opacity: 1;
 }
 .btn.icon.pn-act:hover:not(:disabled) {
@@ -129,8 +141,8 @@
 }
 .detail-tab:hover + .pn-tab-close,
 .detail-tab:focus-visible + .pn-tab-close,
-.pn-tab-close:hover,
-.pn-tab-close:focus-visible {
+.btn.icon.pn-tab-close:hover,
+.btn.icon.pn-tab-close:focus-visible {
   opacity: 1;
 }
 .btn.icon.pn-tab-close:hover:not(:disabled) {

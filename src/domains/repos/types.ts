@@ -26,6 +26,13 @@ export interface RepoDetails {
   setup: SetupConfig;
   /** The GitHub account picked for it in Settings; null = automatic. */
   githubAccount: string | null;
+  /** Whether the folder is still on disk; a missing one gets no git (no remote or branch read). */
+  exists: boolean;
+}
+
+/** The repo's page on its host. */
+export function remoteUrl(remote: RemoteRepo): string {
+  return `https://${remote.host}/${remote.owner}/${remote.name}`;
 }
 
 /** `owner/name`. */
@@ -37,4 +44,10 @@ export const EMPTY_SETUP: SetupConfig = { copyFiles: [], commands: [] };
 
 export function isEmptySetup(setup: SetupConfig): boolean {
   return setup.copyFiles.length === 0 && setup.commands.length === 0;
+}
+
+/** The setup as words: "No setup", "1 setup step", "3 setup steps". */
+export function setupSteps(setup: SetupConfig): string {
+  const n = setup.commands.length + setup.copyFiles.length;
+  return n === 0 ? "No setup" : `${n} setup step${n === 1 ? "" : "s"}`;
 }

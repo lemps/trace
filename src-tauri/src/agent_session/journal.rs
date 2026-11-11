@@ -196,6 +196,11 @@ pub struct QuestionOption {
     pub label: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// What picking it would look like (a snippet, a mock-up), shown beside the
+    /// options while it's pointed at. Claude's AskUserQuestion sends one per option
+    /// and words its question as if the user can see them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

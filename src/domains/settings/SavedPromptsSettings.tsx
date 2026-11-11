@@ -3,13 +3,14 @@ import { I } from "@/components/Icon";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import { SavedPromptEditor } from "./SavedPromptEditor";
 import { SavedPromptRow } from "./SavedPromptRow";
+import { SettingSection } from "./SettingSection";
 
 /** Which prompt the editor is open on: an id, a new one, or none. */
 type Editing = { id: string } | "new" | null;
 
 const NEW_PROMPT = { name: "", title: "", body: "" };
 
-// Settings → Agents → Saved prompts: reusable messages offered in every agent's
+// Settings → Prompts → Saved prompts: reusable messages offered in every agent's
 // slash menu. Picking one (or typing /name and Enter) puts its text in the message
 // box to edit and send. Two built-ins to start; any can be edited or deleted.
 export function SavedPromptsSettings() {
@@ -19,12 +20,10 @@ export function SavedPromptsSettings() {
   useEffect(() => useSavedPrompts.getState().ensure(), []);
 
   return (
-    <section className="setting-group">
-      <h2>Saved prompts</h2>
-      <div className="desc">
-        Type /name in an agent's message box to put a prompt there, ready to edit and send. If the
-        agent has a command with the same name, use /saved:name.
-      </div>
+    <SettingSection
+      title="Saved prompts"
+      desc="Type /name in an agent's message box to put a prompt there, ready to edit and send. If the agent has a command with the same name, use /saved:name."
+    >
       <div className="sp-list">
         {prompts.map((p) =>
           editing !== "new" && editing?.id === p.id ? (
@@ -48,6 +47,6 @@ export function SavedPromptsSettings() {
           </div>
         )}
       </div>
-    </section>
+    </SettingSection>
   );
 }

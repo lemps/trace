@@ -1,73 +1,114 @@
-/* The composer bar's model, effort and mode pickers (`AgentOptionPickers`): the
-   bar's control height and type, like Attach and Send beside them, but quiet. */
+/* The composer bar's settings (`AgentOptionPickers`): the model-and-effort pill and
+   the permission mode. `.btn`s at the bar's control height and type, like Attach
+   and Send beside them, but quiet; open, they look pressed (menu.css). */
 
 .ac-opts {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 4px;
-  min-width: 0;
 }
 
-.ac-opt {
-  display: inline-flex;
-  align-items: center;
+.btn.ac-opt {
   gap: 4px;
-  height: var(--control-h);
-  max-width: 160px;
   padding: 0 6px 0 10px;
-  border: 1px solid var(--border-faint);
-  border-radius: var(--radius-sm);
+  border-color: var(--border-faint);
   background: transparent;
-  font-size: var(--text-ui);
   color: var(--fg-2);
+  white-space: nowrap;
 }
-.ac-opt:hover:not(:disabled) {
+/* Its glyph leads, so it sits a step closer to the edge than a word would. */
+.btn.ac-opt.ac-opt-mode {
+  padding-left: 8px;
+}
+.btn.ac-opt:hover:not(:disabled) {
   color: var(--fg-0);
   border-color: var(--border);
   background: var(--bg-2);
 }
-.ac-opt[aria-expanded="true"] {
-  color: var(--fg-0);
-  border-color: var(--border-strong);
-}
-.ac-opt:disabled {
-  color: var(--fg-3);
-  cursor: default;
-}
-.ac-opt:focus-visible {
+.btn.ac-opt:focus-visible {
   outline: 2px solid var(--c-accent);
   outline-offset: 1px;
 }
 
-.ac-opt-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Points up: the menu opens above the composer. */
+.ac-opt-glyph,
 .ac-opt-chev {
   display: inline-flex;
   flex-shrink: 0;
+}
+/* The pill's glyph shows only once its words are gone (below). */
+.ac-opt-model .ac-opt-glyph {
+  display: none;
+}
+/* Points up: the menu opens above the composer. */
+.ac-opt-chev {
   color: var(--fg-3);
 }
-.ac-opt:disabled .ac-opt-chev {
-  visibility: hidden;
-}
 
-/* Plan mode changes nothing until you approve: say so at a glance, in the brand accent. */
-.ac-opt.plan {
+/* Plan mode changes nothing until you approve: say so at a glance, in the brand
+   accent, hovered and open too. */
+.btn.ac-opt.plan,
+.btn.ac-opt.plan:hover:not(:disabled) {
   color: var(--c-accent);
   border-color: color-mix(in oklch, var(--c-accent) 45%, transparent);
   background: var(--c-accent-bg);
 }
-.ac-opt.plan .ac-opt-chev {
+.btn.ac-opt.plan[aria-haspopup][aria-expanded="true"]:not(:disabled) {
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+  background: color-mix(in oklch, var(--c-accent) 20%, transparent);
+}
+.btn.ac-opt.plan .ac-opt-chev {
   color: inherit;
 }
 
-/* The composer sits at the bottom of the pane: its menus open upwards. */
-.ac-opts .pop-menu-pop {
-  top: auto;
-  bottom: calc(100% + 6px);
+/* Narrow composers (`.ac-composer`, the size container: composer.css). Labels
+   collapse to glyphs, never truncate (trace-ui §1), one step at a time. Widths are
+   Geist at --text-ui, from the longest realistic labels; the bar's fixed part is
+   its padding 12 + 8, Attach 30, gaps 8 + 4 + 8, Send's 4 margin and, while a
+   message waits to steer, Send + its caret 56: 130px.
+   Pill = label + 36 (border 2, padding 10 + 6, gap 4, caret 14);
+   mode = label + 52 (border 2, padding 8 + 6, glyph 14, two gaps 4, caret 14).
+   Longest pill: "deepseek-v4-pro[1m] · Max" 156 (Claude's own worst, "Sonnet 5.5
+   1M · Max", is 115; Codex's "gpt-5.6-codex · Extra high" 148). Longest mode:
+   "Default mode" 77 ("Accept edits" 71). */
+
+/* (a) Both full: 130 + 192 + 129 = 451. Below it the mode is its glyph alone. */
+@container ac-composer (max-width: 455px) {
+  .btn.ac-opt.ac-opt-mode {
+    flex: none;
+    width: var(--control-h);
+    padding: 0;
+    justify-content: center;
+  }
+  .ac-opt-mode .ac-opt-label,
+  .ac-opt-mode .ac-opt-chev {
+    display: none;
+  }
+}
+
+/* (b) Pill full, mode a glyph: 130 + 192 + 30 = 352. Below it the pill drops its
+   effort ("Opus 5.5"); the menu and the tooltip still say it. */
+@container ac-composer (max-width: 356px) {
+  .ac-opt-effort {
+    display: none;
+  }
+}
+
+/* (c) Pill a model alone ("deepseek-v4-pro[1m]" 123 + 36): 130 + 159 + 30 = 319.
+   Below it the pill is its glyph too, and the row needs 130 + 30 + 30 = 190. */
+@container ac-composer (max-width: 322px) {
+  .btn.ac-opt.ac-opt-model {
+    flex: none;
+    width: var(--control-h);
+    padding: 0;
+    justify-content: center;
+  }
+  .ac-opt-model .ac-opt-label,
+  .ac-opt-model .ac-opt-chev {
+    display: none;
+  }
+  .ac-opt-model .ac-opt-glyph {
+    display: inline-flex;
+  }
 }

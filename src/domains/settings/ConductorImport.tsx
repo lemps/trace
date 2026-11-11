@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/app/toast";
-import { I } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
 import {
@@ -17,8 +16,8 @@ import { applyDefaults, currentDefaults } from "./conductorDefaults";
 import { promptProblems } from "./conductorPromptNames";
 import { initialTicks, selectedCount, type Ticks, toSelection } from "./conductorSelection";
 
-// Settings → Repositories → Import from Conductor. Shown only when Conductor's
-// database is on this computer. Four steps: quit Conductor, preview with
+// Settings → Repositories → Add repository ▾ → Import from Conductor…, offered only
+// when Conductor's database is on this computer. Four steps: quit Conductor, preview with
 // checkboxes, import, then a summary of what was skipped and why.
 
 type Step =
@@ -37,33 +36,32 @@ function reloadSavedPrompts() {
     });
 }
 
-interface ConductorImportProps {
+/**
+ * Whether Conductor's database is on this computer, so "Import from Conductor…"
+ * is worth offering. False until it's known (it's a file check in the backend).
+ */
+export function useConductorAvailable(): boolean {
+  const [available, setAvailable] = useState(false);
+  useEffect(() => {
+    let live = true;
+    conductorImportAvailable()
+      .then((yes) => live && setAvailable(yes))
+      .catch(() => live && setAvailable(false));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return available;
+}
+
+interface ConductorImportDialogProps {
+  onClose: () => void;
   /** Repos or sessions may have been added: reload what Settings shows. */
   onImported: () => void;
 }
 
-export function ConductorImport({ onImported }: ConductorImportProps) {
-  const [available, setAvailable] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    conductorImportAvailable()
-      .then(setAvailable)
-      .catch(() => setAvailable(false));
-  }, []);
-
-  if (!available) return null;
-  return (
-    <>
-      <button type="button" className="btn" onClick={() => setOpen(true)}>
-        <I.Download size={14} /> Import from Conductor…
-      </button>
-      {open && <ImportDialog onClose={() => setOpen(false)} onImported={onImported} />}
-    </>
-  );
-}
-
-function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+/** The import itself, opened from Repositories' "Add repository…" menu. */
+export function ConductorImportDialog({ onClose, onImported }: ConductorImportDialogProps) {
   const [step, setStep] = useState<Step>({ kind: "quit" });
   const busy = step.kind === "loading" || step.kind === "importing";
   const close = useCallback(() => {

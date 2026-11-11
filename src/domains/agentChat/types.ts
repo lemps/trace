@@ -124,7 +124,8 @@ export interface Question {
   id: string;
   header?: string;
   text: string;
-  options: { label: string; description?: string }[];
+  /** `preview`: what picking it would look like (a snippet, a mock-up). */
+  options: { label: string; description?: string; preview?: string }[];
   multiSelect: boolean;
   allowFreeText: boolean;
 }

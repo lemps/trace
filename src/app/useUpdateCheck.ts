@@ -17,7 +17,7 @@ export function useUpdateCheck(): void {
     const t = setTimeout(() => {
       checkAppUpdate()
         .then((update) => {
-          if (update) toast.info(`trace v${update.version} is available — Settings → Updates`);
+          if (update) toast.info(`trace v${update.version} is available — Settings → About`);
         })
         .catch(() => {});
     }, 5000);

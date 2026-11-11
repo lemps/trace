@@ -21,15 +21,38 @@ export const THEMES: ThemeInfo[] = [
   { id: "paper", label: "Paper", scheme: "light", blurb: "Warm and low-glare." },
 ];
 
-/** Which theme "system" means for each OS preference. */
-const SYSTEM_THEME: Record<ColorScheme, ThemeId> = { dark: "dark", light: "light" };
+/** A light theme, for "System" while the OS is light. */
+export type LightThemeId = "light" | "paper";
+/** A dark theme, for "System" while the OS is dark. */
+export type DarkThemeId = "dark" | "midnight";
+
+/** Which theme "System" uses for each OS mode (Settings → Appearance → Theme). */
+export interface SystemThemes {
+  light: LightThemeId;
+  dark: DarkThemeId;
+}
+
+/** The picks before anyone chose: what "System" always meant. */
+export const DEFAULT_SYSTEM_THEMES: SystemThemes = { light: "light", dark: "dark" };
 
 export function isThemeChoice(v: unknown): v is ThemeChoice {
   return v === "system" || THEMES.some((t) => t.id === v);
 }
 
-export function resolveTheme(choice: ThemeChoice, system: ColorScheme): ThemeId {
-  return choice === "system" ? SYSTEM_THEME[system] : choice;
+export const isLightThemeId = (v: unknown): v is LightThemeId => v === "light" || v === "paper";
+export const isDarkThemeId = (v: unknown): v is DarkThemeId => v === "dark" || v === "midnight";
+
+/** The theme on screen: a picked theme, or "System"'s pick for the OS's mode now. */
+export function resolveTheme(
+  choice: ThemeChoice,
+  system: ColorScheme,
+  picks: SystemThemes = DEFAULT_SYSTEM_THEMES
+): ThemeId {
+  return choice === "system" ? picks[system] : choice;
+}
+
+export function themeLabel(id: ThemeId): string {
+  return THEMES.find((t) => t.id === id)?.label ?? id;
 }
 
 export function schemeOf(id: ThemeId): ColorScheme {

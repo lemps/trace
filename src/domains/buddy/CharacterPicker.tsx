@@ -27,8 +27,8 @@ export function CharacterPicker() {
       </div>
       {broken.length > 0 && (
         <div className="hint buddy-picker-broken">
-          Skipped (breaks the art contract — run <code>npm run check:sprite</code>):{" "}
-          {broken.map((b) => `${b.id} (${b.errors.length})`).join(", ")}
+          {broken.length === 1 ? "One character couldn't" : "Some characters couldn't"} be loaded
+          and aren't offered: {broken.map((b) => b.id).join(", ")}.
         </div>
       )}
     </div>

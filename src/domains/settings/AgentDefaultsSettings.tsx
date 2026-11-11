@@ -7,28 +7,30 @@ import {
   agentProvider,
   agentTransport,
   autoStartOnMove,
-  DEFAULT_KICKOFF_PROMPT,
-  kickoffPromptRaw,
   setAgentArgs,
   setAgentCli,
   setAgentModel,
   setAgentProvider,
   setAgentTransport,
   setAutoStartOnMove,
-  setKickoffPrompt,
 } from "@/domains/agent/defaults";
 import { useHasChat } from "@/domains/agentChat/transport";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { ProviderKeyField } from "./ProviderKeyField";
 import { SettingRow } from "./SettingRow";
+import { SettingSection } from "./SettingSection";
 
-// What a new agent starts with: harness, provider, model, arguments, kickoff brief.
+/** Why the provider's rows don't apply with Codex chosen. */
+const CLAUDE_ONLY = "Applies when Default agent is Claude.";
+
+// What a new agent starts with: harness, provider, model, arguments. (The kickoff
+// brief is on the Prompts tab.) Provider and its key stay on the page whatever is
+// chosen, inactive with the reason when they don't apply, so nothing jumps.
 export function AgentDefaultsSettings() {
   const [cli, setCli] = useState<AgentCli>(agentCli);
   const [provider, setProvider] = useState<AgentProvider>(agentProvider);
   const [model, setModel] = useState(agentModelRaw);
   const [args, setArgs] = useState(agentArgsRaw);
-  const [kickoff, setKickoff] = useState(kickoffPromptRaw);
   const [autoStart, setAutoStart] = useState(autoStartOnMove);
   const [transport, setTransport] = useState<Transport>(agentTransport);
   const codexChat = useHasChat("codex");
@@ -49,10 +51,6 @@ export function AgentDefaultsSettings() {
     setArgs(next);
     setAgentArgs(next);
   };
-  const chooseKickoff = (next: string) => {
-    setKickoff(next);
-    setKickoffPrompt(next);
-  };
   const chooseTransport = (next: Transport) => {
     setTransport(next);
     setAgentTransport(next);
@@ -63,9 +61,7 @@ export function AgentDefaultsSettings() {
   };
 
   return (
-    <section className="setting-group">
-      <h2>Agent defaults</h2>
-      <div className="desc">Applied when you start a new coding session.</div>
+    <SettingSection title="New agents" desc="Applied when you start a new coding session.">
       <SettingRow label="Default agent" hint="Pre-selected when starting a session.">
         <select
           aria-label="Default agent"
@@ -76,26 +72,29 @@ export function AgentDefaultsSettings() {
           <option value="codex">Codex</option>
         </select>
       </SettingRow>
-      {cli === "claude" && (
-        <SettingRow
-          label="Provider"
-          hint="Third-party providers run the same Claude Code harness against their API."
+      <SettingRow
+        label="Provider"
+        hint="Third-party providers run the same Claude Code harness against their API."
+        inactive={cli !== "claude"}
+        inactiveReason={CLAUDE_ONLY}
+      >
+        <select
+          aria-label="Default provider"
+          value={provider}
+          onChange={(e) => chooseProvider(e.target.value as AgentProvider)}
         >
-          <select
-            aria-label="Default provider"
-            value={provider}
-            onChange={(e) => chooseProvider(e.target.value as AgentProvider)}
-          >
-            <option value="anthropic">Anthropic</option>
-            <option value="moonshot">Kimi (Moonshot)</option>
-            <option value="wafer">Kimi (Wafer)</option>
-            <option value="wafer-fast">Kimi Fast (Wafer)</option>
-            <option value="deepseek">DeepSeek Flash</option>
-            <option value="deepseek-pro">DeepSeek Pro</option>
-          </select>
-        </SettingRow>
-      )}
-      {cli === "claude" && provider !== "anthropic" && <ProviderKeyField provider={provider} />}
+          <option value="anthropic">Anthropic</option>
+          <option value="moonshot">Kimi (Moonshot)</option>
+          <option value="wafer">Kimi (Wafer)</option>
+          <option value="wafer-fast">Kimi Fast (Wafer)</option>
+          <option value="deepseek">DeepSeek Flash</option>
+          <option value="deepseek-pro">DeepSeek Pro</option>
+        </select>
+      </SettingRow>
+      <ProviderKeyField
+        provider={provider}
+        inactiveReason={cli !== "claude" ? CLAUDE_ONLY : undefined}
+      />
       <SettingRow
         label="Shows as"
         hint={`Chat shows the agent as a formatted conversation, Terminal as its own TUI. A ticket or session can pick the other when it starts, and keeps its choice.${codexChat ? "" : " Codex has no chat view yet, so it always runs in a terminal."}`}
@@ -137,22 +136,6 @@ export function AgentDefaultsSettings() {
           label="Auto-start agents on move to In Progress"
         />
       </SettingRow>
-      <div className="setting-block">
-        <div className="label">Kickoff prompt</div>
-        <div className="hint">
-          Sent to the agent when you start it from the board (Start on a card or, with auto-start
-          on, dragging to In&nbsp;Progress). Placeholders: {"{key}"}, {"{summary}"},{" "}
-          {"{description}"}, {"{comments}"} (the ticket's discussion thread, fetched at launch).
-          Blank uses the default.
-        </div>
-        <textarea
-          aria-label="Kickoff prompt"
-          rows={4}
-          placeholder={DEFAULT_KICKOFF_PROMPT}
-          value={kickoff}
-          onChange={(e) => chooseKickoff(e.target.value)}
-        />
-      </div>
-    </section>
+    </SettingSection>
   );
 }

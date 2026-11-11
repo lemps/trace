@@ -5,16 +5,16 @@ import { IconButton } from "@/components/IconButton";
 import { ApprovalCard } from "./ApprovalCard";
 import { useChatActions } from "./actions";
 import { useChatView } from "./chatContext";
-import { showSubagentTab } from "./closedTabs";
 import type { ToolItem } from "./projection";
 import { plainLine, SubagentStatusWord, useElapsed } from "./SubagentBits";
-import { openSubagentBeside } from "./subagentPanel";
+import { openSubagentBeside, showSubagentTab } from "./subagentPanel";
 import type { SubagentThread } from "./subagents";
 
 // A subagent in the main timeline: one card that stays where its call was and
 // changes in place (status, time, calls, its latest step, then its report)
-// however many rows the subagent adds. Its rows are in its own tab; clicking
-// the card opens it. A permission it waits on is answered here too.
+// however many rows the subagent adds. Its rows are in its own pane tab; clicking
+// the card shows it (bringing it back if it was closed). A permission it waits on
+// is answered here too.
 
 function CardBody({ item }: { item: ToolItem }) {
   const thread = item.subagent as SubagentThread;
@@ -36,7 +36,7 @@ function CardBody({ item }: { item: ToolItem }) {
           type="button"
           className="ac-agent-open"
           onClick={open}
-          title="Open its conversation in a tab"
+          title="Show its conversation in its tab"
         >
           <I.Sparkles size={14} />
           {thread.agentType && <span className="ac-agent-type">{thread.agentType}</span>}
@@ -59,7 +59,7 @@ function CardBody({ item }: { item: ToolItem }) {
           size="sm"
           className="ac-agent-beside"
           onClick={() => openSubagentBeside(workspaceId, thread.callId)}
-          title="Open beside: its conversation in a pane next to the chat"
+          title="Open beside: its conversation in a pane next to the agent's"
           label="Open beside"
         >
           <I.SplitRight size={14} />

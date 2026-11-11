@@ -16,6 +16,8 @@
   overflow: hidden;
   text-overflow: clip;
 }
+/* Every cursor style is the same 1.15em box, so picking one never changes the
+   line's height: the bar is a narrow box, the underline a box's bottom edge. */
 .ap-term-cursor {
   display: inline-block;
   width: 0.6em;
@@ -27,8 +29,8 @@
   width: 2px;
 }
 .ap-term-cursor.underline {
-  height: 2px;
-  vertical-align: baseline;
+  background: none;
+  box-shadow: inset 0 -2px 0 var(--term-cursor);
 }
 .ap-term-cursor.blink {
   animation: ap-blink 1s steps(1) infinite;
@@ -71,33 +73,31 @@
   white-space: pre;
 }
 
-/* The chat preview: a column inside a pane, as wide as the setting says
-   (scaled to the preview: Readable leaves margins, Full fills it). */
-.ap-chat-pv {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ap-chat-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
+/* The chat preview: the chat's own column (`.tx-col.ac-col`) in its frame, as
+   wide as the setting says, scaled to the preview: Readable leaves margins,
+   Full fills it. */
+.ap-frame .ap-chat-col {
+  max-width: none;
+  margin: 0;
   padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-0);
 }
-.ap-chat-col > * {
+.ap-chat-col > .ac-turn {
   width: 100%;
   margin-inline: auto;
 }
-.ap-chat-col.readable > * {
+.ap-chat-col.readable > .ac-turn {
   max-width: 84%;
 }
-.ap-chat-col.wide > * {
+.ap-chat-col.wide > .ac-turn {
   max-width: 94%;
 }
 .ap-chat-col .tx-prompt {
   margin-top: 0;
+}
+
+/* The terminal preview fills its frame, which carries the scheme's background. */
+.ap-frame .ap-term {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 0;
 }

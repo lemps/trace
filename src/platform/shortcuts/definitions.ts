@@ -31,6 +31,32 @@ export const SHORTCUTS: ShortcutDef[] = [
     pc: ["Ctrl+Shift+k", "Ctrl+Shift+/"],
   },
   {
+    // The zoom keys walk Settings → Appearance → Interface size (domains/appearance/zoom.ts).
+    // Off macOS, Ctrl+= / Ctrl+- are the terminal's, so they add Shift like the rest.
+    id: "zoomIn",
+    label: "Zoom in (Interface size)",
+    group: "app",
+    scope: "app",
+    mac: ["Meta+="],
+    pc: ["Ctrl+Shift+="],
+  },
+  {
+    id: "zoomOut",
+    label: "Zoom out (Interface size)",
+    group: "app",
+    scope: "app",
+    mac: ["Meta+-"],
+    pc: ["Ctrl+Shift+-"],
+  },
+  {
+    id: "zoomReset",
+    label: "Actual size (Interface size 100%)",
+    group: "app",
+    scope: "app",
+    mac: ["Meta+0"],
+    pc: ["Ctrl+Shift+0"],
+  },
+  {
     // Not heard in a terminal, so off macOS it can be Ctrl+/ (the terminal keeps its ^_
     // there). ⌘/ and Ctrl+Shift+/ are the search's.
     id: "cheatSheet",
@@ -228,7 +254,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   },
   {
     id: "chatNextTab",
-    label: "Next tab: main chat, then each subagent",
+    label: "Next tab of the agent: the agent, then each subagent",
     group: "chat",
     scope: "detail",
     mac: ["Shift+Meta+]"],
@@ -236,7 +262,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   },
   {
     id: "chatPrevTab",
-    label: "Previous chat tab",
+    label: "Previous tab of the agent",
     group: "chat",
     scope: "detail",
     mac: ["Shift+Meta+["],

@@ -72,18 +72,14 @@
   margin-bottom: 0;
 }
 
-/* An action's summary can be long in the narrow panel: it wraps rather than
-   truncating as the agent chat's one-line card titles do. */
+/* An action's summary can be long in the narrow panel (card titles wrap): its
+   glyph stays on the first line. */
 .orch-ask .ac-card-head {
   align-items: flex-start;
 }
 .orch-ask .ac-card-head > svg {
   flex-shrink: 0;
   margin-top: 2px;
-}
-.orch-ask .ac-card-title {
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 /* The card a running turn is parked on, above the composer. */
 .orch-confirm {

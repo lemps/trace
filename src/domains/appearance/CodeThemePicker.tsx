@@ -1,9 +1,11 @@
 import { CODE_THEMES } from "./chatStyle";
-import { useAppearance } from "./store";
+import { activeTheme, useAppearance } from "./store";
+import { themeLabel } from "./themes";
 
 // The code themes as thumbnails: a few highlighted lines, each card carrying
 // its own data-code-theme so it paints with that theme's real colours
-// (styles/code-themes.css). "Match theme" follows the app theme.
+// (styles/code-themes.css). "Match theme" follows the app theme, and names it.
+// The sample is a picture (aria-hidden): a card's name is its label alone.
 
 function Snippet() {
   return (
@@ -21,6 +23,7 @@ function Snippet() {
 export function CodeThemePicker() {
   const codeTheme = useAppearance((s) => s.prefs.chat.codeTheme);
   const updateChat = useAppearance((s) => s.updateChat);
+  const theme = useAppearance(activeTheme);
   return (
     <fieldset className="ap-thumbs" aria-label="Code theme">
       {CODE_THEMES.map((t) => (
@@ -31,10 +34,12 @@ export function CodeThemePicker() {
           className={`ap-thumb${codeTheme === t.id ? " on" : ""}`}
           onClick={() => updateChat({ codeTheme: t.id })}
         >
-          <span className="ap-code-card" data-code-theme={t.id}>
+          <span className="ap-code-card" data-code-theme={t.id} aria-hidden="true">
             <Snippet />
           </span>
-          <span className="ap-thumb-name">{t.label}</span>
+          <span className="ap-thumb-name">
+            {t.id === "match" ? `${t.label} · ${themeLabel(theme)}` : t.label}
+          </span>
         </button>
       ))}
     </fieldset>

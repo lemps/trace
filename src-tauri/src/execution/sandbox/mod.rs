@@ -21,8 +21,8 @@ pub mod prs;
 mod ready;
 pub mod script;
 pub mod session;
-pub mod size;
 mod setup;
+pub mod size;
 mod watch;
 
 use std::collections::HashMap;

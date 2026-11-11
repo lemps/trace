@@ -2,16 +2,22 @@ import { type ChatStyle, DEFAULT_CHAT_STYLE, parseChatStyle } from "./chatStyle.
 import { isTermSchemeChoice, type TermSchemeChoice } from "./terminalSchemes.ts";
 import {
   type AccentId,
+  type DarkThemeId,
   DEFAULT_ACCENT,
+  DEFAULT_SYSTEM_THEMES,
   isAccentId,
+  isDarkThemeId,
+  isLightThemeId,
   isThemeChoice,
+  type LightThemeId,
+  type SystemThemes,
   type ThemeChoice,
 } from "./themes.ts";
 
 // The persisted Appearance settings: their shape, defaults, and a validating
 // load (localStorage is user-editable, so nothing is trusted by cast).
-// The terminal *font* settings are older and keep their own keys
-// (agent/terminalPrefs.ts); Appearance is still the one page that edits them.
+// The terminal's font, size, line height and scrollback are older and keep their
+// own keys (agent/terminalPrefs.ts); Appearance is still the one page that edits them.
 
 export type Density = "compact" | "standard" | "comfortable";
 export type CursorStyle = "block" | "bar" | "underline";
@@ -20,10 +26,19 @@ export type MotionPref = "system" | "reduce";
 
 export interface AppearancePrefs {
   theme: ThemeChoice;
+  /** The theme "System" uses while the OS is light. */
+  lightTheme: LightThemeId;
+  /** The theme "System" uses while the OS is dark. */
+  darkTheme: DarkThemeId;
   accent: AccentId;
   density: Density;
   /** A UI font family as typed ("" = Geist). */
   uiFont: string;
+  /**
+   * The app's code font as typed ("" = Geist Mono): --font-mono, so ids, keys,
+   * diffs and the Files tab, and the default for the chat's code and the terminal.
+   */
+  monoFont: string;
   /** Whole-interface zoom, in percent. */
   uiScale: number;
   termScheme: TermSchemeChoice;
@@ -34,13 +49,17 @@ export interface AppearancePrefs {
   chat: ChatStyle;
 }
 
-export const UI_SCALES = [90, 100, 110, 125] as const;
+/** The Interface size steps, smallest first; the zoom shortcuts walk them too (zoom.ts). */
+export const UI_SCALES = [80, 90, 100, 110, 125, 150] as const;
 
 export const DEFAULT_PREFS: AppearancePrefs = {
   theme: "dark",
+  lightTheme: DEFAULT_SYSTEM_THEMES.light,
+  darkTheme: DEFAULT_SYSTEM_THEMES.dark,
   accent: DEFAULT_ACCENT,
   density: "standard",
   uiFont: "",
+  monoFont: "",
   uiScale: 100,
   termScheme: "match",
   cursorStyle: "block",
@@ -70,9 +89,12 @@ export function parsePrefs(raw: unknown): AppearancePrefs {
   const d = DEFAULT_PREFS;
   return {
     theme: pick(o.theme, isThemeChoice, d.theme),
+    lightTheme: pick(o.lightTheme, isLightThemeId, d.lightTheme),
+    darkTheme: pick(o.darkTheme, isDarkThemeId, d.darkTheme),
     accent: pick(o.accent, isAccentId, d.accent),
     density: pick(o.density, isDensity, d.density),
     uiFont: pick(o.uiFont, isString, d.uiFont).slice(0, 200),
+    monoFont: pick(o.monoFont, isString, d.monoFont).slice(0, 200),
     uiScale: pick(o.uiScale, isScale, d.uiScale),
     termScheme: pick(o.termScheme, isTermSchemeChoice, d.termScheme),
     cursorStyle: pick(o.cursorStyle, isCursor, d.cursorStyle),
@@ -80,6 +102,11 @@ export function parsePrefs(raw: unknown): AppearancePrefs {
     motion: pick(o.motion, isMotion, d.motion),
     chat: parseChatStyle(o.chat),
   };
+}
+
+/** What "System" resolves to, from the prefs. */
+export function systemThemes(p: AppearancePrefs): SystemThemes {
+  return { light: p.lightTheme, dark: p.darkTheme };
 }
 
 export function loadPrefs(): AppearancePrefs {

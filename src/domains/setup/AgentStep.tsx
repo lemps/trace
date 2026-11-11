@@ -54,7 +54,7 @@ export function AgentStep() {
         </SettingRow>
       </div>
       <div className="su-note">
-        Provider, model and the kickoff prompt are in Settings → Agents.
+        Provider and model are in Settings → Agents, the kickoff prompt in Settings → Prompts.
       </div>
     </>
   );

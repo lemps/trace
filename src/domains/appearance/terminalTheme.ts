@@ -1,5 +1,10 @@
 import type { ITerminalOptions } from "@xterm/xterm";
-import { termFontFamily, termFontSize, termLineHeight } from "@/domains/agent/terminalPrefs";
+import {
+  termFontFamily,
+  termFontSize,
+  termLineHeight,
+  termScrollback,
+} from "@/domains/agent/terminalPrefs";
 import { minimumContrastFor } from "./contrast";
 import { activeTheme, isMotionReduced, useAppearance } from "./store";
 import { resolveTermScheme } from "./terminalSchemes";
@@ -15,11 +20,13 @@ export function terminalAppearance(): ITerminalOptions {
   return {
     theme,
     minimumContrastRatio: minimumContrastFor(theme.background),
-    fontFamily: termFontFamily(),
+    fontFamily: termFontFamily(prefs.monoFont),
     // The terminal's size is its own setting, so undo the interface zoom that
     // is on screen: a 14px terminal stays 14px at 125%.
     fontSize: termFontSize() / (s.appliedScale / 100),
     lineHeight: termLineHeight(),
+    // xterm takes a new scrollback on a live terminal: a smaller one drops the oldest lines.
+    scrollback: termScrollback(),
     cursorStyle: prefs.cursorStyle,
     cursorBlink: prefs.cursorBlink && !isMotionReduced(s),
   };
@@ -35,6 +42,8 @@ export function terminalAppearanceKey(s = useAppearance.getState()): string {
   return [
     prefs.termScheme,
     activeTheme(s),
+    // A terminal with no font of its own follows the code font.
+    prefs.monoFont,
     prefs.cursorStyle,
     prefs.cursorBlink && !isMotionReduced(s),
     s.appliedScale,

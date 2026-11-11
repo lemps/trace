@@ -1,26 +1,33 @@
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import { FontField } from "@/components/FontField";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import {
-  DEFAULT_TERM_FONT_SIZE,
-  DEFAULT_TERM_LINE_HEIGHT,
+  resetTermPrefs,
   setTermFont,
   setTermFontSize,
   setTermLineHeight,
+  setTermScrollback,
   termFontFamily,
   termFontRaw,
   termFontSize,
-  termFontSizeRaw,
+  termFontSizeSetting,
   termLineHeight,
-  termLineHeightRaw,
+  termScrollback,
 } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
 import { installedOnly, MONO_FONT_SUGGESTIONS } from "@/domains/appearance/installedFonts";
 import type { CursorStyle } from "@/domains/appearance/prefs";
 import { TerminalPreview } from "@/domains/appearance/previews/TerminalPreview";
+import { SizeField } from "@/domains/appearance/SizeField";
 import { isMotionReduced, useAppearance } from "@/domains/appearance/store";
 import { TermSchemePicker } from "@/domains/appearance/TermSchemePicker";
+import {
+  DEFAULT_TERM_FONT_SIZE,
+  TERM_LINE_HEIGHTS,
+  TERM_SCROLLBACKS,
+  TERM_SIZE,
+} from "@/domains/appearance/terminalOptions";
 import { AppearanceGroup } from "./AppearanceGroup";
 import { SettingRow } from "./SettingRow";
 
@@ -29,51 +36,52 @@ const CURSORS: { value: CursorStyle; label: string }[] = [
   { value: "bar", label: "Bar" },
   { value: "underline", label: "Underline" },
 ];
+const LINE_OPTIONS = TERM_LINE_HEIGHTS.map((h) => ({ value: h, label: String(h) }));
+const SCROLLBACK_OPTIONS = TERM_SCROLLBACKS.map((n) => ({
+  value: n,
+  label: n.toLocaleString("en-US"),
+}));
 
-// Appearance → Terminal: colours, font and cursor of the agent chat and shell
-// terminals. Every change is pushed into the live terminals immediately (they
-// survive navigation in the registry, so there's no "next terminal" to wait for).
-// Reset remounts it (a new key) so the font inputs re-read their cleared values.
+/** What this group's reset puts back in the appearance store (the rest is terminalPrefs'). */
+const KEYS = ["termScheme", "cursorStyle", "cursorBlink"] as const;
+
+// Appearance → Terminal: colours, font, cursor and scrollback of agent terminals
+// and shell terminals. Every change is pushed into the live terminals at once
+// (they survive navigation in the registry, so there's no "next terminal" to
+// wait for). The font, size, line height and scrollback live in terminalPrefs
+// (localStorage, not the store), so a write bumps `version` to re-read them.
 export function TerminalAppearance() {
   const prefs = useAppearance((s) => s.prefs);
   const update = useAppearance((s) => s.update);
+  const reset = useAppearance((s) => s.reset);
   const reduced = useAppearance(isMotionReduced);
-  const [font, setFont] = useState(termFontRaw);
-  const [size, setSize] = useState(termFontSizeRaw);
-  const [lineHeight, setLineHeight] = useState(termLineHeightRaw);
+  const [, bump] = useReducer((n: number) => n + 1, 0);
   // Measured once per visit: only suggestions this machine can show.
   const [monoFonts] = useState(() => installedOnly(MONO_FONT_SUGGESTIONS));
 
-  const changeFont = (next: string) => {
-    setFont(next);
-    setTermFont(next);
+  const apply = (write: () => void) => {
+    write();
     applyTerminalPrefs();
+    bump();
   };
-  const changeSize = (next: string) => {
-    setSize(next);
-    setTermFontSize(next);
-    applyTerminalPrefs();
-  };
-  const changeLineHeight = (next: string) => {
-    setLineHeight(next);
-    setTermLineHeight(next);
-    applyTerminalPrefs();
-  };
-
-  // The inputs above have just written these, so they're current for the preview.
-  const preview = (
-    <TerminalPreview
-      fontFamily={termFontFamily()}
-      fontSize={termFontSize()}
-      lineHeight={termLineHeight()}
-    />
-  );
+  const resetGroup = () =>
+    apply(() => {
+      resetTermPrefs();
+      reset(KEYS);
+    });
 
   return (
     <AppearanceGroup
       title="Terminal"
-      desc="The agent chat and shell terminals. Changes apply to open terminals immediately."
-      preview={preview}
+      desc="Agent terminals and shell terminals. Changes apply to open terminals at once."
+      preview={
+        <TerminalPreview
+          fontFamily={termFontFamily(prefs.monoFont)}
+          fontSize={termFontSize()}
+          lineHeight={termLineHeight()}
+        />
+      }
+      onReset={resetGroup}
     >
       <div className="ap-sub">
         <div className="label">Colour scheme</div>
@@ -85,42 +93,36 @@ export function TerminalAppearance() {
       <SettingRow label="Font" hint="Any installed monospace font; missing glyphs fall back.">
         <FontField
           label="Terminal font"
-          value={font}
-          onChange={changeFont}
+          value={termFontRaw()}
+          onChange={(font) => apply(() => setTermFont(font))}
           suggestions={monoFonts}
-          defaultFamily="Geist Mono"
+          defaultFamily="Same as code font"
         />
       </SettingRow>
       <SettingRow
         label="Font size"
-        hint={`Pixels, 8–32. Blank uses ${DEFAULT_TERM_FONT_SIZE}. Interface size doesn't change it.`}
+        hint={`Pixels, ${TERM_SIZE.min}–${TERM_SIZE.max}. Blank uses ${DEFAULT_TERM_FONT_SIZE}. Interface size doesn't change it.`}
       >
-        <input
-          type="number"
-          aria-label="Terminal font size"
-          min={8}
-          max={32}
-          step={1}
-          placeholder={String(DEFAULT_TERM_FONT_SIZE)}
-          value={size}
-          onChange={(e) => changeSize(e.target.value)}
+        <SizeField
+          label="Terminal font size"
+          value={termFontSizeSetting()}
+          range={TERM_SIZE}
+          onChange={(px) => apply(() => setTermFontSize(px))}
         />
       </SettingRow>
-      <SettingRow label="Line height" hint="1–2; a little extra (1.1–1.3) reads less cramped.">
-        <input
-          type="number"
-          aria-label="Terminal line height"
-          min={1}
-          max={2}
-          step={0.05}
-          placeholder={String(DEFAULT_TERM_LINE_HEIGHT)}
-          value={lineHeight}
-          onChange={(e) => changeLineHeight(e.target.value)}
+      <SettingRow
+        label="Line height"
+        hint="1 joins box drawing up; a little more reads less cramped."
+      >
+        <Segmented
+          label="Terminal line height"
+          value={termLineHeight()}
+          options={LINE_OPTIONS}
+          onChange={(h) => apply(() => setTermLineHeight(h))}
         />
       </SettingRow>
       <SettingRow label="Cursor" hint="Most visible in the shell; Claude Code draws its own.">
         <Segmented
-          className="ap-seg"
           label="Cursor style"
           value={prefs.cursorStyle}
           options={CURSORS}
@@ -135,6 +137,17 @@ export function TerminalAppearance() {
           on={prefs.cursorBlink}
           onChange={(cursorBlink) => update({ cursorBlink })}
           label="Blinking cursor"
+        />
+      </SettingRow>
+      <SettingRow
+        label="Scrollback"
+        hint="Lines each terminal keeps above the screen. Fewer drops the oldest at once."
+      >
+        <Segmented
+          label="Scrollback lines"
+          value={termScrollback()}
+          options={SCROLLBACK_OPTIONS}
+          onChange={(lines) => apply(() => setTermScrollback(lines))}
         />
       </SettingRow>
     </AppearanceGroup>

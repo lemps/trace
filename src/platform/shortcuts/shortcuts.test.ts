@@ -209,10 +209,13 @@ describe("review fixes", () => {
     assert.match(bindingProblem(def("inboxDismiss"), "Ctrl+c", win, "windows") ?? "", /clipboard/);
     assert.equal(bindingProblem(def("inboxDismiss"), "Ctrl+Shift+d", win, "windows"), null);
   });
-  it("refuses macOS screenshot, full-screen and lock chords, and Ctrl++", () => {
+  it("refuses macOS screenshot, full-screen and lock chords", () => {
     assert.match(bindingProblem(def("detailTab"), "Shift+Meta+#", mac, "macos") ?? "", /system/);
     assert.match(bindingProblem(def("search"), "Ctrl+Meta+f", mac, "macos") ?? "", /system/);
-    assert.match(bindingProblem(def("search"), "Ctrl+Shift+=", win, "windows") ?? "", /system/);
+  });
+  it("gives Ctrl++ and ⌘= to trace's own Zoom in (the webview's zoom keys are off)", () => {
+    assert.match(bindingProblem(def("search"), "Ctrl+Shift+=", win, "windows") ?? "", /Zoom in/);
+    assert.match(bindingProblem(def("search"), "Meta+=", mac, "macos") ?? "", /Zoom in/);
   });
   it("drops stored rebindings the rules refuse", () => {
     const stored = {

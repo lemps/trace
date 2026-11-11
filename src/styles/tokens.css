@@ -137,12 +137,13 @@
   --text-meta: 11.5px; /* metadata, timestamps, hints */
   --text-label: 10.5px; /* uppercase section labels, mono counts */
 
-  /* A UI font chosen in Appearance goes in --font-ui, in front of the
-     defaults, so missing glyphs still fall back to something sane. */
+  /* A UI font chosen in Appearance goes in --font-ui, and a code font in
+     --font-code (apply.ts), in front of the defaults, so missing glyphs still
+     fall back to something sane. */
   --font-sans-default: "Geist", -apple-system, "Helvetica Neue", Helvetica, system-ui, sans-serif;
   --font-mono-default: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --font-sans: var(--font-ui, var(--font-sans-default));
-  --font-mono: var(--font-mono-default);
+  --font-mono: var(--font-code, var(--font-mono-default));
 }
 
 * {

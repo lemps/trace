@@ -202,7 +202,17 @@ terminal aren't replayed into it.
 ## Model, effort and permission mode
 
 The composer's pickers (`agentChat/AgentOptionPickers`) set a workspace's options
-(`agent_session::options`, kept in `agent-options.json`; `set_agent_option`). Every start
+(`agent_session::options`, kept in `agent-options.json`; `set_agent_option`). There are two:
+one pill for the model and its effort ("Opus 5.5 · High", just "Opus 5.5" at the default
+effort), whose menu has a Model and an Effort section, and the permission mode, a glyph
+naming the mode before its word (a hand for Ask, the edit pencil for Accept edits, the Plan
+tab's glyph for Plan, a shield with an alert for Full access). Claude model ids read as names
+(`claude-opus-5-5-20261001[1m]` → "Opus 5.5 1M"; `agentOptionsFormat.modelLabel`); any other
+model, a provider's or Codex's, shows as its id. When a provider pins the model, only the
+Model section is greyed, with why; effort still changes. A narrow composer collapses them in
+steps instead of truncating (`agentOptions.css`, the composer is the size container): the
+mode becomes its glyph, then the pill drops its effort, then the pill becomes a sliders
+glyph; the tooltips and accessible names keep the values. Every start
 honours them: Claude gets `--model`, `--effort` and `--permission-mode`, and Settings' flags they
 replace (`--model`, `--effort`, `--permission-mode`, `--dangerously-skip-permissions`) are dropped;
 a provider still pins its model. A running agent gets the change at once where its CLI allows:
@@ -279,15 +289,18 @@ context-window size, Codex's own slash commands.
   only hides items: every item keeps its key from its first row on, so nothing remounts when a
   turn ends, and no disclosure's default depends on live state (a box that opened while a call
   ran and closed between calls was the subagent flicker), so nothing opens or closes by itself.
-- Subagents (`subagents.ts`, `SubagentCard`, `SubagentView`, `ChatTabs`): the main timeline
-  shows one card per subagent where its call was (type, description, status, time, calls, its
-  latest step, then its report) that changes in place and never folds; clicking it opens the
-  subagent's tab. The pane has a tab strip, Main plus one per subagent in start order (the newest
-  five, older ones in a menu), with a live mark and call count; Ctrl+Shift+] / [ (⇧⌘] / [,
-  rebindable) switch. A tab is the subagent's whole conversation, read-only: brief, thinking,
-  messages, calls with output and diffs, report; the composer stays the main agent's.
-  `SubagentView` takes only `(workspaceId, callId)` and `useSubagents(workspaceId)` lists them,
-  so a layout can put one in a pane of its own.
+- Subagents (`subagents.ts`, `SubagentCard`, `SubagentView`, `subagentPanel.tsx`): the main
+  timeline shows one card per subagent where its call was (type, description, status, time,
+  calls, its latest step, then its report) that changes in place and never folds; clicking it
+  shows the subagent's tab. Each subagent is a tab in the detail's pane strip, placed right after
+  its agent's tab (and its earlier subagents, in start order) when it starts, without taking the
+  view; the agent and its subagents read as one run, the strip's divider after the last. A
+  finished one's × (or middle-click, or its menu) hides it; its card brings it back. Ctrl+Shift+]
+  / [ (⇧⌘] / [, rebindable) step through the agent's tab and its subagents'. A tab is the
+  subagent's whole conversation, read-only, under a fact strip the height of the chat's header
+  (`SubagentBar`: back to the agent, its label, state, time, calls, Open beside, Stop): brief,
+  thinking, messages, calls with output and diffs, report. No composer there; you talk to the
+  agent on its own tab. Open beside moves the tab to a pane of its own.
 - Tool calls pair with their output and show one summary line, expanding to the detail.
 - Diff cards, plan cards, and inline approval and question cards answered in place.
 - Assistant text streams in and renders as Markdown, with file links that open in an editor.
