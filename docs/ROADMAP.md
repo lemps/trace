@@ -94,6 +94,14 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
 
 ### Reviewing agent work
 
+- [~] **trace's own permission layer:** a "Reviewed by trace" mode runs a chat agent with Claude's
+      checks bypassed and `permissions.ask: ["*"]` in its `--settings`, so every call comes back to
+      trace and is answered from your own rules (`src-tauri/src/permissions`); reads and trace's own
+      tools never raise a card, and "Always allow" keeps the rule for the rest of the run. Agents
+      trace can't answer for — a terminal TUI owns its own dialog — get the same list projected into
+      Claude's own allow/ask/deny rules. *Not yet:* Settings → Permissions to edit the list, a
+      richer approval card (a diff for an edit, the command for a shell call), Codex, and rules that
+      outlive a run.
 - [ ] **Diff annotations:** comment on specific lines and send them to the agent as one batch;
       comments follow the line as the diff changes.
 - [ ] **Fix with AI:** one click sends failing checks, hook failures or merge conflicts to an agent.

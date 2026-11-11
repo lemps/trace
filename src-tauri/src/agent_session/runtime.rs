@@ -162,9 +162,20 @@ fn launch(
     // instead of the loopback endpoint, allowed as they are locally.
     let mut extra_args = wiring.extra_args;
     let tools = (req.remote.is_some() && req.cli == "claude").then(|| {
-        let allow =
-            serde_json::json!({ "permissions": { "allow": [crate::agent_tools::ALLOW_RULE] } });
-        extra_args.extend(["--settings".to_string(), allow.to_string()]);
+        // The same rules a local chat agent runs under: trace's tools allowed, and
+        // in trace's own mode the ask rule that routes every call back here. Without
+        // it a bypassed agent in a sandbox would have no checks at all.
+        let perms = crate::permissions::settings_perms(&req.workspace_id, true, true);
+        let mut rules = serde_json::Map::new();
+        rules.insert("allow".to_string(), serde_json::json!(perms.allow));
+        if !perms.ask.is_empty() {
+            rules.insert("ask".to_string(), serde_json::json!(perms.ask));
+        }
+        if !perms.deny.is_empty() {
+            rules.insert("deny".to_string(), serde_json::json!(perms.deny));
+        }
+        let settings = serde_json::json!({ "permissions": serde_json::Value::Object(rules) });
+        extra_args.extend(["--settings".to_string(), settings.to_string()]);
         tools_host(app, &req.workspace_id)
     });
     let spec = LaunchSpec {

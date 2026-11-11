@@ -197,6 +197,8 @@ impl ChatAgents {
             if let Some(info) = self.infos.lock().get_mut(workspace_id) {
                 info.busy = false;
             }
+            // Its "always allow" answers were for this run, and it's over.
+            crate::permissions::forget(workspace_id);
         }
         current
     }

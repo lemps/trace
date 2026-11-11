@@ -42,6 +42,7 @@ pub fn wiring(
             model,
             provider,
             extra_args,
+            true,
         ),
         "codex" => Ok(crate::claude::launch::codex_wiring(
             app,

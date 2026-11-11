@@ -20,6 +20,7 @@ pub mod interrupted;
 pub mod issues;
 pub mod mcp;
 pub mod orchestrator;
+pub mod permissions;
 pub mod plans;
 pub mod pr;
 pub mod pr_watch;

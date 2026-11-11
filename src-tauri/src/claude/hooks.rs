@@ -149,32 +149,52 @@ struct AgentTurn<'a> {
 /// Longest closing message the renderer gets — a card quotes two lines of it.
 const LAST_MESSAGE_CHARS: usize = 600;
 
-/// Write `trace-hook` and return the `--settings` JSON that wires it up, plus
-/// any permission rules to allow (trace's own tools). Hooks and rules from
-/// `--settings` merge with the user's own, so theirs keep working too.
-pub fn settings_arg(allow: &[&str]) -> Result<String, String> {
-    let script =
-        write_script().map_err(|e| format!("Couldn't write the trace-hook script: {e}"))?;
-    let command = shell_quote(&Os::shell_path(&script));
-    let hook = |event: &str| json!([{ "hooks": [{ "type": "command", "command": format!("{command} {event}") }] }]);
-    // PermissionRequest names what a dialog is for (`claude::permission_ask`);
-    // the hook prints nothing, so Claude still shows the dialog as usual.
-    let mut settings = json!({ "hooks": {
-        "Stop": hook("stop"),
-        "Notification": hook("needs-input"),
-        // Marks the agent mid-turn, so one cut off by a restart is told to
-        // carry on (`interrupted`). Prints nothing: stdout here becomes context.
-        "UserPromptSubmit": hook("prompt"),
-        "PermissionRequest": hook("permission"),
-        // A question or plan dialog was answered — however it was answered
-        // (keys, a click, Remote Control), the ask it raised is over.
-        "PostToolUse": [{
-            "matcher": "AskUserQuestion|ExitPlanMode",
-            "hooks": [{ "type": "command", "command": format!("{command} answered") }],
-        }],
-    } });
-    if !allow.is_empty() {
-        settings["permissions"] = json!({ "allow": allow });
+/// Write `trace-hook` and return the `--settings` JSON that wires it up, plus the
+/// permission rules the agent runs under (`permissions::settings_perms`): trace's
+/// own tools, and either the one ask rule that routes every call to trace or the
+/// user's rules as Claude's own. Hooks and rules from `--settings` merge with the
+/// user's own, so theirs keep working too.
+pub fn settings_arg(
+    perms: &crate::permissions::SettingsPerms,
+    with_hooks: bool,
+) -> Result<String, String> {
+    let mut settings = json!({});
+    // The rules don't need the render bridge, and must never be dropped because it
+    // is down: an agent whose own checks are bypassed is held by its ask rule alone.
+    if with_hooks {
+        let script =
+            write_script().map_err(|e| format!("Couldn't write the trace-hook script: {e}"))?;
+        let command = shell_quote(&Os::shell_path(&script));
+        let hook = |event: &str| json!([{ "hooks": [{ "type": "command", "command": format!("{command} {event}") }] }]);
+        // PermissionRequest names what a dialog is for (`claude::permission_ask`);
+        // the hook prints nothing, so Claude still shows the dialog as usual.
+        settings["hooks"] = json!({
+            "Stop": hook("stop"),
+            "Notification": hook("needs-input"),
+            // Marks the agent mid-turn, so one cut off by a restart is told to
+            // carry on (`interrupted`). Prints nothing: stdout here becomes context.
+            "UserPromptSubmit": hook("prompt"),
+            "PermissionRequest": hook("permission"),
+            // A question or plan dialog was answered — however it was answered
+            // (keys, a click, Remote Control), the ask it raised is over.
+            "PostToolUse": [{
+                "matcher": "AskUserQuestion|ExitPlanMode",
+                "hooks": [{ "type": "command", "command": format!("{command} answered") }],
+            }],
+        });
+    }
+    let mut rules = serde_json::Map::new();
+    if !perms.allow.is_empty() {
+        rules.insert("allow".to_string(), json!(perms.allow));
+    }
+    if !perms.ask.is_empty() {
+        rules.insert("ask".to_string(), json!(perms.ask));
+    }
+    if !perms.deny.is_empty() {
+        rules.insert("deny".to_string(), json!(perms.deny));
+    }
+    if !rules.is_empty() {
+        settings["permissions"] = serde_json::Value::Object(rules);
     }
     Ok(settings.to_string())
 }
@@ -377,8 +397,11 @@ mod tests {
 mod settings_tests {
     #[test]
     fn answered_dialogs_are_reported_for_questions_and_plans_only() {
-        let settings: serde_json::Value =
-            serde_json::from_str(&super::settings_arg(&[]).expect("settings")).expect("json");
+        let settings: serde_json::Value = serde_json::from_str(
+            &super::settings_arg(&crate::permissions::SettingsPerms::default(), true)
+                .expect("settings"),
+        )
+        .expect("json");
         let post = &settings["hooks"]["PostToolUse"][0];
         assert_eq!(post["matcher"], "AskUserQuestion|ExitPlanMode");
         let command = post["hooks"][0]["command"].as_str().unwrap_or_default();

@@ -12,6 +12,8 @@ use crate::agent_session::journal::{
 /// What answering a prompt needs: the request as Claude sent it.
 pub struct Pending {
     pub row_id: String,
+    /// The tool the prompt is about, for the rule an "always" answer writes.
+    pub tool: String,
     input: Value,
     /// `permission_suggestions`, offered one "always" option each.
     suggestions: Vec<Value>,
@@ -54,6 +56,7 @@ pub fn approval(request_id: &str, req: &Value) -> (Approval, Pending) {
     };
     let pending = Pending {
         row_id: format!("approval:{request_id}"),
+        tool: approval.tool.clone(),
         input,
         suggestions,
         questions: Vec::new(),
@@ -100,6 +103,7 @@ pub fn questions(request_id: &str, req: &Value) -> (QuestionSet, Pending) {
         .collect();
     let pending = Pending {
         row_id: format!("question:{request_id}"),
+        tool: "AskUserQuestion".to_string(),
         input,
         suggestions: Vec::new(),
         questions: questions.iter().map(|q| q.text.clone()).collect(),
@@ -112,8 +116,71 @@ pub fn questions(request_id: &str, req: &Value) -> (QuestionSet, Pending) {
     (set, pending)
 }
 
-/// The `control_response` that gives Claude the user's `answer`.
-pub fn response(request_id: &str, pending: &Pending, answer: &Answer) -> Result<Value, String> {
+/// The `control_response` that lets a call through as the agent wrote it.
+pub fn allow(request_id: &str, input: &Value) -> Value {
+    control_response(
+        request_id,
+        json!({"behavior": "allow", "updatedInput": input}),
+    )
+}
+
+/// The `control_response` that refuses a call, with the reason the agent is told.
+pub fn deny(request_id: &str, message: &str) -> Value {
+    control_response(request_id, json!({"behavior": "deny", "message": message}))
+}
+
+/// One decision, wrapped as the frame Claude is waiting for.
+fn control_response(request_id: &str, decision: Value) -> Value {
+    json!({
+        "type": "control_response",
+        "response": {"subtype": "success", "request_id": request_id, "response": decision},
+    })
+}
+
+impl Pending {
+    /// The rule an "always" option stands for, written as trace stores it: Claude's
+    /// own suggestion where it made one (`Bash(git status:*)`), so the rule kept is
+    /// the one the button named. A suggestion trace can't express as a rule (a
+    /// folder, a mode change) falls back to this exact call, which is narrower than
+    /// the button promises but never wider.
+    pub fn rule_for(&self, option_id: &str) -> String {
+        let suggested = option_id
+            .strip_prefix("always:")
+            .and_then(|i| i.parse::<usize>().ok())
+            .and_then(|i| self.suggestions.get(i))
+            .and_then(suggested_rule);
+        suggested.unwrap_or_else(|| {
+            match crate::permissions::tools::subject(&self.tool, &self.input) {
+                Some(subject) => format!("{}({subject})", self.tool),
+                None => self.tool.clone(),
+            }
+        })
+    }
+}
+
+/// An `addRules` suggestion as a rule string; `None` for the kinds that aren't one.
+fn suggested_rule(s: &Value) -> Option<String> {
+    if str_at(s, "type") != Some("addRules") {
+        return None;
+    }
+    let rule = s.get("rules").and_then(Value::as_array)?.first()?;
+    let tool = str_at(rule, "toolName")?;
+    Some(match str_at(rule, "ruleContent") {
+        Some(content) => format!("{tool}({content})"),
+        None => tool.to_string(),
+    })
+}
+
+/// The `control_response` that gives Claude the user's `answer`. In trace's own
+/// mode the "always" options become trace's rules (`permissions::grant`), so
+/// nothing is written into Claude's: its own allow rules are outranked anyway by
+/// the ask rule that brought the call here.
+pub fn response(
+    request_id: &str,
+    pending: &Pending,
+    answer: &Answer,
+    trace_mode: bool,
+) -> Result<Value, String> {
     let decision = match answer {
         Answer::Approval { option_id, note } => match option_id.as_str() {
             "allow" => json!({"behavior": "allow", "updatedInput": pending.input}),
@@ -128,11 +195,15 @@ pub fn response(request_id: &str, pending: &Pending, answer: &Answer) -> Result<
                     .and_then(|i| i.parse::<usize>().ok())
                     .and_then(|i| pending.suggestions.get(i))
                     .ok_or_else(|| format!("Unknown option {other}."))?;
-                json!({
-                    "behavior": "allow",
-                    "updatedInput": pending.input,
-                    "updatedPermissions": [rule],
-                })
+                if trace_mode {
+                    json!({"behavior": "allow", "updatedInput": pending.input})
+                } else {
+                    json!({
+                        "behavior": "allow",
+                        "updatedInput": pending.input,
+                        "updatedPermissions": [rule],
+                    })
+                }
             }
         },
         // AskUserQuestion reads the answers from its input, keyed by question
@@ -151,10 +222,7 @@ pub fn response(request_id: &str, pending: &Pending, answer: &Answer) -> Result<
             json!({"behavior": "allow", "updatedInput": input})
         }
     };
-    Ok(json!({
-        "type": "control_response",
-        "response": {"subtype": "success", "request_id": request_id, "response": decision},
-    }))
+    Ok(control_response(request_id, decision))
 }
 
 fn option(id: &str, label: String, kind: ApprovalKind) -> ApprovalOption {

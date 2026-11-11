@@ -53,7 +53,16 @@ fn changes(options: &AgentOptions) -> Vec<Change> {
     let mut list = Vec::new();
     list.extend(options.model.clone().map(Change::Model));
     list.extend(options.effort.clone().map(Change::Effort));
-    list.extend(options.permission_mode.clone().map(Change::Mode));
+    // Trace's own mode can't be switched into live (`options::pick`): it needs the
+    // launch's ask rule, so sending bypassPermissions now would lift the checks and
+    // route nothing back.
+    list.extend(
+        options
+            .permission_mode
+            .clone()
+            .filter(|mode| mode.as_str() != crate::permissions::TRACE_MODE)
+            .map(Change::Mode),
+    );
     list
 }
 
