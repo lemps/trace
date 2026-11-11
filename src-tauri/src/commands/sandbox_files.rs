@@ -2,7 +2,6 @@
 //! (`execution::sandbox::files`) instead of a local folder. `commands/diff.rs`
 //! and `commands/files.rs` ask here first.
 
-use crate::commands::session::load;
 use crate::execution::sandbox::files::RemoteDir;
 use crate::execution::sandbox::SandboxProvider;
 use crate::execution::vercel::{auth, Vercel};
@@ -14,8 +13,7 @@ pub(crate) fn with_remote<T>(
     workspace_id: &str,
     read: impl FnOnce(&RemoteDir) -> Result<T, String>,
 ) -> Option<Result<T, String>> {
-    let session = load().into_iter().find(|s| s.id == workspace_id)?;
-    let host = session.host?;
+    let host = crate::commands::issue_host::host_of(workspace_id)?;
     let SessionHost::Vercel { sandbox, .. } = &host;
     Some((|| {
         let conn = auth::load().ok_or("Connect Vercel in Integrations first.")?;

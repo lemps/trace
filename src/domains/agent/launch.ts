@@ -1,3 +1,4 @@
+import { toast } from "@/app/toast";
 import { activity } from "@/domains/activity/store";
 import type { ActivityActor } from "@/domains/activity/types";
 import { syncChatActivity } from "@/domains/agentChat/liveBridge";
@@ -5,11 +6,19 @@ import { noteTransport, resolveTransport } from "@/domains/agentChat/transport";
 import { rememberIssues } from "@/domains/board/issueBoards";
 import { useBoardStore } from "@/domains/board/store";
 import type { Issue } from "@/domains/issues/types";
-import { type AgentCli, type AgentProvider, startAgent, type Transport } from "@/ipc/agent";
+import { useVercelStore } from "@/domains/vercel/store";
+import {
+  type AgentCli,
+  type AgentProvider,
+  type RunsOn,
+  startAgent,
+  type Transport,
+} from "@/ipc/agent";
 import { listIssueComments } from "@/ipc/issues";
 import {
   agentArgs,
   agentCli,
+  agentHost,
   agentModel,
   agentProvider,
   kickoffPromptTemplate,
@@ -57,6 +66,8 @@ interface LaunchOptions {
   prompt?: string;
   /** Chat or terminal for this start; unset keeps the ticket's last, else Settings' default. */
   transport?: Transport;
+  /** Where it runs; unset takes Settings' default, else where the ticket ran last. */
+  host?: RunsOn;
   /** Who started it, for the activity log (default: the user). */
   actor?: ActivityActor;
 }
@@ -70,7 +81,7 @@ interface LaunchOptions {
  */
 export async function launchIssueAgent(
   issueKey: string,
-  { cli, provider, prompt, actor, transport }: LaunchOptions = {}
+  { cli, provider, prompt, actor, transport, host }: LaunchOptions = {}
 ): Promise<void> {
   const { clearOutput, setAgentRunning, data, boardKey } = useBoardStore.getState();
   const chosen = cli ?? agentCli();
@@ -93,18 +104,36 @@ export async function launchIssueAgent(
     clearOutput(issueKey);
     resetTerminal(issueKey);
   }
-  await startAgent(
-    issueKey,
-    size.cols,
-    size.rows,
-    agentModel(),
-    chosen,
-    agentArgs(),
-    prompt,
-    matchText,
-    chosenProvider,
-    chosenTransport
-  );
+  // Settings' default only reaches a start nobody chose a host for, and only when it
+  // can work: Vercel connected and Claude. If it can't (say the repo isn't on GitHub),
+  // the ticket starts here instead, with a note.
+  const byDefault =
+    !host && agentHost() === "vercel" && chosen === "claude" && useVercelStore.getState().status;
+  const begin = (runsOn: RunsOn | undefined) =>
+    startAgent(
+      issueKey,
+      size.cols,
+      size.rows,
+      agentModel(),
+      chosen,
+      agentArgs(),
+      prompt,
+      matchText,
+      chosenProvider,
+      chosenTransport,
+      runsOn
+    );
+  if (byDefault) {
+    await begin("vercel").catch((err) => {
+      // No repo yet is the same answer here: the board's repo picker handles it.
+      if (!String(err).includes("No repository assigned")) {
+        toast.error(`Couldn't start in the cloud, starting here instead: ${String(err)}`);
+      }
+      return begin("local");
+    });
+  } else {
+    await begin(host);
+  }
   noteTransport(issueKey, chosenTransport);
   setAgentRunning(issueKey, true);
   if (chosenTransport === "chat") syncChatActivity(issueKey);

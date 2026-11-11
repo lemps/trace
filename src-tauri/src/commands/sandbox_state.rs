@@ -4,7 +4,6 @@
 
 use serde::Serialize;
 
-use crate::commands::session::owning_session;
 use crate::execution::sandbox::{Preview, SandboxInfo, SandboxProvider};
 use crate::execution::vercel::{auth, Vercel};
 use crate::execution::SessionHost;
@@ -51,7 +50,7 @@ fn state_of(found: Option<SandboxInfo>) -> SandboxState {
 pub async fn sandbox_state(workspace_id: String) -> Result<Option<SandboxState>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let Some(SessionHost::Vercel { sandbox, .. }) =
-            owning_session(&workspace_id).and_then(|s| s.host)
+            crate::commands::issue_host::host_of(&workspace_id)
         else {
             return Ok(None);
         };

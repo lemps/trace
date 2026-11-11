@@ -31,6 +31,15 @@ export type AgentProvider =
   | "deepseek"
   | "deepseek-pro";
 
+/** Where a ticket's agent runs: this machine (a worktree) or a Vercel sandbox. */
+export type RunsOn = "local" | "vercel";
+
+/** Where `issueKey`'s agent runs, as last started. */
+export async function issueHost(issueKey: string): Promise<RunsOn> {
+  const host = await invoke<unknown | null>("issue_host", { issueKey });
+  return host ? "vercel" : "local";
+}
+
 export function startAgent(
   issueKey: string,
   cols: number,
@@ -42,7 +51,9 @@ export function startAgent(
   matchText?: string,
   provider?: AgentProvider,
   /** Unset keeps what the ticket ran on last (the terminal if it never ran). */
-  transport?: Transport
+  transport?: Transport,
+  /** Unset keeps where the ticket ran last (this machine if it never ran). */
+  host?: RunsOn
 ): Promise<void> {
   return invoke("start_agent", {
     issueKey,
@@ -55,6 +66,7 @@ export function startAgent(
     initialPrompt: initialPrompt ?? null,
     matchText: matchText ?? null,
     transport: transport ?? null,
+    host: host ?? null,
   });
 }
 
