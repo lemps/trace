@@ -60,6 +60,7 @@ import "@/domains/prs/pr-pane.css";
 import "@/domains/prs/checks.css";
 import "@/domains/prs/github-md.css";
 import "@/domains/sessions/sessions.css";
+import "@/domains/sessions/new-session.css";
 import "@/domains/sessions/session-list.css";
 import "@/domains/sessions/sessions-order.css";
 import "@/domains/sessions/rail-recents.css";

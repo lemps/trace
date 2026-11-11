@@ -3,8 +3,8 @@ import { toast } from "@/app/toast";
 import { I, ICON_SIZE } from "@/components/Icon";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "@/domains/agent/defaults";
 import { noteTransport } from "@/domains/agentChat/transport";
-import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { setWorkspaceTransport } from "@/ipc/agentChat";
+import { setAgentOption } from "@/ipc/agentOptions";
 import { ArchiveBin } from "./ArchiveBin";
 import { sessionsDrag } from "./dragState";
 import {
@@ -21,14 +21,15 @@ import { useLastTab } from "./hooks/useLastTab";
 import { useRemoteSessions } from "./hooks/useRemoteSessions";
 import { useSessionColumns } from "./hooks/useSessionColumns";
 import { ListSortMenu, useSessionLists } from "./hooks/useSessionLists";
-import { NewSessionModal } from "./NewSessionModal";
+import { launchSession } from "./launch";
+import { NewSessionModal, type NewSessionRequest } from "./NewSessionModal";
 import { useSessionOrderStore } from "./orderStore";
 import { RemoteSessions } from "./RemoteSessions";
 import { SectionGroup } from "./SectionGroup";
 import { SessionTabs } from "./SessionTabs";
 import { useSessionsStore } from "./store";
 import { TitleEditor } from "./TitleEditor";
-import type { ScratchSession, SessionHostKind, SessionSection } from "./types";
+import type { ScratchSession, SessionSection } from "./types";
 
 export function SessionsView() {
   const sessions = useSessionsStore((s) => s.sessions);
@@ -92,24 +93,27 @@ export function SessionsView() {
     void saveGroups(patchSectionIn(groups, id, patch));
   const deleteSection = (id: string) => void saveGroups(withoutSection(groups, id)).then(load);
 
-  const onCreate = (
-    title: string,
-    cli: AgentCli,
-    repo: string | null,
-    provider: AgentProvider,
-    folder: string | null,
-    transport: Transport,
-    host: SessionHostKind | null
-  ) => {
-    setAgentCli(cli);
-    setAgentProvider(provider);
+  const onCreate = (req: NewSessionRequest) => {
+    setAgentCli(req.cli);
+    setAgentProvider(req.provider);
     setCreating(false);
-    create(title, cli, repo, provider, folder, host)
-      .then((s) => {
+    create(req.title, req.cli, req.repo, req.provider, req.folder, req.host)
+      .then(async (s) => {
         if (activeTab) void assign(s.id, activeTab, null);
         // Its first start runs on what was picked here (and every start after).
-        noteTransport(s.id, transport);
-        void setWorkspaceTransport(s.id, transport).catch(() => {});
+        noteTransport(s.id, req.transport);
+        await setWorkspaceTransport(s.id, req.transport).catch(() => {});
+        // Model and mode are the workspace's own options, saved before it starts.
+        if (req.model) await setAgentOption(s.id, "model", req.model).catch(() => {});
+        if (req.mode) await setAgentOption(s.id, "permissionMode", req.mode).catch(() => {});
+        // A task typed in the dialog starts the agent and is its first message;
+        // without one the session waits at its prompt, as it always has. A failed
+        // start is its own error: the session itself was created and is on the page.
+        if (req.prompt) {
+          await launchSession(s, req.prompt).catch((err) =>
+            toast.error(`Created the session, but its agent didn't start: ${String(err)}`)
+          );
+        }
       })
       // A Vercel session without a GitHub remote is refused, with a readable reason.
       .catch((err) => toast.error(`Couldn't create the session: ${String(err)}`));

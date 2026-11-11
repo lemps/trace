@@ -150,6 +150,7 @@ pub(crate) fn spawn_in(
             model,
             provider.as_deref(),
             extra_args,
+            false,
         )?;
         (wiring.model, wiring.extra_args, wiring.env)
     } else if cli == "codex" {

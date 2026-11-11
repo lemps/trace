@@ -71,6 +71,10 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
       question rows answered in place, for Claude and Codex (`agent_session/codex/`). The terminal
       transcript still doesn't.
+- [x] **Start a session from the task:** the New session dialog asks what the agent should do, not
+      what to call it — the task starts the agent as its first message, Haiku names the session from
+      it (its first line when there's no key or CLI), and the dialog reopens on the repo, agent,
+      model and mode last used. Everything else is behind More options.
 - [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
@@ -90,6 +94,14 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
 
 ### Reviewing agent work
 
+- [~] **trace's own permission layer:** a "Reviewed by trace" mode runs a chat agent with Claude's
+      checks bypassed and `permissions.ask: ["*"]` in its `--settings`, so every call comes back to
+      trace and is answered from your own rules (`src-tauri/src/permissions`); reads and trace's own
+      tools never raise a card, and "Always allow" keeps the rule for the rest of the run. Agents
+      trace can't answer for — a terminal TUI owns its own dialog — get the same list projected into
+      Claude's own allow/ask/deny rules. *Not yet:* Settings → Permissions to edit the list, a
+      richer approval card (a diff for an edit, the command for a shell call), Codex, and rules that
+      outlive a run.
 - [ ] **Diff annotations:** comment on specific lines and send them to the agent as one batch;
       comments follow the line as the diff changes.
 - [ ] **Fix with AI:** one click sends failing checks, hook failures or merge conflicts to an agent.

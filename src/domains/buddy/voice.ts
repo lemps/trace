@@ -1,13 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { useOrchestratorStore } from "@/domains/orchestrator/store";
-import { getAnthropicKey, orchestratorCli } from "@/ipc/orchestrator";
+import { firstLine, oneLine } from "@/domains/orchestrator/oneLine";
 
-// The buddy's voice: one short line from Haiku. Reuses the Assistant's
-// transport choice (Settings → Assistant): the user's API key via the SDK, or
-// the logged-in Claude CLI. No key and no CLI → the buddy stays quiet.
+// The buddy's voice: one short line from Haiku, through the Assistant's shared
+// transport (`orchestrator/oneLine`). No key and no CLI → the buddy stays quiet.
 
-const MODEL = "claude-haiku-5-5";
-const CLI_MODEL = "haiku";
 const MAX_CHARS = 140;
 
 /** Who's talking: the chosen character's manifest name and personality. */
@@ -35,40 +30,10 @@ Rules:
 
 /** Normalise a model reply to one bubble-sized line (or null if empty). */
 export function toBubbleLine(raw: string): string | null {
-  const first = raw.trim().split("\n")[0]?.trim() ?? "";
-  const unquoted = first.replace(/^["'“”]+|["'“”]+$/g, "").trim();
-  if (!unquoted) return null;
-  return unquoted.length > MAX_CHARS ? `${unquoted.slice(0, MAX_CHARS - 1)}…` : unquoted;
-}
-
-async function viaSdk(apiKey: string, system: string, prompt: string): Promise<string | null> {
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-  const res = await client.messages.create({
-    model: MODEL,
-    // Room for Haiku's (low-effort) thinking before the one-line answer.
-    max_tokens: 1024,
-    output_config: { effort: "low" },
-    system,
-    messages: [{ role: "user", content: prompt }],
-  });
-  if (res.stop_reason === "refusal") return null;
-  const text = res.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  return toBubbleLine(text);
+  return firstLine(raw, MAX_CHARS);
 }
 
 /** One line for the bubble, or null when there's no transport or the call fails. */
-export async function speak(prompt: string, voice: Voice): Promise<string | null> {
-  try {
-    if (useOrchestratorStore.getState().backend === "cli") {
-      return toBubbleLine(await orchestratorCli(persona(voice), prompt, CLI_MODEL));
-    }
-    const key = await getAnthropicKey();
-    return key ? await viaSdk(key, persona(voice), prompt) : null;
-  } catch {
-    // A missed quip isn't worth an error toast.
-    return null;
-  }
+export function speak(prompt: string, voice: Voice): Promise<string | null> {
+  return oneLine(persona(voice), prompt, MAX_CHARS);
 }

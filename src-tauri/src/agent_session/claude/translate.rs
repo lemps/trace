@@ -66,6 +66,9 @@ pub fn mcp_reply(request_id: &str, reply: Option<Value>) -> Value {
 /// One agent's translation state: the rows still open and what they wait on.
 /// Owned by the adapter's thread, never shared.
 pub struct Translator {
+    /// Whose permission rules answer this agent's prompts. Empty until the adapter
+    /// says (`decides_for`), and in tests, where nothing is decided for it.
+    workspace_id: String,
     book: RowBook,
     info: SessionInfo,
     turn: Option<OpenTurn>,
@@ -112,6 +115,7 @@ impl Translator {
     /// in tests).
     pub fn new(next_seq: u64, clock: fn() -> u64) -> Self {
         Self {
+            workspace_id: String::new(),
             book: RowBook::new(next_seq, clock),
             info: SessionInfo {
                 agent: "claude".to_string(),
@@ -353,6 +357,11 @@ impl Translator {
         }
     }
 
+    /// Whose rules answer this agent's permission prompts (`crate::permissions`).
+    pub fn decides_for(&mut self, workspace_id: &str) {
+        self.workspace_id = workspace_id.to_string();
+    }
+
     fn control_request(&mut self, m: &Value, out: &mut Vec<Out>) {
         let request_id = str_at(m, "request_id").unwrap_or_default().to_string();
         let req = &m["request"];
@@ -373,6 +382,25 @@ impl Translator {
                              "error": "Not supported by trace."},
             })));
             return;
+        }
+        // In trace's own mode every call arrives here, bypassing Claude's checks:
+        // the rules answer most of them, and only what they leave open is a card.
+        // A question is for the user whatever the rules say, so it goes straight on.
+        let tool = str_at(req, "tool_name").unwrap_or_default();
+        if tool != "AskUserQuestion" && crate::permissions::trace_decides(&self.workspace_id, true)
+        {
+            let input = req.get("input").cloned().unwrap_or(Value::Null);
+            match crate::permissions::decide(&self.workspace_id, tool, &input) {
+                crate::permissions::Decision::Allow => {
+                    out.push(Out::Reply(prompts::allow(&request_id, &input)));
+                    return;
+                }
+                crate::permissions::Decision::Deny(why) => {
+                    out.push(Out::Reply(prompts::deny(&request_id, &why)));
+                    return;
+                }
+                crate::permissions::Decision::Ask => {}
+            }
         }
         // A subagent's prompt belongs to its turn, which may have ended.
         let parent = str_at(req, "tool_use_id")

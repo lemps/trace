@@ -108,17 +108,29 @@ export function effortLabel(effort: string | undefined): string {
   return EFFORT_LABELS[effort] ?? effort;
 }
 
-/** Permission modes to offer. Codex has no plan mode here. */
+/**
+ * trace's own permission mode: the agent runs with Claude's checks bypassed and
+ * every call routed back to trace, which answers it from the rules in Settings →
+ * Permissions (`src-tauri/src/permissions`). Not one of Claude's
+ * `--permission-mode` values — the backend turns it into the flag Claude takes.
+ */
+export const TRACE_MODE = "traceReview";
+
+/**
+ * Permission modes to offer. Codex has no plan mode here, and doesn't route its
+ * approvals through trace's rules yet.
+ */
 export function modeChoices(agent: string): string[] {
   return agent === "codex"
     ? ["default", "acceptEdits", "bypassPermissions"]
-    : ["default", "acceptEdits", "plan", "bypassPermissions"];
+    : ["default", "acceptEdits", "plan", TRACE_MODE, "bypassPermissions"];
 }
 
 const MODE_LABELS: Record<string, string> = {
   default: "Ask",
   acceptEdits: "Accept edits",
   plan: "Plan",
+  [TRACE_MODE]: "Reviewed by trace",
   bypassPermissions: "Full access",
   dontAsk: "Don't ask",
   auto: "Auto",
@@ -128,6 +140,7 @@ const MODE_DETAILS: Record<string, string> = {
   default: "Asks before edits and commands",
   acceptEdits: "Edits files without asking; asks before commands",
   plan: "Reads and plans; changes nothing until you approve",
+  [TRACE_MODE]: "trace checks each call against your rules; applies on next start",
   bypassPermissions: "Runs everything without asking",
 };
 
@@ -154,6 +167,7 @@ const MODE_GLYPHS = new Map<string, ModeGlyph>([
   ["default", "Hand"], // asks first: a raised hand
   ["acceptEdits", "Pencil"], // edits on its own: the edit glyph
   ["plan", "Plan"], // the Plan tab's own glyph: one glyph for "plan" app-wide
+  [TRACE_MODE, "ShieldCheck"], // permissions checked for you, by trace
   ["bypassPermissions", "ShieldAlert"], // no permission checks at all
   ["dontAsk", "Ban"], // never asks: refuses whatever isn't allowed already
   ["auto", "ShieldCheck"], // permissions checked for you

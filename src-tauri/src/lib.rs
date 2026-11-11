@@ -22,6 +22,7 @@ pub mod interrupted;
 pub mod issues;
 pub mod jira;
 mod mcp_auth;
+pub mod permissions;
 pub mod plans;
 pub mod platform;
 pub mod preflight;
@@ -233,6 +234,9 @@ pub fn run() {
             commands::groups::save_session_groups,
             commands::session_order::list_session_order,
             commands::session_order::set_session_list,
+            commands::permissions::list_permission_rules,
+            commands::permissions::save_permission_rule,
+            commands::permissions::delete_permission_rule,
             commands::saved_prompts::list_saved_prompts,
             commands::saved_prompts::save_saved_prompt,
             commands::saved_prompts::delete_saved_prompt,

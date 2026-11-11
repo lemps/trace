@@ -1,0 +1,37 @@
+/* The New session dialog (trace-ui §1, §4): the task first, its choices under it,
+   the rest behind More options. */
+
+/* What you type for the agent. Taller than a form field's 80px so a few sentences
+   fit without scrolling, and it grows from there. */
+.ns-task {
+  min-height: 108px;
+  line-height: 1.5;
+}
+
+/* The four choices in two columns: each is a .field, so they keep the form's
+   label-over-control shape and their controls line up. */
+.ns-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+/* The disclosure sits with the fields, not with the footer's buttons. */
+.ns-more {
+  align-self: flex-start;
+  color: var(--fg-2);
+}
+/* Points down once it's open (trace-ui §4: Chevron, rotated, for a disclosure). */
+.ns-more svg {
+  transition: transform 120ms ease;
+}
+.ns-more[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+.ns-more-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 2px;
+}

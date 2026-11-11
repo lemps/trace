@@ -44,6 +44,9 @@ pub fn bridge_env(
 
 /// Everything trace adds to a Claude agent: [`bridge_env`], its tools and hooks,
 /// and the provider's endpoint. A provider also replaces a model that isn't its own.
+/// `chat` says which transport will host it: only a chat agent routes its permission
+/// prompts to trace (`--permission-prompt-tool stdio`), so only a chat agent can be
+/// the one trace decides for. A terminal agent gets the rules as Claude's own.
 pub fn claude_wiring(
     app: &AppHandle,
     state: &AppState,
@@ -51,6 +54,7 @@ pub fn claude_wiring(
     model: Option<String>,
     provider: Option<&str>,
     mut extra_args: Vec<String>,
+    chat: bool,
 ) -> Result<Wiring, String> {
     let env = bridge_env(app, state, workspace_id);
     let bridge_up = !env.is_empty();
@@ -63,14 +67,16 @@ pub fn claude_wiring(
     let tools = state
         .tool_server
         .get_or_init(|| crate::agent_tools::server::start(app.clone()).unwrap_or_default());
-    let mut allow = Vec::new();
-    if tools.port != 0 {
+    let has_tools = tools.port != 0;
+    if has_tools {
         extra_args.push("--mcp-config".to_string());
         extra_args.push(crate::agent_tools::mcp_config_arg(tools, workspace_id));
-        allow.push(crate::agent_tools::ALLOW_RULE);
     }
-    if bridge_up {
-        if let Ok(settings) = hooks::settings_arg(&allow) {
+    // The permission rules ride in the same `--settings`, and unlike the hooks they
+    // don't need the bridge: an agent trace decides for is held by its ask rule.
+    let perms = crate::permissions::settings_perms(workspace_id, chat, has_tools);
+    if bridge_up || !perms.is_empty() {
+        if let Ok(settings) = hooks::settings_arg(&perms, bridge_up) {
             extra_args.push("--settings".to_string());
             extra_args.push(settings);
         }

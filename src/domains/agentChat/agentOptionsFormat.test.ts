@@ -7,6 +7,7 @@ import {
   effortLabel,
   effortSuffix,
   modeChoices,
+  modeDetail,
   modeGlyph,
   modeLabel,
   modelChoices,
@@ -16,6 +17,7 @@ import {
   modelLockReason,
   pickerTitle,
   shownOption,
+  TRACE_MODE,
 } from "./agentOptionsFormat.ts";
 
 const info = (extra: Record<string, string>) => ({
@@ -108,6 +110,7 @@ describe("agent option pickers", () => {
     assert.equal(modeGlyph("acceptEdits"), "Pencil");
     assert.equal(modeGlyph("plan"), "Plan");
     assert.equal(modeGlyph("bypassPermissions"), "ShieldAlert");
+    assert.equal(modeGlyph(TRACE_MODE), "ShieldCheck");
     assert.equal(modeGlyph("dontAsk"), "Ban");
     assert.equal(modeGlyph("auto"), "ShieldCheck");
     assert.equal(modeGlyph("someNewMode"), "Shield");
@@ -123,6 +126,7 @@ describe("agent option pickers", () => {
     assert.equal(modeLabel("acceptEdits"), "Accept edits");
     assert.equal(modeLabel("plan"), "Plan");
     assert.equal(modeLabel("bypassPermissions"), "Full access");
+    assert.equal(modeLabel(TRACE_MODE), "Reviewed by trace");
     assert.equal(modeLabel("someNewMode"), "someNewMode");
   });
 
@@ -131,6 +135,11 @@ describe("agent option pickers", () => {
     assert.deepEqual(effortChoices("codex"), ["low", "medium", "high", "xhigh"]);
     assert.ok(modeChoices("claude").includes("plan"));
     assert.ok(!modeChoices("codex").includes("plan"));
+    // Codex doesn't route its approvals through trace's rules yet.
+    assert.ok(modeChoices("claude").includes(TRACE_MODE));
+    assert.ok(!modeChoices("codex").includes(TRACE_MODE));
+    // Picking it needs a restart, and the menu says so.
+    assert.match(modeDetail(TRACE_MODE) ?? "", /next start/);
   });
 
   it("shows what's in effect while running, and what the next start uses when stopped", () => {

@@ -1,17 +1,16 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { activity } from "@/domains/activity/store";
-import { agentArgs, agentCli, agentProvider } from "@/domains/agent/defaults";
+import { agentCli, agentProvider } from "@/domains/agent/defaults";
 import { decodePtyChunk, transcriptText } from "@/domains/agent/transcript";
 import { chatTail, runsAsChat, sendToAgent } from "@/domains/agentChat/deliver";
-import { syncChatActivity } from "@/domains/agentChat/liveBridge";
-import { noteTransport, resolveTransport } from "@/domains/agentChat/transport";
 import { useBoardStore } from "@/domains/board/store";
 import { useLiveStore } from "@/domains/live/store";
+import { launchSession } from "@/domains/sessions/launch";
 import { useSessionsStore } from "@/domains/sessions/store";
 import type { ScratchSession } from "@/domains/sessions/types";
 import type { AgentCli } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
-import { createSession, startSession } from "@/ipc/session";
+import { createSession } from "@/ipc/session";
 import { basename } from "@/platform/paths";
 import { flag, str } from "./args";
 import { creatorFromCaller } from "./callerOrigin";
@@ -23,9 +22,6 @@ import { cachedPrLine } from "./prCache";
 // an ordinary one: it shows on the Sessions page, and opening it attaches to the
 // same PTY.
 
-/** A session's terminal size until its pane mounts and resizes it. */
-const COLS = 120;
-const ROWS = 40;
 /** How long start_session watches for the Remote Control link before answering. */
 const LINK_WAIT_MS = 15_000;
 
@@ -183,19 +179,10 @@ async function waitForLink(id: string): Promise<string | null> {
   return null;
 }
 
-/** Start (or resume) a session's agent, on its transport, and mark it running. */
+/** Start (or resume) a session's agent, forgetting any Remote Control link it had. */
 async function launch(session: ScratchSession, prompt: string) {
   knownLinks.delete(session.id);
-  // Remote Control is a TUI feature, so a session started with it is a terminal.
-  const transport = session.remoteControl
-    ? "terminal"
-    : await resolveTransport(session.id, session.cli);
-  await startSession(session.id, COLS, ROWS, agentArgs(), prompt || undefined, transport);
-  noteTransport(session.id, transport);
-  const board = useBoardStore.getState();
-  board.setAgentRunning(session.id, true);
-  if (prompt) board.noteUserTurn(session.id);
-  else if (transport === "chat") syncChatActivity(session.id);
+  await launchSession(session, prompt || undefined);
 }
 
 async function start(input: unknown, caller: string): Promise<string> {
