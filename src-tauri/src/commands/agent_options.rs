@@ -5,6 +5,7 @@ use serde::Serialize;
 use tauri::State;
 
 use crate::agent_session::options::{self, store, AgentOptions};
+use crate::claude::catalog::{self, Catalog};
 use crate::state::AppState;
 
 /// `set_agent_option`'s answer (`SetAgentOptionResult` in ipc/agentOptions.ts).
@@ -35,4 +36,12 @@ pub fn set_agent_option(
 ) -> Result<SetResult, String> {
     let (options, live) = options::pick(&state, &workspace_id, &kind, value)?;
     Ok(SetResult { options, live })
+}
+
+/// What the installed Claude Code offers — its models and slash commands — for
+/// the model pickers and the chat's `/` menu: asked of the CLI, so new ones show
+/// without a trace update.
+#[tauri::command]
+pub async fn claude_catalog() -> Result<Catalog, String> {
+    catalog::get().await
 }

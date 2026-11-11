@@ -24,7 +24,9 @@
   align-items: center;
   gap: 8px;
 }
+/* Room under the head, so its buttons (as tall as the head) don't sit on the text. */
 .setting-section-desc {
+  margin-top: 8px;
   font-size: var(--text-ui);
   color: var(--fg-3);
 }

@@ -194,6 +194,23 @@ export function Composer({
           >
             <I.Paperclip size={14} />
           </IconButton>
+          <IconButton
+            className="ac-commands"
+            label="Slash commands"
+            title={
+              text.trim() && !text.startsWith("/")
+                ? "Clear the box to pick a command, or type / at its start"
+                : undefined
+            }
+            disabled={Boolean(text.trim()) && !text.startsWith("/")}
+            onClick={() => {
+              if (!text.startsWith("/")) setText("/");
+              slash.reset();
+              inputRef.current?.focus();
+            }}
+          >
+            <I.Slash size={14} />
+          </IconButton>
           <AgentOptionPickers workspaceId={workspaceId} running={running} />
           <SendSlot
             busy={busy}

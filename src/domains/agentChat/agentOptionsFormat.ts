@@ -11,11 +11,52 @@ export const CLAUDE_MODEL_ALIASES = ["fable", "opus", "sonnet", "haiku"] as cons
 
 export type OptionKind = "model" | "effort" | "permissionMode";
 
-/** The models to offer: Claude's aliases plus the id in use; Codex only its own. */
-export function modelChoices(agent: string, current: string | undefined): string[] {
-  const list: string[] = agent === "claude" ? [...CLAUDE_MODEL_ALIASES] : [];
-  if (current && !list.includes(current)) list.push(current);
+/** A model the installed Claude Code offers (`ipc/claudeModels`), as far as naming goes. */
+export interface CatalogModel {
+  value: string;
+  displayName: string;
+  /** The id an alias stands for: what a running agent reports for it. */
+  resolvedModel?: string;
+}
+
+/**
+ * Is `choice` the model in use? A running agent reports the id (`claude-opus-5-5`)
+ * where the pick was the alias (`opus`), and they're one model.
+ */
+export function isModel(
+  choice: string,
+  current: string | undefined,
+  catalog: readonly CatalogModel[]
+): boolean {
+  if (!current) return false;
+  if (choice === current) return true;
+  // Only when nothing is listed under the id itself, so that row is the one ticked.
+  if (catalog.some((m) => m.value === current)) return false;
+  return catalog.some((m) => m.value === choice && m.resolvedModel === current);
+}
+
+/**
+ * The models to offer, plus the one in use: for Claude, what the installed CLI
+ * lists (`catalog`), or its aliases until that's known; Codex only its own.
+ */
+export function modelChoices(
+  agent: string,
+  current: string | undefined,
+  catalog: readonly CatalogModel[] = []
+): string[] {
+  const claude = catalog.length ? catalog.map((m) => m.value) : [...CLAUDE_MODEL_ALIASES];
+  const list: string[] = agent === "claude" ? claude : [];
+  const listed = list.some((m) => isModel(m, current, agent === "claude" ? catalog : []));
+  if (current && !listed) list.push(current);
   return list;
+}
+
+/** A model's name: the CLI's own when it lists it ("Fable 5.1" for `fable`), else `modelLabel`. */
+export function modelName(model: string | undefined, catalog: readonly CatalogModel[]): string {
+  const listed = model
+    ? (catalog.find((m) => m.value === model) ?? catalog.find((m) => m.resolvedModel === model))
+    : undefined;
+  return listed?.displayName ?? modelLabel(model);
 }
 
 const FAMILIES = "opus|sonnet|haiku|fable";
@@ -62,9 +103,10 @@ export interface ModelEffortText {
 
 export function modelEffortText(
   model: string | undefined,
-  effort: string | undefined
+  effort: string | undefined,
+  catalog: readonly CatalogModel[] = []
 ): ModelEffortText {
-  return { model: modelLabel(model), effort: effort ? effortLabel(effort) : null };
+  return { model: modelName(model, catalog), effort: effort ? effortLabel(effort) : null };
 }
 
 /**

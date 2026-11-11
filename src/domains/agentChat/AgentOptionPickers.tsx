@@ -9,6 +9,7 @@ import {
   effortChoices,
   effortLabel,
   effortSuffix,
+  isModel,
   modeChoices,
   modeDetail,
   modeGlyph,
@@ -16,12 +17,13 @@ import {
   modelChoices,
   modelEffortName,
   modelEffortText,
-  modelLabel,
   modelLockReason,
+  modelName,
   type OptionKind,
   pickerTitle,
   shownOption,
 } from "./agentOptionsFormat";
+import { useClaudeModels } from "./claudeCatalog";
 import { useAgentChatStore } from "./store";
 
 interface AgentOptionPickersProps {
@@ -85,7 +87,8 @@ interface ModelEffortPickerProps {
 
 /** "Opus 5.5 · High ▴": one control, one menu with a Model and an Effort section. */
 function ModelEffortPicker({ agent, model, effort, when, lock, onPick }: ModelEffortPickerProps) {
-  const text = modelEffortText(model, effort);
+  const catalog = useClaudeModels();
+  const text = modelEffortText(model, effort, catalog);
   const name = modelEffortName(text);
   const suffix = effortSuffix(text);
   // A pinned model is listed alone, greyed, with why: the other models don't apply.
@@ -100,10 +103,10 @@ function ModelEffortPicker({ agent, model, effort, when, lock, onPick }: ModelEf
           onSelect: noPick,
         },
       ]
-    : modelChoices(agent, model).map((m) => ({
+    : modelChoices(agent, model, catalog).map((m) => ({
         id: m,
-        label: modelLabel(m),
-        checked: m === model,
+        label: modelName(m, catalog),
+        checked: isModel(m, model, catalog),
         onSelect: () => onPick("model", m),
       }));
   const efforts: MenuItem[] = effortChoices(agent).map((e) => ({

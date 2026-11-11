@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { useSavedPrompts } from "@/domains/savedPrompts/store";
+import { useCommandDetails } from "../claudeCatalog";
 import { type SlashEntry, slashEntries, slashMatches } from "../slash";
 
 export interface Slash {
@@ -27,7 +28,11 @@ export function useSlash(
   const [closed, setClosed] = useState(false);
   const prompts = useSavedPrompts((s) => s.prompts);
   useEffect(() => useSavedPrompts.getState().ensure(), []);
-  const entries = useMemo(() => slashEntries(commands, prompts), [commands, prompts]);
+  const details = useCommandDetails();
+  const entries = useMemo(
+    () => slashEntries(commands, prompts, details),
+    [commands, prompts, details]
+  );
   const matches = closed ? null : slashMatches(text, entries);
 
   const pick = (entry: SlashEntry) => {
