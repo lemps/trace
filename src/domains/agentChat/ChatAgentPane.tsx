@@ -29,6 +29,8 @@ interface ChatAgentPaneProps {
    * counts as always running.
    */
   onStart?: () => void;
+  /** A record, not an agent to talk to (a finished scheduled run): no composer. */
+  readOnly?: boolean;
 }
 
 // A chat agent's conversation, the same for every brand: the header's facts,
@@ -36,7 +38,12 @@ interface ChatAgentPaneProps {
 // diffs, plans, prompts answered in place) and the composer, which always
 // talks to the main agent. This is the one seam the session and ticket views
 // mount; it needs only the workspace id.
-export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatAgentPaneProps) {
+export function ChatAgentPane({
+  workspaceId,
+  expandAll = false,
+  onStart,
+  readOnly = false,
+}: ChatAgentPaneProps) {
   useJournalFeed(workspaceId);
   const actions = useChatActions();
   const live = useBoardStore((s) => s.runningAgents.has(workspaceId));
@@ -47,7 +54,7 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
   const subagents = useSubagents(workspaceId);
   const last = turns[turns.length - 1];
   const busy = info?.busy ?? isTurnLive(last);
-  const working = useAgentWorking(workspaceId) && !stopped;
+  const working = useAgentWorking(workspaceId) && !stopped && !readOnly;
   const running = subagents.filter((s) => s.status === "running").length;
   const stored = useAgentChatStore((s) => s.tab[workspaceId] ?? "main");
   // Tabs the user closed (`closedTabs.ts`) are off the strip; their cards reopen them.
@@ -117,16 +124,18 @@ export function ChatAgentPane({ workspaceId, expandAll = false, onStart }: ChatA
             </div>
           </div>
         )}
-        <Composer
-          workspaceId={workspaceId}
-          busy={busy}
-          working={working}
-          onInterrupt={interrupt}
-          toMain={tab !== "main"}
-          slashCommands={info?.slashCommands ?? []}
-          running={!stopped}
-          onStart={stopped ? onStart : undefined}
-        />
+        {!readOnly && (
+          <Composer
+            workspaceId={workspaceId}
+            busy={busy}
+            working={working}
+            onInterrupt={interrupt}
+            toMain={tab !== "main"}
+            slashCommands={info?.slashCommands ?? []}
+            running={!stopped}
+            onStart={stopped ? onStart : undefined}
+          />
+        )}
       </div>
     </ChatViewContext.Provider>
   );
