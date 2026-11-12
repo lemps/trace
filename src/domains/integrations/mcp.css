@@ -6,6 +6,11 @@
   justify-content: space-between;
   gap: 16px;
 }
+/* The note beside it takes the squeeze: the button keeps its one-line label. */
+.mcp-head > .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .mcp-section-note {
   margin: -8px 0 12px;
 }

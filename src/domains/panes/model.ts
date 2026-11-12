@@ -292,7 +292,8 @@ export function openBeside(
 
 /**
  * Whether a layout is the user's arrangement rather than the default one row: split,
- * holding an optional panel, or with its tabs out of their natural order.
+ * or with its tabs other than the `natural` ones in their order (a panel opened, a
+ * tab dragged along). Owned tabs where they placed themselves are in `natural`.
  */
 export function isArranged(layout: PaneLayout, natural: string[]): boolean {
   if (layout.root.kind === "split") return true;

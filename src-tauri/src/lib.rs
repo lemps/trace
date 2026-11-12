@@ -22,6 +22,7 @@ pub mod interrupted;
 pub mod issues;
 pub mod jira;
 mod mcp_auth;
+pub mod permissions;
 pub mod plans;
 pub mod platform;
 pub mod preflight;
@@ -130,9 +131,13 @@ pub fn run() {
             commands::agent::agent_running,
             commands::agent::live_workspaces,
             commands::agent::start_agent,
+            commands::issue_host::issue_host,
             commands::terminal::start_terminal,
             commands::tailscale::tailscale_status,
             commands::preflight::preflight_checks,
+            commands::preflight::preflight_install,
+            commands::preflight::preflight_sign_in,
+            commands::preflight::preflight_cancel_sign_in,
             commands::agent::detach_agent,
             commands::session_host::agent_capabilities,
             commands::sandbox_state::sandbox_state,
@@ -146,6 +151,8 @@ pub fn run() {
             commands::mcp::mcp_disconnect,
             commands::vercel::sandbox_lifetime,
             commands::vercel::set_sandbox_lifetime,
+            commands::vercel::sandbox_size,
+            commands::vercel::set_sandbox_size,
             commands::vercel::vercel_status,
             commands::vercel::connect_vercel,
             commands::vercel::disconnect_vercel,
@@ -171,6 +178,7 @@ pub fn run() {
             commands::agent_chat::load_journal,
             commands::agent_options::agent_options,
             commands::agent_options::set_agent_option,
+            commands::agent_options::claude_catalog,
             commands::pr::raise_pr,
             commands::pr::merge_pr,
             commands::pr_watch::workspace_prs,
@@ -230,6 +238,9 @@ pub fn run() {
             commands::groups::save_session_groups,
             commands::session_order::list_session_order,
             commands::session_order::set_session_list,
+            commands::permissions::list_permission_rules,
+            commands::permissions::save_permission_rule,
+            commands::permissions::delete_permission_rule,
             commands::saved_prompts::list_saved_prompts,
             commands::saved_prompts::save_saved_prompt,
             commands::saved_prompts::delete_saved_prompt,

@@ -16,6 +16,7 @@ pub struct RaisedPr {
 /// already pushed and a PR exists, returns that PR's URL instead of erroring.
 #[tauri::command]
 pub fn raise_pr(issue_key: String, title: String, body: String) -> Result<RaisedPr, String> {
+    crate::commands::issue_host::require_local(&issue_key, "Raising a PR from here")?;
     let repo = crate::commands::repos::repo_for(&issue_key)?;
     let slug = slugify(&issue_key);
     let worktree = crate::commands::repos::workspace_dir(&repo, &issue_key);
@@ -94,6 +95,7 @@ pub fn merge_pr(issue_key: String, pr_url: String, method: Option<String>) -> Re
     if pr_url.starts_with('-') {
         return Err("Invalid pull request URL.".to_string());
     }
+    crate::commands::issue_host::require_local(&issue_key, "Merging from here")?;
     let repo = crate::commands::repos::repo_for(&issue_key)?;
     let flag = match method.as_deref().unwrap_or("squash") {
         "merge" => "--merge",

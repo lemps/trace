@@ -1,134 +1,58 @@
-import { useState } from "react";
-import { FontField } from "@/components/FontField";
+import { type CSSProperties, useState } from "react";
 import { InlineConfirm } from "@/components/InlineConfirm";
-import { Segmented } from "@/components/Segmented";
-import { StatusLight } from "@/components/StatusLight";
-import { Switch } from "@/components/Switch";
-import { setTermFont, setTermFontSize, setTermLineHeight } from "@/domains/agent/terminalPrefs";
+import { resetTermPrefs } from "@/domains/agent/terminalPrefs";
 import { applyTerminalPrefs } from "@/domains/agent/terminalRegistry";
-import { installedOnly, UI_FONT_SUGGESTIONS } from "@/domains/appearance/installedFonts";
-import { type Density, UI_SCALES } from "@/domains/appearance/prefs";
-import { AppPreview } from "@/domains/appearance/previews/AppPreview";
-import { TextPreview } from "@/domains/appearance/previews/TextPreview";
 import { useAppearance } from "@/domains/appearance/store";
-import { AccentPicker, ThemePicker } from "@/domains/appearance/ThemePicker";
-import { AppearanceGroup } from "./AppearanceGroup";
+import { useScrollAnchor } from "@/domains/appearance/useScrollAnchor";
+import { useStackedLayout } from "@/domains/appearance/useStackedLayout";
 import { ChatAppearance } from "./ChatAppearance";
-import { SettingRow } from "./SettingRow";
+import { InterfaceAppearance } from "./InterfaceAppearance";
 import { TerminalAppearance } from "./TerminalAppearance";
+import { ThemeAppearance } from "./ThemeAppearance";
 
-const DENSITIES: { value: Density; label: string }[] = [
-  { value: "compact", label: "Compact" },
-  { value: "standard", label: "Standard" },
-  { value: "comfortable", label: "Comfortable" },
-];
-const SCALES = UI_SCALES.map((s) => ({ value: s, label: `${s}%` }));
-
-// Settings → Appearance: theme, accent, text and layout, terminal, chat &
-// transcript, motion. Every control writes the appearance store, which applies
-// itself live (domains/appearance/apply.ts) and persists; each group shows a
-// live preview of what it changes beside it.
+// Settings → Appearance: Interface, Theme, Chat & transcript, Terminal. Every
+// control writes the appearance store (or terminalPrefs), which applies itself
+// live (domains/appearance/apply.ts) and persists; each group shows a live
+// preview beside it.
+//
+// Changing an option must not move the page under the pointer:
+// - the Settings page keeps Standard density (appearance.css); previews show it;
+// - previews sit in fixed-height frames, so their settings never resize them;
+// - rows are never mounted or unmounted by an option, only disabled;
+// - a zoom (Interface size) does move the page, so the clicked control is put
+//   back under the pointer once it lands (useScrollAnchor), and the side-by-side
+//   or stacked layout is decided in screen points, which a zoom doesn't change
+//   (useStackedLayout). The previews column keeps its on-screen width (--ap-unzoom).
 export function AppearanceSettings() {
-  const prefs = useAppearance((s) => s.prefs);
-  const systemReducedMotion = useAppearance((s) => s.systemReducedMotion);
-  const update = useAppearance((s) => s.update);
   const reset = useAppearance((s) => s.reset);
+  const appliedScale = useAppearance((s) => s.appliedScale);
+  const stacked = useStackedLayout();
+  const anchor = useScrollAnchor();
+  // Bumped by Reset appearance: the terminal group re-reads terminalPrefs.
   const [resets, setResets] = useState(0);
-  // Measured once per visit: only suggestions this machine can show.
-  const [uiFonts] = useState(() => installedOnly(UI_FONT_SUGGESTIONS));
 
   const resetAll = () => {
-    setTermFont("");
-    setTermFontSize("");
-    setTermLineHeight("");
+    resetTermPrefs();
     reset();
     applyTerminalPrefs();
     setResets((n) => n + 1);
   };
 
   return (
-    <div className="ap-page">
-      <AppearanceGroup
-        title="Theme"
-        desc="Colours for the whole app. Changes apply as you pick them."
-        preview={<AppPreview />}
-      >
-        <ThemePicker />
-        <SettingRow
-          label="Accent"
-          hint="Focus, selection and highlights. Amber, blue and green stay reserved for agent state."
-        >
-          <AccentPicker />
-        </SettingRow>
-      </AppearanceGroup>
-
-      <AppearanceGroup
-        title="Text and layout"
-        desc="How large and how dense the interface is."
-        preview={<TextPreview />}
-      >
-        <SettingRow label="Interface size" hint="Zooms everything but the terminals.">
-          <Segmented
-            className="ap-seg"
-            label="Interface size"
-            value={prefs.uiScale}
-            options={SCALES}
-            onChange={(uiScale) => update({ uiScale })}
-          />
-        </SettingRow>
-        <SettingRow label="Density" hint="Control heights and text size in lists and toolbars.">
-          <Segmented
-            className="ap-seg"
-            label="Density"
-            value={prefs.density}
-            options={DENSITIES}
-            onChange={(density) => update({ density })}
-          />
-        </SettingRow>
-        <SettingRow label="Font" hint="Any installed font. Blank uses Geist.">
-          <FontField
-            label="Interface font"
-            value={prefs.uiFont}
-            onChange={(uiFont) => update({ uiFont })}
-            suggestions={uiFonts}
-            defaultFamily="Geist"
-          />
-        </SettingRow>
-      </AppearanceGroup>
-
+    <div
+      className={`ap-page${stacked ? " stacked" : ""}`}
+      style={{ "--ap-unzoom": 100 / appliedScale } as CSSProperties}
+      onClickCapture={anchor}
+    >
+      <InterfaceAppearance />
+      <ThemeAppearance />
+      <ChatAppearance />
       <TerminalAppearance key={resets} />
-      <ChatAppearance key={`chat${resets}`} />
-
-      <AppearanceGroup
-        title="Motion"
-        preview={
-          <div className="ap-motion-pv" inert aria-hidden="true">
-            <StatusLight light="working" variant="pill" />
-            <StatusLight light="attention" variant="pill" />
-          </div>
-        }
-      >
-        <SettingRow
-          label="Reduce motion"
-          hint={
-            systemReducedMotion
-              ? "Your system asks for reduced motion, so it's on. Change it in the OS settings."
-              : "Stops spinners, blinking, slides and the buddy's animation."
-          }
-        >
-          <Switch
-            on={prefs.motion === "reduce" || systemReducedMotion}
-            onChange={(on) => update({ motion: on ? "reduce" : "system" })}
-            label="Reduce motion"
-            disabled={systemReducedMotion}
-          />
-        </SettingRow>
-      </AppearanceGroup>
 
       <div className="ap-reset">
         <InlineConfirm
           label="Reset appearance"
-          message="Reset every appearance setting, terminal font, size and line height included?"
+          message="Reset every appearance setting, the terminal's font, size, line height and scrollback included?"
           confirmLabel="Reset"
           onConfirm={resetAll}
         />

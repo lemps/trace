@@ -1,10 +1,13 @@
 import { type RefObject, useLayoutEffect, useRef, useState } from "react";
+import { ALL_LABELS, type Fit, type FitItem, nextFit, sameFit } from "./tabFitSolve";
 
-// Fits a row of tabs into its width by measuring, never by counting: every tab
-// keeps its label while they all fit; then only the active one does and the rest
-// are icons (named by their tooltip and aria-label); then the active one is an
-// icon too; then tabs from the end (never the first) go to a "more" menu. A label is never cut to
-// a couple of letters.
+// Fits a row of tabs into its width by measuring, never by counting. Tabs keep
+// their labels while they all fit; then they become icons (named by their tooltip
+// and aria-label) one at a time, only as many as it takes: the early ones first
+// (`data-fit-early`, a detail's subagent tabs), then the rest from the end, the
+// active one last. Past that, tabs go to a "more" menu in the same order (never the
+// first, never the active one). `tabFitSolve` decides; this measures. A label is
+// never cut to a couple of letters.
 //
 // Markup: the tabs sit in a `.tab-fit` row (`fitRef`), each with `data-fit-tab`
 // = its id and its label in a `data-fit-label` element; something that belongs
@@ -16,13 +19,6 @@ import { type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 export type TabFitMode = "label" | "icon" | "out";
 
-interface Fit {
-  icons: boolean;
-  activeLabel: boolean;
-  out: readonly string[];
-}
-
-const ALL: Fit = { icons: false, activeLabel: true, out: [] };
 /** The "more" trigger's width before it has been drawn once. */
 const MORE_GUESS = 72;
 
@@ -37,7 +33,7 @@ export function useTabFit(
   moreRef: RefObject<HTMLElement | null>,
   active: string
 ): TabFit {
-  const [fit, setFit] = useState<Fit>(ALL);
+  const [fit, setFit] = useState<Fit>(ALL_LABELS);
   const [, setSize] = useState(0);
   const moreW = useRef(MORE_GUESS);
 
@@ -54,16 +50,12 @@ export function useTabFit(
     const el = fitRef.current;
     if (!el) return;
     const next = measure(el, moreRef.current, active, moreW, fit);
-    if (!same(fit, next)) setFit(next);
+    if (!sameFit(fit, next)) setFit(next);
   });
 
   return {
     out: fit.out,
-    mode: (id) => {
-      if (fit.out.includes(id)) return "out";
-      if (!fit.icons || (fit.activeLabel && id === active)) return "label";
-      return "icon";
-    },
+    mode: (id) => (fit.out.includes(id) ? "out" : fit.icons.includes(id) ? "icon" : "label"),
   };
 }
 
@@ -75,12 +67,6 @@ export function fitClass(mode: TabFitMode): string {
 
 /** Spare room (px) needed to step back to a roomier fit. */
 const SLACK = 4;
-const rank = (f: Fit) => (f.out.length > 0 ? 3 : !f.icons ? 0 : f.activeLabel ? 1 : 2);
-
-const same = (a: Fit, b: Fit) =>
-  a.icons === b.icons && a.activeLabel === b.activeLabel && a.out.join("\n") === b.out.join("\n");
-
-type Item = { tab: string; full: number; icon: number } | { of: string | null; w: number };
 
 const px = (v: string) => Number.parseFloat(v) || 0;
 
@@ -99,7 +85,7 @@ function measure(
   const avail =
     el.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight) + (more ? moreW.current : 0) + 0.5;
 
-  const items: Item[] = [];
+  const items: FitItem[] = [];
   for (const child of el.children) {
     if (!(child instanceof HTMLElement)) continue;
     const s = getComputedStyle(child);
@@ -110,68 +96,18 @@ function measure(
       items.push({ of: child.dataset.fitOf ?? null, w });
       continue;
     }
+    const early = child.dataset.fitEarly !== undefined;
     const label = child.querySelector<HTMLElement>("[data-fit-label]");
-    const labelW = label?.scrollWidth ?? 0;
+    // A capped label (a subagent's task) is never wider than its cap, whatever it holds.
+    const cap = label ? px(getComputedStyle(label).maxWidth) : 0;
+    const labelW = Math.min(label?.scrollWidth ?? 0, cap || Number.POSITIVE_INFINITY);
     const inner = label ? px(s.columnGap) : 0;
     const max = px(s.maxWidth) || Number.POSITIVE_INFINITY;
     if (child.classList.contains("fit-icon")) {
-      items.push({ tab, icon: w, full: Math.min(w + inner + labelW, max + margins) });
+      items.push({ tab, early, icon: w, full: Math.min(w + inner + labelW, max + margins) });
     } else {
-      items.push({ tab, full: w, icon: w - (label?.offsetWidth ?? 0) - inner });
+      items.push({ tab, early, full: w, icon: w - (label?.offsetWidth ?? 0) - inner });
     }
   }
-
-  const need = (labeled: (tab: string) => boolean, out: ReadonlySet<string>) => {
-    let sum = 0;
-    let n = 0;
-    for (const item of items) {
-      if ("tab" in item) {
-        if (out.has(item.tab)) continue;
-        sum += labeled(item.tab) ? item.full : item.icon;
-      } else {
-        if (item.of !== null && out.has(item.of)) continue;
-        sum += item.w;
-      }
-      n++;
-    }
-    return sum + gap * Math.max(0, n - 1);
-  };
-
-  // Going back to a roomier step takes a little spare room, so a width that
-  // rounds either way can't flip between two steps.
-  const step = rank(was);
-  const fits = (width: number, at: number) => width <= avail - (at < step ? SLACK : 0);
-  const none = new Set<string>();
-  if (
-    fits(
-      need(() => true, none),
-      0
-    )
-  )
-    return ALL;
-  if (
-    fits(
-      need((t) => t === active, none),
-      1
-    )
-  )
-    return { icons: true, activeLabel: true, out: [] };
-  if (
-    fits(
-      need(() => false, none),
-      2
-    )
-  )
-    return { icons: true, activeLabel: false, out: [] };
-  const out = new Set<string>();
-  // The first tab (Main, the agent's chat) and the active one always stay.
-  const tabs = items
-    .flatMap((i) => ("tab" in i ? [i.tab] : []))
-    .filter((t, i) => i > 0 && t !== active);
-  const room = avail - moreW.current - (was.out.length > 0 ? SLACK : 0);
-  for (let i = tabs.length - 1; i >= 0; i--) {
-    out.add(tabs[i]);
-    if (need(() => false, out) <= room) break;
-  }
-  return { icons: true, activeLabel: false, out: tabs.filter((t) => out.has(t)) };
+  return nextFit(items, active, { avail, more: moreW.current, gap }, was, SLACK);
 }

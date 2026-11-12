@@ -1,4 +1,4 @@
-/* Settings → Sidebar: the rail's pages as reorderable rows. */
+/* Settings → Layout → Sidebar: the rail's pages as reorderable rows. */
 .sb-list {
   display: flex;
   flex-direction: column;
@@ -6,9 +6,14 @@
   border-radius: var(--radius);
   overflow: hidden;
 }
+/* Fixed columns, the same in every row: the text wraps at one width and the
+   controls line up down the list, whichever control a row has. The control
+   column fits the widest (a tracker page's three-way Segmented). */
 .sb-row {
+  --sb-control-w: 210px;
+  --sb-move-w: calc(var(--control-h-sm) * 2 + 2px);
   display: grid;
-  grid-template-columns: 14px 16px 1fr auto auto;
+  grid-template-columns: 14px 16px minmax(0, 1fr) var(--sb-control-w) var(--sb-move-w);
   align-items: center;
   gap: 12px;
   min-height: 46px;
@@ -67,8 +72,6 @@
 .sb-move {
   display: flex;
   gap: 2px;
-  /* Two buttons' room, so a fixed row's control lines up with the rest. */
-  width: calc(var(--control-h-sm) * 2 + 2px);
 }
 /* The chevron points the way the row moves. */
 .sb-move .sb-up svg {

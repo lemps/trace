@@ -1,66 +1,80 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/app/toast";
+import { BusyLabel } from "@/components/BusyLabel";
+import { I, ICON_SIZE } from "@/components/Icon";
 import { Modal } from "@/components/Modal";
-import { Segmented } from "@/components/Segmented";
+import { modelLockReason } from "@/domains/agentChat/agentOptionsFormat";
 import { defaultTransport, useHasChat } from "@/domains/agentChat/transport";
 import { useVercelStatus } from "@/domains/vercel/store";
 import type { AgentCli, AgentProvider, Transport } from "@/ipc/agent";
 import { listRepos } from "@/ipc/repos";
 import { basename } from "@/platform/paths";
 import { useSandboxRepos } from "./hooks/useSandboxRepos";
+import { NewSessionMore } from "./NewSessionMore";
+import { NewSessionWhere } from "./NewSessionWhere";
+import { lastSessionStart, rememberSessionStart } from "./sessionDefaults";
 import { sandboxRepoNote } from "./sessionHost";
+import { titleFromPrompt } from "./titleFromPrompt";
 import type { SessionHostKind } from "./types";
+
+/** What the dialog asks for, as one object: it has outgrown a positional list. */
+export interface NewSessionRequest {
+  title: string;
+  /** The task to send as the agent's first message. Empty leaves it idle, as before. */
+  prompt: string;
+  cli: AgentCli;
+  repo: string | null;
+  provider: AgentProvider;
+  folder: string | null;
+  transport: Transport;
+  host: SessionHostKind | null;
+  /** Unset leaves the model to Settings and the CLI's own default. */
+  model: string | null;
+  mode: string | null;
+}
 
 interface NewSessionModalProps {
   defaultCli: AgentCli;
   defaultProvider: AgentProvider;
   onClose: () => void;
-  onCreate: (
-    title: string,
-    cli: AgentCli,
-    repo: string | null,
-    provider: AgentProvider,
-    folder: string | null,
-    transport: Transport,
-    host: SessionHostKind | null
-  ) => void;
+  onCreate: (request: NewSessionRequest) => void;
 }
 
-// Show the repo's folder name, not its full path — matches the board's picker.
 // Values of the "Runs in" picker that aren't a repo's path (those are always absolute).
 const SCRATCH = "scratch";
 const FOLDER = "folder";
 const CHOOSE_FOLDER = "choose";
 const isRepoPlace = (place: string) => place !== SCRATCH && place !== FOLDER;
 
-/** "Run on": this computer (null) or a Vercel Sandbox. */
-const HOSTS: { value: SessionHostKind | "local"; label: string }[] = [
-  { value: "local", label: "This computer" },
-  { value: "vercel", label: "Vercel" },
-];
-
-// Title + agent + where it runs, for a new exploratory session. Title is optional (the
-// backend falls back to "Exploration" when blank). A repo gives it an isolated worktree;
-// it doesn't need one, and can run in a folder of the user's or an empty scratch folder.
-// With Vercel connected it can run in a Vercel Sandbox instead, which needs a repo with a
-// GitHub origin (the sandbox clones it) and runs Claude as a chat or in a terminal.
+// A session starts from the task you want done: type it, press Start, and the agent
+// is created and handed it as its first message. Haiku names the session from that
+// task (`titleFromPrompt`) unless you type a name under it. The choices that change where the
+// work happens sit under it, opened on whatever was used last
+// (`sessionDefaults`); the rest are behind More options. An empty task still works
+// and behaves as it always did: the session is created and waits at its prompt.
 export function NewSessionModal({
   defaultCli,
   defaultProvider,
   onClose,
   onCreate,
 }: NewSessionModalProps) {
+  const [last] = useState(lastSessionStart);
+  const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [more, setMore] = useState(false);
   const vercel = useVercelStatus();
-  const [hostPick, setHostPick] = useState<SessionHostKind | "local">("local");
+  const [hostPick, setHostPick] = useState<SessionHostKind | "local">(last.host ?? "local");
   // Disconnected meanwhile: back to this computer.
   const host = vercel && hostPick === "vercel" ? "vercel" : null;
   const [pickedCli, setCli] = useState<AgentCli>(defaultCli);
   // A sandbox's image has Claude Code, not Codex.
   const cli: AgentCli = host ? "claude" : pickedCli;
   const [provider, setProvider] = useState<AgentProvider>(defaultProvider);
-  const [transport, setTransport] = useState<Transport>(() => defaultTransport(defaultCli));
+  const [transport, setTransport] = useState<Transport>(
+    () => last.transport ?? defaultTransport(defaultCli)
+  );
   const canChat = useHasChat(cli);
   // A Vercel sandbox runs Claude as a chat too (`execution::sandbox::chat`), but
   // headless: with no Claude login saved for sandboxes, only a terminal has
@@ -68,26 +82,33 @@ export function NewSessionModal({
   const needsLogin = host === "vercel" && !vercel?.claude;
   const shownAs: Transport = canChat && !needsLogin ? transport : "terminal";
   const [repos, setRepos] = useState<string[]>([]);
-  const [place, setPlace] = useState(SCRATCH);
-  const [folder, setFolder] = useState<string | null>(null);
+  const [place, setPlace] = useState(last.place ?? SCRATCH);
+  const [folder, setFolder] = useState<string | null>(last.folder);
+  const [model, setModel] = useState(last.model ?? "");
+  const [mode, setMode] = useState(last.mode ?? "");
   // A sandbox clones the repo's GitHub origin, so only those repos are offered for one.
   const sandbox = useSandboxRepos(host === "vercel");
   const choices = host ? (sandbox?.usable ?? []) : repos;
-  const inputRef = useRef<HTMLInputElement>(null);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const modelLocked = modelLockReason(cli, provider);
 
-  // Focus the title field on open (without the lint-flagged autoFocus attribute).
+  // Focus the task field on open (without the lint-flagged autoFocus attribute).
   useEffect(() => {
-    inputRef.current?.focus();
+    promptRef.current?.focus();
   }, []);
 
-  // Load configured repos and default the picker to the first one.
+  // Load configured repos, keeping the one last used while it's still configured.
   useEffect(() => {
     let cancelled = false;
     listRepos()
       .then((all) => {
         if (cancelled) return;
         setRepos(all);
-        if (all[0]) setPlace(all[0]);
+        setPlace((current) =>
+          current === SCRATCH || current === FOLDER || all.includes(current)
+            ? current
+            : (all[0] ?? SCRATCH)
+        );
       })
       .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
     return () => {
@@ -114,18 +135,33 @@ export function NewSessionModal({
   }, [host, firstUsable, sandbox, place]);
   const canCreate = host ? choices.includes(place) : true;
 
-  const submit = () => {
-    if (!canCreate) return;
+  const submit = async () => {
+    if (!canCreate || busy) return;
+    setBusy(true);
+    // Named before it's created: a folder session's directory is slugified from its
+    // title then, and renaming it later doesn't move the folder.
+    const named = title.trim() || (await titleFromPrompt(prompt)) || "Exploration";
     const isRepo = isRepoPlace(place);
-    onCreate(
-      title.trim() || "Exploration",
+    rememberSessionStart({
+      place,
+      folder,
+      host,
+      transport,
+      model: modelLocked ? null : model,
+      mode,
+    });
+    onCreate({
+      title: named,
+      prompt: prompt.trim(),
       cli,
-      isRepo ? place : null,
+      repo: isRepo ? place : null,
       provider,
-      place === FOLDER ? folder : null,
-      shownAs,
-      host
-    );
+      folder: place === FOLDER ? folder : null,
+      transport: shownAs,
+      host,
+      model: modelLocked ? null : model || null,
+      mode: mode || null,
+    });
   };
 
   const note = host
@@ -147,110 +183,84 @@ export function NewSessionModal({
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="btn primary" disabled={!canCreate} onClick={submit}>
-            Create
+          <button
+            type="button"
+            className="btn primary"
+            disabled={!canCreate || busy}
+            onClick={() => void submit()}
+          >
+            <BusyLabel busy={busy} idle="Start" working="Starting…" />
           </button>
         </>
       }
     >
       <label className="field">
-        <span className="field-label">What are you exploring?</span>
-        <input
-          ref={inputRef}
-          className="field-input"
-          type="text"
-          placeholder="e.g. Spike: try the new parser"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+        <span className="field-label">What should the agent do?</span>
+        <textarea
+          ref={promptRef}
+          className="ns-task"
+          placeholder="e.g. Fix the flaky auth test, then open a PR"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") submit();
+            if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            void submit();
           }}
         />
       </label>
-      {vercel && (
-        <div className="field">
-          <span className="field-label">Run on</span>
-          <Segmented
-            label="Run on"
-            value={hostPick}
-            options={HOSTS}
-            onChange={setHostPick}
-            className="ns-host"
-          />
-        </div>
-      )}
       <label className="field">
-        <span className="field-label">Agent</span>
-        <select
+        <span className="field-label">Name</span>
+        <input
           className="field-input"
-          value={cli}
-          disabled={Boolean(host)}
-          onChange={(e) => setCli(e.target.value as AgentCli)}
-        >
-          <option value="claude">Claude</option>
-          <option value="codex">Codex</option>
-        </select>
+          type="text"
+          placeholder="Named from the task"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </label>
-      {cli === "claude" && (
-        <label className="field">
-          <span className="field-label">Provider</span>
-          <select
-            className="field-input"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value as AgentProvider)}
-          >
-            <option value="anthropic">Anthropic</option>
-            <option value="moonshot">Kimi (Moonshot)</option>
-            <option value="wafer">Kimi (Wafer)</option>
-            <option value="wafer-fast">Kimi Fast (Wafer)</option>
-            <option value="deepseek">DeepSeek Flash</option>
-            <option value="deepseek-pro">DeepSeek Pro</option>
-          </select>
-        </label>
+      <NewSessionWhere
+        host={host}
+        choices={choices}
+        sandboxKnown={Boolean(sandbox)}
+        place={place}
+        onPlace={(next) => void choosePlace(next)}
+        folder={folder}
+        scratchValue={SCRATCH}
+        folderValue={FOLDER}
+        chooseValue={CHOOSE_FOLDER}
+        cli={cli}
+        onCli={setCli}
+        model={model}
+        onModel={setModel}
+        modelLocked={modelLocked}
+        mode={mode}
+        onMode={setMode}
+      />
+      <button
+        type="button"
+        className="btn sm ns-more"
+        aria-expanded={more}
+        onClick={() => setMore((v) => !v)}
+      >
+        <I.Chevron size={ICON_SIZE.sm} />
+        More options
+      </button>
+      {more && (
+        <NewSessionMore
+          showHost={Boolean(vercel)}
+          hostPick={hostPick}
+          onHost={setHostPick}
+          cli={cli}
+          host={host}
+          provider={provider}
+          onProvider={setProvider}
+          shownAs={shownAs}
+          onTransport={setTransport}
+          canChat={canChat}
+          needsLogin={needsLogin}
+        />
       )}
-      <label className="field">
-        <span className="field-label">Shows as</span>
-        <select
-          className="field-input"
-          value={shownAs}
-          disabled={!canChat || needsLogin}
-          onChange={(e) => setTransport(e.target.value as Transport)}
-        >
-          <option value="chat">Chat</option>
-          <option value="terminal">Terminal</option>
-        </select>
-      </label>
-      {needsLogin && (
-        <div className="field-note">
-          No Claude login is saved for sandboxes, so it runs in a terminal where you can log in with
-          /login. To use chat, save one in Integrations → Vercel.
-        </div>
-      )}
-      {!canChat && !host && (
-        <div className="field-note">
-          {cli === "codex" ? "Codex" : cli} has no chat view yet, so it runs in a terminal.
-        </div>
-      )}
-      <label className="field">
-        <span className="field-label">{host ? "Repository" : "Runs in"}</span>
-        <select
-          className="field-input"
-          value={place}
-          onChange={(e) => void choosePlace(e.target.value)}
-        >
-          {choices.map((r) => (
-            <option key={r} value={r}>
-              {basename(r)}
-            </option>
-          ))}
-          {!host && folder && <option value={FOLDER}>{basename(folder)}</option>}
-          {!host && <option value={SCRATCH}>New empty folder</option>}
-          {!host && <option value={CHOOSE_FOLDER}>Choose a folder…</option>}
-          {host && choices.length === 0 && (
-            <option value={place}>{sandbox ? "No GitHub repositories" : "Checking…"}</option>
-          )}
-        </select>
-      </label>
       <div className="field-note">{note}</div>
     </Modal>
   );

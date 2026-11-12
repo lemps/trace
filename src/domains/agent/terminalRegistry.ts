@@ -355,8 +355,10 @@ export function disposeTerminal(issueKey: string): void {
   // teardown — see the note in `resetTerminal`.
 }
 
-// A theme, scheme, cursor or zoom change re-themes the live terminals in place;
-// other appearance edits (UI font, density, accent) don't touch them.
+// A theme, scheme, cursor, code font or zoom change re-themes the live terminals
+// in place; other appearance edits (UI font, density, accent) don't touch them.
+// Their own font, size, line height and scrollback (terminalPrefs) are applied by
+// Settings calling applyTerminalPrefs; xterm takes a new scrollback live.
 let appearanceKey = terminalAppearanceKey();
 useAppearance.subscribe((s) => {
   const next = terminalAppearanceKey(s);

@@ -22,9 +22,19 @@ use crate::state::AppState;
 /// Reasoning effort levels, as Claude Code's `--effort` takes them.
 pub const EFFORTS: [&str; 5] = ["low", "medium", "high", "xhigh", "max"];
 
-/// Permission modes the composer offers, as Claude Code's `--permission-mode`
-/// takes them: Ask, Accept edits, Plan, Full access.
-pub const MODES: [&str; 4] = ["default", "acceptEdits", "plan", "bypassPermissions"];
+/// Permission modes the composer offers: Ask, Accept edits, Plan, Reviewed by
+/// trace, Full access. All but one are Claude Code's own `--permission-mode`
+/// values; [`TRACE_MODE`] is trace's, and [`AgentOptions::claude_flags`] turns it
+/// into the flag Claude takes.
+///
+/// [`TRACE_MODE`]: crate::permissions::TRACE_MODE
+pub const MODES: [&str; 5] = [
+    "default",
+    "acceptEdits",
+    "plan",
+    crate::permissions::TRACE_MODE,
+    "bypassPermissions",
+];
 
 /// The longest model id taken: real ids are well under it.
 const MODEL_MAX: usize = 100;
@@ -104,7 +114,7 @@ impl AgentOptions {
             flags.extend(["--effort".to_string(), effort.clone()]);
         }
         if let Some(mode) = &self.permission_mode {
-            flags.extend(["--permission-mode".to_string(), mode.clone()]);
+            flags.extend(["--permission-mode".to_string(), claude_mode(mode)]);
         }
         flags
     }
@@ -144,6 +154,16 @@ impl AgentOptions {
     }
 }
 
+/// The `--permission-mode` Claude is started with. Trace's own mode runs it with
+/// its checks bypassed; what brings every call back to trace is the `ask` rule in
+/// the same launch's `--settings` (`permissions::settings_perms`).
+pub fn claude_mode(mode: &str) -> String {
+    match mode {
+        crate::permissions::TRACE_MODE => "bypassPermissions".to_string(),
+        other => other.to_string(),
+    }
+}
+
 /// Pick one of a workspace's options: saved for every start and, while its
 /// chat agent runs, sent to it (even when it's what was saved: Claude may have
 /// left plan mode by itself since). Returns the saved options, and true when
@@ -162,7 +182,10 @@ pub fn pick(
     let pinned = agents
         .info(workspace_id)
         .is_some_and(|i| i.provider.is_some());
-    if !agents.is_running(workspace_id) || (pinned && change.model.is_some()) {
+    // Trace's mode is launch-time: its ask rule rides in `--settings`, so switching
+    // into it live would bypass Claude's checks with nothing to bring the calls back.
+    let needs_restart = change.permission_mode.as_deref() == Some(crate::permissions::TRACE_MODE);
+    if !agents.is_running(workspace_id) || needs_restart || (pinned && change.model.is_some()) {
         return Ok((next, false));
     }
     let live = agents

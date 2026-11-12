@@ -40,7 +40,7 @@ const TOOLS: Anthropic.Tool[] = [
   ...VIEWER_TOOLS,
 ];
 
-/** The tool definitions in MCP's shape, less those of tabs turned off in Settings → Tabs. */
+/** The tool definitions in MCP's shape, less those of tabs turned off in Settings → Layout → Tabs. */
 export function mcpTools(): McpTool[] {
   const off = offTools(useTabSettings.getState().off);
   return TOOLS.filter((t) => !off.has(t.name)).map((t) => ({
@@ -55,7 +55,7 @@ export async function runAgentTool(name: string, input: unknown, caller: string)
   // An agent started before its tab was turned off still has the tool: say why it's gone.
   const tab = tabOfTool(name);
   if (tab && offTools(useTabSettings.getState().off).has(name)) {
-    throw new Error(`The ${tab.label} tab is turned off in trace's Settings → Tabs.`);
+    throw new Error(`The ${tab.label} tab is turned off in trace's Settings → Layout.`);
   }
   if (name === GET_BOARD.name) return buildBoardContext();
   if (name === UPDATE_USER.name) return runUpdateUser(input, caller);

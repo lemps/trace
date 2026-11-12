@@ -9,8 +9,9 @@
   background: var(--bg-0);
 }
 
-/* Header: agent, model, cost, usage-limit windows. A strip, 36px like a
-   subagent view's head (`.ac-subview-head`), so stacked strips agree. */
+/* Header: agent, model, cost, usage-limit windows. A 36px strip; a subagent's
+   tab has the same one (`SubagentBar`, `.ac-subhead`), so switching between an
+   agent's tab and its subagents' moves nothing. */
 .ac-head {
   display: flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { navTracker } from "@/app/nav";
+import { InlineConfirm } from "@/components/InlineConfirm";
 import { Segmented } from "@/components/Segmented";
 import { Switch } from "@/components/Switch";
 import { useIssuesStore } from "@/domains/issues/store";
@@ -9,6 +10,7 @@ import { RECENTS_DELAYS } from "@/domains/sidebar/recentsDelay";
 import { useSidebarStore } from "@/domains/sidebar/store";
 import { useHint } from "@/platform/shortcuts";
 import { SettingRow } from "./SettingRow";
+import { SettingSection } from "./SettingSection";
 import { SidebarRow } from "./SidebarRow";
 import { useSidebarDrag } from "./useSidebarDrag";
 
@@ -17,11 +19,11 @@ const DELAY_OPTIONS = RECENTS_DELAYS.map((ms) => ({
   label: ms === 0 ? "Instant" : `${ms / 1000}s`,
 }));
 
-// Settings → Sidebar: every page the rail can show, in the rail's order. Each can be
+// Settings → Layout → Sidebar: every page the rail can show, in the rail's order. Each can be
 // hidden or shown, and dragged (or moved with the buttons / Alt+↑↓) into a new place;
 // Settings itself stays, at the bottom. Changes reach the rail at once. Below the
 // list, whether resting on Sessions slides out your recent sessions (off by
-// default), and while it's on, how long it waits first.
+// default), and how long it waits first (inactive while it's off, never unmounted).
 export function SidebarSettings() {
   const entries = useSidebarStore((s) => s.entries);
   const setVisibility = useSidebarStore((s) => s.setVisibility);
@@ -38,23 +40,20 @@ export function SidebarSettings() {
   const isDefault = isDefaultSidebar(entries);
 
   return (
-    <section className="setting-group">
-      <div className="sc-head">
-        <h2>Sidebar</h2>
-        <button
-          type="button"
-          className="btn"
+    <SettingSection
+      title="Sidebar"
+      desc={`The pages in the rail on the left, top to bottom. Drag a row, or use its arrows, to reorder. A hidden page still opens from search (${searchKey}).`}
+      actions={
+        <InlineConfirm
+          label="Reset to default"
           disabled={isDefault}
-          onClick={reset}
           title={isDefault ? "The sidebar is in its built-in order" : undefined}
-        >
-          Reset to default
-        </button>
-      </div>
-      <div className="desc">
-        The pages in the rail on the left, top to bottom. Drag a row, or use its arrows, to reorder.
-        A hidden page still opens from search ({searchKey}).
-      </div>
+          message="Put every page back in its built-in place and visibility?"
+          confirmLabel="Reset"
+          onConfirm={reset}
+        />
+      }
+    >
       <div className="sb-list">
         {entries.map((entry) => {
           const def = sidebarItem(entry.id);
@@ -87,19 +86,19 @@ export function SidebarSettings() {
       >
         <Switch on={recentsFlyout} onChange={setRecentsFlyout} label="Show recent sessions" />
       </SettingRow>
-      {recentsFlyout && (
-        <SettingRow
+      <SettingRow
+        label="Recent sessions delay"
+        hint="How long the pointer rests on Sessions before your recent sessions slide out."
+        inactive={!recentsFlyout}
+        inactiveReason="Applies when Recent sessions is on."
+      >
+        <Segmented
           label="Recent sessions delay"
-          hint="How long the pointer rests on Sessions before your recent sessions slide out."
-        >
-          <Segmented
-            label="Recent sessions delay"
-            value={recentsDelay}
-            options={DELAY_OPTIONS}
-            onChange={setRecentsDelay}
-          />
-        </SettingRow>
-      )}
-    </section>
+          value={recentsDelay}
+          options={DELAY_OPTIONS}
+          onChange={setRecentsDelay}
+        />
+      </SettingRow>
+    </SettingSection>
   );
 }

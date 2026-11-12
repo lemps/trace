@@ -1,3 +1,4 @@
+import { modelLabel } from "./agentOptionsFormat";
 import { ContextGauge } from "./ContextGauge";
 import { formatCost, limitLabel, resetsIn } from "./format";
 import type { ChatTurn } from "./projection";
@@ -31,7 +32,7 @@ export function ChatHeader({ info, turns }: ChatHeaderProps) {
           className="ac-head-model"
           title="The model in use. Change it from the composer's model picker."
         >
-          {info.model}
+          {modelLabel(info.model)}
         </span>
       )}
       {hasCost && (

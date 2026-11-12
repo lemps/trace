@@ -197,34 +197,18 @@
   letter-spacing: -0.015em;
   color: var(--fg-0);
 }
+/* Last message, Changes: cards, as the ask card above them (`.ac-card.ac-ask`, the
+   chat's own) is. */
 .ib-card {
   background: var(--bg-1);
   border: 1px solid var(--border-faint);
-  border-radius: var(--radius-lg);
-  padding: 14px 18px;
+  border-radius: var(--radius);
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.ib-card.ask {
-  border-color: var(--state-needs-border);
-  background: var(--state-needs-bg);
-}
-.ib-ask-head {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.ib-hint {
-  font-size: var(--text-ui);
-  color: var(--fg-2);
-}
-.ib-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+/* An answer's key chip (hints on buttons) on the amber answer. */
 .btn.primary-needs .kbd {
   background: transparent;
   border-color: color-mix(in oklch, var(--on-needs) 35%, transparent);
@@ -236,14 +220,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--fg-3);
-}
-.ib-said {
-  margin: 0;
-  font-size: var(--text-body);
-  line-height: 1.55;
-  color: var(--fg-1);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 .ib-card-head {
   display: flex;
@@ -274,12 +250,13 @@
 .ib-detail .del {
   color: var(--c-danger);
 }
+/* The reply box: the field, then Send ▾ (send, or send and go to the next agent). */
 .ib-reply {
   display: flex;
   align-items: center;
   gap: 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   padding: 10px 12px;
   background: var(--bg-1);
 }
@@ -311,22 +288,4 @@
 .ib-title-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-.ib-ask-detail {
-  margin: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-0);
-  font-family: var(--font-mono);
-  font-size: var(--text-ui);
-  color: var(--fg-0);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.ib-ask-question {
-  margin: 0;
-  font-size: var(--text-body);
-  line-height: 1.5;
-  color: var(--fg-0);
 }

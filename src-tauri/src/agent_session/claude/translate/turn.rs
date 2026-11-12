@@ -60,13 +60,22 @@ impl Translator {
             .pending
             .remove(request_id)
             .ok_or("That prompt isn't open any more.")?;
-        let reply = match prompts::response(request_id, &pending, &answer) {
+        let trace_mode = crate::permissions::trace_decides(&self.workspace_id, true);
+        let reply = match prompts::response(request_id, &pending, &answer, trace_mode) {
             Ok(reply) => reply,
             Err(e) => {
                 self.pending.insert(request_id.to_string(), pending);
                 return Err(e);
             }
         };
+        // "Always allow" is trace's rule to keep, for the rest of this run.
+        if trace_mode {
+            if let Answer::Approval { option_id, .. } = &answer {
+                if option_id.starts_with("always:") {
+                    crate::permissions::grant(&self.workspace_id, pending.rule_for(option_id));
+                }
+            }
+        }
         let mut out = vec![Out::Reply(reply)];
         self.resolve(&pending.row_id, Resolution::Answered { answer }, &mut out);
         Ok(out)

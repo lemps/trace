@@ -35,11 +35,15 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       ([#13](https://github.com/noble1911/trace/pull/13)) Shortcuts show in menus, tooltips, the
       search palette and a cheat sheet (`?`, Ctrl+/, the rail's keyboard button), not as chips on
       buttons unless Settings → Shortcuts' "Show shortcut hints on buttons" is on.
-- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System,
-      plus accent, interface size, density, UI font, terminal scheme and cursor, reduced motion.
-      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview, and
-      Chat & transcript styles agent Markdown (fonts, sizes, spacing, width, code theme, tool
-      activity); fenced code is highlighted.
+- [x] **Themes and appearance:** Settings → Appearance: Dark, Light, Midnight, Paper or System
+      (with its own light and dark picks, so Paper and Midnight follow the OS too), plus accent,
+      interface size (80–150%, also ⌘= / ⌘− / ⌘0), density, interface and code fonts, terminal
+      scheme, font, cursor and scrollback, reduced motion.
+      ([#14](https://github.com/noble1911/trace/pull/14)) Each group shows a live preview in a
+      fixed frame, and Chat & transcript styles agent Markdown (fonts, sizes, spacing, reading
+      width, code theme, tool activity); fenced code is highlighted. Changing an option never
+      moves the page: Settings keeps Standard density, and a zoom keeps the clicked control
+      under the pointer.
 
 ## Candidates
 
@@ -67,6 +71,12 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       (`agent_session/`, `domains/agentChat/`, docs/AGENT_CHAT.md) turns both into approval and
       question rows answered in place, for Claude and Codex (`agent_session/codex/`). The terminal
       transcript still doesn't.
+- [x] **Start a session from the task:** the New session dialog asks what the agent should do, not
+      what to call it — the task starts the agent as its first message, Haiku names the session from
+      it (its first line when there's no key or CLI), and the dialog reopens on the repo, agent,
+      model and mode last used, with a Name field under the task to name it yourself. Everything
+      else is behind More options. Its model list, and the composer's, come from the installed
+      Claude Code (`claude/catalog.rs`), so new models show without a trace release.
 - [~] **Queued messages:** edit or reorder messages waiting to be sent while the agent works.
       *Started:* the chat view queues messages typed during a turn (editable, removable, sent in
       order). Not yet: reordering.
@@ -76,7 +86,11 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
       ([#70](https://github.com/noble1911/trace/pull/70)).
 - [x] **First run and preflight:** checks for git, claude and a signed-in gh with fixes, and a
       three-step setup for new users; Settings → Run setup again
-      ([#61](https://github.com/noble1911/trace/pull/61)). Not yet: a base branch picker.
+      ([#61](https://github.com/noble1911/trace/pull/61)). On macOS and Linux, trace installs
+      Claude Code and the GitHub CLI itself (into `~/.local/bin`, no admin or Homebrew) and signs
+      both in through the browser, row by row or with "Set it all up"; Claude Code's sign-in is
+      checked too. Not yet: a base branch picker, the same on Windows, a Git check that sees
+      through Apple's `/usr/bin/git` placeholder.
 - [ ] **Transcript navigation:** message rail, per-turn diffs, grouped subagent sections and rewind.
 - [x] **Default view setting:** choose chat or CLI globally or per agent. Settings → Agents →
       Shows as (Chat by default; brands without a chat adapter stay Terminal), overridden per
@@ -86,6 +100,14 @@ reviews, with what shipped and what's still open, live in [`reviews/`](reviews/)
 
 ### Reviewing agent work
 
+- [~] **trace's own permission layer:** a "Reviewed by trace" mode runs a chat agent with Claude's
+      checks bypassed and `permissions.ask: ["*"]` in its `--settings`, so every call comes back to
+      trace and is answered from your own rules (`src-tauri/src/permissions`); reads and trace's own
+      tools never raise a card, and "Always allow" keeps the rule for the rest of the run. Agents
+      trace can't answer for — a terminal TUI owns its own dialog — get the same list projected into
+      Claude's own allow/ask/deny rules. *Not yet:* Settings → Permissions to edit the list, a
+      richer approval card (a diff for an edit, the command for a shell call), Codex, and rules that
+      outlive a run.
 - [ ] **Diff annotations:** comment on specific lines and send them to the agent as one batch;
       comments follow the line as the diff changes.
 - [ ] **Fix with AI:** one click sends failing checks, hook failures or merge conflicts to an agent.

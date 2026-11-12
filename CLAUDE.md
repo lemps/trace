@@ -182,7 +182,9 @@ sizes, which control to use, where panels go, how agent state is drawn — and r
   `commands/session_host.rs`) behind the `execution::AgentHost` port, as a terminal (tmux over
   Vercel's PTY WebSocket) or a chat (`agent_session::process::ChatProcess` over a background
   command). Disconnect or quitting leaves it running and Start rejoins; Stop & save snapshots
-  it. The host's `Capabilities` decide which tabs and views it gets. Live tests:
+  it. The host's `Capabilities` decide which tabs and views it gets. A *ticket* agent can run in a sandbox
+  too (Start menu → Runs on, or Settings' default): `commands/issue_host.rs` keeps its host by issue key,
+  `start_agent` skips the local worktree, and Terminal, Tests, Raise PR and Merge go (`agent/runsOn.ts`). Live tests:
   `cargo test vercel_live -- --ignored` with a token in `~/.config/trace-dev/vercel-token`.
   Design and findings: `docs/REMOTE_EXECUTION_PLAN.md`.
 - **Lifecycle:** moving a card transitions the tracker's issue. With Settings' auto-start on, landing in the first

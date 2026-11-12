@@ -1,7 +1,16 @@
 // Run: `npm test`.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { allTabs, listGroups, singleGroup, splitTab, visibleTabs } from "./model.ts";
+import {
+  allTabs,
+  isArranged,
+  listGroups,
+  moveTab,
+  selectTab,
+  singleGroup,
+  splitTab,
+  visibleTabs,
+} from "./model.ts";
 import { hideTabs, normalizeLayout, parseLayout, type TabCatalog } from "./validate.ts";
 
 const catalog = (fixed: string[], optional: string[] = []): TabCatalog => ({
@@ -142,5 +151,53 @@ describe("a tab that comes and goes (Plan)", () => {
     const focusedOnPlan = { ...split, focused: listGroups(split.root)[1].id };
     const shown = hideTabs(normalizeLayout(focusedOnPlan, withHidden), hidden);
     assert.equal(shown.focused, listGroups(shown.root)[0].id);
+  });
+});
+
+describe("tabs an agent owns (its subagents)", () => {
+  const SUB = ["sub:a:1", "sub:a:2"];
+  const owning = (tabs: string[]): TabCatalog => ({
+    ...catalog(TABS, SUB),
+    owned: [{ owner: "agent:a", tabs }],
+  });
+
+  it("are in the one row from the start, after their agent, showing the agent", () => {
+    const l = normalizeLayout(null, owning(SUB));
+    assert.deepEqual(allTabs(l), ["agent:a", ...SUB, "html", "files", "terminal"]);
+    assert.deepEqual(visibleTabs(l), ["agent:a"]);
+  });
+
+  it("join a stored layout without changing what it shows or focuses", () => {
+    const reading = selectTab(splitTab(singleGroup(TABS), "files", "g1", "right"), "html");
+    const l = normalizeLayout(reading, owning(SUB));
+    assert.deepEqual(visibleTabs(l), visibleTabs(reading));
+    assert.equal(l.focused, reading.focused);
+    assert.deepEqual(listGroups(l.root)[0].tabs, ["agent:a", ...SUB, "html", "terminal"]);
+  });
+
+  it("stay where the user put them", () => {
+    const stored = splitTab(normalizeLayout(null, owning(SUB)), "sub:a:2", "g1", "right");
+    const l = normalizeLayout(stored, owning(SUB));
+    assert.deepEqual(listGroups(l.root)[1].tabs, ["sub:a:2"]);
+  });
+
+  it("show the tab beside one that went (closed, or gone from the journal)", () => {
+    const stored = selectTab(normalizeLayout(null, owning(SUB)), "sub:a:1");
+    // The first subagent's tab was closed: it's no longer optional or owned.
+    const closed: TabCatalog = {
+      ...catalog(TABS, ["sub:a:2"]),
+      owned: [{ owner: "agent:a", tabs: ["sub:a:2"] }],
+    };
+    const l = normalizeLayout(stored, closed);
+    assert.deepEqual(allTabs(l), ["agent:a", "sub:a:2", "html", "files", "terminal"]);
+    assert.deepEqual(visibleTabs(l), ["sub:a:2"]);
+  });
+
+  it("aren't an arrangement where they placed themselves", () => {
+    const natural = allTabs(normalizeLayout(null, owning(SUB)));
+    const l = normalizeLayout(selectTab(singleGroup(TABS), "html"), owning(SUB));
+    assert.equal(isArranged(l, natural), false);
+    const dragged = moveTab(l, "sub:a:1", "g1", "files");
+    assert.equal(isArranged(dragged, natural), true);
   });
 });

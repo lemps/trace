@@ -235,6 +235,12 @@ pub(crate) fn assigned_workspaces() -> Vec<(String, String)> {
     load().assignments.into_iter().collect()
 }
 
+/// Every workspace id that adopted another's worktree dir → that dir name, read
+/// once, for naming a whole listing of worktrees (`repo_catalog::owners`).
+pub(crate) fn dir_overrides() -> HashMap<String, String> {
+    load().dir_overrides
+}
+
 /// All configured repos, in the order the user added them.
 pub(crate) fn all_repos() -> Vec<String> {
     load().repos

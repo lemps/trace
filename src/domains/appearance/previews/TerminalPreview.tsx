@@ -3,11 +3,13 @@ import { type AnsiName, termColors } from "../ansi";
 import type { CursorStyle } from "../prefs";
 import { activeTheme, isMotionReduced, useAppearance } from "../store";
 import { resolveTermScheme, type TermScheme } from "../terminalSchemes";
+import { PreviewFrame } from "./PreviewFrame";
 
 // Settings → Appearance → Terminal: a few lines a terminal might show — a
 // prompt, test results in each ANSI colour, a cursor — painted as styled text
 // in the scheme, font, size, line height and cursor that the real terminals
-// use. Static on purpose: no xterm instance for a preview.
+// use. Static on purpose: no xterm instance for a preview. It sits in a fixed
+// frame, so a bigger font shows fewer lines, as a real terminal would.
 
 interface TerminalPreviewProps {
   fontFamily: string;
@@ -43,6 +45,35 @@ const LINES: Seg[][] = [
     ["magenta", " i"],
     ["fg", " info  "],
     ["cyan", "watching src/"],
+  ],
+];
+
+/** The full preview's extra lines, after the sample (so the frame starts full). */
+const MORE: Seg[][] = [
+  [["fg", ""]],
+  [
+    ["brightBlack", " Tests  "],
+    ["green", "12 passed"],
+    ["fg", " | "],
+    ["red", "2 failed"],
+    ["fg", " (14)"],
+  ],
+  [
+    ["brightBlack", " Time   "],
+    ["fg", "1.84s"],
+  ],
+  [
+    ["green", "~/trace"],
+    ["blue", " main"],
+    ["fg", " $ git status --short"],
+  ],
+  [
+    ["yellow", " M"],
+    ["fg", " src/domains/appearance/apply.ts"],
+  ],
+  [
+    ["green", "A "],
+    ["fg", " src/domains/appearance/zoom.ts"],
   ],
 ];
 
@@ -84,18 +115,24 @@ export function TermSnippet({
 export function TerminalPreview({ fontFamily, fontSize, lineHeight }: TerminalPreviewProps) {
   const s = useAppearance();
   const scheme = resolveTermScheme(s.prefs.termScheme, activeTheme(s));
-  const cursorColor = termColors(scheme.theme).cursor;
+  const colors = termColors(scheme.theme);
   const blink = s.prefs.cursorBlink && !isMotionReduced(s);
   return (
-    <div inert aria-hidden="true">
+    <PreviewFrame
+      kind="terminal"
+      style={{ background: colors.background }}
+      caption={`${scheme.label} · ${fontSize}px · ${lineHeight}`}
+    >
       <TermSnippet
         scheme={scheme}
+        lines={[...LINES, ...MORE]}
         style={
           {
+            background: "none",
             fontFamily,
             fontSize: fontSize / (s.appliedScale / 100),
             lineHeight,
-            "--term-cursor": cursorColor,
+            "--term-cursor": colors.cursor,
           } as CSSProperties
         }
       >
@@ -104,10 +141,7 @@ export function TerminalPreview({ fontFamily, fontSize, lineHeight }: TerminalPr
           <Cursor style={s.prefs.cursorStyle} blink={blink} />
         </div>
       </TermSnippet>
-      <div className="ap-pv-caption">
-        {scheme.label} · {fontSize}px · {lineHeight}
-      </div>
-    </div>
+    </PreviewFrame>
   );
 }
 

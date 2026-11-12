@@ -23,6 +23,11 @@ interface StatusLightProps {
    * may be stale. Only changes how `working` looks; ignored for other lights.
    */
   quiet?: boolean;
+  /**
+   * `word` without its dot: the state's word in its colour, for a row whose light
+   * is already drawn in its own column (an Inbox row's ask beside its subtitle).
+   */
+  dotless?: boolean;
 }
 
 /** The quiet look's tooltip: the why behind the word. */
@@ -42,6 +47,7 @@ export function StatusLight({
   title,
   size = "sm",
   quiet = false,
+  dotless = false,
 }: StatusLightProps) {
   const isQuiet = quiet && light === "working";
   const look = isQuiet ? "quiet" : light;
@@ -53,7 +59,7 @@ export function StatusLight({
   }
   return (
     <span className={`light-${variant} ${look}${size === "lg" ? " lg" : ""}`} title={tip}>
-      {dot}
+      {!(dotless && variant === "word") && dot}
       <span className="light-text">{text}</span>
       {age && <span className="light-age">{age}</span>}
     </span>

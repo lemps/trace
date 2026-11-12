@@ -26,7 +26,7 @@ function setBusy(busy: boolean): void {
 export function seedFixture(): void {
   const s = useAgentChatStore.getState();
   useAgentChatStore.setState({
-    journals: { ...s.journals, [FIXTURE_WS]: { byId: {}, rows: [] } },
+    journals: { ...s.journals, [FIXTURE_WS]: { byKey: {}, rows: [] } },
   });
   s.applyRows(FIXTURE_WS, FIXTURE_ROWS);
   s.setInfo(FIXTURE_WS, FIXTURE_INFO);

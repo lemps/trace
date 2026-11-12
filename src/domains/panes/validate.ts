@@ -2,11 +2,13 @@ import {
   clampRatio,
   listGroups,
   mapGroups,
+  type PaneGroup,
   type PaneLayout,
   type PaneNode,
   prune,
   singleGroup,
 } from "./model.ts";
+import { type OwnedRun, placeOwned } from "./owned.ts";
 
 // A stored layout is untrusted (an older build wrote it, or a tab it names is gone),
 // so it's parsed structurally, then fitted to the tabs the view has now: unknown and
@@ -52,6 +54,8 @@ export interface TabCatalog {
   isOptional: (tab: string) => boolean;
   /** Fixed tabs out of the tab row for now: kept in place in the layout, not shown. */
   hidden?: ReadonlySet<string>;
+  /** Optional tabs that place themselves after their agent's tab (`owned.ts`). */
+  owned?: readonly OwnedRun[];
 }
 
 /** Insert `tab` after `after` in whichever group holds it, or first in the first group. */
@@ -65,25 +69,43 @@ function insertTab(root: PaneNode, tab: string, after: string | null): PaneNode 
   });
 }
 
+/** Place every owned tab the layout doesn't hold yet, after its agent's tab. */
+function placeAll(layout: PaneLayout, catalog: TabCatalog): PaneLayout {
+  return (catalog.owned ?? []).reduce(placeOwned, layout);
+}
+
+/**
+ * The tab a group shows once some of its tabs are gone: the one it showed, or, if
+ * that went, the tab that took its place (as closing a tab shows its neighbour).
+ */
+function survivor(was: PaneGroup, tabs: string[]): string {
+  if (tabs.includes(was.active)) return was.active;
+  const at = was.tabs.indexOf(was.active);
+  if (at < 0) return was.active;
+  const before = was.tabs.slice(0, at).filter((t) => tabs.includes(t)).length;
+  return tabs[Math.min(before, tabs.length - 1)] ?? "";
+}
+
 /**
  * Fit a layout (or none) to the tabs there are now. The result always holds every
- * fixed tab exactly once, no unknown tab, no empty group, a shown tab per group and
- * a focused group that exists.
+ * fixed tab exactly once, every owned tab (after its agent's, unless it's already
+ * somewhere), no unknown tab, no empty group, a shown tab per group and a focused
+ * group that exists.
  */
 export function normalizeLayout(layout: PaneLayout | null, catalog: TabCatalog): PaneLayout {
-  if (!layout) return singleGroup(catalog.fixed);
+  if (!layout) return placeAll(singleGroup(catalog.fixed), catalog);
   const fixed = new Set(catalog.fixed);
   const seen = new Set<string>();
-  const kept = mapGroups(layout.root, (g) => ({
-    ...g,
-    tabs: g.tabs.filter((t) => {
+  const kept = mapGroups(layout.root, (g) => {
+    const tabs = g.tabs.filter((t) => {
       if (seen.has(t) || !(fixed.has(t) || catalog.isOptional(t))) return false;
       seen.add(t);
       return true;
-    }),
-  }));
+    });
+    return { ...g, tabs, active: survivor(g, tabs) };
+  });
   let root = prune(kept);
-  if (!root) return singleGroup(catalog.fixed);
+  if (!root) return placeAll(singleGroup(catalog.fixed), catalog);
   // Missing fixed tabs (a companion agent added since) go back after the tab that
   // precedes them in the natural order, so a new agent's tab lands beside the others.
   catalog.fixed.forEach((tab, i) => {
@@ -91,6 +113,8 @@ export function normalizeLayout(layout: PaneLayout | null, catalog: TabCatalog):
     root = insertTab(root, tab, i === 0 ? null : catalog.fixed[i - 1]);
     seen.add(tab);
   });
+  // Owned tabs that started since go after their agent's, the view left as it was.
+  root = placeAll({ root, focused: layout.focused }, catalog).root;
   const hidden = catalog.hidden;
   const shows = (t: string) => !hidden?.has(t);
   // A group shows a tab that's on show, where it has one.

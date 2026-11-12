@@ -25,7 +25,7 @@ export function TrackerMissing({ nav, tracker, onNav }: TrackerMissingProps) {
         <div className="title">{name} isn't connected</div>
         <div className="hint">
           {page} shows data from {name}. Connect it in Integrations, or hide this page in Settings →
-          Sidebar.
+          Layout.
         </div>
         <button type="button" className="btn" onClick={() => onNav("integrations")}>
           Open Integrations

@@ -1,5 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 
+/** The workspace a worktree belongs to (`repo_catalog/owners.rs`). */
+export interface WorktreeOwner {
+  kind: "session" | "ticket" | "prompt";
+  /** Its workspace id: session id, issue key or prompt id. */
+  id: string;
+  /** The session's or prompt's title, or the issue key. */
+  label: string;
+}
+
 export interface WorktreeInfo {
   repo: string;
   path: string;
@@ -12,10 +21,14 @@ export interface WorktreeInfo {
   dirty: boolean;
   /** A live PTY is rooted here — removal is blocked. */
   running: boolean;
+  /** Who it belongs to, when trace knows; null shows the dir name. */
+  owner: WorktreeOwner | null;
 }
 
-export function listWorktrees(): Promise<WorktreeInfo[]> {
-  return invoke("list_worktrees");
+/** Every `.worktrees/` checkout across the configured repos, with status. */
+export async function listWorktrees(): Promise<WorktreeInfo[]> {
+  const list = await invoke<WorktreeInfo[]>("list_worktrees");
+  return list.map((wt) => ({ ...wt, owner: wt.owner ?? null }));
 }
 
 export function removeWorktree(

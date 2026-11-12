@@ -46,6 +46,18 @@ The tabs under the rule: Plan, Browser, Gallery, Files, Terminal, Tests, Pull re
    (Settings says this; the menu doesn't), and the agent tools that fill it.
 5. A badge (unseen dot, count) is the tab's own business, beside the rule.
 
+## Subagent tabs: a different family
+
+An agent's subagents are pane tabs too (`agentChat/subagentPanel.tsx`), but they are
+optional panels of the `sub:` kind, not under `coming.ts`: don't route them through it.
+They keep the same spirit. Each one's tab places itself right after its agent's tab
+(and the agent's earlier subagents, in start order) when it starts, without selecting
+it or moving focus (`panes/owned.ts`; one the user moved stays put). A finished one's
+× hides it (`closedTabs.ts`), nothing is deleted, and its card in the chat brings it
+back; a running one, or one waiting on you, has no ×. They have no ⌘1–9 number and
+aren't listed in the pane menu's Tabs; the next/previous-tab keys step through the
+agent and its subagents.
+
 ## Don'ts
 
 - No "Close" or "Hide" button inside a tab's content. The tab's × is the one way to

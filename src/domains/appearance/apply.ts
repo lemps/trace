@@ -7,7 +7,7 @@ import { accentOf, DEFAULT_ACCENT, schemeOf } from "./themes";
 
 // Pushes Appearance into the document: data-theme / data-density / data-motion
 // on <html> (themes.css keys off them) and data-code-theme (code-themes.css);
-// the accent, UI font, terminal background and chat style as root custom
+// the accent, UI and code fonts, terminal background and chat style as root custom
 // properties; and the native window's theme + zoom.
 // Painted surfaces that can't read CSS (xterm, Vega, mermaid) subscribe to the
 // store themselves.
@@ -41,6 +41,8 @@ function applyDocument(): void {
   setVar("--accent-h", isDefault ? "" : String(accent.hue));
   setVar("--accent-sat", isDefault ? "" : String(accent.sat));
   setVar("--font-ui", fontStack(prefs.uiFont, "var(--font-sans-default)"));
+  // The code font: --font-mono everywhere (tokens.css reads --font-code first).
+  setVar("--font-code", fontStack(prefs.monoFont, "var(--font-mono-default)"));
   setVar("--term-bg", terminalBackground());
   applyChatStyle();
 }

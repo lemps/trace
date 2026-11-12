@@ -35,6 +35,14 @@ export const isOrchestratorKey = (e: KeyChord) => isShortcut("orchestrator", e);
 /** Jump to the next agent needing you. */
 export const isNextAgentKey = (e: KeyChord) => isShortcut("nextAgent", e);
 
+/** Zoom in, zoom out or back to 100% (Interface size), or null for another key. */
+export function zoomKey(e: KeyChord): "in" | "out" | "reset" | null {
+  if (isShortcut("zoomIn", e)) return "in";
+  if (isShortcut("zoomOut", e)) return "out";
+  if (isShortcut("zoomReset", e)) return "reset";
+  return null;
+}
+
 /** Focus the search box. */
 export const isSearchKey = (e: KeyChord) => isShortcut("search", e);
 

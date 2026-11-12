@@ -97,6 +97,7 @@ impl ClaudeAdapter {
         pump(spawned.stdout, spawned.stderr, &tx);
         let mut translator = Translator::new(spec.next_seq, book::now_ms);
         translator.seed_options(&spec.options);
+        translator.decides_for(&spec.workspace_id);
         let process = spawned.process;
         let (tools, back) = (spec.tools.clone(), tx.clone());
         std::thread::spawn(move || run(rx, process, translator, sink, 0, tools, back));
@@ -116,6 +117,7 @@ impl ClaudeAdapter {
         std::thread::spawn(move || {
             let mut translator = Translator::new(spec.next_seq, book::now_ms);
             translator.seed_options(&spec.options);
+            translator.decides_for(&spec.workspace_id);
             let tr = RefCell::new(translator);
             let say = |text: &str| {
                 for out in tr.borrow_mut().notice(text, Tone::Info) {

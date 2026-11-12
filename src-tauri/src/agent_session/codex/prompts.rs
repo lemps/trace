@@ -185,6 +185,8 @@ pub fn questions(request_id: &str, rpc_id: &Value, p: &Value) -> (QuestionSet, P
                                 description: str_at(o, "description")
                                     .filter(|d| !d.is_empty())
                                     .map(str::to_string),
+                                // Codex's request for input has no previews.
+                                preview: None,
                             })
                         })
                         .collect()

@@ -66,6 +66,9 @@ pub fn mcp_reply(request_id: &str, reply: Option<Value>) -> Value {
 /// One agent's translation state: the rows still open and what they wait on.
 /// Owned by the adapter's thread, never shared.
 pub struct Translator {
+    /// Whose permission rules answer this agent's prompts. Empty until the adapter
+    /// says (`decides_for`), and in tests, where nothing is decided for it.
+    workspace_id: String,
     book: RowBook,
     info: SessionInfo,
     turn: Option<OpenTurn>,
@@ -112,6 +115,7 @@ impl Translator {
     /// in tests).
     pub fn new(next_seq: u64, clock: fn() -> u64) -> Self {
         Self {
+            workspace_id: String::new(),
             book: RowBook::new(next_seq, clock),
             info: SessionInfo {
                 agent: "claude".to_string(),
@@ -155,6 +159,22 @@ impl Translator {
         out
     }
 
+    /// The row id for one block of one assistant message.
+    ///
+    /// Some builds send stream events with no message id anywhere on them. Left
+    /// to `msg::{index}`, every message of the session shares one row id, and a
+    /// row the book has retired starts its revisions at 0 again — which the
+    /// renderer reads as a stale copy of the first message and drops, so the
+    /// agent answers and the conversation shows nothing. A row's own place in
+    /// the journal is unique, so name it by that when the message isn't named.
+    fn block_id(&self, message_id: &str, index: u64) -> String {
+        if message_id.is_empty() {
+            format!("msg:s{}:{index}", self.book.next_seq())
+        } else {
+            format!("msg:{message_id}:{index}")
+        }
+    }
+
     fn stream_event(&mut self, m: &Value, out: &mut Vec<Out>) {
         // A subagent's text is its own business; its tool calls still show.
         if !m["parent_tool_use_id"].is_null() {
@@ -176,7 +196,7 @@ impl Translator {
                     Some("thinking") => Role::Reasoning,
                     _ => return,
                 };
-                let row_id = format!("msg:{mid}:{index}");
+                let row_id = self.block_id(&mid, index);
                 let text = String::new();
                 self.blocks
                     .insert((mid, index), Block { row_id, role, text });
@@ -230,7 +250,7 @@ impl Translator {
                     } else {
                         Role::Reasoning
                     };
-                    let id = format!("msg:{uuid}:{i}");
+                    let id = self.block_id(&uuid, i as u64);
                     let mut body = message(role, text, false);
                     if let JournalBody::Message(m) = &mut body {
                         m.parent_call_id = parent.clone();
@@ -337,6 +357,11 @@ impl Translator {
         }
     }
 
+    /// Whose rules answer this agent's permission prompts (`crate::permissions`).
+    pub fn decides_for(&mut self, workspace_id: &str) {
+        self.workspace_id = workspace_id.to_string();
+    }
+
     fn control_request(&mut self, m: &Value, out: &mut Vec<Out>) {
         let request_id = str_at(m, "request_id").unwrap_or_default().to_string();
         let req = &m["request"];
@@ -357,6 +382,25 @@ impl Translator {
                              "error": "Not supported by trace."},
             })));
             return;
+        }
+        // In trace's own mode every call arrives here, bypassing Claude's checks:
+        // the rules answer most of them, and only what they leave open is a card.
+        // A question is for the user whatever the rules say, so it goes straight on.
+        let tool = str_at(req, "tool_name").unwrap_or_default();
+        if tool != "AskUserQuestion" && crate::permissions::trace_decides(&self.workspace_id, true)
+        {
+            let input = req.get("input").cloned().unwrap_or(Value::Null);
+            match crate::permissions::decide(&self.workspace_id, tool, &input) {
+                crate::permissions::Decision::Allow => {
+                    out.push(Out::Reply(prompts::allow(&request_id, &input)));
+                    return;
+                }
+                crate::permissions::Decision::Deny(why) => {
+                    out.push(Out::Reply(prompts::deny(&request_id, &why)));
+                    return;
+                }
+                crate::permissions::Decision::Ask => {}
+            }
         }
         // A subagent's prompt belongs to its turn, which may have ended.
         let parent = str_at(req, "tool_use_id")

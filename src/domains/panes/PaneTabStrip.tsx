@@ -1,4 +1,4 @@
-import { type DragEvent, Fragment, useRef, useState } from "react";
+import { type DragEvent, Fragment, type ReactNode, useRef, useState } from "react";
 import { ContextMenu } from "@/components/ContextMenu";
 import { I } from "@/components/Icon";
 import { IconButton } from "@/components/IconButton";
@@ -6,14 +6,16 @@ import { MoreTrigger, PopMenu } from "@/components/PopMenu";
 import { TabMore } from "@/components/TabMore";
 import { useContextMenuAt } from "@/components/useContextMenuAt";
 import { fitClass, useTabFit } from "@/components/useTabFit";
-import { useNumberedAriaKeys, useNumberedHints } from "@/platform/shortcuts";
+import { useAriaKeys, useHint, useNumberedAriaKeys, useNumberedHints } from "@/platform/shortcuts";
 import { usePaneArea } from "./context";
 import { beginTabDrag, endTabDrag, useTabDrag } from "./drag";
 import { insertionIndex } from "./dropZone";
 import { closeGroup, moveTab, type PaneGroup, removeTab } from "./model";
+import { runOf, stepOrigin, stepRun } from "./owned";
 import { PaneTab } from "./PaneTab";
 import { paneMenu, usePaneHints } from "./paneMenu";
 import { NUMBERED_TABS, tabNumbers } from "./tabNumber";
+import type { Panes } from "./usePanes";
 
 // One pane's tab row: the same `.detail-tabs` the detail has always had, plus what
 // arranging needs — tabs drag (to reorder, to another pane, or to a pane's edge to
@@ -36,10 +38,24 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
   const active = panes.panels.get(group.active);
   const refocus = focusLater;
 
-  // ⌘1–9 pick the detail's tabs wherever they sit: each tab names its number.
+  // ⌘1–9 pick the detail's tabs wherever they sit: each tab names its number. An
+  // agent's subagents have none; the tabs the next/previous-tab keys would step to
+  // in an agent's run name those keys instead.
   const numbers = tabNumbers(panes.panels.values());
   const numberHints = useNumberedHints("detailTab", NUMBERED_TABS);
   const numberKeys = useNumberedAriaKeys("detailTab", NUMBERED_TABS);
+  const steps = useStepHints(panes);
+  // With several agents here, a tab an agent owns names it.
+  const multiAgent = Object.keys(panes.owners).length > 1;
+  const ownerName = (tab: string) => {
+    const run = multiAgent ? runOf(panes.runs, tab) : undefined;
+    return run && run.owner !== tab ? panes.panels.get(run.owner)?.label : undefined;
+  };
+  // What goes after a tab (the session's "+ agent") goes after its run: the tabs of
+  // its section that follow it in the strip (an agent's subagents).
+  const sectionAt = (i: number) => panes.panels.get(group.tabs[i])?.section;
+  const runEnds = (i: number) => i === group.tabs.length - 1 || sectionAt(i + 1) !== sectionAt(i);
+  let carried: ReactNode[] = [];
 
   // The tabs on show (not those in the "more" menu), and where each sits in the group.
   const shownTabs = () => [
@@ -87,12 +103,16 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
       <div className="tab-fit" ref={fitRef}>
         {group.tabs.map((tab, i) => {
           const panel = panes.panels.get(tab);
-          if (!panel) return null;
+          if (panel?.after) carried.push(<Fragment key={`after:${tab}`}>{panel.after}</Fragment>);
+          const after = runEnds(i) ? carried : [];
+          if (runEnds(i)) carried = [];
+          if (!panel) return after.length > 0 ? <Fragment key={tab}>{after}</Fragment> : null;
           const mode = fit.mode(tab);
           const number = numbers.get(tab);
+          const step = number ? undefined : steps.of(tab);
           return (
             <Fragment key={tab}>
-              {i > 0 && panel.section !== panes.panels.get(group.tabs[i - 1])?.section && (
+              {i > 0 && panel.section !== sectionAt(i - 1) && (
                 <span className={`detail-tab-sep${fitClass(mode)}`} data-fit-of={tab} />
               )}
               <PaneTab
@@ -101,8 +121,9 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
                 active={tab === group.active}
                 dragged={dragging?.tab === tab && dragging.scope === panes.scope}
                 draggable={!narrow}
-                hint={number ? numberHints[number - 1] : ""}
-                ariaKeys={number ? numberKeys[number - 1] : undefined}
+                hint={number ? numberHints[number - 1] : (step?.hint ?? "")}
+                ariaKeys={number ? numberKeys[number - 1] : step?.aria}
+                owner={ownerName(tab)}
                 onSelect={() => panes.select(tab)}
                 onClose={() =>
                   panel.onClose ? panel.onClose() : panes.apply((l) => removeTab(l, tab))
@@ -118,7 +139,7 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
                   endTabDrag();
                 }}
               />
-              {panel.after}
+              {after}
             </Fragment>
           );
         })}
@@ -186,4 +207,26 @@ export function PaneTabStrip({ group, focused }: { group: PaneGroup; focused: bo
       )}
     </div>
   );
+}
+
+/**
+ * Which tabs the next/previous-tab keys step to from here (`stepRun`), with the
+ * keys' current bindings: those tabs name them in their tooltips.
+ */
+function useStepHints(panes: Panes) {
+  const nextHint = useHint("chatNextTab");
+  const prevHint = useHint("chatPrevTab");
+  const nextAria = useAriaKeys("chatNextTab");
+  const prevAria = useAriaKeys("chatPrevTab");
+  const from = stepOrigin(panes.layout, panes.runs);
+  const next = from ? stepRun(panes.layout, panes.runs, from, 1) : null;
+  const prev = from ? stepRun(panes.layout, panes.runs, from, -1) : null;
+  return {
+    of: (tab: string) =>
+      tab === next
+        ? { hint: nextHint, aria: nextAria }
+        : tab === prev
+          ? { hint: prevHint, aria: prevAria }
+          : undefined,
+  };
 }

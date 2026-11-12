@@ -36,6 +36,7 @@ import { mergePr, raisePr } from "@/ipc/pr";
 import { issueRepo, listRepos, setIssueRepo } from "@/ipc/repos";
 import { ChatSurface } from "./ChatSurface";
 import { ContextRail } from "./ContextRail";
+import { useCapabilities } from "./capabilities";
 import { DetailHeader } from "./DetailHeader";
 import { agentCli, agentProvider, setAgentCli, setAgentProvider } from "./defaults";
 import { useHasExited } from "./exitedStore";
@@ -45,6 +46,8 @@ import { usePrTab, useTestsTab } from "./reviewTabs";
 import { StartPrompt } from "./StartPrompt";
 import { TICKET_CHAT_TAB, ticketPanels } from "./ticketPanels";
 import { useDetailKeys } from "./useDetailKeys";
+import { usePickableRepos } from "./usePickableRepos";
+import { useRunsOn } from "./useRunsOn";
 import { useViewerTabs } from "./viewerTabs";
 import { useWorkspaceTabs } from "./workspaceTabs";
 
@@ -68,10 +71,13 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
   const [nextTransport, setNextTransport] = useState<Transport | undefined>();
   const isChat = ranOn === "chat";
   const [provider, setProvider] = useState<AgentProvider>(agentProvider);
+  const { state: runsOn, picked: pickedHost, refresh: refreshHost } = useRunsOn(issue.key);
+  const caps = useCapabilities(issue.key);
   // Right edge: the ticket's details, or the orchestrator — one at a time.
   const panel = useSidePanel("ticket", ["context", "orchestrator"]);
   const [repos, setRepos] = useState<string[]>([]);
   const [repoChoice, setRepoChoice] = useState("");
+  const pickable = usePickableRepos(runsOn.host, repos, repoChoice, setRepoChoice);
   const running = useBoardStore((s) => s.runningAgents.has(issue.key));
   const exited = useHasExited(issue.key);
   // Selecting a primitive (length) keeps this referentially stable across renders.
@@ -166,7 +172,10 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       // SIGWINCH double-painting the banner. No kickoff brief here: starting
       // from inside the ticket opens a plain session (the user is present to
       // direct it) — only the board paths (card button, drag) send the brief.
-      await launchIssueAgent(issue.key, { cli, provider, transport });
+      // A sandbox with no saved Claude login can only be a terminal, to sign in from.
+      const shownAs = runsOn.chatBlock ? "terminal" : transport;
+      await launchIssueAgent(issue.key, { cli, provider, transport: shownAs, host: pickedHost });
+      refreshHost();
     } catch (err) {
       toast.error(`Couldn't start the agent: ${String(err)}`);
     } finally {
@@ -240,7 +249,8 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         <StartPrompt
           onStart={() => void start()}
           onStartFresh={startFresh}
-          repos={repos}
+          repos={pickable.repos}
+          sandboxNote={pickable.note}
           repoChoice={repoChoice}
           onRepoChange={setRepoChoice}
           agentName={agentLabel(cli, provider)}
@@ -265,6 +275,8 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
       tests,
       pr,
       prUrls,
+      remote: runsOn.remote,
+      filesInSandbox: caps?.files === true,
     })
   );
   const panes = usePanes(`ticket:${issue.key}`, panels, { [issue.key]: TICKET_CHAT_TAB });
@@ -299,6 +311,7 @@ export function AgentDetail({ issue, site, onBack, backLabel }: AgentDetailProps
         onChooseProvider={chooseProvider}
         transport={nextTransport ?? ranOn}
         onChooseTransport={setNextTransport}
+        runsOn={runsOn}
         agentItems={agentItems}
         layoutItems={layoutItems(panes)}
       />

@@ -1,228 +1,127 @@
-import { open } from "@tauri-apps/plugin-dialog";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "@/app/toast";
+import { useEffect, useMemo, useState } from "react";
 import { I } from "@/components/Icon";
-import { IconButton } from "@/components/IconButton";
-import { InlineConfirm } from "@/components/InlineConfirm";
-import { CloneFolder } from "@/domains/github/CloneFolder";
+import { SplitButton } from "@/components/SplitButton";
 import { RepoBrowser } from "@/domains/github/RepoBrowser";
 import { useGitHubStore } from "@/domains/github/store";
-import type { RepoDetails } from "@/domains/repos/types";
-import { repoDetails } from "@/ipc/repoSetup";
-import {
-  addRepo,
-  listRepoMappings,
-  listRepos,
-  type RepoMapping,
-  removeRepo,
-  setRepoMappings,
-} from "@/ipc/repos";
-import { basename } from "@/platform/paths";
-import { ConductorImport } from "./ConductorImport";
-import { REPO_ACCOUNT_HINT } from "./RepoAccountSelect";
-import { RepoRow } from "./RepoRow";
+import { useCloneRoot } from "@/domains/github/useCloneRoot";
+import { MiddlePath } from "@/domains/repos/MiddlePath";
+import { ConductorImportDialog, useConductorAvailable } from "./ConductorImport";
+import { RepoList } from "./RepoList";
+import { SettingSection } from "./SettingSection";
+import { TicketMappings } from "./TicketMappings";
+import { useRepoSettings } from "./useRepoSettings";
 
-// The Repositories section: the configured repos plus the ticket→repo mapping
-// table. A ticket whose key contains a mapping's pattern (case-insensitive)
-// resolves to that repo; first match wins. Incomplete rows (empty pattern)
-// live only in the editor — the backend drops them from disk until filled in.
-type EditorRow = RepoMapping & { id: string };
-
-const withId = (m: RepoMapping): EditorRow => ({ ...m, id: crypto.randomUUID() });
-
+// Settings → Repositories: the repos agents work in, how tickets pick one, and
+// where GitHub clones go. Three sections, each always on the page, so nothing
+// moves as repositories come and go.
 export function RepoSettings() {
-  const [repos, setRepos] = useState<string[]>([]);
-  const [mappings, setMappings] = useState<EditorRow[]>([]);
-  // Remote, default branch and setup per repo: slower (git per repo), so they fill in.
-  const [details, setDetails] = useState<Record<string, RepoDetails>>({});
-  const [browsing, setBrowsing] = useState(false);
+  const state = useRepoSettings();
+  const [dialog, setDialog] = useState<"clone" | "conductor" | null>(null);
+  const conductor = useConductorAvailable();
   const github = useGitHubStore((s) => s.status);
   const checkGitHub = useGitHubStore((s) => s.checkStatus);
-  const githubLogins = (github?.accounts ?? []).map((a) => a.login);
+  const logins = useMemo(() => (github?.accounts ?? []).map((a) => a.login), [github]);
+  const mapped = useMemo(() => new Set(state.mappings.map((m) => m.repo)), [state.mappings]);
 
   useEffect(() => {
     if (!github) void checkGitHub();
   }, [github, checkGitHub]);
 
-  const loadDetails = useCallback(
-    () =>
-      void repoDetails()
-        .then((list) => setDetails(Object.fromEntries(list.map((d) => [d.path, d]))))
-        .catch((err) => toast.error(`Couldn't read your repositories: ${String(err)}`)),
-    []
-  );
-
-  useEffect(() => {
-    listRepos()
-      .then(setRepos)
-      .catch((err) => toast.error(`Couldn't load your repositories: ${String(err)}`));
-    loadDetails();
-    listRepoMappings()
-      .then((list) => setMappings(list.map(withId)))
-      .catch((err) => toast.error(`Couldn't load your repo mappings: ${String(err)}`));
-  }, [loadDetails]);
-
-  const persist = (next: EditorRow[]) => {
-    setMappings(next);
-    void setRepoMappings(next.map(({ pattern, repo }) => ({ pattern, repo }))).catch((err) =>
-      toast.error(`Couldn't save your repo mappings: ${String(err)}`)
-    );
-  };
-
-  const addFolder = async () => {
-    const picked = await open({
-      directory: true,
-      multiple: false,
-      title: "Choose a git repository",
-    });
-    if (typeof picked !== "string") return;
-    try {
-      setRepos(await addRepo(picked));
-      loadDetails();
-    } catch (err) {
-      toast.error(`Couldn't add that repository: ${String(err)}`);
-    }
-  };
-
-  const remove = async (path: string) => {
-    try {
-      setRepos(await removeRepo(path));
-      persist(mappings.filter((m) => m.repo !== path));
-    } catch (err) {
-      toast.error(`Couldn't remove that repository: ${String(err)}`);
-    }
-  };
+  const addFolder = () => void state.addFolder();
+  const addSections = [
+    {
+      items: [
+        { id: "folder", label: "From a folder…", onSelect: addFolder },
+        ...(conductor
+          ? [
+              {
+                id: "conductor",
+                label: "Import from Conductor…",
+                onSelect: () => setDialog("conductor"),
+              },
+            ]
+          : []),
+      ],
+    },
+  ];
 
   return (
-    <section className="setting-group">
-      <h2>Repositories</h2>
-      <div className="desc">
-        The git repos your tickets live in. Agents run in isolated worktrees under the resolved
-        repo.
-      </div>
-      {repos.length > 0 && (
-        <div className="repo-list">
-          {repos.map((path) => (
-            <RepoRow
-              key={path}
-              path={path}
-              details={details[path] ?? null}
-              onRemove={() => void remove(path)}
-              onSaved={(setup) => {
-                const d = details[path];
-                if (d) setDetails({ ...details, [path]: { ...d, setup } });
-              }}
-              githubLogins={githubLogins}
-              onAccountSaved={(githubAccount) =>
-                setDetails((all) => {
-                  const d = all[path];
-                  return d ? { ...all, [path]: { ...d, githubAccount } } : all;
-                })
-              }
-            />
-          ))}
-        </div>
-      )}
-      {repos.length > 0 && githubLogins.length > 1 && (
-        <span className="hint rp-account-hint">GitHub account: {REPO_ACCOUNT_HINT}</span>
-      )}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
-        <button type="button" className="btn" onClick={addFolder}>
-          <I.Plus size={14} /> Add repository…
-        </button>
-        <button type="button" className="btn" onClick={() => setBrowsing(true)}>
-          <I.Download size={14} /> Clone from GitHub…
-        </button>
-        <ConductorImport
-          onImported={() => {
-            void listRepos().then(setRepos);
-            loadDetails();
-          }}
-        />
-      </div>
-      {repos.length === 0 && (
-        <span className="hint" style={{ marginTop: 8, display: "block" }}>
-          Add the folder of a local git repository, or clone one from GitHub.
-        </span>
-      )}
-      <CloneFolder label="GitHub clones go in" />
-      {browsing && (
+    <>
+      <SettingSection
+        title="Repositories"
+        desc="The git repositories agents work in. Each agent gets its own worktree of one."
+        actions={
+          <>
+            <button type="button" className="btn" onClick={() => setDialog("clone")}>
+              <I.Download size={14} /> Clone from GitHub…
+            </button>
+            <SplitButton menuLabel="More ways to add" sections={addSections}>
+              <button type="button" className="btn" onClick={addFolder}>
+                <I.Plus size={14} /> Add repository…
+              </button>
+            </SplitButton>
+          </>
+        }
+      >
+        {state.repos.length > 0 ? (
+          <RepoList
+            repos={state.repos}
+            details={state.details}
+            logins={logins}
+            mapped={mapped}
+            onRemove={(path) => void state.remove(path)}
+            onPatch={state.patchDetails}
+          />
+        ) : (
+          state.loaded && (
+            <div className="rs-empty">Add a local git repository, or clone one from GitHub.</div>
+          )
+        )}
+      </SettingSection>
+
+      <TicketMappings
+        repos={state.repos}
+        mappings={state.mappings}
+        onChange={state.saveMappings}
+        onAdd={state.addMapping}
+      />
+
+      <CloningSection />
+
+      {dialog === "clone" && (
         <RepoBrowser
           onClose={() => {
-            setBrowsing(false);
-            loadDetails();
+            // Its last step may have saved the clone's setup.
+            setDialog(null);
+            state.reload();
           }}
-          onCloned={(cloned) => {
-            setRepos((list) => (list.includes(cloned.path) ? list : [...list, cloned.path]));
-            loadDetails();
-          }}
+          onCloned={() => state.reload()}
         />
       )}
+      {dialog === "conductor" && (
+        <ConductorImportDialog onClose={() => setDialog(null)} onImported={state.reload} />
+      )}
+    </>
+  );
+}
 
-      {repos.length > 1 && (
-        <div className="setting-block">
-          <div className="label">Ticket mapping</div>
-          <div className="hint">
-            Tickets whose key contains the pattern use that repository (first match wins). Tickets
-            with no match ask once and remember the answer per ticket.
-          </div>
-          {mappings.map((m, i) => (
-            <div key={m.id} className="map-row">
-              <input
-                type="text"
-                aria-label="Ticket pattern"
-                placeholder="e.g. TRACE"
-                value={m.pattern}
-                onChange={(e) =>
-                  persist(mappings.map((x, j) => (j === i ? { ...x, pattern: e.target.value } : x)))
-                }
-              />
-              <span className="map-arrow">→</span>
-              <select
-                aria-label="Mapped repository"
-                value={m.repo}
-                onChange={(e) =>
-                  persist(mappings.map((x, j) => (j === i ? { ...x, repo: e.target.value } : x)))
-                }
-              >
-                {repos.map((r) => (
-                  <option key={r} value={r}>
-                    {basename(r)}
-                  </option>
-                ))}
-              </select>
-              {m.pattern.trim() ? (
-                <InlineConfirm
-                  label={<I.Trash size={12} />}
-                  className="btn ghost icon xs repo-remove"
-                  size="xs"
-                  ariaLabel="Remove mapping"
-                  message={`Remove the ${m.pattern.trim()} mapping?`}
-                  confirmLabel="Remove"
-                  onConfirm={() => persist(mappings.filter((x) => x.id !== m.id))}
-                />
-              ) : (
-                // A blank row holds nothing yet (it isn't even saved), so it goes on one click.
-                <IconButton
-                  size="xs"
-                  className="ghost repo-remove"
-                  onClick={() => persist(mappings.filter((x) => x.id !== m.id))}
-                  label="Remove mapping"
-                >
-                  <I.Trash size={12} />
-                </IconButton>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            className="sec-add"
-            onClick={() => persist([...mappings, withId({ pattern: "", repo: repos[0] ?? "" })])}
-          >
-            <I.Plus size={12} /> Add mapping
+/** Where new GitHub clones go: one row, the folder shortened in the middle. */
+function CloningSection() {
+  const { root, change } = useCloneRoot();
+  return (
+    <SettingSection title="Cloning">
+      <div className="setting-row rs-clone-row">
+        <div className="setting-text">
+          <div className="label">Clone folder</div>
+          <div className="hint">New GitHub clones go here.</div>
+        </div>
+        <div className="control">
+          <MiddlePath className="rs-clone-path" path={root ?? "…"} />
+          <button type="button" className="btn" onClick={() => void change()}>
+            Change…
           </button>
         </div>
-      )}
-    </section>
+      </div>
+    </SettingSection>
   );
 }

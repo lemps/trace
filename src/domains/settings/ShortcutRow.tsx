@@ -20,7 +20,9 @@ interface ShortcutRowProps {
 }
 
 // One shortcut: its keys, and — unless it's built in — a button that records new ones.
-// A chord the rules refuse is explained in place and nothing changes.
+// A chord the rules refuse is explained in place and nothing changes. The note line
+// and the reset button keep their room when empty, so recording, rebinding and
+// resetting never move the row or the keys button.
 export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: ShortcutRowProps) {
   const chords = useKeymapStore((s) => s.keymap[def.id] ?? NONE);
   const isOverridden = useKeymapStore((s) => def.id in s.overrides);
@@ -58,11 +60,13 @@ export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: Sho
         : "Press the new keys. Esc cancels."))
     : (clash ?? (def.isFixed ? "Built in" : null));
 
+  const canReset = isOverridden && !isRecording;
+
   return (
     <div className="setting-row sc-row">
       <div>
         <div className="label">{def.label}</div>
-        {note && <div className={problem || clash ? "hint sc-problem" : "hint"}>{note}</div>}
+        <div className={problem || clash ? "hint sc-problem" : "hint"}>{note ?? "\u00a0"}</div>
       </div>
       <div className="control">
         {def.isFixed ? (
@@ -77,11 +81,16 @@ export function ShortcutRow({ def, clashesWith, isRecording, setRecording }: Sho
             {isRecording ? "Press keys…" : keys}
           </button>
         )}
-        {isOverridden && !isRecording && (
-          <IconButton label={`Reset ${def.label} to its default`} onClick={() => reset(def.id)}>
-            <I.RotateCcw size={14} />
-          </IconButton>
-        )}
+        <IconButton
+          label={`Reset ${def.label} to its default`}
+          className={canReset ? undefined : "sc-reset-off"}
+          aria-hidden={!canReset || undefined}
+          disabled={!canReset}
+          tabIndex={canReset ? undefined : -1}
+          onClick={() => reset(def.id)}
+        >
+          <I.RotateCcw size={14} />
+        </IconButton>
       </div>
     </div>
   );

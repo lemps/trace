@@ -14,7 +14,7 @@ const fromLines = (text: string) => text.split("\n");
 // dropped when it's saved (`SetupConfig::sanitized` in Rust).
 export function SetupFields({ setup, onChange, idPrefix }: SetupFieldsProps) {
   return (
-    <div className="rp-setup">
+    <div className="rp-setup-fields">
       <div className="field">
         <label htmlFor={`${idPrefix}-commands`}>Commands</label>
         <textarea
@@ -35,7 +35,7 @@ export function SetupFields({ setup, onChange, idPrefix }: SetupFieldsProps) {
         <label htmlFor={`${idPrefix}-copy`}>Copy from the main checkout</label>
         <textarea
           id={`${idPrefix}-copy`}
-          className="rp-lines"
+          className="rp-lines short"
           spellCheck={false}
           rows={2}
           placeholder=".env"

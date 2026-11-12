@@ -58,7 +58,7 @@ export const GROUPS: { id: GroupId; label: string; desc: string }[] = [
   { id: "search", label: "Search box", desc: "While the search box has focus." },
   { id: "board", label: "Board", desc: "On a tracker's board." },
   { id: "sessions", label: "Sessions", desc: "On a row in the Sessions page's lists." },
-  { id: "settings", label: "Settings", desc: "In Settings → Sidebar's list of pages." },
+  { id: "settings", label: "Settings", desc: "In Settings → Layout's list of pages." },
 ];
 
 export interface ShortcutDef {

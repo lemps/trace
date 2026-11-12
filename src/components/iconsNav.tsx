@@ -3,6 +3,10 @@ import { Base, type IconProps } from "./iconBase";
 // The app's places and the things it names (pages, panels, status), part of `I`
 // (Icon.tsx). One meaning per glyph: see the glyph table in the trace-ui skill.
 
+/** The shield outline the permission glyphs share. */
+const SHIELD =
+  "M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z";
+
 export const NAV_ICONS = {
   Board: (p: IconProps) => (
     <Base {...p}>
@@ -46,6 +50,13 @@ export const NAV_ICONS = {
     <Base {...p}>
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+    </Base>
+  ),
+  /** An agent's model and effort, as one setting (sliders-horizontal). Not Settings (the page). */
+  Sliders: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3" />
+      <path d="M14 2v4M8 10v4M16 18v4" />
     </Base>
   ),
   Inbox: (p: IconProps) => (
@@ -142,7 +153,31 @@ export const NAV_ICONS = {
   /** An agent asking permission to use a tool (shield). */
   Shield: (p: IconProps) => (
     <Base {...p}>
-      <path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z" />
+      <path d={SHIELD} />
+    </Base>
+  ),
+  /** Full access: an agent that runs everything without asking (shield-alert). */
+  ShieldAlert: (p: IconProps) => (
+    <Base {...p}>
+      <path d={SHIELD} />
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
+    </Base>
+  ),
+  /** Auto mode: an agent whose permissions are checked for it (shield-check). */
+  ShieldCheck: (p: IconProps) => (
+    <Base {...p}>
+      <path d={SHIELD} />
+      <path d="m9 12 2 2 4-4" />
+    </Base>
+  ),
+  /** Ask mode: an agent that asks before it edits or runs (a raised hand). */
+  Hand: (p: IconProps) => (
+    <Base {...p}>
+      <path d="M18 11V6a2 2 0 0 0-4 0" />
+      <path d="M14 10V4a2 2 0 0 0-4 0v2" />
+      <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
+      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
     </Base>
   ),
   /** Started by another agent (corner-down-right). */

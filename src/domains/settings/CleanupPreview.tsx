@@ -1,65 +1,57 @@
 import { BusyLabel } from "@/components/BusyLabel";
-import { I } from "@/components/Icon";
 import { InlineConfirm } from "@/components/InlineConfirm";
-import { relTime } from "@/domains/sessions/time";
 import type { CleanupReport } from "@/ipc/cleanup";
+import { SettingRow } from "./SettingRow";
+import { worktreeCount } from "./useCleanup";
+import { deleteCount } from "./worktreeModel";
 
 interface CleanupPreviewProps {
-  /** null while the first preview is loading. */
+  /** Auto-cleanup is on (the preview only runs then). */
+  enabled: boolean;
+  /** Null until the first preview; afterwards the latest, kept while the next is worked out. */
   report: CleanupReport | null;
-  busy: boolean;
+  /** A new preview is on its way: the line shows the previous one, dimmed. */
+  stale: boolean;
+  /** "Clean up now" is running. */
+  running: boolean;
   onRun: () => void;
 }
 
-// What the auto-cleanup rules select right now: the workspaces the next pass
-// will delete, plus any it has to keep (running, uncommitted work) and why.
-export function CleanupPreview({ report, busy, onRun }: CleanupPreviewProps) {
-  if (!report) return <span className="hint">Checking workspaces…</span>;
-  const deletable = report.items.filter((it) => !it.held);
-  if (report.items.length === 0) {
-    return <span className="hint">Nothing matches these rules right now.</span>;
-  }
+const NEVER =
+  "Never deleted: workspaces with uncommitted changes or a running agent. A branch with unpushed commits is kept, so starting the workspace again checks it back out.";
+
+/** One line for what the next pass does; which rows it touches is marked in the list above. */
+function summary(report: CleanupReport | null): string {
+  if (!report) return "Checking workspaces…";
+  const n = deleteCount(report);
+  const kept = report.items.length - n;
+  if (report.items.length === 0) return "Nothing matches these rules right now.";
+  if (n === 0) return `The next pass deletes nothing: it keeps ${worktreeCount(kept)}.`;
+  return `The next pass deletes ${worktreeCount(n)}.`;
+}
+
+// What the auto-cleanup rules select right now, as one summary line with
+// "Clean up now". The worktrees themselves are marked in the Worktrees list.
+export function CleanupPreview({ enabled, report, stale, running, onRun }: CleanupPreviewProps) {
+  const n = deleteCount(report);
   return (
-    <div className="cleanup-preview">
-      <div className="cleanup-preview-head">
-        <span className="hint">
-          {deletable.length === 0
-            ? "Matching workspaces are being kept:"
-            : `The next pass deletes ${countLabel(deletable.length)}:`}
-        </span>
-        {deletable.length > 0 && (
-          <InlineConfirm
-            label={
-              <>
-                <I.Trash size={14} />{" "}
-                <BusyLabel busy={busy} idle="Clean up now" working="Cleaning up…" />
-              </>
-            }
-            disabled={busy}
-            message={`Delete ${countLabel(deletable.length)} now?`}
-            confirmLabel={`Delete ${deletable.length}`}
-            onConfirm={onRun}
-          />
-        )}
-      </div>
-      <div className="repo-list">
-        {report.items.map((it) => (
-          <div key={it.path} className="repo-row">
-            {it.kind === "ticket" ? <I.Ticket size={14} /> : <I.Chat size={14} />}
-            <span className="repo-name">{it.label}</span>
-            <span className="repo-path" title={it.path}>
-              last active {relTime(it.lastActive)}
-            </span>
-            {it.held && (
-              <span className="wt-chip dirty" title={`Kept: ${it.held}`}>
-                kept — {it.held}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className={stale ? "cleanup-summary stale" : "cleanup-summary"}>
+      <SettingRow
+        label={enabled ? summary(report) : "Next pass"}
+        hint={NEVER}
+        inactive={!enabled}
+        inactiveReason="Turn on auto-cleanup to see what it would delete."
+      >
+        <InlineConfirm
+          className="btn sm"
+          size="sm"
+          label={<BusyLabel busy={running} idle="Clean up now" working="Cleaning up…" />}
+          disabled={!enabled || running || n === 0}
+          message={`Delete ${worktreeCount(n)} now?`}
+          confirmLabel={`Delete ${n}`}
+          onConfirm={onRun}
+        />
+      </SettingRow>
     </div>
   );
 }
-
-const countLabel = (n: number) => `${n} workspace${n === 1 ? "" : "s"}`;

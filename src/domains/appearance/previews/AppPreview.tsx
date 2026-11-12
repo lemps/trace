@@ -1,10 +1,13 @@
 import { I } from "@/components/Icon";
 import { StatusLight } from "@/components/StatusLight";
+import { activeTheme, useAppearance } from "../store";
+import { accentOf, themeLabel } from "../themes";
+import { PreviewFrame } from "./PreviewFrame";
 
 // Settings → Appearance → Theme: a miniature trace window — title bar, rail,
 // a page header with buttons, agent rows — drawn with the real tokens and
 // controls, so it shows the theme, accent and density exactly as they apply.
-// It's a picture: `inert` keeps its controls out of the tab order.
+// The caption says which theme is on screen (System's pick, under System).
 
 const ROWS = [
   {
@@ -18,8 +21,20 @@ const ROWS = [
 ];
 
 export function AppPreview() {
+  const choice = useAppearance((s) => s.prefs.theme);
+  const theme = useAppearance(activeTheme);
+  const accent = useAppearance((s) => accentOf(s.prefs.accent).label);
+  const name = choice === "system" ? `System: ${themeLabel(theme)}` : themeLabel(theme);
   return (
-    <div className="ap-win" inert aria-hidden="true">
+    <PreviewFrame kind="theme" caption={`${name} · ${accent}`}>
+      <Window />
+    </PreviewFrame>
+  );
+}
+
+function Window() {
+  return (
+    <div className="ap-win">
       <div className="ap-win-title">
         <span>trace</span>
         <span className="ap-win-ctrls">

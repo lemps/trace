@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { I } from "@/components/Icon";
-import { Markdown, NO_LINK_COMPONENTS } from "@/components/Markdown";
 import { StatusLight } from "@/components/StatusLight";
 import { isShortcut } from "@/platform/shortcuts";
 import { ChatMarkdown } from "./ChatMarkdown";
 import { useAnswer } from "./hooks/useAnswer";
+import { QuestionOptions } from "./QuestionOptions";
+import { splitRecommended } from "./recommended";
 import type { Question, QuestionSet } from "./types";
 
 // The agent asks you something, answered in place: each question's options
@@ -15,6 +16,7 @@ type Picks = Record<string, string[]>;
 
 export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
   const { busy, submit } = useAnswer(set.requestId);
+  const idBase = useId();
   const [picks, setPicks] = useState<Picks>({});
   const [typed, setTyped] = useState<Record<string, string>>({});
   if (set.resolution) return <Answered set={set} />;
@@ -48,37 +50,19 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
       <div className="ac-card-head">
         <StatusLight light="attention" variant="pill" label="Question" />
       </div>
-      {set.questions.map((q) => (
+      {set.questions.map((q, n) => (
         <fieldset key={q.id} className="ac-q" disabled={busy}>
-          <legend className="ac-q-text">
+          <legend className="ac-q-text" id={`${idBase}-q${n}`}>
             {q.header && <span className="ac-q-header">{q.header}</span>}
             <ChatMarkdown text={q.text} inline />
             {q.multiSelect && <span className="ac-card-meta">Pick any</span>}
           </legend>
-          <div className="ac-q-options">
-            {q.options.map((o) => {
-              const on = (picks[q.id] ?? []).includes(o.label);
-              return (
-                <button
-                  key={o.label}
-                  type="button"
-                  aria-pressed={on}
-                  className={`ac-q-option${on ? " on" : ""}${q.multiSelect ? " multi" : ""}`}
-                  onClick={() => pick(q, o.label)}
-                >
-                  <span className="ac-q-mark">{on && <I.Check size={12} />}</span>
-                  <span className="ac-q-label">
-                    <Markdown text={o.label} prose inline components={NO_LINK_COMPONENTS} />
-                  </span>
-                  {o.description && (
-                    <span className="ac-q-desc">
-                      <Markdown text={o.description} prose inline components={NO_LINK_COMPONENTS} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <QuestionOptions
+            question={q}
+            picked={picks[q.id] ?? []}
+            labelledBy={`${idBase}-q${n}`}
+            onPick={(label) => pick(q, label)}
+          />
           {q.allowFreeText && (
             <input
               className="ac-q-input"
@@ -104,7 +88,7 @@ export function QuestionCard({ questions: set }: { questions: QuestionSet }) {
           disabled={!ready || busy}
           onClick={send}
         >
-          <I.Send size={14} /> Answer
+          Answer
         </button>
       </div>
     </div>
@@ -135,7 +119,7 @@ function Answered({ set }: { set: QuestionSet }) {
           <span className="ac-answered-a">
             {(answers[q.id] ?? []).map((a) => (
               <span key={a} className="ac-chip">
-                {a}
+                {splitRecommended(a).label}
               </span>
             ))}
           </span>
